@@ -463,33 +463,9 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
    MOBILE & TOUCH DEVICE FIXES  —  Comprehensive Overhaul
    ================================================================ */
 
-/* ---- 1. Hero: auto-reveal content on touch devices ---- */
-@media (hover: none) {
-  .hero-cinematic-logo {
-    opacity: 0 !important;
-    pointer-events: none;
-  }
-  .hero-cinematic-reveal .line-inner {
-    transform: translateY(0) !important;
-    opacity: 1 !important;
-    transition: none !important;
-  }
-  .hero-bottom-grid {
-    opacity: 1 !important;
-    transform: translateY(0) !important;
-    transition: none !important;
-  }
-}
-
-/* ---- 2. (Removed) Allow cards to animate on scroll instead of being fully expanded ---- */
-
-/* ---- 3. Disable canvas on touch (performance) ---- */
+/* ---- 1. Canvas & cursor off on touch ---- */
 @media (hover: none) {
   canvas { display: none !important; }
-}
-
-/* ---- 4. Hide custom cursor on touch ---- */
-@media (hover: none) {
   #cursor { display: none !important; }
 }
 
@@ -714,17 +690,30 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
   }
 }
 
-/* ---- touch-revealed: JS-triggered hero reveal for touch devices ---- */
+/* ---- touch-revealed: fires after preloader exits, plays the full cinematic reveal ---- */
 .hero-cinematic-container.touch-revealed .hero-cinematic-logo {
   opacity: 0 !important;
+  transform: scale(1.4) !important;
+  filter: blur(8px) !important;
   pointer-events: none;
 }
-.hero-cinematic-container.touch-revealed .line-inner {
+.hero-cinematic-container.touch-revealed .line:nth-child(1) .line-inner {
   transform: translateY(0) !important;
   opacity: 1 !important;
+  transition-delay: 0.05s !important;
+}
+.hero-cinematic-container.touch-revealed .line:nth-child(2) .line-inner {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  transition-delay: 0.15s !important;
+}
+.hero-cinematic-container.touch-revealed .line:nth-child(3) .line-inner {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  transition-delay: 0.25s !important;
 }
 .hero-cinematic-container.touch-revealed .hero-bottom-grid {
   opacity: 1 !important;
   transform: translateY(0) !important;
-  transition-delay: 0.2s !important;
+  transition-delay: 0.4s !important;
 }
