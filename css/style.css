@@ -182,7 +182,7 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 .stat-block { display: flex; flex-direction: column; gap: 0.5rem; }
 .stat-label { font-family: var(--font-mono); font-size: 0.75rem; color: #888; }
 .stat-val { font-size: 2rem; font-weight: 700; color: var(--fg); }
-.footer { border-top: 1px solid var(--border); padding: 2vw 4vw; display: flex; justify-content: space-between; align-items: center; }
+.footer,.cinematic-footer { border-top: 1px solid var(--border); padding: 2vw 4vw; display: flex; justify-content: space-between; align-items: center; }
 
 @media(max-width: 900px) {
     .nav { display: none; }
@@ -453,10 +453,10 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 
 
 /* ================================================================
-   MOBILE & TOUCH DEVICE FIXES
+   MOBILE & TOUCH DEVICE FIXES  —  Comprehensive Overhaul
    ================================================================ */
 
-/* ---- 1. Hero: auto-reveal content on touch devices (no hover available) ---- */
+/* ---- 1. Hero: auto-reveal content on touch devices ---- */
 @media (hover: none) {
   .hero-cinematic-logo {
     opacity: 0 !important;
@@ -474,7 +474,7 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
   }
 }
 
-/* ---- 2. Work cards: always show reveal layer on touch ---- */
+/* ---- 2. Work cards: always-visible content on touch ---- */
 @media (hover: none) {
   .work-reveal,
   .work-card-bg,
@@ -487,10 +487,14 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
     opacity: 1 !important;
     transform: translateY(0) !important;
   }
+  .work-title {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+  }
   .work-base { display: none; }
 }
 
-/* ---- 3. Disable particles canvas on touch (performance) ---- */
+/* ---- 3. Disable canvas on touch (performance) ---- */
 @media (hover: none) {
   canvas { display: none !important; }
 }
@@ -502,12 +506,22 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 
 /* ---- 5. Layout: phones & small tablets ---- */
 @media (max-width: 768px) {
-  /* Work rail: vertical stack instead of horizontal scroll */
+
+  /* === Preloader === */
+  .preloader-inner {
+    width: min(300px, 85vw) !important;
+  }
+
+  /* === Work Scene: vertical stack === */
+  .work-scene {
+    overflow: visible !important;
+    padding: 10vw 0 !important;
+  }
   .work-rail {
     flex-direction: column !important;
     width: 100% !important;
     padding: 0 5vw !important;
-    gap: 8vw !important;
+    gap: 6vw !important;
   }
   .work-panel {
     width: 100% !important;
@@ -515,62 +529,164 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
   }
   .intro-panel {
     width: 100% !important;
-    padding: 10vw 0 4vw !important;
+    padding: 8vw 0 3vw !important;
+  }
+  .outro-panel {
+    padding: 3vw 0 8vw !important;
   }
   .work-card {
     aspect-ratio: 4/5;
   }
+  .work-card-content {
+    padding: 5vw !important;
+  }
 
-  /* Hero spacing */
+  /* === Hero === */
   .hero {
     padding-left: 5vw !important;
     padding-right: 5vw !important;
     min-height: 100svh;
   }
-  .hero-heading {
-    font-size: clamp(2.8rem, 11vw, 5rem) !important;
+  .hero-cinematic-reveal {
+    padding: 0 !important;
+    width: 100%;
   }
-  .hero-sub {
-    font-size: 0.92rem !important;
+  .hero-heading,
+  .hero-cinematic-reveal .hero-heading {
+    font-size: clamp(2.6rem, 10.5vw, 5rem) !important;
+    margin-bottom: 1.5rem !important;
+  }
+  .hero-sub,
+  .hero-cinematic-reveal .hero-sub {
+    font-size: 0.9rem !important;
     max-width: 100% !important;
+    margin-bottom: 2rem !important;
   }
   .hero-bottom-grid {
     gap: 1.5rem !important;
   }
-
-  /* About terminal: already 1-col but fix padding */
-  .terminal-box {
-    grid-template-columns: 1fr !important;
-    padding: 8vw 5vw !important;
+  .scroll-ind {
+    font-size: 0.6rem;
+    bottom: 3vw;
+    left: 5vw;
   }
 
-  /* Process cards: auto-fit handles it but ensure min col width */
+  /* === Scene headings === */
+  .scene-heading {
+    font-size: clamp(2rem, 8.5vw, 3.5rem) !important;
+  }
+  .scene-sub {
+    font-size: 0.9rem;
+    max-width: 100%;
+  }
+
+  /* === Process Section === */
+  .process-scene {
+    padding: 14vw 5vw !important;
+  }
   .futuristic-cards {
     grid-template-columns: 1fr !important;
     gap: 4vw !important;
+    margin-top: 8vw !important;
+  }
+  .premium-card {
+    padding: 2.5rem 1.8rem !important;
+    transform: none !important;
   }
 
-  /* Contact */
+  /* === About Terminal === */
+  .about-terminal {
+    padding: 14vw 5vw !important;
+  }
+  .terminal-box {
+    grid-template-columns: 1fr !important;
+    padding: 7vw 5vw !important;
+    gap: 3rem !important;
+  }
+  .terminal-title {
+    font-size: 2.2rem !important;
+  }
+  .terminal-text {
+    font-size: 1rem !important;
+    max-width: 100% !important;
+  }
+  .stat-val {
+    font-size: 1.6rem !important;
+  }
+
+  /* === Contact === */
+  .contact-scene {
+    height: auto !important;
+    min-height: 70vh !important;
+    padding: 14vw 0 !important;
+  }
   .contact-actions {
     flex-direction: column !important;
     align-items: center !important;
     gap: 1rem !important;
+    margin-top: 2.5rem !important;
   }
   .contact-card {
     padding: 0 5vw !important;
   }
 
-  /* Footer */
-  .footer-inner {
+  /* === Footer (cinematic-footer) === */
+  .cinematic-footer {
     flex-direction: column !important;
-    gap: 2rem !important;
+    align-items: center !important;
     text-align: center !important;
+    gap: 1.2rem !important;
+    padding: 8vw 5vw !important;
   }
-  .footer-links {
-    justify-content: center !important;
+  .footer-center,
+  .footer-right {
+    font-size: 0.65rem !important;
   }
 
-  /* Disable section spotlight pseudo-elements (no mouse on mobile) */
+  /* === Nav: mobile open state === */
+  .nav.is-open {
+    padding: 5vw !important;
+    gap: 0 !important;
+  }
+  .nav.is-open .nav-link {
+    font-size: 1.5rem !important;
+    font-family: var(--font-body) !important;
+    letter-spacing: -0.02em !important;
+    padding: 1.1rem 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+  }
+  .nav.is-open .nav-link--cta {
+    margin-top: 1.5rem !important;
+    padding: 1rem 2rem !important;
+    border-radius: 50px !important;
+    text-align: center !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    font-family: var(--font-mono) !important;
+    border: 1px solid var(--fg) !important;
+    border-bottom: 1px solid var(--fg) !important;
+    background: transparent !important;
+  }
+
+  /* === Hamburger → X animation === */
+  .menu-btn span {
+    transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+  }
+  .menu-btn.is-active span:first-child {
+    transform: translateY(6px) rotate(45deg);
+  }
+  .menu-btn.is-active span:last-child {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  /* === Disable section spotlights (mouse-only) === */
   .hero::before, .hero::after,
   .work-scene::before, .work-scene::after,
   .process-scene::before, .process-scene::after,
@@ -579,19 +695,24 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
     display: none !important;
   }
 
-  /* Disable 3D tilt transform leftovers */
+  /* === Disable 3D tilt on mobile === */
   .work-card-inner, .premium-card {
     transform: none !important;
   }
 
-  /* General section padding */
+  /* === General section horizontal padding === */
   section {
     padding-left: 5vw;
     padding-right: 5vw;
   }
+
+  /* === Marquee text size === */
+  .marquee-track-cinematic span {
+    font-size: 0.75rem;
+  }
 }
 
-/* touch-revealed: JS-triggered hero reveal for touch devices */
+/* ---- touch-revealed: JS-triggered hero reveal for touch devices ---- */
 .hero-cinematic-container.touch-revealed .hero-cinematic-logo {
   opacity: 0 !important;
   pointer-events: none;
