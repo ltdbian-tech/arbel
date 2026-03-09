@@ -83,40 +83,47 @@
   var header  = document.getElementById('header');
   if(menuBtn && nav){
     menuBtn.addEventListener('click', function(){
-      nav.classList.toggle('is-open');
+      var isOpen = nav.classList.toggle('is-open');
       menuBtn.classList.toggle('is-active');
+      // Lock body scroll so page can't scroll behind the nav overlay
+      document.body.classList.toggle('nav-open', isOpen);
       if(header) {
-          if (nav.classList.contains('is-open')) {
-              header.style.background = 'var(--surface)';
-          } else {
-              header.style.background = '';
-          }
+          header.style.background = isOpen ? 'var(--surface)' : '';
       }
     });
     nav.querySelectorAll('.nav-link').forEach(function(link){
       link.addEventListener('click', function(){
         nav.classList.remove('is-open');
         menuBtn.classList.remove('is-active');
+        document.body.classList.remove('nav-open');
         if(header) header.style.background = '';
       });
     });
   }
 
-  /* ---- Auto-reveal hero on touch: show arbel. first, reveal on first scroll ---- */
+  /* ---- Auto-reveal hero on touch: show arbel. first, reveal after intentional scroll ---- */
   if (!window.matchMedia('(hover: hover)').matches) {
     var heroContainer = document.querySelector('.hero-cinematic-container');
     if (heroContainer) {
       var heroRevealed = false;
+      // Track touch start Y so we know which direction the swipe went
+      var touchStartY = 0;
+      document.addEventListener('touchstart', function(e) {
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
       function revealHero() {
         if (heroRevealed) return;
         heroRevealed = true;
         heroContainer.classList.add('touch-revealed');
-        window.removeEventListener('scroll', revealHero, { passive: true });
-        document.removeEventListener('touchmove', revealHero, { passive: true });
+        document.removeEventListener('touchend', onTouchEnd, { passive: true });
       }
-      // Trigger on first scroll or swipe
-      window.addEventListener('scroll', revealHero, { passive: true });
-      document.addEventListener('touchmove', revealHero, { passive: true });
+      function onTouchEnd(e) {
+        // Only trigger if user swiped UP (scrolling down) by at least 20px
+        var dy = touchStartY - e.changedTouches[0].clientY;
+        if (dy > 20) revealHero();
+      }
+      document.addEventListener('touchend', onTouchEnd, { passive: true });
     }
   }
 
