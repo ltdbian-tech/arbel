@@ -1,6 +1,9 @@
-/* ===== webgl-media.js � Three.js shader surfaces ===== */
+/* ===== webgl-media.js — Three.js shader surfaces ===== */
 (function(){
   'use strict';
+
+  // Skip entirely on touch/mobile — saves GPU, battery, and frame budget
+  if (!window.matchMedia('(pointer: fine)').matches) return;
 
   if(typeof THREE === 'undefined') return;
 

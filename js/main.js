@@ -102,13 +102,21 @@
     });
   }
 
-  /* ---- Auto-reveal hero on touch devices (fires when preloader fully exits) ---- */
+  /* ---- Auto-reveal hero on touch: show arbel. first, reveal on first scroll ---- */
   if (!window.matchMedia('(hover: hover)').matches) {
     var heroContainer = document.querySelector('.hero-cinematic-container');
     if (heroContainer) {
-      document.addEventListener('preloader-done', function() {
+      var heroRevealed = false;
+      function revealHero() {
+        if (heroRevealed) return;
+        heroRevealed = true;
         heroContainer.classList.add('touch-revealed');
-      });
+        window.removeEventListener('scroll', revealHero, { passive: true });
+        document.removeEventListener('touchmove', revealHero, { passive: true });
+      }
+      // Trigger on first scroll or swipe
+      window.addEventListener('scroll', revealHero, { passive: true });
+      document.addEventListener('touchmove', revealHero, { passive: true });
     }
   }
 
