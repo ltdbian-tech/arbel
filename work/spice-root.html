@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Spice Root — Single-Origin Artisan Spices</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080402;
+      --fg: #F2EBD9;
+      --accent: #E8841A;
+      --accent2: #B03020;
+      --muted: rgba(242,235,217,0.5);
+      --border: rgba(242,235,217,0.08);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --mono: 'Courier New', Courier, monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--fg); font-family: 'Georgia', 'Times New Roman', serif; overflow-x: hidden; cursor: none; }
+
+    /* ── CURSOR ───────────────────────────────── */
+    #c-dot {
+      width: 6px; height: 6px;
+      background: var(--accent); border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      transform: translate(-50%,-50%);
+      pointer-events: none; z-index: 9999;
+    }
+    #c-ring {
+      width: 32px; height: 32px;
+      border: 1px solid rgba(232,132,26,0.5); border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      transform: translate(-50%,-50%);
+      pointer-events: none; z-index: 9998;
+      transition: width 0.35s var(--ease), height 0.35s var(--ease), border-color 0.3s;
+    }
+    #c-ring.is-hover { width: 50px; height: 50px; border-color: var(--accent); }
+
+    /* ── NAV ──────────────────────────────────── */
+    nav {
+      position: fixed; inset: 0 0 auto; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 2rem 4rem;
+    }
+    nav::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(8,4,2,0.9) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .nav-back {
+      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em;
+      color: var(--muted); text-decoration: none;
+      position: relative; transition: color 0.3s;
+    }
+    .nav-back:hover { color: var(--fg); }
+    .nav-logo {
+      font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.18em;
+      color: var(--fg); text-decoration: none; position: relative;
+    }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; position: relative; }
+    .nav-links a {
+      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em;
+      color: var(--muted); text-decoration: none; transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--fg); }
+
+    /* ── HERO ─────────────────────────────────── */
+    .hero {
+      height: 100vh; min-height: 700px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0 4rem 6rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-ambient {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 70% 50% at 65% 35%, rgba(232,132,26,0.13) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(176,48,32,0.08) 0%, transparent 60%);
+    }
+    .hero-bigtext {
+      position: absolute; right: 2rem; top: 50%;
+      transform: translateY(-50%);
+      font-size: clamp(10rem, 22vw, 22rem); font-weight: 900;
+      color: rgba(232,132,26,0.05); letter-spacing: -0.05em;
+      line-height: 1; user-select: none; pointer-events: none;
+      text-transform: uppercase;
+    }
+    .hero-eyebrow {
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.22em;
+      color: var(--accent); margin-bottom: 1.5rem;
+      opacity: 0; animation: fadeUp 1s var(--ease) 0.3s forwards;
+    }
+    .hero-title {
+      font-size: clamp(5.5rem, 13vw, 14rem); font-weight: 900;
+      line-height: 0.88; letter-spacing: -0.04em; text-transform: uppercase;
+      opacity: 0; animation: fadeUp 1.2s var(--ease) 0.5s forwards;
+    }
+    .hero-title em { font-style: italic; color: var(--accent); }
+    .hero-bottom {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-top: 3rem;
+      opacity: 0; animation: fadeUp 1s var(--ease) 0.85s forwards;
+    }
+    .hero-desc {
+      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em;
+      color: var(--muted); max-width: 420px; line-height: 1.9;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 1.2rem;
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
+      color: var(--bg); background: var(--accent);
+      text-decoration: none; padding: 1rem 2.2rem;
+      transition: transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 16px 50px rgba(232,132,26,0.45); }
+    .hero-scroll-tag {
+      position: absolute; right: 4rem; bottom: 6rem;
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em;
+      color: var(--muted); writing-mode: vertical-rl;
+      opacity: 0; animation: fadeIn 1s var(--ease) 1.3s forwards;
+    }
+
+    /* ── MARQUEE ──────────────────────────────── */
+    .marquee {
+      overflow: hidden; padding: 1.6rem 0;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .marquee-track {
+      display: flex; gap: 3.5rem; white-space: nowrap;
+      animation: marquee 18s linear infinite; width: max-content;
+    }
+    .marquee-track span {
+      font-size: clamp(1.5rem, 3vw, 3rem); font-weight: 900;
+      text-transform: uppercase; letter-spacing: -0.02em;
+      color: rgba(242,235,217,0.07);
+    }
+    .marquee-track span.sep { color: var(--accent); opacity: 0.6; }
+
+    /* ── FEATURED ─────────────────────────────── */
+    .section { padding: 9rem 4rem; }
+    .s-label {
+      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em;
+      color: var(--accent); margin-bottom: 1rem;
+    }
+    .s-title {
+      font-size: clamp(3rem, 7vw, 7rem); font-weight: 900;
+      line-height: 0.92; letter-spacing: -0.03em; text-transform: uppercase;
+      margin-bottom: 5rem;
+    }
+    .products-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
+    }
+    .product-card {
+      position: relative; aspect-ratio: 2/3; overflow: hidden;
+    }
+    .product-card-bg {
+      position: absolute; inset: 0;
+      transition: transform 0.9s var(--ease);
+    }
+    .product-card:hover .product-card-bg { transform: scale(1.06); }
+    .pc-bg-1 { background: linear-gradient(160deg, #2A1408 0%, #5C2A0A 55%, #150802 100%); }
+    .pc-bg-2 { background: linear-gradient(160deg, #1C0808 0%, #480C0C 55%, #0A0202 100%); }
+    .pc-bg-3 { background: linear-gradient(160deg, #1A1205 0%, #3C2808 55%, #080402 100%); }
+    .product-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 40%, rgba(232,132,26,0.12), transparent);
+      opacity: 0; transition: opacity 0.5s;
+    }
+    .product-card:hover .product-glow { opacity: 1; }
+    .product-icon {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      font-size: 5.5rem; opacity: 0.18;
+      transition: opacity 0.5s, transform 0.7s var(--ease);
+    }
+    .product-card:hover .product-icon { opacity: 0.28; transform: translate(-50%,-60%) rotate(-8deg) scale(0.9); }
+    .product-tag {
+      position: absolute; top: 1.8rem; left: 1.8rem;
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em;
+      color: var(--accent); border: 1px solid rgba(232,132,26,0.4);
+      padding: 0.3rem 0.7rem;
+    }
+    .product-price-tag {
+      position: absolute; top: 1.8rem; right: 1.8rem;
+      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+    .product-foot {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 2.5rem 2rem 2rem;
+      background: linear-gradient(to top, rgba(8,4,2,0.97) 0%, transparent 100%);
+    }
+    .product-name-lg {
+      font-size: 1.6rem; font-weight: 800;
+      letter-spacing: -0.02em; line-height: 1; margin-bottom: 0.6rem;
+    }
+    .product-origin-tag {
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em; color: var(--accent);
+    }
+    .product-add {
+      display: block; margin-top: 1.2rem;
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+      color: var(--fg); text-decoration: none;
+      border-top: 1px solid rgba(242,235,217,0.12); padding-top: 1rem;
+      opacity: 0; transform: translateY(6px);
+      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+    }
+    .product-card:hover .product-add { opacity: 1; transform: translateY(0); }
+
+    /* ── DIVIDER ──────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 0 4rem; }
+
+    /* ── STORY ────────────────────────────────── */
+    .story {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8rem; padding: 9rem 4rem; align-items: center;
+    }
+    .story-heading {
+      font-size: clamp(3rem, 5.5vw, 5.5rem); font-weight: 900;
+      line-height: 0.95; letter-spacing: -0.03em;
+      text-transform: uppercase; margin-bottom: 2.5rem;
+    }
+    .story-heading em { color: var(--accent); font-style: italic; }
+    .story-body { color: var(--muted); line-height: 1.95; margin-bottom: 1.5rem; font-size: 0.98rem; }
+    .story-stats { display: flex; gap: 3.5rem; margin-top: 3rem; }
+    .stat { }
+    .stat-n {
+      font-size: 3.2rem; font-weight: 900; letter-spacing: -0.04em;
+      color: var(--accent); line-height: 1;
+    }
+    .stat-l {
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
+      color: var(--muted); margin-top: 0.4rem;
+    }
+    .story-vis {
+      position: relative; aspect-ratio: 4/5;
+      background: linear-gradient(160deg, #1E0E04 0%, #3C2008 60%, #0A0402 100%);
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+    }
+    .story-vis-icon {
+      font-size: 9rem; opacity: 0.2;
+      position: relative; z-index: 1;
+      animation: floatY 4s ease-in-out infinite;
+    }
+    .story-vis::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 70% at 50% 40%, rgba(232,132,26,0.18), transparent);
+    }
+    .story-vis-label {
+      position: absolute; bottom: 2rem; left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em;
+      color: var(--muted); text-align: center; white-space: nowrap;
+    }
+
+    /* ── PROCESS ──────────────────────────────── */
+    .process { padding: 9rem 4rem; }
+    .process-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 5rem; }
+    .process-step {
+      padding: 3rem; background: rgba(242,235,217,0.02);
+      border: 1px solid var(--border);
+      transition: background 0.4s, border-color 0.4s;
+      position: relative; overflow: hidden;
+    }
+    .process-step:hover { background: rgba(232,132,26,0.04); border-color: rgba(232,132,26,0.2); }
+    .process-step::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(232,132,26,0.08), transparent);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .process-step:hover::before { opacity: 1; }
+    .step-num {
+      font-size: 4rem; font-weight: 900; letter-spacing: -0.05em;
+      color: rgba(232,132,26,0.15); line-height: 1; margin-bottom: 2rem;
+    }
+    .step-title {
+      font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em;
+      text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .step-body { color: var(--muted); font-size: 0.9rem; line-height: 1.8; font-family: var(--mono); font-size: 0.7rem; }
+
+    /* ── CTA CLOSER ───────────────────────────── */
+    .closer {
+      padding: 10rem 4rem; text-align: center; position: relative;
+    }
+    .closer::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(232,132,26,0.08), transparent);
+    }
+    .closer-big {
+      font-size: clamp(5rem, 13vw, 14rem); font-weight: 900;
+      line-height: 0.9; letter-spacing: -0.05em; text-transform: uppercase;
+      position: relative; margin-bottom: 3rem;
+    }
+    .closer-big em { color: var(--accent); font-style: italic; display: block; }
+    .closer-sub {
+      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.15em;
+      color: var(--muted); margin-bottom: 3.5rem; position: relative;
+    }
+    .closer-btn {
+      position: relative; display: inline-flex; align-items: center; gap: 1.5rem;
+      padding: 1.2rem 3.5rem; background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
+      text-decoration: none;
+      transition: transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .closer-btn:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(232,132,26,0.5); }
+
+    /* ── FOOTER ───────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 4rem;
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: 2rem;
+    }
+    .f-brand {
+      font-size: 1.4rem; font-weight: 900;
+      letter-spacing: -0.02em; text-transform: uppercase;
+    }
+    .f-credit {
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em;
+      color: var(--muted); text-align: center;
+    }
+    .f-credit a { color: var(--accent); text-decoration: none; }
+    .f-links { display: flex; gap: 2rem; justify-content: flex-end; }
+    .f-links a {
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+      color: var(--muted); text-decoration: none; transition: color 0.3s;
+    }
+    .f-links a:hover { color: var(--fg); }
+
+    /* ── ANIMATIONS ───────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @keyframes floatY {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-12px); }
+    }
+
+    /* ── SCROLL REVEAL ────────────────────────── */
+    .rev { opacity: 0; transform: translateY(50px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+    .rev.in { opacity: 1; transform: translateY(0); }
+    .rev.d1 { transition-delay: 0.1s; }
+    .rev.d2 { transition-delay: 0.22s; }
+    .rev.d3 { transition-delay: 0.34s; }
+  </style>
+</head>
+<body>
+
+  <div id="c-dot"></div>
+  <div id="c-ring"></div>
+
+  <nav>
+    <a href="../index.html" class="nav-back">← ARBEL PORTFOLIO</a>
+    <a href="#" class="nav-logo">THE SPICE ROOT</a>
+    <ul class="nav-links">
+      <li><a href="#collection">SHOP</a></li>
+      <li><a href="#story">OUR STORY</a></li>
+      <li><a href="#process">SOURCING</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-ambient"></div>
+    <div class="hero-bigtext">SR</div>
+    <div class="hero-eyebrow">EST. 2019 &nbsp;·&nbsp; ARTISAN SPICES &nbsp;·&nbsp; GLOBAL ORIGINS</div>
+    <h1 class="hero-title">THE<br><em>SPICE</em><br>ROOT</h1>
+    <div class="hero-bottom">
+      <p class="hero-desc">Single-origin spices sourced from the world's most extraordinary growing regions. Fire, earth, and memory — bottled.</p>
+      <a href="#collection" class="hero-cta">EXPLORE COLLECTION →</a>
+    </div>
+    <span class="hero-scroll-tag">SCROLL TO DISCOVER</span>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee">
+    <div class="marquee-track">
+      <span>SINGLE ORIGIN</span><span class="sep">✦</span>
+      <span>HAND HARVESTED</span><span class="sep">✦</span>
+      <span>SMALL BATCH</span><span class="sep">✦</span>
+      <span>DIRECT TRADE</span><span class="sep">✦</span>
+      <span>FAMILY FARMS</span><span class="sep">✦</span>
+      <span>SINGLE ORIGIN</span><span class="sep">✦</span>
+      <span>HAND HARVESTED</span><span class="sep">✦</span>
+      <span>SMALL BATCH</span><span class="sep">✦</span>
+      <span>DIRECT TRADE</span><span class="sep">✦</span>
+      <span>FAMILY FARMS</span><span class="sep">✦</span>
+    </div>
+  </div>
+
+  <!-- COLLECTION -->
+  <section class="section" id="collection">
+    <div class="rev"><div class="s-label">— 01 / COLLECTION</div></div>
+    <div class="rev"><h2 class="s-title">CURATED<br>COLLECTION</h2></div>
+    <div class="products-grid">
+      <div class="product-card rev d1">
+        <div class="product-card-bg pc-bg-1"></div>
+        <div class="product-glow"></div>
+        <div class="product-icon">🌶</div>
+        <div class="product-tag">NEW SEASON</div>
+        <div class="product-price-tag">$28</div>
+        <div class="product-foot">
+          <div class="product-name-lg">Kashmiri Chili</div>
+          <div class="product-origin-tag">ORIGIN: KASHMIR VALLEY, INDIA</div>
+          <a href="#" onclick="return false" class="product-add">ADD TO CART →</a>
+        </div>
+      </div>
+      <div class="product-card rev d2">
+        <div class="product-card-bg pc-bg-2"></div>
+        <div class="product-glow"></div>
+        <div class="product-icon">🌿</div>
+        <div class="product-tag">BEST SELLER</div>
+        <div class="product-price-tag">$34</div>
+        <div class="product-foot">
+          <div class="product-name-lg">Smoked Cardamom</div>
+          <div class="product-origin-tag">ORIGIN: KERALAN HIGHLANDS</div>
+          <a href="#" onclick="return false" class="product-add">ADD TO CART →</a>
+        </div>
+      </div>
+      <div class="product-card rev d3">
+        <div class="product-card-bg pc-bg-3"></div>
+        <div class="product-glow"></div>
+        <div class="product-icon">✦</div>
+        <div class="product-tag">RARE RESERVE</div>
+        <div class="product-price-tag">$42</div>
+        <div class="product-foot">
+          <div class="product-name-lg">Midnight Saffron</div>
+          <div class="product-origin-tag">ORIGIN: MASHHAD, IRAN</div>
+          <a href="#" onclick="return false" class="product-add">ADD TO CART →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- STORY -->
+  <section class="story" id="story">
+    <div class="story-text">
+      <div class="rev"><div class="s-label">— 02 / OUR STORY</div></div>
+      <h2 class="story-heading rev">BORN FROM<br><em>FIRE &</em><br>EARTH</h2>
+      <p class="story-body rev">The Spice Root was founded on a single principle: the world's greatest flavors deserve the world's greatest stage. We travel to the most remote farms, highest mountain plateaus, and oldest spice markets to bring back what cannot be found anywhere else.</p>
+      <p class="story-body rev">Every jar carries a story — a farmer's craft, a region's terroir, centuries of tradition. We bottle that story for your kitchen.</p>
+      <div class="story-stats rev">
+        <div class="stat"><div class="stat-n">40+</div><div class="stat-l">COUNTRIES SOURCED</div></div>
+        <div class="stat"><div class="stat-n">12</div><div class="stat-l">ACTIVE FARMS</div></div>
+        <div class="stat"><div class="stat-n">2K+</div><div class="stat-l">HAPPY KITCHENS</div></div>
+      </div>
+    </div>
+    <div class="story-vis rev">
+      <div class="story-vis-icon">🫙</div>
+      <div class="story-vis-label">HAND-PACKED IN SMALL BATCHES</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- PROCESS -->
+  <section class="process" id="process">
+    <div class="rev"><div class="s-label">— 03 / SOURCING</div></div>
+    <div class="rev"><h2 class="s-title">FROM FIELD<br>TO JAR</h2></div>
+    <div class="process-grid">
+      <div class="process-step rev d1">
+        <div class="step-num">01</div>
+        <div class="step-title">Source</div>
+        <div class="step-body">We travel directly to origin farms, building relationships with growers who share our obsession with quality. No middlemen. No compromise.</div>
+      </div>
+      <div class="process-step rev d2">
+        <div class="step-num">02</div>
+        <div class="step-title">Harvest</div>
+        <div class="step-body">Every spice is hand-harvested at peak season. Timing is everything — a day too early or too late changes the entire flavor profile.</div>
+      </div>
+      <div class="process-step rev d3">
+        <div class="step-num">03</div>
+        <div class="step-title">Deliver</div>
+        <div class="step-body">Vacuum-sealed within 48 hours of harvest and shipped directly to your door. Maximum potency. Zero compromise on freshness.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSER CTA -->
+  <section class="closer">
+    <h2 class="closer-big rev">TASTE<br><em>THE WORLD</em></h2>
+    <p class="closer-sub rev">FREE SHIPPING OVER $75 &nbsp;·&nbsp; SAME-DAY DISPATCH &nbsp;·&nbsp; 30-DAY RETURNS</p>
+    <a href="#collection" class="closer-btn rev">SHOP ALL SPICES →</a>
+  </section>
+
+  <footer>
+    <div class="f-brand">The Spice Root</div>
+    <div class="f-credit">A project by <a href="../index.html">ARBEL.LIVE</a></div>
+    <div class="f-links">
+      <a href="#" onclick="return false">INSTAGRAM</a>
+      <a href="#" onclick="return false">WHOLESALE</a>
+      <a href="#" onclick="return false">CONTACT</a>
+    </div>
+  </footer>
+
+  <script>
+    // Cursor
+    const dot  = document.getElementById('c-dot');
+    const ring = document.getElementById('c-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+    });
+    (function loop() {
+      rx += (mx - rx) * 0.1; ry += (my - ry) * 0.1;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(loop);
+    })();
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('is-hover'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('is-hover'));
+    });
+
+    // Scroll reveal
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.rev').forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>arbel.live &mdash; Cinematic Studio</title>
+    <meta name="description" content="arbel.live crafts cinematic websites with scroll-driven motion, fast turnaround, and transparent pricing.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-dark">
+
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-inner">
+            <div class="sys-code fade-in" style="margin-bottom:1rem">INITIALIZING EXPERIENCE</div>
+            <div class="preloader-logo">arbel<span class="preloader-dot">.</span></div>
+            <div class="preloader-line"><div class="preloader-fill" id="preloaderFill"></div></div>
+            <div class="preloader-progress" id="preloaderProgress">00%</div>
+        </div>
+    </div>
+
+    
+
+    <!-- Cursor -->
+    <div class="cursor" id="cursor">
+        <div class="cursor-dot"></div>
+        <div class="cursor-ring"></div>
+        <div class="cursor-text" id="cursorText">VIEW</div>
+    </div>
+
+    <!-- Noise overlay -->
+    <div class="noise-bg"></div>
+
+    <!-- Navigation -->
+    <header class="header" id="header">
+        <div class="header-inner">
+            <div class="header-left">
+                <a href="#" class="logo">arbel<span class="logo-dot">.</span></a>
+                <span class="sys-time mono" id="sysTime" style="display:none;">00:00:00</span>
+            </div>
+            <nav class="nav" id="nav">
+                <a href="#work" class="nav-link hover-fade" data-text="Work">Work</a>
+                <a href="#process" class="nav-link hover-fade" data-text="Process">Process</a>
+                <a href="#about" class="nav-link hover-fade" data-text="About">About</a>
+                <a href="#contact" class="nav-link nav-link--cta magnetic">Start Project</a>
+            </nav>
+            <button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span></button>
+        </div>
+    </header>
+
+    <main id="smooth-wrapper">
+        <div id="smooth-content">
+
+            <!-- Hero -->
+            <section class="hero" id="hero">
+                <div class="hero-bg">
+                    <div class="webgl-surface" data-theme="ink"></div>
+                    <div class="hero-vignette"></div>
+                </div>
+                
+                <div class="hero-cinematic-container">
+                    <div class="hero-cinematic-logo">arbel<span class="logo-dot">.</span></div>
+                    <div class="hero-cinematic-reveal">
+                        <h1 class="hero-heading">
+                            <span class="line"><span class="line-inner">We build</span></span>
+                            <span class="line"><span class="line-inner">cinematic</span></span>
+                            <span class="line"><span class="line-inner"><em>experiences.</em></span></span>
+                        </h1>
+                        <div class="hero-bottom-grid">
+                            <p class="hero-sub">Motion design, WebGL workflows, and high-performance development moving at lightspeed.</p>
+                            <div class="hero-actions">
+                                <a href="#work" class="btn btn-primary magnetic">START PROJECT</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="scroll-ind mono">
+                    <span>SCROLL TO EXPLORE</span>
+                    <div class="scroll-track"><div class="scroll-thumb"></div></div>
+                </div>
+            </section>
+
+            <!-- Marquee Fast -->
+            <div class="marquee-cinematic">
+                <div class="marquee-track-cinematic">
+                    <span>CREATIVE DEVELOPMENT &mdash; WEBGL INTERFACES &mdash; MOTION CHOREOGRAPHY &mdash;</span>
+                    <span>CREATIVE DEVELOPMENT &mdash; WEBGL INTERFACES &mdash; MOTION CHOREOGRAPHY &mdash;</span>
+                </div>
+            </div>
+
+            <!-- Scene: Work Rail -->
+            <section class="work-scene" id="work">
+                <div class="work-rail" id="workRail">
+                    <div class="work-panel intro-panel">
+                        <div class="section-label mono">01 / SELECTED WORK</div>
+                        <h2 class="scene-heading">Selected<br><em>Archives.</em></h2>
+                        <p class="scene-sub">A curated selection of our finest digital experiences. Scroll to explore &mdash;</p>
+                    </div>
+
+                                        <!-- Card 1 -->
+                    <div class="work-panel work-card">
+                        <div class="work-card-inner cursor-hover-view">
+                            <div class="work-base">
+                                <div class="work-meta mono">
+                                    <span class="mono">THE SPICE ROOT</span>
+                                    <span class="mono muted">E-COMMERCE</span>
+                                </div>
+                                <div class="work-bignum">01</div>
+                            </div>
+                            <div class="work-reveal">
+                                <div class="work-card-bg webgl-surface" data-theme="warm"></div>
+                                <div class="work-card-overlay"></div>
+                                <div class="work-card-content">
+                                    <div class="work-meta mono">
+                                        <span class="mono" style="color:var(--fg);">THE SPICE ROOT</span>
+                                        <span class="mono" style="color:#aaa;">E-COMMERCE</span>
+                                    </div>
+                                    <h3 class="work-title">Spice Route</h3>
+                                    <p class="work-desc">Bold hero motion, fluid book flows, and high velocity interactions.</p>
+                                    <a href="work/spice-root.html" class="work-link mono">VIEW SITE &rarr;</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2 -->
+                    <div class="work-panel work-card">
+                        <div class="work-card-inner cursor-hover-view">
+                            <div class="work-base">
+                                <div class="work-meta mono">
+                                    <span class="mono">GLOW SKINCARE</span>
+                                    <span class="mono muted">EDITORIAL</span>
+                                </div>
+                                <div class="work-bignum">02</div>
+                            </div>
+                            <div class="work-reveal">
+                                <div class="work-card-bg webgl-surface" data-theme="cool"></div>
+                                <div class="work-card-overlay"></div>
+                                <div class="work-card-content">
+                                    <div class="work-meta mono">
+                                        <span class="mono" style="color:var(--fg);">GLOW SKINCARE</span>
+                                        <span class="mono" style="color:#aaa;">EDITORIAL / 4 DAYS</span>
+                                    </div>
+                                    <h3 class="work-title">Glow Studio</h3>
+                                    <p class="work-desc">Soft gradients, dynamic filters, and premium cinematic transitions.</p>
+                                    <a href="work/glow-studio.html" class="work-link mono">VIEW SITE &rarr;</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3 -->
+                    <div class="work-panel work-card">
+                        <div class="work-card-inner cursor-hover-view">
+                            <div class="work-base">
+                                <div class="work-meta mono">
+                                    <span class="mono">HEALING HANDS</span>
+                                    <span class="mono muted">HEALTHCARE</span>
+                                </div>
+                                <div class="work-bignum">03</div>
+                            </div>
+                            <div class="work-reveal">
+                                <div class="work-card-bg webgl-surface" data-theme="ember"></div>
+                                <div class="work-card-overlay"></div>
+                                <div class="work-card-content">
+                                    <div class="work-meta mono">
+                                        <span class="mono" style="color:var(--fg);">HEALING HANDS</span>
+                                        <span class="mono" style="color:#aaa;">HEALTHCARE / 7 DAYS</span>
+                                    </div>
+                                    <h3 class="work-title">MediCare Clinic</h3>
+                                    <p class="work-desc">Trustworthy presence, 3D routing, and lightning fast booking.</p>
+                                    <a href="work/medicare-clinic.html" class="work-link mono">VIEW SITE &rarr;</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="work-panel outro-panel">
+                        <h2 class="scene-heading">More<br><em>Soon.</em></h2>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scene: Futuristic Cards Process -->
+            <section class="process-scene" id="process">
+                <div class="container container-wide">
+                    <div class="process-header">
+                        <div class="section-label mono">[02] BUILD PROTOCOL</div>
+                        <div class="process-header-split">
+                            <h2 class="scene-heading">
+                                <span class="line"><span class="line-inner">Velocity by</span></span>
+                                <span class="line"><span class="line-inner"><em>Design.</em></span></span>
+                            </h2>
+                            <p class="scene-sub max-w">Our build system bypasses traditional friction. We do not design in Figma. We design directly in code, merging layout, typography, and motion instantaneously.</p>
+                        </div>
+                    </div>
+
+                    <div class="futuristic-cards">
+                        <div class="premium-card"><div class="premium-card-bg-layer1"></div><div class="premium-card-bg"></div>
+                            <div class="card-decor tl" style="display:none;"></div><div class="card-decor tr" style="display:none;"></div><div class="card-decor bl" style="display:none;"></div><div class="card-decor br" style="display:none;"></div>
+                            <div class="step-num mono">01 / DISCOVERY</div>
+                            <h4 class="card-title">Strategy Call</h4>
+                            <p class="card-body">We scope your exact coordinates, map the sitemap, and establish a lightning-fast launch sequence.</p>
+                            <div class="card-meter"><div class="meter-fill" style="width:33%"></div></div>
+                        </div>
+
+                        <div class="premium-card"><div class="premium-card-bg-layer1"></div><div class="premium-card-bg"></div>
+                            <div class="card-decor tl" style="display:none;"></div><div class="card-decor tr" style="display:none;"></div><div class="card-decor bl" style="display:none;"></div><div class="card-decor br" style="display:none;"></div>
+                            <div class="step-num mono">02 / DESIGN & DEV</div>
+                            <h4 class="card-title">Motion Design</h4>
+                            <p class="card-body">Engineering directly within code. Typography, layout, and WebGL choreography simultaneously forged.</p>
+                            <div class="card-meter"><div class="meter-fill" style="width:66%"></div></div>
+                        </div>
+
+                        <div class="premium-card accent-card"><div class="premium-card-bg-layer1"></div><div class="premium-card-bg"></div>
+                            <div class="card-decor tl" style="display:none;"></div><div class="card-decor tr" style="display:none;"></div><div class="card-decor bl" style="display:none;"></div><div class="card-decor br" style="display:none;"></div>
+                            <div class="step-num mono">03 / DEPLOYMENT</div>
+                            <h4 class="card-title">Final Payload</h4>
+                            <p class="card-body">Your digital presence deploys worldwide. Blistering speeds, responsive scaling, and airtight SEO.</p>
+                            <div class="card-meter"><div class="meter-fill" style="width:100%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Terminal (About) -->
+                        <section class="about-terminal" id="about">
+                <div class="terminal-box">
+                    <div class="terminal-left">
+                        <div class="section-label mono">02 / OUR STUDIO</div>
+                        <h2 class="terminal-title">We engineer<br><em>impact.</em></h2>
+                    </div>
+                    <div class="terminal-right">
+                        <p class="terminal-text">Arbel Technologies is a boutique digital collective. We exist because standard templates are dead. No visual builders &mdash; only bespoke code, tailored for cinematic performance and global reach.</p>
+                        <div style="display:flex; gap: 4rem; margin-top: 2rem; flex-wrap: wrap;">
+                            <div class="stat-block">
+                                <div class="stat-val">48H</div>
+                                <div class="stat-label">FIRST DRAFT</div>
+                            </div>
+                            <div class="stat-block">
+                                <div class="stat-val">3-7D</div>
+                                <div class="stat-label">LAUNCH TIME</div>
+                            </div>
+                            <div class="stat-block">
+                                <div class="stat-val">&bull;</div>
+                                <div class="stat-label">PERFORMANCE</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Final CTA -->
+            <section class="contact-scene" id="contact">
+                <div class="webgl-surface absolute-bg" data-theme="ink"></div>
+                <div class="hero-vignette"></div>
+                <div class="contact-card">
+                    <div class="section-label mono">03 / GET IN TOUCH</div>
+                    <h2 class="scene-heading text-center">
+                        <span class="line"><span class="line-inner">Ready to</span></span>
+                          <span class="line"><span class="line-inner"><em>Start?</em></span></span>
+                    </h2>
+                    <div class="contact-actions">
+                        <a href="mailto:hello@arbel.live" class="btn btn-primary magnetic">EMAIL US</a>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="cinematic-footer">
+        <div class="footer-left">
+            <a href="#" class="logo">arbel<span class="logo-dot">.</span></a>
+        </div>
+        <div class="footer-center mono">
+            ALL RIGHTS RESERVED &bull; &copy; <span id="year"></span>
+        </div>
+        <div class="footer-right mono">
+            BASED WORLDWIDE
+        </div>
+    </footer>
+
+    <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script defer src="js/webgl-media.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script defer src="js/animations.js"></script>
+    <script defer src="js/particles.js"></script>
+    <script defer src="js/main.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

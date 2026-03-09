@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Healing Hands — Modern Healthcare Clinic</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #020508;
+      --fg: #EDF4F8;
+      --accent: #2BBFCC;
+      --accent2: #4A90D9;
+      --muted: rgba(237,244,248,0.5);
+      --border: rgba(237,244,248,0.07);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --mono: 'Courier New', Courier, monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--fg); font-family: 'Arial', 'Helvetica Neue', sans-serif; overflow-x: hidden; cursor: none; }
+
+    /* ── CURSOR ───────────────────────────────── */
+    #c-dot {
+      width: 5px; height: 5px;
+      background: var(--accent); border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      transform: translate(-50%,-50%);
+      pointer-events: none; z-index: 9999;
+    }
+    #c-ring {
+      width: 28px; height: 28px;
+      border: 1px solid rgba(43,191,204,0.4); border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      transform: translate(-50%,-50%);
+      pointer-events: none; z-index: 9998;
+      transition: width 0.35s var(--ease), height 0.35s var(--ease), border-color 0.3s;
+    }
+    #c-ring.is-hover { width: 46px; height: 46px; border-color: var(--accent); }
+
+    /* ── NAV ──────────────────────────────────── */
+    nav {
+      position: fixed; inset: 0 0 auto; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 2rem 4rem;
+    }
+    nav::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(to bottom, rgba(2,5,8,0.92), transparent);
+      pointer-events: none;
+    }
+    .nav-back {
+      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em;
+      color: var(--muted); text-decoration: none; position: relative; transition: color 0.3s;
+    }
+    .nav-back:hover { color: var(--fg); }
+    .nav-logo {
+      font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.18em;
+      color: var(--fg); text-decoration: none; position: relative;
+    }
+    .nav-logo span { color: var(--accent); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 0.8rem;
+      padding: 0.65rem 1.5rem; background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
+      text-decoration: none; position: relative;
+      transition: transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(43,191,204,0.4); }
+
+    /* ── HERO ─────────────────────────────────── */
+    .hero {
+      height: 100vh; min-height: 700px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 0 4rem 7rem;
+      position: relative; overflow: hidden;
+    }
+    .hero-ambient {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 55% 55% at 75% 25%, rgba(74,144,217,0.12) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 50% at 20% 70%, rgba(43,191,204,0.1) 0%, transparent 65%);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(43,191,204,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(43,191,204,0.025) 1px, transparent 1px);
+      background-size: 80px 80px;
+    }
+    .hero-pulse {
+      position: absolute; top: 30%; left: 65%;
+      transform: translate(-50%, -50%);
+    }
+    .pulse-ring {
+      position: absolute; border: 1px solid rgba(43,191,204,0.15);
+      border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      animation: pulseOut 3.5s ease-out infinite;
+    }
+    .pulse-ring:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
+    .pulse-ring:nth-child(2) { width: 400px; height: 400px; animation-delay: 1.1s; }
+    .pulse-ring:nth-child(3) { width: 600px; height: 600px; animation-delay: 2.2s; }
+    .pulse-core {
+      position: absolute; width: 12px; height: 12px;
+      background: var(--accent); border-radius: 50%;
+      top: 50%; left: 50%; transform: translate(-50%,-50%);
+      box-shadow: 0 0 20px rgba(43,191,204,0.8);
+    }
+    .hero-eyebrow {
+      font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.22em;
+      color: var(--accent); margin-bottom: 1.5rem;
+      opacity: 0; animation: fadeUp 1s var(--ease) 0.3s forwards;
+    }
+    .hero-title {
+      font-size: clamp(5rem, 12vw, 12rem); font-weight: 900;
+      line-height: 0.88; letter-spacing: -0.03em; text-transform: uppercase;
+      opacity: 0; animation: fadeUp 1.2s var(--ease) 0.5s forwards;
+    }
+    .hero-title .accent { color: var(--accent); }
+    .hero-bottom {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-top: 3rem; gap: 4rem;
+      opacity: 0; animation: fadeUp 1s var(--ease) 0.9s forwards;
+    }
+    .hero-desc {
+      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em;
+      color: var(--muted); max-width: 500px; line-height: 1.9;
+    }
+    .hero-book-block { text-align: right; flex-shrink: 0; }
+    .hero-book-label {
+      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
+      color: var(--muted); margin-bottom: 1rem;
+    }
+    .btn-book {
+      display: inline-flex; align-items: center; gap: 1.2rem;
+      padding: 1rem 2.5rem; background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em;
+      text-decoration: none; font-weight: 700;
+      transition: transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .btn-book:hover { transform: translateY(-3px); box-shadow: 0 16px 50px rgba(43,191,204,0.5); }
+
+    /* ── TRUST BAR ────────────────────────────── */
+    .trust-bar {
+      display: flex; gap: 2px; padding: 0 0;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .trust-item {
+      flex: 1; padding: 2rem 3rem;
+      display: flex; align-items: center; gap: 1.5rem;
+      border-right: 1px solid var(--border);
+      transition: background 0.3s;
+    }
+    .trust-item:hover { background: rgba(43,191,204,0.03); }
+    .trust-item:last-child { border-right: none; }
+    .trust-icon { font-size: 1.8rem; opacity: 0.7; }
+    .trust-num { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; color: var(--accent); line-height: 1; }
+    .trust-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; color: var(--muted); margin-top: 0.3rem; }
+
+    /* ── SERVICES ─────────────────────────────── */
+    .section { padding: 9rem 4rem; }
+    .s-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 1rem; }
+    .s-title { font-size: clamp(3rem, 6.5vw, 6.5rem); font-weight: 900; line-height: 0.92; letter-spacing: -0.03em; text-transform: uppercase; margin-bottom: 5rem; }
+
+    .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; }
+    .service-card {
+      padding: 3.5rem; position: relative; overflow: hidden;
+      background: rgba(237,244,248,0.02); border: 1px solid var(--border);
+      transition: background 0.4s, border-color 0.4s;
+    }
+    .service-card:hover { background: rgba(43,191,204,0.04); border-color: rgba(43,191,204,0.2); }
+    .service-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 0% 0%, rgba(43,191,204,0.08), transparent);
+      opacity: 0; transition: opacity 0.4s;
+    }
+    .service-card:hover::before { opacity: 1; }
+    .sc-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; }
+    .sc-icon { font-size: 2.5rem; }
+    .sc-num {
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
+      color: rgba(43,191,204,0.4);
+    }
+    .sc-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    .sc-body { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted); line-height: 1.85; margin-bottom: 2rem; }
+    .sc-link {
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em;
+      color: var(--accent); text-decoration: none;
+      border-bottom: 1px solid rgba(43,191,204,0.3); padding-bottom: 3px;
+      display: inline-block;
+      opacity: 0; transform: translateX(-8px);
+      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+    }
+    .service-card:hover .sc-link { opacity: 1; transform: translateX(0); }
+
+    /* ── DIVIDER ──────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 0 4rem; }
+
+    /* ── HOW IT WORKS ─────────────────────────── */
+    .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 5rem; }
+    .step-card {
+      padding: 3rem; border: 1px solid var(--border); position: relative;
+      transition: border-color 0.4s, background 0.4s;
+    }
+    .step-card:hover { background: rgba(43,191,204,0.03); border-color: rgba(43,191,204,0.15); }
+    .step-num-big {
+      font-size: 5rem; font-weight: 900; letter-spacing: -0.05em;
+      color: rgba(43,191,204,0.1); line-height: 1; margin-bottom: 1.5rem;
+    }
+    .step-title { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 1rem; text-transform: uppercase; }
+    .step-body { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted); line-height: 1.85; }
+    .step-connector {
+      position: absolute; top: 3.5rem; right: -1px;
+      width: 1px; height: 40px; background: var(--accent); opacity: 0.2;
+    }
+
+    /* ── TEAM ─────────────────────────────────── */
+    .team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 5rem; }
+    .doc-card {
+      aspect-ratio: 3/4; position: relative; overflow: hidden;
+      background: rgba(237,244,248,0.02); border: 1px solid var(--border);
+      display: flex; flex-direction: column; justify-content: flex-end;
+      transition: border-color 0.4s;
+    }
+    .doc-card:hover { border-color: rgba(43,191,204,0.2); }
+    .doc-art {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.8s var(--ease);
+    }
+    .doc-card:hover .doc-art { transform: scale(1.03); }
+    .doc-initials {
+      font-size: 5rem; font-weight: 900; letter-spacing: -0.05em;
+      color: rgba(43,191,204,0.08);
+    }
+    .doc-glow {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 30%, rgba(43,191,204,0.07), transparent);
+      opacity: 0; transition: opacity 0.5s;
+    }
+    .doc-card:hover .doc-glow { opacity: 1; }
+    .doc-foot {
+      position: relative; z-index: 1; padding: 2rem;
+      background: linear-gradient(to top, rgba(2,5,8,1) 0%, transparent 100%);
+    }
+    .doc-name { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.3rem; }
+    .doc-role { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.15em; color: var(--accent); }
+
+    /* ── BOOKING CTA ──────────────────────────── */
+    .booking-cta {
+      padding: 10rem 4rem; text-align: center; position: relative;
+    }
+    .booking-cta::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(43,191,204,0.07), transparent);
+    }
+    .bc-big {
+      font-size: clamp(4rem, 10vw, 10rem); font-weight: 900;
+      line-height: 0.9; letter-spacing: -0.04em; text-transform: uppercase;
+      position: relative; margin-bottom: 3rem;
+    }
+    .bc-big span { color: var(--accent); }
+    .bc-sub {
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
+      color: var(--muted); position: relative; margin-bottom: 1.5rem;
+    }
+    .bc-availability {
+      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
+      color: rgba(43,191,204,0.6);
+      position: relative; margin-bottom: 3.5rem;
+    }
+    .bc-availability::before { content: '● '; color: var(--accent); }
+    .bc-btn {
+      position: relative; display: inline-flex; align-items: center; gap: 1.5rem;
+      padding: 1.2rem 3.5rem; background: var(--accent); color: var(--bg);
+      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
+      text-decoration: none; font-weight: 700;
+      transition: transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .bc-btn:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(43,191,204,0.5); }
+
+    /* ── FOOTER ───────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 3rem 4rem;
+      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2rem;
+    }
+    .f-brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.01em; }
+    .f-brand span { color: var(--accent); }
+    .f-credit { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.15em; color: var(--muted); text-align: center; }
+    .f-credit a { color: var(--accent); text-decoration: none; }
+    .f-links { display: flex; gap: 2rem; justify-content: flex-end; }
+    .f-links a { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; color: var(--muted); text-decoration: none; transition: color 0.3s; }
+    .f-links a:hover { color: var(--fg); }
+
+    /* ── ANIMATIONS ───────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes pulseOut {
+      0%   { transform: translate(-50%,-50%) scale(0.4); opacity: 0.6; }
+      100% { transform: translate(-50%,-50%) scale(1);   opacity: 0; }
+    }
+
+    /* ── SCROLL REVEAL ────────────────────────── */
+    .rev { opacity: 0; transform: translateY(50px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+    .rev.in { opacity: 1; transform: translateY(0); }
+    .rev.d1 { transition-delay: 0.1s; }
+    .rev.d2 { transition-delay: 0.22s; }
+    .rev.d3 { transition-delay: 0.34s; }
+    .rev.d4 { transition-delay: 0.46s; }
+  </style>
+</head>
+<body>
+
+  <div id="c-dot"></div>
+  <div id="c-ring"></div>
+
+  <nav>
+    <a href="../index.html" class="nav-back">← ARBEL PORTFOLIO</a>
+    <a href="#" class="nav-logo">HEALING <span>HANDS</span></a>
+    <a href="#book" class="nav-cta">BOOK APPOINTMENT →</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-ambient"></div>
+    <div class="hero-grid"></div>
+    <div class="hero-pulse">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-core"></div>
+    </div>
+    <div class="hero-eyebrow">MODERN HEALTHCARE &nbsp;·&nbsp; SINCE 2018 &nbsp;·&nbsp; EST. LONDON</div>
+    <h1 class="hero-title">CARE<br><span class="accent">RE-</span><br>IMAGINED</h1>
+    <div class="hero-bottom">
+      <p class="hero-desc">A new standard in primary care. Bringing together world-class specialists, lightning-fast booking, and a clinic experience designed for how people actually live.</p>
+      <div class="hero-book-block">
+        <div class="hero-book-label">NEXT AVAILABLE: TODAY</div>
+        <a href="#book" class="btn-book">BOOK NOW →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRUST BAR -->
+  <div class="trust-bar rev">
+    <div class="trust-item rev d1">
+      <div class="trust-icon">🏥</div>
+      <div>
+        <div class="trust-num">12K+</div>
+        <div class="trust-label">PATIENTS SERVED</div>
+      </div>
+    </div>
+    <div class="trust-item rev d2">
+      <div class="trust-icon">⭐</div>
+      <div>
+        <div class="trust-num">4.9</div>
+        <div class="trust-label">AVERAGE RATING</div>
+      </div>
+    </div>
+    <div class="trust-item rev d3">
+      <div class="trust-icon">⏱</div>
+      <div>
+        <div class="trust-num">&lt;10 min</div>
+        <div class="trust-label">AVERAGE WAIT TIME</div>
+      </div>
+    </div>
+    <div class="trust-item rev d4">
+      <div class="trust-icon">🩺</div>
+      <div>
+        <div class="trust-num">40+</div>
+        <div class="trust-label">SPECIALIST DOCTORS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVICES -->
+  <section class="section" id="services">
+    <div class="rev"><div class="s-label">— 01 / SERVICES</div></div>
+    <div class="rev"><h2 class="s-title">CARE FOR<br>EVERY NEED</h2></div>
+    <div class="services-grid">
+      <div class="service-card rev d1">
+        <div class="sc-head">
+          <div class="sc-icon">🫀</div>
+          <div class="sc-num">01</div>
+        </div>
+        <div class="sc-title">General Practice</div>
+        <div class="sc-body">Same-day GP appointments with experienced physicians. From routine checkups to urgent care, we're here when you need us — without the wait.</div>
+        <a href="#book" class="sc-link">BOOK NOW →</a>
+      </div>
+      <div class="service-card rev d2">
+        <div class="sc-head">
+          <div class="sc-icon">🧠</div>
+          <div class="sc-num">02</div>
+        </div>
+        <div class="sc-title">Mental Wellness</div>
+        <div class="sc-body">Compassionate, evidence-based mental health support. Our therapists and psychiatrists work together to provide genuinely holistic care.</div>
+        <a href="#book" class="sc-link">BOOK NOW →</a>
+      </div>
+      <div class="service-card rev d1">
+        <div class="sc-head">
+          <div class="sc-icon">🦴</div>
+          <div class="sc-num">03</div>
+        </div>
+        <div class="sc-title">Specialist Referrals</div>
+        <div class="sc-body">Direct access to 25+ specialties — cardiology, dermatology, orthopaedics and more. Referred same week, not the same month.</div>
+        <a href="#book" class="sc-link">BOOK NOW →</a>
+      </div>
+      <div class="service-card rev d2">
+        <div class="sc-head">
+          <div class="sc-icon">👶</div>
+          <div class="sc-num">04</div>
+        </div>
+        <div class="sc-title">Paediatrics</div>
+        <div class="sc-body">Dedicated paediatric care from newborn to adolescent. A calm, child-friendly environment and paediatricians who take the time to listen.</div>
+        <a href="#book" class="sc-link">BOOK NOW →</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <section class="section">
+    <div class="rev"><div class="s-label">— 02 / HOW IT WORKS</div></div>
+    <div class="rev"><h2 class="s-title">HEALTHCARE<br>MADE SIMPLE</h2></div>
+    <div class="steps-row">
+      <div class="step-card rev d1">
+        <div class="step-num-big">01</div>
+        <div class="step-title">Book Online</div>
+        <div class="step-body">Choose a service, select a time that works for you, and confirm in under 30 seconds. Same-day slots are almost always available.</div>
+        <div class="step-connector"></div>
+      </div>
+      <div class="step-card rev d2">
+        <div class="step-num-big">02</div>
+        <div class="step-title">See Your Doctor</div>
+        <div class="step-body">Walk in on time and see a qualified clinician within minutes. No crowded waiting rooms, no chasing appointments. Just care.</div>
+        <div class="step-connector"></div>
+      </div>
+      <div class="step-card rev d3">
+        <div class="step-num-big">03</div>
+        <div class="step-title">Follow-Up Care</div>
+        <div class="step-body">Receive your care plan digitally, schedule follow-ups, and message your doctor directly — all from the Healing Hands app.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- TEAM -->
+  <section class="section">
+    <div class="rev"><div class="s-label">— 03 / OUR TEAM</div></div>
+    <div class="rev"><h2 class="s-title">WORLD-CLASS<br>CLINICIANS</h2></div>
+    <div class="team-grid">
+      <div class="doc-card rev d1">
+        <div class="doc-art">
+          <div class="doc-initials">SA</div>
+        </div>
+        <div class="doc-glow"></div>
+        <div class="doc-foot">
+          <div class="doc-name">Dr. Sarah Amir</div>
+          <div class="doc-role">GENERAL PRACTITIONER · 14 YRS</div>
+        </div>
+      </div>
+      <div class="doc-card rev d2">
+        <div class="doc-art">
+          <div class="doc-initials">JO</div>
+        </div>
+        <div class="doc-glow"></div>
+        <div class="doc-foot">
+          <div class="doc-name">Dr. James Osei</div>
+          <div class="doc-role">CARDIOLOGIST · 18 YRS</div>
+        </div>
+      </div>
+      <div class="doc-card rev d3">
+        <div class="doc-art">
+          <div class="doc-initials">ML</div>
+        </div>
+        <div class="doc-glow"></div>
+        <div class="doc-foot">
+          <div class="doc-name">Dr. Maya Lin</div>
+          <div class="doc-role">PAEDIATRICIAN · 11 YRS</div>
+        </div>
+      </div>
+      <div class="doc-card rev d4">
+        <div class="doc-art">
+          <div class="doc-initials">RK</div>
+        </div>
+        <div class="doc-glow"></div>
+        <div class="doc-foot">
+          <div class="doc-name">Dr. Ravi Kumar</div>
+          <div class="doc-role">PSYCHIATRIST · 16 YRS</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BOOKING CTA -->
+  <section class="booking-cta" id="book">
+    <h2 class="bc-big rev">YOUR HEALTH<br><span>STARTS NOW</span></h2>
+    <p class="bc-sub rev">FIRST APPOINTMENT? WE'LL WAIVE THE BOOKING FEE.</p>
+    <p class="bc-availability rev">APPOINTMENTS AVAILABLE TODAY · MONDAY – SUNDAY · 07:00 – 22:00</p>
+    <a href="#" onclick="return false" class="bc-btn rev">BOOK YOUR APPOINTMENT →</a>
+  </section>
+
+  <footer>
+    <div class="f-brand">HEALING <span>HANDS</span></div>
+    <div class="f-credit">A project by <a href="../index.html">ARBEL.LIVE</a></div>
+    <div class="f-links">
+      <a href="#" onclick="return false">PATIENT LOGIN</a>
+      <a href="#" onclick="return false">CAREERS</a>
+      <a href="#" onclick="return false">CONTACT</a>
+    </div>
+  </footer>
+
+  <script>
+    // Cursor
+    const dot  = document.getElementById('c-dot');
+    const ring = document.getElementById('c-ring');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+    });
+    (function loop() {
+      rx += (mx - rx) * 0.1; ry += (my - ry) * 0.1;
+      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+      requestAnimationFrame(loop);
+    })();
+    document.querySelectorAll('a, button').forEach(el => {
+      el.addEventListener('mouseenter', () => ring.classList.add('is-hover'));
+      el.addEventListener('mouseleave', () => ring.classList.remove('is-hover'));
+    });
+
+    // Scroll reveal
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.rev').forEach(el => obs.observe(el));
+  </script>
+</body>
+</html>
