@@ -118,21 +118,20 @@
               trigger: card,
               start: "top 85%",
               toggleActions: "play none none reverse",
+              // On touch: add is-active once (stay active — don't remove on scroll past)
               onEnter: () => { if(isTouch) card.classList.add('is-active'); },
-              onLeave: () => { if(isTouch) card.classList.remove('is-active'); },
-              onEnterBack: () => { if(isTouch) card.classList.add('is-active'); },
-              onLeaveBack: () => { if(isTouch) card.classList.remove('is-active'); }
+              onEnterBack: () => { if(isTouch) card.classList.add('is-active'); }
           }
       });
   });
 
-  /* ---- Work Cards Mobile Reveal ---- */
+  /* ---- Work Cards Mobile Scroll-Reveal ---- */
   if (isTouch) {
     gsap.utils.toArray('.work-card').forEach(function(card){
         ScrollTrigger.create({
             trigger: card,
-            start: "top 60%", /* Trigger slightly above center */
-            end: "bottom 40%",
+            start: "top 75%",   // activate as card enters bottom of screen
+            end: "bottom 0%",   // deactivate only when fully scrolled off the top
             onEnter: () => card.classList.add('is-active'),
             onLeave: () => card.classList.remove('is-active'),
             onEnterBack: () => card.classList.add('is-active'),

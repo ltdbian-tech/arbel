@@ -526,13 +526,9 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
   }
   .work-card {
     aspect-ratio: auto;
-    min-height: 450px;
+    height: 420px;
   }
-  .work-card-inner {
-    position: relative !important;
-    height: 100%;
-    min-height: 450px;
-  }
+  /* keep work-card-inner as position:absolute — it fills its parent */
   .work-card-content {
     padding: 6vw !important;
   }
