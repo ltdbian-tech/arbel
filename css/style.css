@@ -524,8 +524,9 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
     min-height: 100svh;
   }
   .hero-cinematic-reveal {
-    padding: 0 !important;
+    padding: 0 max(7vw, 24px) !important;
     width: 100%;
+    box-sizing: border-box;
   }
   .hero-heading,
   .hero-cinematic-reveal .hero-heading {
