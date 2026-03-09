@@ -521,8 +521,8 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 
   /* === Hero === */
   .hero {
-    padding-left: 5vw !important;
-    padding-right: 5vw !important;
+    padding-left: max(7vw, 24px) !important;
+    padding-right: max(7vw, 24px) !important;
     min-height: 100svh;
   }
   .hero-cinematic-reveal {
