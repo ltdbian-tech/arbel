@@ -107,6 +107,8 @@
   }
 
   /* ---- Process Cards Reveal ---- */
+  var isTouch = window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(hover: none)').matches;
+  
   gsap.utils.toArray('.premium-card').forEach(function(card, i){
       gsap.from(card, {
           y: 40,
@@ -115,10 +117,29 @@
           scrollTrigger: {
               trigger: card,
               start: "top 85%",
-              toggleActions: "play none none reverse"
+              toggleActions: "play none none reverse",
+              onEnter: () => { if(isTouch) card.classList.add('is-active'); },
+              onLeave: () => { if(isTouch) card.classList.remove('is-active'); },
+              onEnterBack: () => { if(isTouch) card.classList.add('is-active'); },
+              onLeaveBack: () => { if(isTouch) card.classList.remove('is-active'); }
           }
       });
   });
+
+  /* ---- Work Cards Mobile Reveal ---- */
+  if (isTouch) {
+    gsap.utils.toArray('.work-card').forEach(function(card){
+        ScrollTrigger.create({
+            trigger: card,
+            start: "top 60%", /* Trigger slightly above center */
+            end: "bottom 40%",
+            onEnter: () => card.classList.add('is-active'),
+            onLeave: () => card.classList.remove('is-active'),
+            onEnterBack: () => card.classList.add('is-active'),
+            onLeaveBack: () => card.classList.remove('is-active')
+        });
+    });
+  }
 
   /* ---- Text Line Split Reveals for other sections ---- */
   ['.process-header', '.contact-scene'].forEach(function(sectionStr){
