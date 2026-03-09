@@ -102,6 +102,14 @@
     });
   }
 
+  /* ---- Auto-reveal hero on touch devices ---- */
+  if (!window.matchMedia('(hover: hover)').matches) {
+    var heroContainer = document.querySelector('.hero-cinematic-container');
+    if (heroContainer) {
+      heroContainer.classList.add('touch-revealed');
+    }
+  }
+
   /* ---- Smooth scroll anchors ---- */
   document.querySelectorAll('a[href^="#"]').forEach(function(a){
     a.addEventListener('click', function(e){

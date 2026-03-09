@@ -450,3 +450,158 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 
 /* ===== HEADER SCROLL EFFECT ===== */
 .header.is-scrolled { background: rgba(3,3,3,0.9); border-color: var(--border); backdrop-filter: blur(12px); }
+
+
+/* ================================================================
+   MOBILE & TOUCH DEVICE FIXES
+   ================================================================ */
+
+/* ---- 1. Hero: auto-reveal content on touch devices (no hover available) ---- */
+@media (hover: none) {
+  .hero-cinematic-logo {
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+  .hero-cinematic-reveal .line-inner {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+  .hero-bottom-grid {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+  }
+}
+
+/* ---- 2. Work cards: always show reveal layer on touch ---- */
+@media (hover: none) {
+  .work-reveal,
+  .work-card-bg,
+  .work-card-overlay,
+  .work-card-content {
+    clip-path: inset(0 0 0 0) !important;
+    transition: none !important;
+  }
+  .work-link {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+  .work-base { display: none; }
+}
+
+/* ---- 3. Disable particles canvas on touch (performance) ---- */
+@media (hover: none) {
+  canvas { display: none !important; }
+}
+
+/* ---- 4. Hide custom cursor on touch ---- */
+@media (hover: none) {
+  #cursor { display: none !important; }
+}
+
+/* ---- 5. Layout: phones & small tablets ---- */
+@media (max-width: 768px) {
+  /* Work rail: vertical stack instead of horizontal scroll */
+  .work-rail {
+    flex-direction: column !important;
+    width: 100% !important;
+    padding: 0 5vw !important;
+    gap: 8vw !important;
+  }
+  .work-panel {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .intro-panel {
+    width: 100% !important;
+    padding: 10vw 0 4vw !important;
+  }
+  .work-card {
+    aspect-ratio: 4/5;
+  }
+
+  /* Hero spacing */
+  .hero {
+    padding-left: 5vw !important;
+    padding-right: 5vw !important;
+    min-height: 100svh;
+  }
+  .hero-heading {
+    font-size: clamp(2.8rem, 11vw, 5rem) !important;
+  }
+  .hero-sub {
+    font-size: 0.92rem !important;
+    max-width: 100% !important;
+  }
+  .hero-bottom-grid {
+    gap: 1.5rem !important;
+  }
+
+  /* About terminal: already 1-col but fix padding */
+  .terminal-box {
+    grid-template-columns: 1fr !important;
+    padding: 8vw 5vw !important;
+  }
+
+  /* Process cards: auto-fit handles it but ensure min col width */
+  .futuristic-cards {
+    grid-template-columns: 1fr !important;
+    gap: 4vw !important;
+  }
+
+  /* Contact */
+  .contact-actions {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 1rem !important;
+  }
+  .contact-card {
+    padding: 0 5vw !important;
+  }
+
+  /* Footer */
+  .footer-inner {
+    flex-direction: column !important;
+    gap: 2rem !important;
+    text-align: center !important;
+  }
+  .footer-links {
+    justify-content: center !important;
+  }
+
+  /* Disable section spotlight pseudo-elements (no mouse on mobile) */
+  .hero::before, .hero::after,
+  .work-scene::before, .work-scene::after,
+  .process-scene::before, .process-scene::after,
+  .about-terminal::before, .about-terminal::after,
+  .contact-scene::before, .contact-scene::after {
+    display: none !important;
+  }
+
+  /* Disable 3D tilt transform leftovers */
+  .work-card-inner, .premium-card {
+    transform: none !important;
+  }
+
+  /* General section padding */
+  section {
+    padding-left: 5vw;
+    padding-right: 5vw;
+  }
+}
+
+/* touch-revealed: JS-triggered hero reveal for touch devices */
+.hero-cinematic-container.touch-revealed .hero-cinematic-logo {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+.hero-cinematic-container.touch-revealed .line-inner {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+}
+.hero-cinematic-container.touch-revealed .hero-bottom-grid {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+  transition-delay: 0.2s !important;
+}
