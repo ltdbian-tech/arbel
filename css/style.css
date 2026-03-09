@@ -441,6 +441,9 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 /* ===== NOISE OVERLAY ===== */
 .noise-bg { position: fixed; inset: 0; pointer-events: none; z-index: 9998; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"); }
 
+/* ===== VIGNETTE ===== */
+.hero-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, rgba(3,3,3,0.7) 100%); pointer-events: none; z-index: 1; }
+
 /* ===== MOBILE NAV ===== */
 .menu-btn { display: none; flex-direction: column; gap: 5px; padding: 8px; }
 .menu-btn span { width: 24px; height: 1px; background: var(--fg); display: block; transition: all 0.3s var(--ease); }
@@ -611,10 +614,12 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
     font-size: 0.65rem !important;
   }
 
-  /* === Nav: mobile open state === */
+  /* === Nav: solid background, full screen overlay === */
   .nav.is-open {
+    background: var(--bg) !important;
     padding: 5vw !important;
     gap: 0 !important;
+    z-index: 600 !important;
   }
   .nav.is-open .nav-link {
     font-size: 1.5rem !important;

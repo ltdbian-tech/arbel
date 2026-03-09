@@ -2,12 +2,15 @@
 (function(){
   'use strict';
 
-  /* ---- Lenis Smooth Scroll ---- */
+  /* ---- Lenis Smooth Scroll (desktop only — touch uses native scroll) ---- */
   var lenis;
+  var isTouchDevice = !window.matchMedia('(pointer: fine)').matches;
   try {
-    lenis = new Lenis({ duration: 1.2, smoothWheel: true, syncTouch: true });
-    gsap.ticker.lagSmoothing(0);
-    gsap.ticker.add(function(time){ lenis.raf(time * 1000); });
+    if (!isTouchDevice) {
+      lenis = new Lenis({ duration: 1.2, smoothWheel: true });
+      gsap.ticker.lagSmoothing(0);
+      gsap.ticker.add(function(time){ lenis.raf(time * 1000); });
+    }
   } catch(e) {
     console.warn('Lenis failed to initialize:', e);
   }
@@ -23,7 +26,12 @@
   var count = { val: 0 };
   var preloaderTL = gsap.timeline({
     onComplete: function(){
-      gsap.to(preloader, { yPercent: -100, duration: 1.2, ease: "expo.inOut", delay: 0.2, onComplete: () => { preloader.style.pointerEvents = 'none'; preloader.style.display = 'none'; } });
+      gsap.to(preloader, { yPercent: -100, duration: 1.2, ease: "expo.inOut", delay: 0.2, onComplete: () => { 
+        preloader.style.pointerEvents = 'none'; 
+        preloader.style.display = 'none';
+        // Signal hero reveal for touch devices
+        document.dispatchEvent(new CustomEvent('preloader-done'));
+      } });
       
     }
   });

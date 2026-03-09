@@ -102,14 +102,13 @@
     });
   }
 
-  /* ---- Auto-reveal hero on touch devices (after preloader exits ~3.8s) ---- */
+  /* ---- Auto-reveal hero on touch devices (fires when preloader fully exits) ---- */
   if (!window.matchMedia('(hover: hover)').matches) {
     var heroContainer = document.querySelector('.hero-cinematic-container');
     if (heroContainer) {
-      // Preloader: 2.2s count + 0.2s pause + 1.2s slide-up = ~3.6s. Add 0.3s buffer.
-      setTimeout(function() {
+      document.addEventListener('preloader-done', function() {
         heroContainer.classList.add('touch-revealed');
-      }, 3900);
+      });
     }
   }
 
