@@ -521,8 +521,6 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 
   /* === Hero === */
   .hero {
-    padding-left: max(7vw, 24px) !important;
-    padding-right: max(7vw, 24px) !important;
     min-height: 100svh;
   }
   .hero-cinematic-reveal {
@@ -698,6 +696,11 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
     padding-right: 5vw !important;
     box-sizing: border-box !important;
     overflow-x: hidden;
+  }
+  /* Hero needs more breathing room than generic 5vw */
+  section.hero {
+    padding-left: max(7vw, 24px) !important;
+    padding-right: max(7vw, 24px) !important;
   }
   
   /* Reset some specific ones that shouldn't overflow */
