@@ -29,7 +29,14 @@ window.ArbelDeploy = (function () {
             if (res.status === 204) return null;
             return res.json().then(function (data) {
                 if (!res.ok) {
-                    var err = new Error(data.message || 'GitHub API error');
+                    var detail = data.message || 'GitHub API error';
+                    if (data.errors && data.errors.length) {
+                        detail += ' — ' + data.errors.map(function(e) { return e.message || e.code; }).join(', ');
+                    }
+                    if (res.status === 401) detail = 'Authentication failed. Please sign in again.';
+                    if (res.status === 403) detail = 'Permission denied. Your GitHub account may need the required access.';
+                    if (res.status === 422 && detail.indexOf('already exists') !== -1) detail = 'Repository "' + (body && body.name || '') + '" already exists. Choose a different name.';
+                    var err = new Error(detail);
                     err.status = res.status;
                     err.data = data;
                     throw err;
