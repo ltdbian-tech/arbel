@@ -625,20 +625,82 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
 
     /* ─── Effect listeners ─── */
+    var _effectPreviewRaf = null;
+
+    function _getEffectTarget() {
+        if (_selectedId) return _selectedId;
+        // Fallback: first section element in the tree
+        var tree = _qs('#editorTree');
+        if (tree && tree.children[0]) return tree.children[0].getAttribute('data-tree-id');
+        return 'hero'; // last resort
+    }
+
     function _reapplyEffect() {
-        if (!_selectedId) return;
+        var targetId = _getEffectTarget();
+        if (!targetId) return;
         var sel = _qs('.editor-effect-select');
         var int = _qs('#editorEffectIntensity');
         var c1 = _qs('#editorEffectColor1');
         var c2 = _qs('#editorEffectColor2');
         var effect = sel ? sel.value : 'none';
+        // Scale intensity: slider 10-100 maps to 20-300 particles
+        var rawInt = int ? parseInt(int.value) : 50;
+        var scaledInt = Math.round(rawInt * 3);
         _postIframe('arbel-set-effect', {
-            id: _selectedId, effect: effect,
-            intensity: int ? parseInt(int.value) : 50,
+            id: targetId, effect: effect,
+            intensity: scaledInt,
             color1: c1 ? _hexToRgb(c1.value) : '100,108,255',
             color2: c2 ? _hexToRgb(c2.value) : '11,218,81'
         });
-        _setOv(_selectedId, 'effect', effect);
+        _setOv(targetId, 'effect', effect);
+        _updateEffectPreview();
+    }
+
+    function _updateEffectPreview() {
+        var cv = _qs('#effectPreview'); if (!cv) return;
+        var ctx = cv.getContext('2d');
+        if (_effectPreviewRaf) cancelAnimationFrame(_effectPreviewRaf);
+        var sel = _qs('.editor-effect-select');
+        var intEl = _qs('#editorEffectIntensity');
+        var c1El = _qs('#editorEffectColor1');
+        var c2El = _qs('#editorEffectColor2');
+        var effect = sel ? sel.value : 'none';
+        if (effect === 'none') { ctx.clearRect(0, 0, cv.width, cv.height); ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0, 0, cv.width, cv.height); return; }
+        var count = Math.min(Math.round((intEl ? parseInt(intEl.value) : 50) * 0.6), 80);
+        var col1 = c1El ? _hexToRgb(c1El.value) : '100,108,255';
+        var col2 = c2El ? _hexToRgb(c2El.value) : '11,218,81';
+        var cw = cv.width, ch = cv.height;
+        var ps = [];
+        for (var i = 0; i < count; i++) ps.push({ x: Math.random() * cw, y: Math.random() * ch, vx: (Math.random() - .5) * .8, vy: (Math.random() - .5) * .8, sz: Math.random() * 3 + 1, a: Math.random() * .5 + .2, p: Math.random() * 6.28, rot: Math.random() * 360, col: Math.random() > .5 ? col1 : col2 });
+        if (effect === 'bubbles') ps.forEach(function (p) { p.vy = -(Math.random() + .3); p.sz = Math.random() * 5 + 2; });
+        if (effect === 'snow') ps.forEach(function (p) { p.vy = Math.random() * .4 + .15; p.sz = Math.random() * 2.5 + 1; });
+        if (effect === 'fireflies') ps = ps.slice(0, Math.min(count, 15));
+        if (effect === 'rain') ps.forEach(function (p) { p.vy = Math.random() * 3 + 2; p.sz = 1; });
+        function draw() {
+            var t = Date.now() * .001;
+            ctx.clearRect(0, 0, cw, ch); ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0, 0, cw, ch);
+            if (effect === 'gradient') { var g = ctx.createLinearGradient(cw * (.5 + .5 * Math.sin(t * .5)), 0, cw * (.5 + .5 * Math.cos(t * .3)), ch); g.addColorStop(0, 'rgba(' + col1 + ',.2)'); g.addColorStop(.5, 'rgba(' + col2 + ',.1)'); g.addColorStop(1, 'rgba(' + col1 + ',.2)'); ctx.fillStyle = g; ctx.fillRect(0, 0, cw, ch); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'waves' || effect === 'sineWaves') { for (var w = 0; w < 4; w++) { ctx.strokeStyle = 'rgba(' + col1 + ',' + (.2 - w * .04) + ')'; ctx.lineWidth = 1.5; ctx.beginPath(); for (var x = 0; x <= cw; x += 3) { var y = ch * .5 + Math.sin(x * .02 + t + w) * (10 + w * 5); x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'aurora') { for (var ab = 0; ab < 4; ab++) { ctx.fillStyle = 'rgba(' + (ab % 2 === 0 ? col1 : col2) + ',0.06)'; ctx.beginPath(); for (var ax = 0; ax <= cw; ax += 4) { var ay = ch * .3 + Math.sin(ax * .008 + t * .5 + ab * 2) * ch * .15; ax === 0 ? ctx.moveTo(ax, ay) : ctx.lineTo(ax, ay); } ctx.lineTo(cw, ch); ctx.lineTo(0, ch); ctx.fill(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'noise') { var imd = ctx.createImageData(cw, ch); var d = imd.data; for (var j = 0; j < d.length; j += 4) { var v = Math.random() * 40; d[j] = v; d[j + 1] = v; d[j + 2] = v; d[j + 3] = 15; } ctx.putImageData(imd, 0, 0); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'blobs' || effect === 'morphBlob') { for (var b = 0; b < 3; b++) { ctx.fillStyle = 'rgba(' + (b % 2 === 0 ? col1 : col2) + ',0.08)'; ctx.beginPath(); var bx = cw * (.25 + b * .2) + Math.sin(t * .5 + b) * 20, by = ch * (.3 + b * .2) + Math.cos(t * .4 + b) * 15, br = 25 + Math.sin(t + b) * 8; for (var ba = 0; ba < 6.28; ba += .1) { var rr = br + Math.sin(ba * 3 + t + b) * 8; ba === 0 ? ctx.moveTo(bx + Math.cos(ba) * rr, by + Math.sin(ba) * rr) : ctx.lineTo(bx + Math.cos(ba) * rr, by + Math.sin(ba) * rr); } ctx.closePath(); ctx.fill(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'geometric') { ctx.strokeStyle = 'rgba(' + col1 + ',0.2)'; ctx.lineWidth = 0.5; for (var gi = 0; gi < 10; gi++) { var gx = cw * .1 + gi * cw / 10 + Math.sin(t + gi) * 5, gy = ch * .5 + Math.cos(t * .7 + gi) * ch * .25, gsz = 8 + Math.sin(t + gi) * 3; ctx.beginPath(); for (var gs = 0; gs < 6; gs++) { var ga = gs * Math.PI / 3 + t * .2; ctx.lineTo(gx + Math.cos(ga) * gsz, gy + Math.sin(ga) * gsz); } ctx.closePath(); ctx.stroke(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'orbits') { for (var oi = 0; oi < 6; oi++) { var oa = t * .5 + oi * Math.PI / 3, or2 = 15 + oi * 8, ox = cw / 2 + Math.cos(oa) * or2, oy = ch / 2 + Math.sin(oa) * or2; ctx.fillStyle = 'rgba(' + col1 + ',' + (.5 - oi * .06) + ')'; ctx.beginPath(); ctx.arc(ox, oy, 2, 0, 6.28); ctx.fill(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'dna') { for (var di = 0; di < 12; di++) { var dx = cw * .15 + di * (cw * .7 / 12), dy1 = ch / 2 + Math.sin(di * .5 + t) * 15, dy2 = ch / 2 - Math.sin(di * .5 + t) * 15; ctx.fillStyle = 'rgba(' + col1 + ',0.5)'; ctx.beginPath(); ctx.arc(dx, dy1, 2, 0, 6.28); ctx.fill(); ctx.fillStyle = 'rgba(' + col2 + ',0.5)'; ctx.beginPath(); ctx.arc(dx, dy2, 2, 0, 6.28); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.beginPath(); ctx.moveTo(dx, dy1); ctx.lineTo(dx, dy2); ctx.stroke(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'confetti') { ps.forEach(function (p) { p.y += 1; p.x += Math.sin(p.p) * .3; p.rot += 2; p.p += .03; if (p.y > ch + 5) { p.y = -5; p.x = Math.random() * cw; } ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot * Math.PI / 180); ctx.fillStyle = 'rgba(' + p.col + ',' + p.a + ')'; ctx.fillRect(-2, -1, 4, 2); ctx.restore(); }); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'matrix') { ctx.fillStyle = 'rgba(0,0,0,0.05)'; ctx.fillRect(0, 0, cw, ch); ctx.fillStyle = 'rgba(0,255,65,0.6)'; ctx.font = '8px monospace'; ps.forEach(function (p) { ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), p.x, p.y); p.y += 8; if (p.y > ch) { p.y = 0; p.x = Math.random() * cw; } }); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'rain') { ctx.strokeStyle = 'rgba(140,180,255,0.4)'; ctx.lineWidth = 1; ps.forEach(function (p) { p.y += p.vy; if (p.y > ch + 5) { p.y = -5; p.x = Math.random() * cw; } ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - .5, p.y + 6); ctx.stroke(); }); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'bokeh') { ps.forEach(function (p) { p.y -= .15; p.x += Math.sin(p.p) * .2; p.p += .01; if (p.y < -10) { p.y = ch + 10; p.x = Math.random() * cw; } ctx.fillStyle = 'rgba(' + p.col + ',' + (p.a * .3) + ')'; ctx.beginPath(); ctx.arc(p.x, p.y, p.sz * 2, 0, 6.28); ctx.fill(); }); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'plasma') { for (var py = 0; py < ch; py += 4) { for (var px = 0; px < cw; px += 4) { var v = Math.sin(px * .03 + t) + Math.sin(py * .03 + t * .7) + Math.sin((px + py) * .02 + t * .5); v = (v + 3) / 6; ctx.fillStyle = 'rgba(' + col1 + ',' + (v * .15) + ')'; ctx.fillRect(px, py, 4, 4); } } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'vortex') { for (var vi = 0; vi < 40; vi++) { var va = vi * .3 + t * 2, vd = vi * 1.5; var vx = cw / 2 + Math.cos(va) * vd, vy2 = ch / 2 + Math.sin(va) * vd * .6; ctx.fillStyle = 'rgba(' + (vi % 2 === 0 ? col1 : col2) + ',' + (0.4 - vi * .008) + ')'; ctx.beginPath(); ctx.arc(vx, vy2, 1.5, 0, 6.28); ctx.fill(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'sparkle') { ps.forEach(function (p) { p.a = .1 + Math.abs(Math.sin(p.p)) * .6; p.p += .05 + Math.random() * .05; ctx.fillStyle = 'rgba(255,255,255,' + p.a + ')'; ctx.beginPath(); ctx.arc(p.x + Math.sin(p.p) * 2, p.y + Math.cos(p.p) * 2, p.sz * .8, 0, 6.28); ctx.fill(); }); _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'smoke') { for (var si = 0; si < 5; si++) { var sx = cw * (.2 + si * .15) + Math.sin(t + si) * 15, sy = ch - t * 10 % ch; var sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 20 + si * 5); sg.addColorStop(0, 'rgba(180,180,180,0.06)'); sg.addColorStop(1, 'transparent'); ctx.fillStyle = sg; ctx.fillRect(0, 0, cw, ch); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            if (effect === 'ripple') { for (var ri2 = 0; ri2 < 5; ri2++) { var rr2 = ((t * 30 + ri2 * 20) % 60); ctx.strokeStyle = 'rgba(' + col1 + ',' + (.3 - rr2 / 200) + ')'; ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(cw / 2, ch / 2, rr2, 0, 6.28); ctx.stroke(); } _effectPreviewRaf = requestAnimationFrame(draw); return; }
+            // Default: particles/stars/fireflies/bubbles
+            ps.forEach(function (p) { p.x += p.vx; p.y += p.vy; p.p += .02; if (p.x < -5) p.x = cw + 5; if (p.x > cw + 5) p.x = -5; if (p.y < -5) p.y = ch + 5; if (p.y > ch + 5) p.y = -5; var al = p.a; if (effect === 'stars' || effect === 'fireflies') al = p.a * (.5 + .5 * Math.sin(p.p)); if (effect === 'fireflies') { ctx.shadowBlur = 6; ctx.shadowColor = 'rgba(100,255,100,' + al + ')'; ctx.fillStyle = 'rgba(100,255,100,' + al + ')'; } else if (effect === 'snow') { ctx.fillStyle = 'rgba(255,255,255,' + al + ')'; p.x += Math.sin(p.p) * .3; } else { ctx.fillStyle = 'rgba(' + p.col + ',' + al + ')'; } ctx.beginPath(); ctx.arc(p.x, p.y, p.sz, 0, 6.28); ctx.fill(); ctx.shadowBlur = 0; });
+            _effectPreviewRaf = requestAnimationFrame(draw);
+        }
+        draw();
     }
 
     function _setupEffectListeners() {
@@ -650,6 +712,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         });
         _on('#editorEffectColor1', 'input', function () { _reapplyEffect(); });
         _on('#editorEffectColor2', 'input', function () { _reapplyEffect(); });
+        // Initialize the preview
+        setTimeout(function () { _updateEffectPreview(); }, 600);
     }
 
     /* ─── Video scroll layer ─── */
@@ -861,20 +925,50 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             if (!pCanvas || !pCtx) return;
             if (pRaf) cancelAnimationFrame(pRaf);
             var cfg = getCfg(), cw = pCanvas.width, ch = pCanvas.height, ps = [];
-            for (var i = 0; i < Math.min(cfg.count, 60); i++) ps.push({ x: Math.random() * cw, y: Math.random() * ch, vx: (Math.random() - .5) * cfg.speed, vy: (Math.random() - .5) * cfg.speed, sz: Math.random() * cfg.size + 1, col: [cfg.color1, cfg.color2, cfg.color3][i % 3], rot: Math.random() * 360, p: Math.random() * 6.28 });
+            var col1 = _hexToRgb(cfg.color1), col2 = _hexToRgb(cfg.color2), col3 = _hexToRgb(cfg.color3);
+            var colArr = [col1, col2, col3];
+            var hexArr = [cfg.color1, cfg.color2, cfg.color3];
+            for (var i = 0; i < Math.min(cfg.count, 60); i++) ps.push({ x: Math.random() * cw, y: Math.random() * ch, vx: (Math.random() - .5) * cfg.speed, vy: (Math.random() - .5) * cfg.speed, sz: Math.random() * cfg.size + 1, col: colArr[i % 3], hexCol: hexArr[i % 3], rot: Math.random() * 360, p: Math.random() * 6.28, a: Math.random() * .5 + .2 });
+            if (cfg.type === 'bubbles') ps.forEach(function (p) { p.vy = -(Math.random() + .3) * cfg.speed; p.sz = Math.random() * cfg.size + 3; });
+            if (cfg.type === 'snow') ps.forEach(function (p) { p.vy = (Math.random() * .4 + .15) * cfg.speed; p.sz = Math.random() * cfg.size * .6 + 1; });
+            if (cfg.type === 'fireflies') ps = ps.slice(0, Math.min(cfg.count, 20));
+            if (cfg.type === 'rain') ps.forEach(function (p) { p.vy = (Math.random() * 3 + 2) * cfg.speed; p.sz = 1; });
             function draw() {
+                var t = Date.now() * .001;
                 pCtx.clearRect(0, 0, cw, ch); pCtx.fillStyle = '#0a0a0f'; pCtx.fillRect(0, 0, cw, ch);
+                // Type-specific rendering
+                if (cfg.type === 'gradient') { var g = pCtx.createLinearGradient(cw * (.5 + .5 * Math.sin(t * .5)), 0, cw * (.5 + .5 * Math.cos(t * .3)), ch); g.addColorStop(0, 'rgba(' + col1 + ',.2)'); g.addColorStop(.5, 'rgba(' + col2 + ',.1)'); g.addColorStop(1, 'rgba(' + col1 + ',.2)'); pCtx.fillStyle = g; pCtx.fillRect(0, 0, cw, ch); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'waves' || cfg.type === 'sineWaves') { for (var w = 0; w < 4; w++) { pCtx.strokeStyle = 'rgba(' + col1 + ',' + (.2 - w * .04) + ')'; pCtx.lineWidth = 1.5; pCtx.beginPath(); for (var x = 0; x <= cw; x += 3) { var y = ch * .5 + Math.sin(x * .02 + t + w) * (8 + w * 4); x === 0 ? pCtx.moveTo(x, y) : pCtx.lineTo(x, y); } pCtx.stroke(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'aurora') { for (var ab = 0; ab < 4; ab++) { pCtx.fillStyle = 'rgba(' + (ab % 2 === 0 ? col1 : col2) + ',0.06)'; pCtx.beginPath(); for (var ax = 0; ax <= cw; ax += 4) { var ay = ch * .3 + Math.sin(ax * .008 + t * .5 + ab * 2) * ch * .12; ax === 0 ? pCtx.moveTo(ax, ay) : pCtx.lineTo(ax, ay); } pCtx.lineTo(cw, ch); pCtx.lineTo(0, ch); pCtx.fill(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'noise') { var imd = pCtx.createImageData(cw, ch); var d = imd.data; for (var j = 0; j < d.length; j += 4) { var v = Math.random() * 40; d[j] = v; d[j + 1] = v; d[j + 2] = v; d[j + 3] = 15; } pCtx.putImageData(imd, 0, 0); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'blobs' || cfg.type === 'morphBlob') { for (var b = 0; b < 3; b++) { pCtx.fillStyle = 'rgba(' + colArr[b % 3] + ',0.08)'; pCtx.beginPath(); var bx = cw * (.25 + b * .2) + Math.sin(t * .5 + b) * 15, by = ch * (.3 + b * .2) + Math.cos(t * .4 + b) * 10, br = 20 + Math.sin(t + b) * 6; for (var ba = 0; ba < 6.28; ba += .1) { var rr = br + Math.sin(ba * 3 + t + b) * 6; ba === 0 ? pCtx.moveTo(bx + Math.cos(ba) * rr, by + Math.sin(ba) * rr) : pCtx.lineTo(bx + Math.cos(ba) * rr, by + Math.sin(ba) * rr); } pCtx.closePath(); pCtx.fill(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'geometric') { pCtx.strokeStyle = 'rgba(' + col1 + ',0.2)'; pCtx.lineWidth = .5; for (var gi = 0; gi < 8; gi++) { var gx = cw * .1 + gi * cw / 8 + Math.sin(t + gi) * 5, gy = ch * .5 + Math.cos(t * .7 + gi) * ch * .2, gsz = 6 + Math.sin(t + gi) * 3; pCtx.beginPath(); for (var gs = 0; gs < 6; gs++) { var ga = gs * Math.PI / 3 + t * .2; pCtx.lineTo(gx + Math.cos(ga) * gsz, gy + Math.sin(ga) * gsz); } pCtx.closePath(); pCtx.stroke(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'orbits') { for (var oi = 0; oi < 6; oi++) { var oa = t * .5 + oi * Math.PI / 3, or2 = 12 + oi * 6, ox = cw / 2 + Math.cos(oa) * or2, oy = ch / 2 + Math.sin(oa) * or2; pCtx.fillStyle = 'rgba(' + col1 + ',' + (.5 - oi * .06) + ')'; pCtx.beginPath(); pCtx.arc(ox, oy, 2, 0, 6.28); pCtx.fill(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'dna') { for (var di = 0; di < 10; di++) { var dx = cw * .15 + di * (cw * .7 / 10), dy1 = ch / 2 + Math.sin(di * .5 + t) * 12, dy2 = ch / 2 - Math.sin(di * .5 + t) * 12; pCtx.fillStyle = 'rgba(' + col1 + ',0.5)'; pCtx.beginPath(); pCtx.arc(dx, dy1, 2, 0, 6.28); pCtx.fill(); pCtx.fillStyle = 'rgba(' + col2 + ',0.5)'; pCtx.beginPath(); pCtx.arc(dx, dy2, 2, 0, 6.28); pCtx.fill(); pCtx.strokeStyle = 'rgba(255,255,255,.08)'; pCtx.beginPath(); pCtx.moveTo(dx, dy1); pCtx.lineTo(dx, dy2); pCtx.stroke(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'confetti') { ps.forEach(function (p) { p.y += 1; p.x += Math.sin(p.p) * .3; p.rot += 2; p.p += .03; if (p.y > ch + 5) { p.y = -5; p.x = Math.random() * cw; } pCtx.save(); pCtx.translate(p.x, p.y); pCtx.rotate(p.rot * Math.PI / 180); pCtx.fillStyle = 'rgba(' + p.col + ',' + p.a + ')'; pCtx.fillRect(-2, -1, 4, 2); pCtx.restore(); }); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'matrix') { pCtx.fillStyle = 'rgba(0,0,0,.05)'; pCtx.fillRect(0, 0, cw, ch); pCtx.fillStyle = 'rgba(0,255,65,.6)'; pCtx.font = '8px monospace'; ps.forEach(function (p) { pCtx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), p.x, p.y); p.y += 8; if (p.y > ch) { p.y = 0; p.x = Math.random() * cw; } }); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'rain') { pCtx.strokeStyle = 'rgba(140,180,255,.4)'; pCtx.lineWidth = 1; ps.forEach(function (p) { p.y += p.vy; if (p.y > ch + 5) { p.y = -5; p.x = Math.random() * cw; } pCtx.beginPath(); pCtx.moveTo(p.x, p.y); pCtx.lineTo(p.x - .5, p.y + 6); pCtx.stroke(); }); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'bokeh') { ps.forEach(function (p) { p.y -= .15; p.x += Math.sin(p.p) * .2; p.p += .01; if (p.y < -10) { p.y = ch + 10; p.x = Math.random() * cw; } pCtx.fillStyle = 'rgba(' + p.col + ',' + (p.a * .3) + ')'; pCtx.beginPath(); pCtx.arc(p.x, p.y, p.sz * 2, 0, 6.28); pCtx.fill(); }); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'plasma') { for (var py = 0; py < ch; py += 4) { for (var px = 0; px < cw; px += 4) { var pv = Math.sin(px * .03 + t) + Math.sin(py * .03 + t * .7) + Math.sin((px + py) * .02 + t * .5); pv = (pv + 3) / 6; pCtx.fillStyle = 'rgba(' + col1 + ',' + (pv * .15) + ')'; pCtx.fillRect(px, py, 4, 4); } } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'vortex') { for (var vi = 0; vi < 30; vi++) { var va = vi * .3 + t * 2, vd = vi * 1.2; var vx = cw / 2 + Math.cos(va) * vd, vy2 = ch / 2 + Math.sin(va) * vd * .6; pCtx.fillStyle = 'rgba(' + (vi % 2 === 0 ? col1 : col2) + ',' + (.4 - vi * .01) + ')'; pCtx.beginPath(); pCtx.arc(vx, vy2, 1.5, 0, 6.28); pCtx.fill(); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'sparkle') { ps.forEach(function (p) { p.a = .1 + Math.abs(Math.sin(p.p)) * .6; p.p += .05; pCtx.fillStyle = 'rgba(255,255,255,' + p.a + ')'; pCtx.beginPath(); pCtx.arc(p.x + Math.sin(p.p) * 2, p.y + Math.cos(p.p) * 2, p.sz * .8, 0, 6.28); pCtx.fill(); }); pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'smoke') { for (var si = 0; si < 5; si++) { var sx = cw * (.15 + si * .15) + Math.sin(t + si) * 10; var sg = pCtx.createRadialGradient(sx, ch * .6, 0, sx, ch * .6, 15 + si * 5); sg.addColorStop(0, 'rgba(180,180,180,.06)'); sg.addColorStop(1, 'transparent'); pCtx.fillStyle = sg; pCtx.fillRect(0, 0, cw, ch); } pRaf = requestAnimationFrame(draw); return; }
+                if (cfg.type === 'ripple') { for (var ri2 = 0; ri2 < 5; ri2++) { var rr2 = ((t * 30 + ri2 * 15) % 50); pCtx.strokeStyle = 'rgba(' + col1 + ',' + (.3 - rr2 / 170) + ')'; pCtx.lineWidth = .8; pCtx.beginPath(); pCtx.arc(cw / 2, ch / 2, rr2, 0, 6.28); pCtx.stroke(); } pRaf = requestAnimationFrame(draw); return; }
+                // Default: particles/stars/fireflies/snow/bubbles
                 ps.forEach(function (p) {
                     p.x += p.vx; p.y += p.vy; p.p += .02;
-                    if (p.x < 0) p.x = cw; if (p.x > cw) p.x = 0; if (p.y < 0) p.y = ch; if (p.y > ch) p.y = 0;
-                    if (cfg.glow > 0) { pCtx.shadowBlur = cfg.glow; pCtx.shadowColor = p.col; }
-                    pCtx.fillStyle = p.col; pCtx.beginPath(); pCtx.arc(p.x, p.y, p.sz, 0, 6.28); pCtx.fill(); pCtx.shadowBlur = 0;
+                    if (p.x < -5) p.x = cw + 5; if (p.x > cw + 5) p.x = -5; if (p.y < -5) p.y = ch + 5; if (p.y > ch + 5) p.y = -5;
+                    var al = p.a; if (cfg.type === 'stars' || cfg.type === 'fireflies') al = p.a * (.5 + .5 * Math.sin(p.p));
+                    if (cfg.type === 'fireflies') { pCtx.shadowBlur = cfg.glow; pCtx.shadowColor = 'rgba(100,255,100,' + al + ')'; pCtx.fillStyle = 'rgba(100,255,100,' + al + ')'; }
+                    else if (cfg.type === 'snow') { pCtx.fillStyle = 'rgba(255,255,255,' + al + ')'; p.x += Math.sin(p.p) * .3; }
+                    else { if (cfg.glow > 0) { pCtx.shadowBlur = cfg.glow; pCtx.shadowColor = p.hexCol; } pCtx.fillStyle = 'rgba(' + p.col + ',' + al + ')'; }
+                    pCtx.beginPath(); pCtx.arc(p.x, p.y, p.sz, 0, 6.28); pCtx.fill(); pCtx.shadowBlur = 0;
                 });
                 if (cfg.connect) {
                     pCtx.strokeStyle = 'rgba(100,108,255,0.1)'; pCtx.lineWidth = .5;
-                    for (var i = 0; i < ps.length; i++) for (var j = i + 1; j < ps.length; j++) {
-                        var dx = ps[i].x - ps[j].x, dy = ps[i].y - ps[j].y;
-                        if (dx * dx + dy * dy < 3600) { pCtx.beginPath(); pCtx.moveTo(ps[i].x, ps[i].y); pCtx.lineTo(ps[j].x, ps[j].y); pCtx.stroke(); }
+                    for (var ci = 0; ci < ps.length; ci++) for (var cj = ci + 1; cj < ps.length; cj++) {
+                        var cdx = ps[ci].x - ps[cj].x, cdy = ps[ci].y - ps[cj].y;
+                        if (cdx * cdx + cdy * cdy < 3600) { pCtx.beginPath(); pCtx.moveTo(ps[ci].x, ps[ci].y); pCtx.lineTo(ps[cj].x, ps[cj].y); pCtx.stroke(); }
                     }
                 }
                 pRaf = requestAnimationFrame(draw);

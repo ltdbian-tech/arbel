@@ -1207,6 +1207,14 @@
                 els.deploySuccess.style.display = '';
                 els.siteLink.href = result.siteUrl;
                 els.repoLink.href = result.repoUrl;
+
+                // Populate custom domain guide with actual values
+                var cnameEl = document.getElementById('dnsCnameTarget');
+                var pathEl = document.getElementById('domainRepoPath');
+                var user = els.deployUsername.textContent;
+                var repo = sanitizeRepoName(els.repoName.value || 'my-site');
+                if (cnameEl) cnameEl.textContent = user + '.github.io';
+                if (pathEl) pathEl.textContent = user + '/' + repo;
             }, 800);
         })
         .catch(function (err) {
@@ -1230,6 +1238,16 @@
                 el.classList.remove('done', 'active');
                 el.querySelector('.deploy-icon').innerHTML = '&#9675;';
             });
+        });
+    }
+
+    // Custom domain guide toggle
+    var domainToggle = $('customDomainToggle'), domainBody = $('customDomainBody');
+    if (domainToggle && domainBody) {
+        domainToggle.addEventListener('click', function () {
+            var isOpen = domainBody.classList.contains('open');
+            domainBody.classList.toggle('open', !isOpen);
+            domainToggle.classList.toggle('open', !isOpen);
         });
     }
 

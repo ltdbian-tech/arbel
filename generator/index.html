@@ -1258,6 +1258,89 @@
                             <a id="repoLink" href="#" target="_blank" class="gen-btn">VIEW REPO</a>
                         </div>
                         <p class="deploy-note mono">GitHub Pages may take 1-2 minutes to fully deploy. If you see a 404, wait and refresh.</p>
+
+                        <!-- Custom Domain Guide -->
+                        <div class="custom-domain-section">
+                            <button class="custom-domain-toggle" id="customDomainToggle">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                                <span class="mono">WANT A CUSTOM DOMAIN?</span>
+                                <svg class="custom-domain-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                            </button>
+                            <div class="custom-domain-body" id="customDomainBody">
+                                <p class="custom-domain-intro mono">Connect your own domain (e.g. <strong>yourbrand.com</strong>) to this GitHub Pages site.</p>
+
+                                <div class="domain-step">
+                                    <div class="domain-step-num mono">01</div>
+                                    <div class="domain-step-content">
+                                        <h4 class="mono">BUY A DOMAIN</h4>
+                                        <p>Purchase a domain from a registrar like <strong>Namecheap</strong>, <strong>Google Domains</strong>, <strong>Cloudflare</strong>, or <strong>GoDaddy</strong>.</p>
+                                    </div>
+                                </div>
+
+                                <div class="domain-step">
+                                    <div class="domain-step-num mono">02</div>
+                                    <div class="domain-step-content">
+                                        <h4 class="mono">ADD DNS RECORDS</h4>
+                                        <p>Go to your domain registrar's DNS settings and add these records:</p>
+                                        <div class="dns-records">
+                                            <div class="dns-record-header mono">
+                                                <span>TYPE</span><span>NAME</span><span>VALUE</span>
+                                            </div>
+                                            <div class="dns-record mono">
+                                                <span class="dns-type">A</span><span>@</span><span>185.199.108.153</span>
+                                            </div>
+                                            <div class="dns-record mono">
+                                                <span class="dns-type">A</span><span>@</span><span>185.199.109.153</span>
+                                            </div>
+                                            <div class="dns-record mono">
+                                                <span class="dns-type">A</span><span>@</span><span>185.199.110.153</span>
+                                            </div>
+                                            <div class="dns-record mono">
+                                                <span class="dns-type">A</span><span>@</span><span>185.199.111.153</span>
+                                            </div>
+                                            <div class="dns-record mono">
+                                                <span class="dns-type dns-type--cname">CNAME</span><span>www</span><span id="dnsCnameTarget">username.github.io</span>
+                                            </div>
+                                        </div>
+                                        <p class="dns-note mono">The A records point your root domain. The CNAME handles the www subdomain.</p>
+                                    </div>
+                                </div>
+
+                                <div class="domain-step">
+                                    <div class="domain-step-num mono">03</div>
+                                    <div class="domain-step-content">
+                                        <h4 class="mono">SET DOMAIN IN GITHUB</h4>
+                                        <p>Go to your repo &rarr; <strong>Settings</strong> &rarr; <strong>Pages</strong> &rarr; under <strong>Custom domain</strong>, enter your domain and click <strong>Save</strong>.</p>
+                                        <div class="domain-path mono">
+                                            <span>github.com/<span id="domainRepoPath">user/repo</span></span> &rarr; Settings &rarr; Pages &rarr; Custom domain
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="domain-step">
+                                    <div class="domain-step-num mono">04</div>
+                                    <div class="domain-step-content">
+                                        <h4 class="mono">ENABLE HTTPS</h4>
+                                        <p>On the same Pages settings page, check <strong>"Enforce HTTPS"</strong>. GitHub provides a free SSL certificate automatically.</p>
+                                        <p class="dns-note mono">This option may take a few minutes to appear after DNS propagation.</p>
+                                    </div>
+                                </div>
+
+                                <div class="domain-step">
+                                    <div class="domain-step-num mono">05</div>
+                                    <div class="domain-step-content">
+                                        <h4 class="mono">WAIT FOR DNS</h4>
+                                        <p>DNS changes can take <strong>up to 24-48 hours</strong> to propagate worldwide, but usually work within <strong>5-30 minutes</strong>.</p>
+                                        <p>You can check propagation status at <strong>dnschecker.org</strong></p>
+                                    </div>
+                                </div>
+
+                                <div class="domain-tip">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                                    <span class="mono">Using Cloudflare? Set SSL mode to "Full" and disable the proxy (grey cloud) for the GitHub A records until verified.</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="deploy-error" id="deployError" style="display:none;">
