@@ -1413,13 +1413,13 @@ window.ArbelCompiler = (function () {
         var navMap2 = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', contact: c.contactNav || 'Contact' };
         (cfg.sections || []).forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
-            if (navMap2[s]) navLinks2 += '        <a href="' + prefix + '#' + s + '" class="nav-link">' + navMap2[s] + '</a>\n';
+            if (navMap2[s]) navLinks2 += '        <a href="' + prefix + '#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap2[s] + '</a>\n';
         });
         if (cfg.pages) {
             cfg.pages.forEach(function (pg) {
                 if (pg.isHome || pg.showInNav === false || pg.id === page.id) return;
                 var pgPath = (pg.path || '/' + pg.id).replace(/^\//, '').replace(/\/$/, '');
-                navLinks2 += '        <a href="' + prefix + pgPath + '" class="nav-link">' + esc(pg.name) + '</a>\n';
+                navLinks2 += '        <a href="' + prefix + pgPath + '" class="nav-link" data-arbel-id="nav-page-' + pg.id + '" data-arbel-edit="text">' + esc(pg.name) + '</a>\n';
             });
         }
 
@@ -1497,11 +1497,15 @@ window.ArbelCompiler = (function () {
             });
         }
 
-        // Include video scroll layer
+        // Include video scroll layer in all HTML pages
         if (cfg.videoLayer) {
             files['js/video-layer.js'] = _buildVideoLayerJS(cfg.videoLayer);
-            // Inject <script> tag before </body>
-            files['index.html'] = files['index.html'].replace('</body>', '<script src="js/video-layer.js"></script>\n</body>');
+            Object.keys(files).forEach(function (key) {
+                if (!key.match(/\.html$/)) return;
+                var depth = key.split('/').length - 1;
+                var vPrefix = depth > 0 ? new Array(depth).join('../') + '../' : '';
+                files[key] = files[key].replace('</body>', '<script src="' + vPrefix + 'js/video-layer.js"></script>\n</body>');
+            });
         }
 
         return files;

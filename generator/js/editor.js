@@ -1351,6 +1351,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
         var nameIn = overlay.querySelector('#dlgEditName');
         var pathIn = overlay.querySelector('#dlgEditPath');
+        pathIn.addEventListener('input', function () { pathIn.setCustomValidity(''); });
+        nameIn.addEventListener('input', function () { pathIn.setCustomValidity(''); });
         overlay.querySelector('.arbel-dialog-cancel').addEventListener('click', function () { overlay.remove(); });
         overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
         overlay.querySelector('.arbel-dialog-confirm').addEventListener('click', function () {
@@ -1365,6 +1367,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             }
             page.name = newName;
             page.path = newPath;
+            page._pathCustomized = true;
             page.seoTitle = overlay.querySelector('#dlgEditSeoTitle').value.trim() || '';
             page.seoDesc = overlay.querySelector('#dlgEditSeoDesc').value.trim() || '';
             page.showInNav = overlay.querySelector('#dlgEditNav').checked;
@@ -1423,7 +1426,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                     if (v && v !== page.name) {
                         page.name = v;
                         /* Update path only if user hasn't customised it via settings */
-                        if (!page.isHome) {
+                        if (!page.isHome && !page._pathCustomized) {
                             var newPath = '/' + _slugify(v);
                             if (_isPathUnique(newPath, page.id)) {
                                 page.path = newPath;
