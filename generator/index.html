@@ -575,6 +575,7 @@
                                 </p>
                             </div>
                         </div>
+                        <button class="gen-btn gen-btn--primary" id="sidebarPreview" style="width:100%;margin-top:16px">PREVIEW &amp; BUILD</button>
                     </aside>
                 </div>
 
@@ -1102,6 +1103,16 @@
                                             <option value="orbits">Orbiting Dots</option>
                                             <option value="dna">DNA Helix</option>
                                         </optgroup>
+                                        <optgroup label="3D Shapes">
+                                            <option value="cube">3D Cube</option>
+                                            <option value="sphere">3D Sphere</option>
+                                            <option value="pyramid">3D Pyramid</option>
+                                            <option value="torus">3D Torus</option>
+                                            <option value="cylinder">3D Cylinder</option>
+                                            <option value="crystal">3D Crystal</option>
+                                            <option value="icosahedron">Icosahedron</option>
+                                            <option value="grid3d">3D Grid</option>
+                                        </optgroup>
                                         <optgroup label="Ambient">
                                             <option value="gradient">Animated Gradient</option>
                                             <option value="waves">Wave Lines</option>
@@ -1134,13 +1145,29 @@
                                     <div class="editor-col" style="margin-bottom:6px">
                                         <span class="editor-hint mono">Type</span>
                                         <select class="gen-select" id="pbuilderType">
-                                            <option value="particles">Particles</option>
-                                            <option value="blobs">Blobs</option>
-                                            <option value="confetti">Confetti</option>
-                                            <option value="matrix">Matrix Rain</option>
-                                            <option value="geometric">Geometric Shapes</option>
-                                            <option value="orbits">Orbits</option>
-                                            <option value="dna">DNA Helix</option>
+                                            <optgroup label="Particles">
+                                                <option value="particles">Particles</option>
+                                                <option value="confetti">Confetti</option>
+                                                <option value="matrix">Matrix Rain</option>
+                                            </optgroup>
+                                            <optgroup label="Organic">
+                                                <option value="blobs">Blobs</option>
+                                                <option value="orbits">Orbits</option>
+                                                <option value="dna">DNA Helix</option>
+                                            </optgroup>
+                                            <optgroup label="3D Shapes">
+                                                <option value="cube">Cube</option>
+                                                <option value="sphere">Sphere</option>
+                                                <option value="pyramid">Pyramid</option>
+                                                <option value="torus">Torus</option>
+                                                <option value="cylinder">Cylinder</option>
+                                                <option value="crystal">Crystal</option>
+                                                <option value="icosahedron">Icosahedron</option>
+                                                <option value="grid3d">3D Grid</option>
+                                            </optgroup>
+                                            <optgroup label="Flat">
+                                                <option value="geometric">Geometric Shapes</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                     <div class="editor-row" style="margin-bottom:4px">

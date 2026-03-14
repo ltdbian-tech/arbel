@@ -973,6 +973,8 @@
     els.toConfig.addEventListener('click', function () { goToStep(2); });
     els.backToStyle.addEventListener('click', function () { goToStep(1); });
     els.toPreview.addEventListener('click', function () { goToStep(3); });
+    var sidebarPreview = $('sidebarPreview');
+    if (sidebarPreview) sidebarPreview.addEventListener('click', function () { goToStep(3); });
     els.backToConfig.addEventListener('click', function () { goToStep(2); });
     els.toDeploy.addEventListener('click', function () { goToStep(4); });
 
