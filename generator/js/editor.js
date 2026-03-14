@@ -860,7 +860,12 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _generatePresetFrames(btn.getAttribute('data-preset'));
             });
         });
-        _on('#videoFps', 'input', function () { _videoConfig.fps = parseInt(this.value); _qs('#videoFpsVal').textContent = this.value; });
+        _on('#videoFps', 'input', function () {
+            _videoConfig.fps = parseInt(this.value); _qs('#videoFpsVal').textContent = this.value;
+            if (_videoConfig.active && _videoConfig.preset) {
+                _generatePresetFrames(_videoConfig.preset);
+            }
+        });
         _on('#videoSpeed', 'input', function () {
             _videoConfig.speed = parseFloat(this.value); _qs('#videoSpeedVal').textContent = parseFloat(this.value).toFixed(1) + 'x';
             if (_videoConfig.active && _videoFrames.length && _iframe) _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig });
