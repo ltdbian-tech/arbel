@@ -370,6 +370,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _setupVideoLayer();
         _setupParticleBuilder();
         _setupPageManagement();
+        _setupAccordions();
+        _setupTemplates();
+        _setupLayerSearch();
         window.addEventListener('message', _handleMessage);
     }
 
@@ -678,29 +681,41 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
     function _extractVideoFrames(file) {
         var video = document.createElement('video');
-        video.muted = true; video.playsInline = true;
-        video.src = URL.createObjectURL(file);
+        video.muted = true; video.playsInline = true; video.preload = 'auto';
+        video.crossOrigin = 'anonymous';
         var progressEl = _qs('#videoProgress'), fillEl = _qs('#videoProgressFill'), textEl = _qs('#videoProgressText');
         if (progressEl) progressEl.style.display = '';
+        if (textEl) textEl.textContent = 'Loading video...';
+        video.addEventListener('error', function () {
+            if (progressEl) progressEl.style.display = 'none';
+            alert('Could not load video. Try a different MP4 or WebM file.');
+        });
         video.addEventListener('loadedmetadata', function () {
             var duration = Math.min(video.duration, 30), fps = _videoConfig.fps, total = Math.floor(duration * fps);
+            if (total <= 0) { if (progressEl) progressEl.style.display = 'none'; return; }
             var canvas = document.createElement('canvas');
             canvas.width = Math.min(video.videoWidth, 1280); canvas.height = Math.min(video.videoHeight, 720);
             var ctx = canvas.getContext('2d'), frames = [], idx = 0;
-            function next() {
-                if (idx >= total) { _videoFrames = frames; URL.revokeObjectURL(video.src); if (progressEl) progressEl.style.display = 'none'; _showVideoPreview(frames, total, fps, duration); return; }
-                video.currentTime = idx / fps;
-            }
-            video.addEventListener('seeked', function onSeek() {
+            function onSeek() {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 frames.push(canvas.toDataURL('image/jpeg', 0.75));
                 idx++;
                 if (fillEl) fillEl.style.width = Math.round((idx / total) * 100) + '%';
                 if (textEl) textEl.textContent = 'Extracting: ' + idx + '/' + total;
-                next();
-            });
-            next();
+                if (idx >= total) {
+                    _videoFrames = frames; URL.revokeObjectURL(video.src);
+                    video.removeEventListener('seeked', onSeek);
+                    if (progressEl) progressEl.style.display = 'none';
+                    _showVideoPreview(frames, total, fps, duration);
+                    return;
+                }
+                video.currentTime = idx / fps;
+            }
+            video.addEventListener('seeked', onSeek);
+            video.currentTime = 0;
         });
+        video.src = URL.createObjectURL(file);
+        video.load();
     }
 
     function _loadImageSequence(files) {
@@ -760,6 +775,39 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 ctx.fillStyle = '#051008'; ctx.fillRect(0, 0, w, h);
                 for (var ni = 0; ni < 15; ni++) { var nx = (Math.sin(ni * 23.7 + t * 3) * .5 + .5) * w, ny2 = (ni * h / 15 + t * h) % (h + 20) - 10;
                 ctx.fillStyle = 'rgba(30,' + (120 + ni * 8) + ',40,0.3)'; ctx.beginPath(); ctx.ellipse(nx, ny2, 5 + Math.sin(ni) * 2, 3, Math.sin(t * 6.28 + ni) * .5, 0, 6.28); ctx.fill(); }
+            } else if (preset === 'glitch') {
+                ctx.fillStyle = '#0a0a12'; ctx.fillRect(0, 0, w, h);
+                for (var gi = 0; gi < 12; gi++) { var gy2 = Math.random() * h, gh2 = 2 + Math.random() * 8;
+                ctx.fillStyle = 'rgba(' + (Math.random() > .5 ? '255,0,100' : '0,200,255') + ',' + (0.1 + Math.random() * 0.2) + ')';
+                ctx.fillRect(Math.random() * w * .3, gy2, w * .4 + Math.random() * w * .3, gh2); }
+                var gShift = Math.sin(t * 30) * 10;
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = 'rgba(255,0,80,0.05)'; ctx.fillRect(gShift, 0, w, h);
+                ctx.fillStyle = 'rgba(0,200,255,0.05)'; ctx.fillRect(-gShift, 0, w, h);
+                ctx.globalCompositeOperation = 'source-over';
+            } else if (preset === 'fire') {
+                ctx.fillStyle = '#0a0400'; ctx.fillRect(0, 0, w, h);
+                for (var fi = 0; fi < 20; fi++) { var fx = w * (.2 + fi * 0.03) + Math.sin(t * 8 + fi * 2) * 20;
+                var fy = h - (t * h * 0.7 + fi * 15 + Math.sin(fi * 3 + t * 5) * 20);
+                var fr = 15 + fi * 2 + Math.sin(t * 6 + fi) * 8;
+                var fGrad = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);
+                fGrad.addColorStop(0, 'rgba(255,' + (100 + fi * 5) + ',0,0.15)');
+                fGrad.addColorStop(1, 'transparent'); ctx.fillStyle = fGrad; ctx.fillRect(0, 0, w, h); }
+            } else if (preset === 'rain') {
+                ctx.fillStyle = '#060810'; ctx.fillRect(0, 0, w, h);
+                ctx.strokeStyle = 'rgba(140,180,255,0.3)'; ctx.lineWidth = 1;
+                for (var ri = 0; ri < 60; ri++) { var rx = (ri * 17.3 + t * 50) % w;
+                var ry = ((ri * 31.7 + t * 200) % (h + 40)) - 20;
+                ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 1, ry + 12); ctx.stroke(); }
+            } else if (preset === 'galaxy') {
+                ctx.fillStyle = '#030308'; ctx.fillRect(0, 0, w, h);
+                for (var spi = 0; spi < 120; spi++) { var angle = spi * 0.15 + t * 3;
+                var dist = spi * 1.5 + Math.sin(spi * 0.3) * 10;
+                var spx = w / 2 + Math.cos(angle) * dist;
+                var spy = h / 2 + Math.sin(angle) * dist * 0.6;
+                var spBright = 0.2 + Math.sin(spi * 0.5 + t * 4) * 0.15;
+                ctx.fillStyle = 'rgba(' + (180 + spi % 70) + ',' + (140 + spi % 80) + ',255,' + spBright + ')';
+                ctx.beginPath(); ctx.arc(spx, spy, 1 + Math.random(), 0, 6.28); ctx.fill(); }
             }
             frames.push(canvas.toDataURL('image/jpeg', 0.7)); idx++;
             if (fillEl) fillEl.style.width = Math.round((idx / total) * 100) + '%';
@@ -892,10 +940,20 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             var fs = _qs('#editorFontSize'), fw = _qs('#editorFontWeight'), lh = _qs('#editorLineHeight'), ls = _qs('#editorLetterSpacing');
             var rad = _qs('#editorRadius'), radV = _qs('#editorRadiusVal'), opa = _qs('#editorOpacity'), opaV = _qs('#editorOpacityVal');
             if (fs) fs.value = st.fontSize; if (fw) fw.value = st.fontWeight;
+            // Font family
+            var ff = _qs('#editorFontSelect');
+            if (ff && st.fontFamily) {
+                var fam = st.fontFamily.replace(/["']/g, '').split(',')[0].trim();
+                ff.value = fam; // Will silently fail if not in options, which is fine
+            }
             if (lh) lh.value = typeof st.lineHeight === 'number' ? st.lineHeight.toFixed(1) : '';
             if (ls) ls.value = st.letterSpacing || '';
             if (rad) rad.value = st.borderRadius; if (radV) radV.textContent = st.borderRadius + 'px';
             if (opa) opa.value = st.opacity; if (opaV) opaV.textContent = st.opacity + '%';
+            // Colors
+            var tc = _qs('#editorTextColor'), bgc = _qs('#editorBgColor');
+            if (tc && st.color) tc.value = _rgbToHex(st.color);
+            if (bgc && st.backgroundColor) bgc.value = _rgbToHex(st.backgroundColor);
             // Border
             var bw = _qs('#editorBorderWidth'), bs = _qs('#editorBorderStyle'), bc = _qs('#editorBorderColor');
             if (bw) bw.value = st.borderWidth; if (bs) bs.value = st.borderStyle; if (bc && st.borderColor) bc.value = _rgbToHex(st.borderColor);
@@ -933,22 +991,41 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (sz && info.rect) sz.textContent = Math.round(info.rect.width) + ' × ' + Math.round(info.rect.height);
     }
 
-    /* ─── Element tree ─── */
+    /* ─── Element tree (Canva-style) ─── */
+    var _currentTree = [];
     function _renderElementTree(tree) {
+        _currentTree = tree;
         var treeEl = _qs('#editorTree'); if (!treeEl) return;
+        var searchEl = _qs('#layerSearch');
+        var filter = searchEl ? searchEl.value.toLowerCase() : '';
         treeEl.innerHTML = '';
         tree.forEach(function (item) {
+            var displayName = _getLayerName(item);
+            var detail = item.id;
+            if (filter && displayName.toLowerCase().indexOf(filter) < 0 && detail.toLowerCase().indexOf(filter) < 0) return;
+
             var div = document.createElement('div');
-            div.className = 'editor-tree-item'; div.setAttribute('data-tree-id', item.id);
-            div.innerHTML = '<span class="tree-tag">&lt;' + item.tag + '&gt;</span>' +
-                '<span class="tree-id">' + item.id + '</span>' +
-                (item.text ? '<span class="tree-text">' + item.text + '</span>' : '') +
+            div.className = 'editor-tree-item';
+            div.setAttribute('data-tree-id', item.id);
+            div.draggable = true;
+
+            var typeClass = _getTypeClass(item.tag);
+            var typeLabel = _getTypeLabel(item.tag);
+
+            div.innerHTML = '<span class="tree-drag-handle" title="Drag to reorder">⠿</span>' +
+                '<span class="tree-type-icon ' + typeClass + '">' + typeLabel + '</span>' +
+                '<span class="tree-info">' +
+                    '<span class="tree-name">' + _escHtml(displayName) + '</span>' +
+                    '<span class="tree-detail">' + _escHtml(detail) + '</span>' +
+                '</span>' +
                 '<span class="tree-icons">' +
                     '<button class="tree-icon-btn tree-vis-btn' + (!item.visible ? ' is-hidden' : '') + '" data-tree-action="vis" title="Toggle Visibility">' +
                         (item.visible ? '&#128065;' : '&#128683;') + '</button>' +
                     '<button class="tree-icon-btn tree-lock-btn' + (item.locked ? ' is-locked' : '') + '" data-tree-action="lock" title="Toggle Lock">' +
                         (item.locked ? '&#128274;' : '&#128275;') + '</button>' +
                 '</span>';
+
+            // Visibility toggle
             div.querySelector('.tree-vis-btn').addEventListener('click', function (e) {
                 e.stopPropagation();
                 var cur = (_overrides[item.id] && _overrides[item.id].visibility) || 'visible';
@@ -958,6 +1035,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 this.innerHTML = next === 'visible' ? '&#128065;' : '&#128683;';
                 this.classList.toggle('is-hidden', next === 'hidden');
             });
+            // Lock toggle
             div.querySelector('.tree-lock-btn').addEventListener('click', function (e) {
                 e.stopPropagation();
                 var cur = (_overrides[item.id] && _overrides[item.id].locked);
@@ -966,9 +1044,163 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 this.innerHTML = !cur ? '&#128274;' : '&#128275;';
                 this.classList.toggle('is-locked', !cur);
             });
+            // Click = select element
             div.addEventListener('click', function () { if (_iframe) _iframe.contentWindow.postMessage({ type: 'arbel-select-by-id', id: item.id }, '*'); });
+
+            // Drag & drop reorder
+            div.addEventListener('dragstart', function (e) {
+                e.dataTransfer.setData('text/plain', item.id);
+                div.classList.add('dragging');
+            });
+            div.addEventListener('dragend', function () { div.classList.remove('dragging'); });
+            div.addEventListener('dragover', function (e) { e.preventDefault(); div.classList.add('drag-over'); });
+            div.addEventListener('dragleave', function () { div.classList.remove('drag-over'); });
+            div.addEventListener('drop', function (e) {
+                e.preventDefault(); div.classList.remove('drag-over');
+                var draggedId = e.dataTransfer.getData('text/plain');
+                if (draggedId && draggedId !== item.id) {
+                    // Swap z-index to reorder
+                    var draggedZ = (_overrides[draggedId] && _overrides[draggedId].zIndex) || 0;
+                    var targetZ = (_overrides[item.id] && _overrides[item.id].zIndex) || 0;
+                    _postIframe('arbel-set-zindex', { id: draggedId, value: targetZ });
+                    _postIframe('arbel-set-zindex', { id: item.id, value: draggedZ });
+                    _setOv(draggedId, 'zIndex', targetZ);
+                    _setOv(item.id, 'zIndex', draggedZ);
+                }
+            });
+
             treeEl.appendChild(div);
         });
+    }
+
+    function _getLayerName(item) {
+        if (item.text) return item.text.substring(0, 40);
+        var tag = item.tag.toLowerCase();
+        var id = item.id || '';
+        if (tag === 'section' || tag === 'main' || tag === 'header' || tag === 'footer' || tag === 'nav') return id.replace(/-/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+        if (tag === 'img') return 'Image — ' + id;
+        if (tag === 'button' || tag === 'a') return 'Button — ' + id;
+        if (tag === 'video') return 'Video — ' + id;
+        if (tag === 'canvas') return 'Canvas — ' + id;
+        return id || tag;
+    }
+
+    function _getTypeClass(tag) {
+        tag = tag.toLowerCase();
+        if (tag === 'section' || tag === 'main' || tag === 'header' || tag === 'footer' || tag === 'article') return 'tree-type-section';
+        if (tag === 'img' || tag === 'picture' || tag === 'video' || tag === 'canvas') return 'tree-type-img';
+        if (tag === 'button' || tag === 'a') return 'tree-type-btn';
+        if (tag === 'nav' || tag === 'ul' || tag === 'ol') return 'tree-type-nav';
+        return '';
+    }
+
+    function _getTypeLabel(tag) {
+        tag = tag.toLowerCase();
+        if (tag === 'section') return 'S';
+        if (tag === 'div') return 'D';
+        if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6') return tag.toUpperCase();
+        if (tag === 'p') return 'P';
+        if (tag === 'span') return 'Sp';
+        if (tag === 'img') return 'Img';
+        if (tag === 'a') return 'A';
+        if (tag === 'button') return 'Btn';
+        if (tag === 'nav') return 'Nav';
+        if (tag === 'header') return 'Hdr';
+        if (tag === 'footer') return 'Ftr';
+        if (tag === 'video') return 'Vid';
+        if (tag === 'canvas') return 'Cv';
+        if (tag === 'ul' || tag === 'ol') return 'Li';
+        return tag.substring(0, 3);
+    }
+
+    function _escHtml(str) { var d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+    /* ─── Accordion toggles (Insert tab) ─── */
+    function _setupAccordions() {
+        if (!_container) return;
+        _container.querySelectorAll('.insert-section-header').forEach(function (header) {
+            var bodyId = header.getAttribute('data-toggle');
+            var body = _qs('#' + bodyId);
+            if (!body) return;
+            header.setAttribute('aria-expanded', body.classList.contains('active') ? 'true' : 'false');
+            header.addEventListener('click', function () {
+                var isOpen = body.classList.contains('active');
+                body.classList.toggle('active', !isOpen);
+                header.setAttribute('aria-expanded', !isOpen ? 'true' : 'false');
+            });
+        });
+    }
+
+    /* ─── Layer search ─── */
+    function _setupLayerSearch() {
+        if (!_container) return;
+        _on('#layerSearch', 'input', function () {
+            if (_currentTree.length) _renderElementTree(_currentTree);
+        });
+    }
+
+    /* ─── Templates ─── */
+    var _templates = [
+        { id: 'minimal-portfolio', name: 'Minimal Portfolio', desc: 'Clean, text-focused portfolio with scroll animations', cat: 'portfolio', tags: ['scroll', 'particles', 'minimal'], style: 0 },
+        { id: 'dark-agency', name: 'Dark Agency', desc: 'Bold dark theme agency site with particle backgrounds', cat: 'business', tags: ['particles', 'bold', 'dark'], style: 1 },
+        { id: 'neon-creative', name: 'Neon Creative', desc: 'Vibrant neon-accented creative showcase', cat: 'creative', tags: ['neon', 'effects', 'video'], style: 2 },
+        { id: 'glass-landing', name: 'Glass Landing', desc: 'Glassmorphism landing page with aurora effects', cat: 'landing', tags: ['glass', 'aurora', 'modern'], style: 3 },
+        { id: 'shop-elegant', name: 'Elegant Shop', desc: 'Clean e-commerce layout with product grid', cat: 'ecommerce', tags: ['grid', 'clean', 'products'], style: 4 },
+        { id: 'brutalist-folio', name: 'Brutalist Folio', desc: 'Raw, experimental portfolio with glitch effects', cat: 'portfolio', tags: ['brutalist', 'glitch', 'bold'], style: 5 },
+        { id: 'gradient-saas', name: 'Gradient SaaS', desc: 'Gradient-rich SaaS landing page with blob effects', cat: 'landing', tags: ['gradient', 'blobs', 'saas'], style: 6 },
+        { id: 'studio-minimal', name: 'Studio Minimal', desc: 'Minimalist design studio with large typography', cat: 'creative', tags: ['minimal', 'type', 'scroll'], style: 7 },
+        { id: 'modern-business', name: 'Modern Business', desc: 'Professional business site with clean sections', cat: 'business', tags: ['professional', 'clean', 'modern'], style: 8 },
+        { id: 'product-showcase', name: 'Product Showcase', desc: 'Single product landing with video scroll', cat: 'ecommerce', tags: ['product', 'video', 'scroll'], style: 9 },
+    ];
+
+    function _setupTemplates() {
+        if (!_container) return;
+        _renderTemplateGrid('all');
+        _container.querySelectorAll('.template-cat-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                _container.querySelectorAll('.template-cat-btn').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                _renderTemplateGrid(btn.getAttribute('data-cat'));
+            });
+        });
+    }
+
+    function _renderTemplateGrid(cat) {
+        var grid = _qs('#templateGrid'); if (!grid) return;
+        grid.innerHTML = '';
+        var filtered = cat === 'all' ? _templates : _templates.filter(function (t) { return t.cat === cat; });
+        filtered.forEach(function (tpl) {
+            var card = document.createElement('div');
+            card.className = 'template-card';
+            // Generate a unique gradient thumbnail based on style index
+            var colors = [
+                ['#1a1a2e', '#16213e', '#0f3460'], ['#0a0a14', '#1a0a2e', '#2d0a4e'],
+                ['#0f0f1a', '#1a0030', '#003050'], ['#060614', '#101040', '#002040'],
+                ['#0a0a0a', '#1a1a2a', '#2a1a3a'], ['#141414', '#0a0a1e', '#1e0a28'],
+                ['#080818', '#180830', '#301848'], ['#0c0c0c', '#1c1c1c', '#2c2c2c'],
+                ['#0a1020', '#102040', '#204060'], ['#100a1e', '#200a3e', '#301060'],
+            ];
+            var c = colors[tpl.style % colors.length];
+            card.innerHTML = '<div class="template-thumb" style="background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ',' + c[2] + ');display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.15);font-size:2rem;font-weight:700">' + tpl.name.charAt(0) + '</div>' +
+                '<div class="template-card-body">' +
+                    '<div class="template-card-name">' + tpl.name + '</div>' +
+                    '<div class="template-card-desc">' + tpl.desc + '</div>' +
+                    '<div class="template-card-tags">' + tpl.tags.map(function (t) { return '<span class="template-tag">' + t + '</span>'; }).join('') + '</div>' +
+                '</div>';
+            card.addEventListener('click', function () {
+                if (confirm('Apply "' + tpl.name + '" template? This will update your current design style.')) {
+                    _applyTemplate(tpl);
+                }
+            });
+            grid.appendChild(card);
+        });
+    }
+
+    function _applyTemplate(tpl) {
+        // When a template is chosen, we dispatch a custom event that app.js can listen to
+        // to switch to the corresponding style and re-generate
+        window.dispatchEvent(new CustomEvent('arbel-apply-template', { detail: { template: tpl } }));
+        _updateStatus({ tag: 'template', id: tpl.name, rect: null });
     }
 
     /* ─── Helpers ─── */
