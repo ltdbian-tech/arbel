@@ -1,9 +1,7 @@
 var ALLOWED_ORIGINS = [
     'https://arbel.live',
     'https://www.arbel.live',
-    'https://arbeltechnologies.github.io',
-    'http://localhost:8080',
-    'http://127.0.0.1:8080'
+    'https://arbeltechnologies.github.io'
 ];
 
 function corsHeaders(origin) {
@@ -53,8 +51,8 @@ async function handleCallback(request, env, origin) {
     }
 
     var code = body.code;
-    if (!code || typeof code !== 'string') {
-        return jsonResponse({ error: 'Missing authorization code' }, 400, origin);
+    if (!code || typeof code !== 'string' || code.length > 200 || !/^[a-f0-9]+$/.test(code)) {
+        return jsonResponse({ error: 'Invalid authorization code' }, 400, origin);
     }
 
     try {
@@ -78,6 +76,11 @@ async function handleCallback(request, env, origin) {
             return jsonResponse({ error: data.error_description || data.error }, 400, origin);
         }
 
+        if (!data.access_token || typeof data.access_token !== 'string') {
+            return jsonResponse({ error: 'Invalid token response from GitHub' }, 502, origin);
+        }
+
+        // Only return the token — never forward scope, token_type, or other metadata
         return jsonResponse({ access_token: data.access_token }, 200, origin);
     } catch (e) {
         return jsonResponse({ error: 'Failed to contact GitHub' }, 502, origin);

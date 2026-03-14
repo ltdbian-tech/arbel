@@ -194,4 +194,3 @@ window.ArbelAuth = (function () {
         getUser: getUser
     };
 })();
-})();
