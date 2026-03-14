@@ -1239,6 +1239,16 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     }
 
+    function _isPathUnique(path, excludeId) {
+        var norm = path.replace(/^\//, '').replace(/\/$/, '');
+        for (var i = 0; i < _pages.length; i++) {
+            if (_pages[i].id === excludeId) continue;
+            var pp = (_pages[i].path || '').replace(/^\//, '').replace(/\/$/, '');
+            if (pp === norm) return false;
+        }
+        return true;
+    }
+
     function _showAddPageDialog() {
         var old = _qs('#arbelPageDialog'); if (old) old.remove();
         var overlay = document.createElement('div');
@@ -1251,6 +1261,10 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 '<input type="text" class="arbel-dialog-input" id="dlgPageName" placeholder="About Us">' +
                 '<label class="arbel-dialog-label">URL Path</label>' +
                 '<input type="text" class="arbel-dialog-input" id="dlgPagePath" placeholder="/about">' +
+                '<label class="arbel-dialog-label">SEO Title (optional)</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgPageSeoTitle" placeholder="About Our Company">' +
+                '<label class="arbel-dialog-label">SEO Description (optional)</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgPageSeoDesc" placeholder="Learn more about our team...">' +
                 '<label class="arbel-dialog-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
                     '<input type="checkbox" id="dlgPageNav" checked> Show in navigation' +
                 '</label>' +
@@ -1264,20 +1278,30 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         var nameIn = overlay.querySelector('#dlgPageName');
         var pathIn = overlay.querySelector('#dlgPagePath');
         nameIn.addEventListener('input', function () {
+            nameIn.setCustomValidity('');
             pathIn.value = '/' + _slugify(this.value.trim());
         });
+        pathIn.addEventListener('input', function () { nameIn.setCustomValidity(''); });
         overlay.querySelector('.arbel-dialog-cancel').addEventListener('click', function () { overlay.remove(); });
         overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
         overlay.querySelector('.arbel-dialog-confirm').addEventListener('click', function () {
             var name = nameIn.value.trim();
             if (!name) { nameIn.focus(); return; }
             var path = pathIn.value.trim() || '/' + _slugify(name);
-            var id = _slugify(path.replace(/^\//, '')) || 'page-' + Date.now();
+            if (!path.match(/^\//)) path = '/' + path;
+            var id = 'page-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
             var showNav = overlay.querySelector('#dlgPageNav').checked;
-            for (var i = 0; i < _pages.length; i++) {
-                if (_pages[i].id === id) { nameIn.setCustomValidity('Page already exists'); nameIn.reportValidity(); return; }
+            var seoTitle = overlay.querySelector('#dlgPageSeoTitle').value.trim();
+            var seoDesc = overlay.querySelector('#dlgPageSeoDesc').value.trim();
+            if (!_isPathUnique(path)) {
+                nameIn.setCustomValidity('A page with this path already exists');
+                nameIn.reportValidity();
+                return;
             }
-            _pages.push({ id: id, name: name, path: path, isHome: false, showInNav: showNav });
+            var pg = { id: id, name: name, path: path, isHome: false, showInNav: showNav };
+            if (seoTitle) pg.seoTitle = seoTitle;
+            if (seoDesc) pg.seoDesc = seoDesc;
+            _pages.push(pg);
             _currentPage = id;
             _updatePageSelect();
             _renderPageList();
@@ -1299,6 +1323,58 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _renderPageList();
     }
 
+    function _showPageSettings(page) {
+        var old = _qs('#arbelPageDialog'); if (old) old.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'arbelPageDialog';
+        overlay.className = 'arbel-dialog-overlay';
+        overlay.innerHTML =
+            '<div class="arbel-dialog">' +
+                '<div class="arbel-dialog-title">Page Settings — ' + _escHtml(page.name) + '</div>' +
+                '<label class="arbel-dialog-label">Page Name</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgEditName" value="' + _escHtml(page.name).replace(/"/g, '&quot;') + '">' +
+                '<label class="arbel-dialog-label">URL Path</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgEditPath" value="' + _escHtml(page.path || '/').replace(/"/g, '&quot;') + '">' +
+                '<label class="arbel-dialog-label">SEO Title</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgEditSeoTitle" value="' + _escHtml(page.seoTitle || '').replace(/"/g, '&quot;') + '" placeholder="Page title for search engines">' +
+                '<label class="arbel-dialog-label">SEO Description</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgEditSeoDesc" value="' + _escHtml(page.seoDesc || '').replace(/"/g, '&quot;') + '" placeholder="Short description for search engines">' +
+                '<label class="arbel-dialog-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
+                    '<input type="checkbox" id="dlgEditNav"' + (page.showInNav ? ' checked' : '') + '> Show in navigation' +
+                '</label>' +
+                '<div class="arbel-dialog-actions">' +
+                    '<button class="arbel-dialog-btn arbel-dialog-cancel">Cancel</button>' +
+                    '<button class="arbel-dialog-btn arbel-dialog-confirm">Save</button>' +
+                '</div>' +
+            '</div>';
+        _container.appendChild(overlay);
+
+        var nameIn = overlay.querySelector('#dlgEditName');
+        var pathIn = overlay.querySelector('#dlgEditPath');
+        overlay.querySelector('.arbel-dialog-cancel').addEventListener('click', function () { overlay.remove(); });
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+        overlay.querySelector('.arbel-dialog-confirm').addEventListener('click', function () {
+            var newName = nameIn.value.trim();
+            if (!newName) { nameIn.focus(); return; }
+            var newPath = pathIn.value.trim();
+            if (!newPath.match(/^\//)) newPath = '/' + newPath;
+            if (!_isPathUnique(newPath, page.id)) {
+                pathIn.setCustomValidity('A page with this path already exists');
+                pathIn.reportValidity();
+                return;
+            }
+            page.name = newName;
+            page.path = newPath;
+            page.seoTitle = overlay.querySelector('#dlgEditSeoTitle').value.trim() || '';
+            page.seoDesc = overlay.querySelector('#dlgEditSeoDesc').value.trim() || '';
+            page.showInNav = overlay.querySelector('#dlgEditNav').checked;
+            _updatePageSelect();
+            _renderPageList();
+            overlay.remove();
+        });
+        nameIn.focus();
+    }
+
     function _renderPageList() {
         var list = _qs('#pageList'); if (!list) return;
         list.innerHTML = '';
@@ -1307,6 +1383,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             row.className = 'page-item' + (page.id === _currentPage ? ' active' : '');
             var homeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
             var pageIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+            var settingsIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
             row.innerHTML =
                 '<div class="page-item-icon">' + (page.isHome ? homeIcon : pageIcon) + '</div>' +
                 '<div class="page-item-info">' +
@@ -1314,7 +1391,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                     '<span class="page-item-path">' + _escHtml(page.path || '/') + '</span>' +
                 '</div>' +
                 '<div class="page-item-actions">' +
-                    (page.showInNav !== false && !page.isHome ? '<span class="page-item-nav-badge" title="In navigation">NAV</span>' : '') +
+                    (page.showInNav && !page.isHome ? '<span class="page-item-nav-badge" title="In navigation">NAV</span>' : '') +
+                    (!page.isHome ? '<button class="page-item-btn page-settings-btn" title="Page Settings">' + settingsIcon + '</button>' : '') +
                     (!page.isHome ? '<button class="page-item-btn page-dup-btn" title="Duplicate">&#128464;</button>' : '') +
                     (!page.isHome ? '<button class="page-item-btn page-del-btn" title="Delete">&times;</button>' : '') +
                 '</div>';
@@ -1326,7 +1404,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _renderPageList();
             });
 
-            /* Double-click name to rename */
+            /* Double-click name to inline rename (name only, id stays stable) */
             var nameEl = row.querySelector('.page-item-name');
             nameEl.addEventListener('dblclick', function (e) {
                 e.stopPropagation();
@@ -1337,13 +1415,19 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 nameEl.replaceWith(input);
                 input.focus();
                 input.select();
+                var committed = false;
                 function commit() {
+                    if (committed) return;
+                    committed = true;
                     var v = input.value.trim();
                     if (v && v !== page.name) {
                         page.name = v;
+                        /* Update path only if user hasn't customised it via settings */
                         if (!page.isHome) {
-                            page.path = '/' + _slugify(v);
-                            page.id = _slugify(v);
+                            var newPath = '/' + _slugify(v);
+                            if (_isPathUnique(newPath, page.id)) {
+                                page.path = newPath;
+                            }
                         }
                     }
                     _updatePageSelect();
@@ -1352,17 +1436,29 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 input.addEventListener('blur', commit);
                 input.addEventListener('keydown', function (e2) {
                     if (e2.key === 'Enter') { e2.preventDefault(); commit(); }
-                    if (e2.key === 'Escape') _renderPageList();
+                    if (e2.key === 'Escape') { committed = true; _renderPageList(); }
                 });
+            });
+
+            /* Settings dialog */
+            var settingsBtn = row.querySelector('.page-settings-btn');
+            if (settingsBtn) settingsBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                _showPageSettings(page);
             });
 
             /* Duplicate */
             var dupBtn = row.querySelector('.page-dup-btn');
             if (dupBtn) dupBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                var base = page.id + '-copy', newId = base, n = 1;
-                while (_pages.some(function (p) { return p.id === newId; })) { newId = base + '-' + (++n); }
-                _pages.push({ id: newId, name: page.name + ' (copy)', path: page.path + '-copy' + (n > 1 ? '-' + n : ''), isHome: false, showInNav: page.showInNav });
+                var basePath = (page.path || '/' + page.name.toLowerCase()) + '-copy';
+                var newPath = basePath, n = 1;
+                while (!_isPathUnique(newPath)) { newPath = basePath + '-' + (++n); }
+                var newId = 'page-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+                var dup = { id: newId, name: page.name + ' (copy)', path: newPath, isHome: false, showInNav: page.showInNav };
+                if (page.seoTitle) dup.seoTitle = page.seoTitle;
+                if (page.seoDesc) dup.seoDesc = page.seoDesc;
+                _pages.push(dup);
                 _updatePageSelect();
                 _renderPageList();
             });

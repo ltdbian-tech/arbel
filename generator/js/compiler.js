@@ -1404,6 +1404,7 @@ window.ArbelCompiler = (function () {
     function _buildPageHTML(cfg, page) {
         var esc = _escHtml;
         var c = cfg.content || {};
+        var cat = _getAnimCategory(cfg.style);
         var parts = (page.path || '').replace(/^\//, '').replace(/\/$/, '').split('/').filter(Boolean);
         var prefix = parts.length > 0 ? parts.map(function () { return '..'; }).join('/') + '/' : '';
 
@@ -1417,13 +1418,14 @@ window.ArbelCompiler = (function () {
         if (cfg.pages) {
             cfg.pages.forEach(function (pg) {
                 if (pg.isHome || pg.showInNav === false || pg.id === page.id) return;
-                navLinks2 += '        <a href="' + prefix + (pg.path || '/' + pg.id).replace(/^\//, '') + '/" class="nav-link">' + esc(pg.name) + '</a>\n';
+                var pgPath = (pg.path || '/' + pg.id).replace(/^\//, '').replace(/\/$/, '');
+                navLinks2 += '        <a href="' + prefix + pgPath + '" class="nav-link">' + esc(pg.name) + '</a>\n';
             });
         }
 
         return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
             '  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-            '  <title>' + esc(page.seoTitle || page.name) + ' — ' + esc(cfg.brandName) + '</title>\n' +
+            '  <title>' + esc(page.seoTitle || page.name) + ' \u2014 ' + esc(cfg.brandName) + '</title>\n' +
             (page.seoDesc ? '  <meta name="description" content="' + esc(page.seoDesc) + '">\n' : '') +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
@@ -1433,7 +1435,7 @@ window.ArbelCompiler = (function () {
             '  <div class="cursor" id="cursor"><div class="cursor-dot"></div><div class="cursor-ring"></div></div>\n' +
             '  <div class="noise-bg"></div>\n\n' +
             '  <header class="header" id="header">\n    <div class="header-inner">\n' +
-            '      <a href="' + prefix + '" class="logo">' + esc(cfg.brandName) + '</a>\n' +
+            '      <a href="' + prefix + '" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
             '      <nav class="nav" id="nav">\n' + navLinks2 + '      </nav>\n' +
             '      <button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n  </header>\n\n' +
@@ -1446,7 +1448,13 @@ window.ArbelCompiler = (function () {
             '  <footer class="footer">\n    <div class="footer-inner">\n' +
             '      <p class="footer-copy">&copy; ' + new Date().getFullYear() + ' ' + esc(cfg.brandName) + '</p>\n' +
             '    </div>\n  </footer>\n\n' +
-            '  <script src="' + prefix + 'js/main.js"></script>\n' +
+            (cat === 'shader' ? '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' : '') +
+            '  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"><\/script>\n' +
+            '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n' +
+            '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>\n' +
+            '  <script src="' + prefix + 'js/' + _getAnimJsFile(cat) + '"><\/script>\n' +
+            '  <script src="' + prefix + 'js/animations.js"><\/script>\n' +
+            '  <script src="' + prefix + 'js/main.js"><\/script>\n' +
             '</body>\n</html>';
     }
 
@@ -1480,9 +1488,13 @@ window.ArbelCompiler = (function () {
             });
         }
 
-        // Apply editor overrides (text changes, animations, hover, effects)
+        // Apply editor overrides (text changes, animations, hover, effects) to all HTML files
         if (cfg.editorOverrides) {
-            files['index.html'] = _applyOverrides(files['index.html'], cfg.editorOverrides);
+            Object.keys(files).forEach(function (key) {
+                if (key.match(/\.html$/)) {
+                    files[key] = _applyOverrides(files[key], cfg.editorOverrides);
+                }
+            });
         }
 
         // Include video scroll layer

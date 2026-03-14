@@ -1114,6 +1114,8 @@ em { font-family: var(--font-display); font-style: italic; }
 }
 .page-item-btn:hover { color: var(--fg); background: var(--surface2); }
 .page-del-btn:hover { color: #e74c3c !important; }
+.page-settings-btn { opacity: 0.5; }
+.page-settings-btn:hover { opacity: 1; }
 .page-item-rename {
     background: var(--bg2); border: 1px solid var(--accent); color: var(--fg);
     font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 4px;
