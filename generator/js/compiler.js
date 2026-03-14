@@ -745,18 +745,18 @@ window.ArbelCompiler = (function () {
 
     /* ─── Section HTML generators ─── */
     function _heroHTML(c, bgClass) {
-        return '<section class="hero" id="hero">\n' +
+        return '<section class="hero" id="hero" data-arbel-id="hero">\n' +
             '  <div class="' + bgClass + ' hero-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
-            '  <div class="hero-content">\n' +
-            '    <h1 class="hero-heading">\n' +
-            '      <span class="line"><span class="line-inner">' + esc(c.heroLine1 || 'We build') + '</span></span>\n' +
-            '      <span class="line"><span class="line-inner">' + esc(c.heroLine2 || 'cinematic') + '</span></span>\n' +
-            '      <span class="line"><span class="line-inner"><em>' + esc(c.heroLine3 || 'experiences.') + '</em></span></span>\n' +
+            '  <div class="hero-content" data-arbel-id="hero-content">\n' +
+            '    <h1 class="hero-heading" data-arbel-id="hero-heading">\n' +
+            '      <span class="line"><span class="line-inner" data-arbel-id="hero-line1" data-arbel-edit="text">' + esc(c.heroLine1 || 'We build') + '</span></span>\n' +
+            '      <span class="line"><span class="line-inner" data-arbel-id="hero-line2" data-arbel-edit="text">' + esc(c.heroLine2 || 'cinematic') + '</span></span>\n' +
+            '      <span class="line"><span class="line-inner" data-arbel-id="hero-line3" data-arbel-edit="text"><em>' + esc(c.heroLine3 || 'experiences.') + '</em></span></span>\n' +
             '    </h1>\n' +
-            '    <p class="hero-sub">' + esc(c.heroSub || '') + '</p>\n' +
+            '    <p class="hero-sub" data-arbel-id="hero-sub" data-arbel-edit="text">' + esc(c.heroSub || '') + '</p>\n' +
             '    <div class="hero-actions">\n' +
-            '      <a href="#contact" class="btn btn-primary magnetic">' + esc(c.heroCta || 'GET STARTED') + '</a>\n' +
+            '      <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'GET STARTED') + '</a>\n' +
             '    </div>\n' +
             '  </div>\n' +
             '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
@@ -768,16 +768,16 @@ window.ArbelCompiler = (function () {
         for (var i = 1; i <= 3; i++) {
             var title = c['service' + i + 'Title'] || 'Service ' + i;
             var desc = c['service' + i + 'Desc'] || '';
-            items += '  <div class="service-card reveal-up">\n' +
+            items += '  <div class="service-card reveal-up" data-arbel-id="service-card-' + i + '">\n' +
                 '    <div class="service-num mono">0' + i + '</div>\n' +
-                '    <h3 class="service-title">' + esc(title) + '</h3>\n' +
-                '    <p class="service-desc">' + esc(desc) + '</p>\n' +
+                '    <h3 class="service-title" data-arbel-id="service-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
+                '    <p class="service-desc" data-arbel-id="service-' + i + '-desc" data-arbel-edit="text">' + esc(desc) + '</p>\n' +
                 '  </div>\n';
         }
-        return '<section class="section services" id="services">\n' +
+        return '<section class="section services" id="services" data-arbel-id="services">\n' +
             '<div class="container">\n' +
             '  <div class="section-label mono">SERVICES</div>\n' +
-            '  <h2 class="section-heading"><span class="line"><span class="line-inner">' + esc(c.servicesHeading || 'What we do') + '</span></span></h2>\n' +
+            '  <h2 class="section-heading" data-arbel-id="services-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.servicesHeading || 'What we do') + '</span></span></h2>\n' +
             '  <div class="services-grid">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -788,19 +788,19 @@ window.ArbelCompiler = (function () {
             var title = c['project' + i + 'Title'] || 'Project ' + i;
             var tag = c['project' + i + 'Tag'] || 'Design';
             var desc = c['project' + i + 'Desc'] || '';
-            items += '  <div class="portfolio-card reveal-up cursor-hover">\n' +
+            items += '  <div class="portfolio-card reveal-up cursor-hover" data-arbel-id="portfolio-card-' + i + '">\n' +
                 '    <div class="portfolio-card-inner">\n' +
-                '      <div class="portfolio-meta mono"><span>' + esc(tag) + '</span></div>\n' +
-                '      <h3 class="portfolio-title">' + esc(title) + '</h3>\n' +
-                '      <p class="portfolio-desc">' + esc(desc) + '</p>\n' +
+                '      <div class="portfolio-meta mono"><span data-arbel-id="project-' + i + '-tag" data-arbel-edit="text">' + esc(tag) + '</span></div>\n' +
+                '      <h3 class="portfolio-title" data-arbel-id="project-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
+                '      <p class="portfolio-desc" data-arbel-id="project-' + i + '-desc" data-arbel-edit="text">' + esc(desc) + '</p>\n' +
                 '      <div class="portfolio-num mono">0' + i + '</div>\n' +
                 '    </div>\n' +
                 '  </div>\n';
         }
-        return '<section class="section portfolio" id="portfolio">\n' +
+        return '<section class="section portfolio" id="portfolio" data-arbel-id="portfolio">\n' +
             '<div class="container">\n' +
             '  <div class="section-label mono">PORTFOLIO</div>\n' +
-            '  <h2 class="section-heading"><span class="line"><span class="line-inner">' + esc(c.portfolioHeading || 'Our Work') + '</span></span></h2>\n' +
+            '  <h2 class="section-heading" data-arbel-id="portfolio-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.portfolioHeading || 'Our Work') + '</span></span></h2>\n' +
             '  <div class="portfolio-grid">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -810,17 +810,17 @@ window.ArbelCompiler = (function () {
         for (var i = 1; i <= 3; i++) {
             var val = c['stat' + i + 'Val'] || '--';
             var label = c['stat' + i + 'Label'] || 'Stat';
-            stats += '    <div class="stat-block"><div class="stat-val">' + esc(val) + '</div><div class="stat-label mono">' + esc(label) + '</div></div>\n';
+            stats += '    <div class="stat-block" data-arbel-id="stat-' + i + '"><div class="stat-val" data-arbel-id="stat-' + i + '-val" data-arbel-edit="text">' + esc(val) + '</div><div class="stat-label mono" data-arbel-id="stat-' + i + '-label" data-arbel-edit="text">' + esc(label) + '</div></div>\n';
         }
-        return '<section class="section about" id="about">\n' +
+        return '<section class="section about" id="about" data-arbel-id="about">\n' +
             '<div class="container">\n' +
             '  <div class="about-grid">\n' +
             '    <div class="about-left">\n' +
             '      <div class="section-label mono">ABOUT</div>\n' +
-            '      <h2 class="section-heading"><span class="line"><span class="line-inner">' + esc(c.aboutHeading || 'About Us') + '</span></span></h2>\n' +
+            '      <h2 class="section-heading" data-arbel-id="about-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.aboutHeading || 'About Us') + '</span></span></h2>\n' +
             '    </div>\n' +
             '    <div class="about-right">\n' +
-            '      <p class="about-desc">' + esc(c.aboutDesc || '') + '</p>\n' +
+            '      <p class="about-desc" data-arbel-id="about-desc" data-arbel-edit="text">' + esc(c.aboutDesc || '') + '</p>\n' +
             '      <div class="stats-row">\n' + stats + '      </div>\n' +
             '    </div>\n' +
             '  </div>\n' +
@@ -832,16 +832,16 @@ window.ArbelCompiler = (function () {
         for (var i = 1; i <= 3; i++) {
             var title = c['step' + i + 'Title'] || 'Step ' + i;
             var desc = c['step' + i + 'Desc'] || '';
-            steps += '  <div class="process-card reveal-up">\n' +
+            steps += '  <div class="process-card reveal-up" data-arbel-id="process-card-' + i + '">\n' +
                 '    <div class="process-num mono">0' + i + '</div>\n' +
-                '    <h3 class="process-title">' + esc(title) + '</h3>\n' +
-                '    <p class="process-desc">' + esc(desc) + '</p>\n' +
+                '    <h3 class="process-title" data-arbel-id="step-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
+                '    <p class="process-desc" data-arbel-id="step-' + i + '-desc" data-arbel-edit="text">' + esc(desc) + '</p>\n' +
                 '  </div>\n';
         }
-        return '<section class="section process" id="process">\n' +
+        return '<section class="section process" id="process" data-arbel-id="process">\n' +
             '<div class="container">\n' +
             '  <div class="section-label mono">PROCESS</div>\n' +
-            '  <h2 class="section-heading"><span class="line"><span class="line-inner">' + esc(c.processHeading || 'How We Work') + '</span></span></h2>\n' +
+            '  <h2 class="section-heading" data-arbel-id="process-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.processHeading || 'How We Work') + '</span></span></h2>\n' +
             '  <div class="process-grid">\n' + steps + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -853,18 +853,18 @@ window.ArbelCompiler = (function () {
             var name = c['testimonial' + i + 'Name'] || 'Client';
             var role = c['testimonial' + i + 'Role'] || '';
             if (!quote) continue;
-            items += '  <div class="testimonial-card reveal-up">\n' +
-                '    <blockquote class="testimonial-quote">&ldquo;' + esc(quote) + '&rdquo;</blockquote>\n' +
+            items += '  <div class="testimonial-card reveal-up" data-arbel-id="testimonial-card-' + i + '">\n' +
+                '    <blockquote class="testimonial-quote" data-arbel-id="testimonial-' + i + '-quote" data-arbel-edit="text">&ldquo;' + esc(quote) + '&rdquo;</blockquote>\n' +
                 '    <div class="testimonial-author">\n' +
-                '      <span class="testimonial-name">' + esc(name) + '</span>\n' +
-                '      <span class="testimonial-role mono">' + esc(role) + '</span>\n' +
+                '      <span class="testimonial-name" data-arbel-id="testimonial-' + i + '-name" data-arbel-edit="text">' + esc(name) + '</span>\n' +
+                '      <span class="testimonial-role mono" data-arbel-id="testimonial-' + i + '-role" data-arbel-edit="text">' + esc(role) + '</span>\n' +
                 '    </div>\n' +
                 '  </div>\n';
         }
-        return '<section class="section testimonials" id="testimonials">\n' +
+        return '<section class="section testimonials" id="testimonials" data-arbel-id="testimonials">\n' +
             '<div class="container">\n' +
             '  <div class="section-label mono">TESTIMONIALS</div>\n' +
-            '  <h2 class="section-heading"><span class="line"><span class="line-inner">What they <em>say.</em></span></span></h2>\n' +
+            '  <h2 class="section-heading" data-arbel-id="testimonials-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">What they <em>say.</em></span></span></h2>\n' +
             '  <div class="testimonials-grid">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -877,17 +877,17 @@ window.ArbelCompiler = (function () {
             var features = (c['tier' + i + 'Features'] || '').split('\n').filter(Boolean);
             var featureList = features.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('\n');
             var accent = i === 2 ? ' pricing-card--accent' : '';
-            tiers += '  <div class="pricing-card' + accent + ' reveal-up">\n' +
-                '    <h3 class="pricing-name">' + esc(name) + '</h3>\n' +
-                '    <div class="pricing-price">' + esc(price) + '</div>\n' +
-                '    <ul class="pricing-features">' + featureList + '</ul>\n' +
-                '    <a href="#contact" class="btn' + (i === 2 ? ' btn-primary' : '') + '">Get Started</a>\n' +
+            tiers += '  <div class="pricing-card' + accent + ' reveal-up" data-arbel-id="pricing-card-' + i + '">\n' +
+                '    <h3 class="pricing-name" data-arbel-id="tier-' + i + '-name" data-arbel-edit="text">' + esc(name) + '</h3>\n' +
+                '    <div class="pricing-price" data-arbel-id="tier-' + i + '-price" data-arbel-edit="text">' + esc(price) + '</div>\n' +
+                '    <ul class="pricing-features" data-arbel-id="tier-' + i + '-features">' + featureList + '</ul>\n' +
+                '    <a href="#contact" class="btn' + (i === 2 ? ' btn-primary' : '') + '" data-arbel-id="tier-' + i + '-cta" data-arbel-edit="text">Get Started</a>\n' +
                 '  </div>\n';
         }
-        return '<section class="section pricing" id="pricing">\n' +
+        return '<section class="section pricing" id="pricing" data-arbel-id="pricing">\n' +
             '<div class="container">\n' +
             '  <div class="section-label mono">PRICING</div>\n' +
-            '  <h2 class="section-heading"><span class="line"><span class="line-inner">' + esc(c.pricingHeading || 'Pricing') + '</span></span></h2>\n' +
+            '  <h2 class="section-heading" data-arbel-id="pricing-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.pricingHeading || 'Pricing') + '</span></span></h2>\n' +
             '  <div class="pricing-grid">\n' + tiers + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -898,30 +898,30 @@ window.ArbelCompiler = (function () {
             var q = c['faq' + i + 'Q'] || '';
             var a = c['faq' + i + 'A'] || '';
             if (!q) continue;
-            items += '  <details class="faq-item reveal-up">\n' +
-                '    <summary class="faq-question">' + esc(q) + '</summary>\n' +
-                '    <p class="faq-answer">' + esc(a) + '</p>\n' +
+            items += '  <details class="faq-item reveal-up" data-arbel-id="faq-item-' + i + '">\n' +
+                '    <summary class="faq-question" data-arbel-id="faq-' + i + '-q" data-arbel-edit="text">' + esc(q) + '</summary>\n' +
+                '    <p class="faq-answer" data-arbel-id="faq-' + i + '-a" data-arbel-edit="text">' + esc(a) + '</p>\n' +
                 '  </details>\n';
         }
-        return '<section class="section faq" id="faq">\n' +
+        return '<section class="section faq" id="faq" data-arbel-id="faq">\n' +
             '<div class="container">\n' +
             '  <div class="section-label mono">FAQ</div>\n' +
-            '  <h2 class="section-heading"><span class="line"><span class="line-inner">Frequently <em>Asked.</em></span></span></h2>\n' +
+            '  <h2 class="section-heading" data-arbel-id="faq-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">Frequently <em>Asked.</em></span></span></h2>\n' +
             '  <div class="faq-list">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
 
     function _contactHTML(c, email, bgClass) {
-        return '<section class="section contact" id="contact">\n' +
+        return '<section class="section contact" id="contact" data-arbel-id="contact">\n' +
             '  <div class="' + bgClass + ' contact-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
             '  <div class="container contact-inner">\n' +
             '    <div class="section-label mono">CONTACT</div>\n' +
-            '    <h2 class="section-heading text-center">\n' +
+            '    <h2 class="section-heading text-center" data-arbel-id="contact-heading" data-arbel-edit="text">\n' +
             '      <span class="line"><span class="line-inner">' + esc(c.contactHeading || "Let's Talk") + '</span></span>\n' +
             '    </h2>\n' +
             '    <div class="contact-actions">\n' +
-            '      <a href="mailto:' + esc(email) + '" class="btn btn-primary magnetic">' + esc(c.contactCta || 'EMAIL US') + '</a>\n' +
+            '      <a href="mailto:' + esc(email) + '" class="btn btn-primary magnetic" data-arbel-id="contact-cta" data-arbel-edit="text">' + esc(c.contactCta || 'EMAIL US') + '</a>\n' +
             '    </div>\n' +
             '  </div>\n' +
             '</section>';
@@ -1349,7 +1349,160 @@ window.ArbelCompiler = (function () {
             case 'wave':     files['js/' + jsFile] = _buildWaveJS(cfg.style, cfg.particles); break;
             default:         files['js/' + jsFile] = _buildShaderJS(cfg.style); break;
         }
+
+        // Apply editor overrides (text changes, animations, hover, effects)
+        if (cfg.editorOverrides) {
+            files['index.html'] = _applyOverrides(files['index.html'], cfg.editorOverrides);
+        }
+
         return files;
+    }
+
+    /** Apply visual editor overrides to compiled HTML */
+    function _applyOverrides(html, overrides) {
+        var ids = Object.keys(overrides);
+        if (!ids.length) return html;
+
+        // Build extra CSS for animations and hover effects
+        var extraCSS = '';
+        var extraJS = '';
+        var hasEffects = false;
+
+        ids.forEach(function (id) {
+            var o = overrides[id];
+            var selector = '[data-arbel-id="' + id + '"]';
+
+            // Text replacement: find the element by data-arbel-id and replace innerText
+            if (o.text !== undefined) {
+                // Match the opening tag with data-arbel-id="id" then content up to closing tag
+                var tagPattern = new RegExp(
+                    '(data-arbel-id="' + id.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '"[^>]*>)([\\s\\S]*?)(<\\/)',
+                    ''
+                );
+                html = html.replace(tagPattern, function (match, openPart, oldContent, closePart) {
+                    return openPart + esc(o.text) + closePart;
+                });
+            }
+
+            // Entrance animation attributes
+            if (o.animation && o.animation !== 'none') {
+                html = html.replace(
+                    'data-arbel-id="' + id + '"',
+                    'data-arbel-id="' + id + '" data-arbel-anim="' + esc(o.animation) + '"'
+                );
+            }
+
+            // Hover effect attributes
+            if (o.hover && o.hover !== 'none') {
+                html = html.replace(
+                    'data-arbel-id="' + id + '"',
+                    'data-arbel-id="' + id + '" data-arbel-hover="' + esc(o.hover) + '"'
+                );
+            }
+
+            // Background effects
+            if (o.effect && o.effect !== 'none') {
+                html = html.replace(
+                    'data-arbel-id="' + id + '"',
+                    'data-arbel-id="' + id + '" data-arbel-effect="' + esc(o.effect) + '"'
+                );
+                hasEffects = true;
+            }
+        });
+
+        // Inject per-element animation and hover JS into the page
+        var overrideJS = _buildOverrideJS(overrides, hasEffects);
+        if (overrideJS) {
+            html = html.replace('</body>', '<script>' + overrideJS + '<\/script>\n</body>');
+        }
+
+        return html;
+    }
+
+    /** Build runtime JS for editor overrides (animations, hover, bg effects) */
+    function _buildOverrideJS(overrides, hasEffects) {
+        var ids = Object.keys(overrides);
+        var hasAnimOrHover = ids.some(function (id) {
+            var o = overrides[id];
+            return (o.animation && o.animation !== 'none') || (o.hover && o.hover !== 'none');
+        });
+        if (!hasAnimOrHover && !hasEffects) return '';
+
+        var js = '(function(){\n';
+
+        // Animation presets
+        js += 'var AN={' +
+            'fadeIn:{from:"opacity:0",to:"opacity:1"},' +
+            'slideUp:{from:"opacity:0;transform:translateY(40px)",to:"opacity:1;transform:translateY(0)"},' +
+            'slideDown:{from:"opacity:0;transform:translateY(-40px)",to:"opacity:1;transform:translateY(0)"},' +
+            'slideLeft:{from:"opacity:0;transform:translateX(40px)",to:"opacity:1;transform:translateX(0)"},' +
+            'slideRight:{from:"opacity:0;transform:translateX(-40px)",to:"opacity:1;transform:translateX(0)"},' +
+            'scaleUp:{from:"opacity:0;transform:scale(0.8)",to:"opacity:1;transform:scale(1)"},' +
+            'rotateIn:{from:"opacity:0;transform:rotate(-10deg)",to:"opacity:1;transform:rotate(0)"},' +
+            'bounceIn:{from:"opacity:0;transform:scale(0.3)",to:"opacity:1;transform:scale(1)"},' +
+            'flipIn:{from:"opacity:0;transform:perspective(400px) rotateY(90deg)",to:"opacity:1;transform:perspective(400px) rotateY(0)"},' +
+            'blurIn:{from:"opacity:0;filter:blur(10px)",to:"opacity:1;filter:blur(0)"}' +
+            '};\n';
+
+        // Hover presets
+        js += 'var HV={lift:"transform:translateY(-5px);box-shadow:0 10px 30px rgba(0,0,0,.2)",' +
+            'scale:"transform:scale(1.05)",glow:"box-shadow:0 0 20px var(--accent)",tilt:"transform:rotate(-2deg)"};\n';
+
+        // Apply animations on scroll using IntersectionObserver
+        js += 'var io=new IntersectionObserver(function(entries){entries.forEach(function(e){\n' +
+            '  if(!e.isIntersecting)return;\n' +
+            '  var el=e.target,a=el.getAttribute("data-arbel-anim"),p=AN[a];\n' +
+            '  if(!p)return;\n' +
+            '  el.style.transition="all .8s cubic-bezier(.16,1,.3,1)";\n' +
+            '  p.to.split(";").forEach(function(s){var kv=s.split(":");if(kv.length===2)el.style[kv[0].trim()]=kv[1].trim()});\n' +
+            '  io.unobserve(el);\n' +
+            '})},{threshold:0.15});\n';
+
+        // Init animated elements
+        js += 'document.querySelectorAll("[data-arbel-anim]").forEach(function(el){\n' +
+            '  var a=el.getAttribute("data-arbel-anim"),p=AN[a];\n' +
+            '  if(!p)return;\n' +
+            '  p.from.split(";").forEach(function(s){var kv=s.split(":");if(kv.length===2)el.style[kv[0].trim()]=kv[1].trim()});\n' +
+            '  io.observe(el);\n' +
+            '});\n';
+
+        // Init hover elements
+        js += 'document.querySelectorAll("[data-arbel-hover]").forEach(function(el){\n' +
+            '  var h=el.getAttribute("data-arbel-hover"),css=HV[h];\n' +
+            '  if(!css)return;\n' +
+            '  el.style.transition="all .3s ease";\n' +
+            '  el.addEventListener("mouseenter",function(){el._ph=el.style.cssText;css.split(";").forEach(function(s){var kv=s.split(":");if(kv.length===2)el.style[kv[0].trim()]=kv[1].trim()})});\n' +
+            '  el.addEventListener("mouseleave",function(){if(el._ph!==undefined)el.style.cssText=el._ph});\n' +
+            '});\n';
+
+        // Background effects
+        if (hasEffects) {
+            js += 'document.querySelectorAll("[data-arbel-effect]").forEach(function(el){\n' +
+                '  var name=el.getAttribute("data-arbel-effect");\n' +
+                '  if(name==="none")return;\n' +
+                '  var pos=getComputedStyle(el).position;if(pos==="static")el.style.position="relative";\n' +
+                '  var cv=document.createElement("canvas");cv.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0";\n' +
+                '  el.insertBefore(cv,el.firstChild);\n' +
+                '  var ctx=cv.getContext("2d");\n' +
+                '  function rsz(){cv.width=el.offsetWidth;cv.height=el.offsetHeight}rsz();\n' +
+                '  var ps=[];for(var i=0;i<30;i++){ps.push({x:Math.random()*cv.width,y:Math.random()*cv.height,' +
+                '    vx:(Math.random()-.5)*.5,vy:name==="bubbles"?-(Math.random()+.3):name==="snow"?(Math.random()*.5+.2):(Math.random()-.5)*.5,' +
+                '    sz:Math.random()*3+1,a:Math.random()*.5+.2,p:Math.random()*6.28})}\n' +
+                '  function draw(){ctx.clearRect(0,0,cv.width,cv.height);var t=Date.now()*.001;\n' +
+                '    if(name==="gradient"){var g=ctx.createLinearGradient(cv.width*(.5+.5*Math.sin(t*.5)),0,cv.width*(.5+.5*Math.cos(t*.3)),cv.height);g.addColorStop(0,"rgba(100,108,255,.1)");g.addColorStop(.5,"rgba(100,108,255,.05)");g.addColorStop(1,"rgba(100,108,255,.1)");ctx.fillStyle=g;ctx.fillRect(0,0,cv.width,cv.height);requestAnimationFrame(draw);return}\n' +
+                '    if(name==="waves"){ctx.strokeStyle="rgba(100,108,255,.15)";ctx.lineWidth=1;for(var w=0;w<3;w++){ctx.beginPath();for(var x=0;x<=cv.width;x+=5){var y=cv.height*.5+Math.sin(x*.01+t+w)*20*(w+1);x===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.stroke()}requestAnimationFrame(draw);return}\n' +
+                '    ps.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.p+=.02;if(p.x<-5)p.x=cv.width+5;if(p.x>cv.width+5)p.x=-5;if(p.y<-5)p.y=cv.height+5;if(p.y>cv.height+5)p.y=-5;' +
+                '    var al=p.a;if(name==="stars"||name==="fireflies")al=p.a*(.5+.5*Math.sin(p.p));ctx.beginPath();' +
+                '    if(name==="fireflies"){ctx.shadowBlur=10;ctx.shadowColor="rgba(100,255,100,"+al+")";ctx.fillStyle="rgba(100,255,100,"+al+")"}' +
+                '    else if(name==="snow"){ctx.fillStyle="rgba(255,255,255,"+al+")";p.x+=Math.sin(p.p)*.5}' +
+                '    else{ctx.fillStyle="rgba(100,108,255,"+al+")"}' +
+                '    ctx.arc(p.x,p.y,p.sz,0,6.28);ctx.fill();ctx.shadowBlur=0});requestAnimationFrame(draw)}draw();\n' +
+                '  window.addEventListener("resize",rsz);\n' +
+                '});\n';
+        }
+
+        js += '})();';
+        return js;
     }
 
     /** Get available styles for the picker */

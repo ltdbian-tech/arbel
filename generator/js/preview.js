@@ -57,13 +57,23 @@ window.ArbelPreview = (function () {
      * Render compiled files in the preview iframe.
      * @param {HTMLIFrameElement} iframe — target iframe element
      * @param {Object} files — { filename: content } from ArbelCompiler.compile()
+     * @param {string} [editorScript] — optional editor overlay script to inject
      */
-    function render(iframe, files) {
+    function render(iframe, files, editorScript) {
         if (!iframe) return;
         _iframe = iframe;
         _cleanup();
 
         var inlinedHTML = _buildInlineHTML(files);
+
+        // Inject editor overlay script if provided
+        if (editorScript) {
+            inlinedHTML = inlinedHTML.replace(
+                '</body>',
+                '<script>' + editorScript + '<\/script>\n</body>'
+            );
+        }
+
         var blob = new Blob([inlinedHTML], { type: 'text/html' });
         var url = URL.createObjectURL(blob);
         _blobUrls.push(url);

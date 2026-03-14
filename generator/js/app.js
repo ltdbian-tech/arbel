@@ -12,8 +12,10 @@
     var state = {
         step: 0,
         style: 'obsidian',
+        styleMode: 'preset',
         authenticated: false,
-        compiledFiles: null
+        compiledFiles: null,
+        editorOverrides: null
     };
 
     /* ─── DOM Refs ─── */
@@ -89,6 +91,10 @@
         previewFrame: $('previewFrame'),
         backToConfig: $('backToConfig'),
         toDeploy: $('toDeploy'),
+        // Editor
+        editorLayout: $('editorLayout'),
+        editorPanel: $('editorPanel'),
+        editModeBtn: $('editModeBtn'),
         // Deploy
         deployUsername: $('deployUsername'),
         repoName: $('repoName'),
@@ -102,6 +108,8 @@
         repoLink: $('repoLink'),
         retryDeploy: $('retryDeploy')
     };
+
+    var editorActive = false;
 
     /* ─── Step Navigation ─── */
     function goToStep(n) {
@@ -1024,16 +1032,39 @@
             content: content
         };
 
+        // If builder mode was used, override style to use the builder's first category preset
+        // and override animation params from builder controls
+        if (styleMode === 'builder') {
+            var catStyles = { particle: 'constellation', blob: 'morphBlob', gradient: 'meshGrad', wave: 'sineWaves' };
+            cfg.style = catStyles[builderState.cat] || 'constellation';
+            state.style = cfg.style;
+        }
+
         // Include animation settings for non-shader styles
-        var cat = ArbelCompiler.getAnimCategory(state.style);
+        var cat = ArbelCompiler.getAnimCategory(cfg.style);
         if (cat !== 'shader') {
-            cfg.particles = {
-                count: parseInt(els.particleCount.value, 10),
-                speed: parseFloat(els.particleSpeed.value),
-                glow: parseFloat(els.particleGlow.value),
-                interact: els.particleInteract.checked,
-                connect: els.particleConnect.checked
-            };
+            if (styleMode === 'builder') {
+                cfg.particles = {
+                    count: builderState.params.count || 80,
+                    speed: builderState.params.speed || 1,
+                    glow: builderState.params.glow || 0.6,
+                    interact: true,
+                    connect: builderState.params.connect !== false
+                };
+            } else {
+                cfg.particles = {
+                    count: parseInt(els.particleCount.value, 10),
+                    speed: parseFloat(els.particleSpeed.value),
+                    glow: parseFloat(els.particleGlow.value),
+                    interact: els.particleInteract.checked,
+                    connect: els.particleConnect.checked
+                };
+            }
+        }
+
+        // Store element-level edits from visual editor
+        if (state.editorOverrides) {
+            cfg.editorOverrides = state.editorOverrides;
         }
 
         return cfg;
@@ -1043,7 +1074,27 @@
     function generatePreview() {
         var config = buildConfig();
         state.compiledFiles = ArbelCompiler.compile(config);
-        ArbelPreview.render(els.previewIframe, state.compiledFiles);
+        // Always inject editor overlay so it's ready when user enables edit mode
+        var editorScript = ArbelEditor.getOverlayScript();
+        ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
+
+        // Initialize editor module
+        ArbelEditor.destroy();
+        ArbelEditor.init(els.previewIframe, els.editorPanel, function (overrides) {
+            state.editorOverrides = overrides;
+        });
+        if (state.editorOverrides) {
+            ArbelEditor.setOverrides(state.editorOverrides);
+        }
+    }
+
+    // Edit mode toggle
+    if (els.editModeBtn) {
+        els.editModeBtn.addEventListener('click', function () {
+            editorActive = !editorActive;
+            els.editModeBtn.classList.toggle('active', editorActive);
+            els.editorLayout.classList.toggle('editor-active', editorActive);
+        });
     }
 
     // Device toggle
@@ -1086,6 +1137,13 @@
 
         if (!state.compiledFiles) {
             state.compiledFiles = ArbelCompiler.compile(buildConfig());
+        }
+        // Re-compile with latest editor overrides for deploy
+        var deployConfig = buildConfig();
+        var latestOverrides = ArbelEditor.getOverrides();
+        if (latestOverrides && Object.keys(latestOverrides).length > 0) {
+            deployConfig.editorOverrides = latestOverrides;
+            state.compiledFiles = ArbelCompiler.compile(deployConfig);
         }
 
         els.deployBtn.style.display = 'none';
