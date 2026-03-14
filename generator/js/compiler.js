@@ -509,7 +509,9 @@ window.ArbelCompiler = (function () {
             '  --ease: cubic-bezier(0.16, 1, 0.3, 1);\n' +
             '}\n\n' +
             '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n' +
-            'html { font-size: 16px; scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }\n' +
+            'html { font-size: 16px; -webkit-font-smoothing: antialiased; }\n' +
+            'html.lenis, html.lenis body { height: auto; }\n' +
+            '.lenis.lenis-smooth { scroll-behavior: auto; }\n' +
             'body { font-family: var(--font-body); background: var(--bg); color: var(--fg); overflow-x: hidden; }\n' +
             'a { color: inherit; text-decoration: none; }\n' +
             '.mono { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }\n' +
@@ -637,8 +639,8 @@ window.ArbelCompiler = (function () {
             '.footer .logo { font-size: 1rem; }\n' +
             '.footer .mono { color: var(--fg2); }\n\n' +
             '/* ═══ REVEAL ANIMATIONS ═══ */\n' +
-            '.reveal-up { opacity: 0; transform: translateY(40px); }\n' +
-            '.line-inner { transform: translateY(110%); }\n\n' +
+            '.reveal-up { will-change: transform, opacity; }\n' +
+            '.line-inner { display: inline-block; will-change: transform; }\n\n' +
             '/* ═══ WEBGL ═══ */\n' +
             '.webgl-bg { position: absolute; inset: 0; }\n' +
             '.webgl-bg canvas { width: 100% !important; height: 100% !important; display: block; }\n\n' +
@@ -669,19 +671,21 @@ window.ArbelCompiler = (function () {
             '    }});\n' +
             '  } else { revealHero(); }\n\n' +
             '  function revealHero(){\n' +
-            '    gsap.to(".hero .line-inner",{y:0,duration:1,stagger:0.12,ease:"expo.out",delay:0.2});\n' +
+            '    gsap.to(".hero .line-inner",{yPercent:0,duration:1,stagger:0.12,ease:"expo.out",delay:0.2});\n' +
             '    gsap.to(".hero-sub",{opacity:1,y:0,duration:0.8,delay:0.6,ease:"power2.out"});\n' +
             '    gsap.to(".hero-actions",{opacity:1,y:0,duration:0.8,delay:0.8,ease:"power2.out"});\n' +
             '  }\n\n' +
             '  // Set initial states\n' +
+            '  gsap.set(".line-inner",{yPercent:110});\n' +
             '  gsap.set(".hero-sub",{opacity:0,y:20});\n' +
-            '  gsap.set(".hero-actions",{opacity:0,y:20});\n\n' +
+            '  gsap.set(".hero-actions",{opacity:0,y:20});\n' +
+            '  gsap.set(".reveal-up",{opacity:0,y:40});\n\n' +
             '  // Section heading reveals\n' +
             '  document.querySelectorAll(".section-heading .line-inner").forEach(function(el){\n' +
             '    ScrollTrigger.create({\n' +
             '      trigger:el.closest(".section"),\n' +
             '      start:"top 80%",\n' +
-            '      onEnter:function(){gsap.to(el,{y:0,duration:0.9,ease:"expo.out"});}\n' +
+            '      onEnter:function(){gsap.to(el,{yPercent:0,duration:0.9,ease:"expo.out"});}\n' +
             '    });\n' +
             '  });\n\n' +
             '  // Reveal-up elements\n' +
@@ -698,6 +702,7 @@ window.ArbelCompiler = (function () {
             '    lenis.on("scroll",ScrollTrigger.update);\n' +
             '    gsap.ticker.add(function(t){lenis.raf(t*1000);});\n' +
             '    gsap.ticker.lagSmoothing(0);\n' +
+            '    ScrollTrigger.refresh();\n' +
             '  }\n' +
             '}\n' +
             'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}else{init();}\n' +
