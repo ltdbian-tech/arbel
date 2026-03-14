@@ -44,13 +44,13 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 .cursor.is-view .cursor-text { opacity: 1; }
 
 /* ===== Section Spotlight — Dual-Layer Cursor Chase ===== */
-.hero, .work-scene, .process-scene, .about-terminal, .contact-scene {
+.hero, .work-scene, .process-scene, .about-terminal, .generator-scene, .contact-scene {
     isolation: isolate;
 }
 .hero::before, .work-scene::before, .process-scene::before,
-.about-terminal::before, .contact-scene::before,
+.about-terminal::before, .generator-scene::before, .contact-scene::before,
 .hero::after, .work-scene::after, .process-scene::after,
-.about-terminal::after, .contact-scene::after {
+.about-terminal::after, .generator-scene::after, .contact-scene::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -61,19 +61,19 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 }
 /* Layer 1 — large soft outer halo */
 .hero::before, .work-scene::before, .process-scene::before,
-.about-terminal::before, .contact-scene::before {
+.about-terminal::before, .generator-scene::before, .contact-scene::before {
     background: radial-gradient(700px circle at var(--mx, -9999px) var(--my, -9999px), rgba(107,76,230,0.15) 0%, transparent 65%);
 }
 /* Layer 2 — smaller, more intense inner core, slight delay for stagger */
 .hero::after, .work-scene::after, .process-scene::after,
-.about-terminal::after, .contact-scene::after {
+.about-terminal::after, .generator-scene::after, .contact-scene::after {
     background: radial-gradient(320px circle at var(--mx, -9999px) var(--my, -9999px), rgba(107,76,230,0.30) 0%, transparent 70%);
     transition: opacity 0.4s ease 0.08s;
 }
 .hero:hover::before, .work-scene:hover::before, .process-scene:hover::before,
-.about-terminal:hover::before, .contact-scene:hover::before,
+.about-terminal:hover::before, .generator-scene:hover::before, .contact-scene:hover::before,
 .hero:hover::after, .work-scene:hover::after, .process-scene:hover::after,
-.about-terminal:hover::after, .contact-scene:hover::after {
+.about-terminal:hover::after, .generator-scene:hover::after, .contact-scene:hover::after {
     opacity: 1;
 }
 
@@ -203,6 +203,129 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
 .marquee-track-cinematic { display: inline-flex; animation: marqueeScroll 25s linear infinite; }
 .marquee-track-cinematic span { font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: 0.1em; color: var(--fg); padding-right: 2rem; opacity: 0.7; }
 @keyframes marqueeScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ===== BUILD / GENERATOR SECTION ===== */
+.generator-scene { position: relative; overflow: hidden; padding: 12vw 4vw; }
+.generator-inner { position: relative; z-index: 10; display: flex; flex-direction: column; max-width: 1400px; margin: 0 auto; }
+.gen-header { text-align: center; margin-bottom: 5rem; }
+.gen-header .scene-heading { margin-bottom: 1.5rem; }
+.gen-header .scene-sub { margin: 0 auto; }
+
+/* Two-card options grid — equal columns */
+.gen-options { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; }
+.gen-option-card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    overflow: hidden;
+    transition: transform 0.6s var(--ease), border-color 0.4s var(--ease);
+}
+.gen-option-card:hover { transform: translateY(-10px); }
+
+/* Dual-wipe background layers (same as premium-card) */
+.gen-option-bg-layer1,
+.gen-option-bg {
+    position: absolute !important;
+    inset: 0 !important;
+    clip-path: inset(100% 0 0 0);
+    transition: clip-path 0.6s cubic-bezier(0.85, 0, 0.15, 1);
+    z-index: 0;
+}
+.gen-option-bg-layer1 { background: var(--accent); z-index: 1; }
+.gen-option-bg { background: var(--fg); z-index: 2; }
+.gen-option-card:hover .gen-option-bg-layer1 { clip-path: inset(0 0 0 0); transition-delay: 0s; }
+.gen-option-card:hover .gen-option-bg { clip-path: inset(0 0 0 0); transition-delay: 0.1s; }
+
+/* Content above bg layers */
+.gen-option-card > *:not(.gen-option-bg):not(.gen-option-bg-layer1) {
+    position: relative;
+    z-index: 3;
+    transition: color 0.4s var(--ease);
+}
+
+/* Text color inversion on hover */
+.gen-option-card:hover .gen-option-badge,
+.gen-option-card:hover .gen-option-title,
+.gen-option-card:hover .gen-option-desc,
+.gen-option-card:hover .gen-feature,
+.gen-option-card:hover .gen-feature-icon {
+    color: var(--bg);
+    opacity: 1;
+    transition-delay: 0.1s;
+}
+.gen-option-card:hover .gen-option-btn {
+    border-color: var(--bg);
+    color: var(--bg);
+    transition-delay: 0.1s;
+}
+
+.gen-option-badge {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+}
+.gen-option-custom .gen-option-badge { color: var(--fg); opacity: 0.6; }
+
+.gen-option-title {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    margin-bottom: 0.8rem;
+    color: var(--fg);
+}
+.gen-option-desc {
+    color: var(--fg);
+    opacity: 0.7;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+}
+.gen-option-features {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+    margin-bottom: 2.5rem;
+    flex: 1;
+}
+.gen-feature { display: flex; align-items: center; gap: 0.5rem; color: var(--fg); opacity: 0.8; font-size: 0.7rem; }
+.gen-feature-icon { color: var(--accent); font-size: 1.2rem; line-height: 1; }
+.gen-option-custom .gen-feature-icon { color: var(--fg); opacity: 0.5; }
+
+.gen-option-btn { align-self: flex-start; }
+
+/* Outline button variant */
+.btn-outline {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 1rem 2.4rem;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s var(--ease), background 0.4s var(--ease), color 0.4s var(--ease);
+    cursor: pointer;
+}
+.btn-outline:hover {
+    border-color: var(--fg);
+    background: var(--fg);
+    color: var(--bg);
+}
+
+@media (max-width: 768px) {
+    .gen-options { grid-template-columns: 1fr; }
+    .gen-option-card { padding: 2rem 1.5rem; }
+}
 
 /* Contact Specific */
 .contact-scene { display: flex; align-items: center; justify-content: center; height: 80vh; position: relative; overflow: hidden; }
@@ -682,6 +805,7 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
   .work-scene::before, .work-scene::after,
   .process-scene::before, .process-scene::after,
   .about-terminal::before, .about-terminal::after,
+  .generator-scene::before, .generator-scene::after,
   .contact-scene::before, .contact-scene::after {
     display: none !important;
   }
@@ -704,6 +828,21 @@ em { font-family: var(--font-display); font-style: italic; color: var(--fg); fon
     padding-right: max(7vw, 24px) !important;
   }
   
+  /* === Generator Section === */
+  .generator-inner {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+  }
+  .generator-scene {
+    padding: 14vw 5vw !important;
+  }
+  .generator-features {
+    grid-template-columns: 1fr !important;
+  }
+  .generator-preview-stack {
+    max-width: 100% !important;
+  }
+
   /* Reset some specific ones that shouldn't overflow */
   .work-scene, .contact-scene {
     overflow-x: hidden !important;

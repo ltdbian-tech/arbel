@@ -145,7 +145,7 @@
   if(yearEl) yearEl.textContent = new Date().getFullYear();
 
   /* ---- Section Spotlight: dual-layer cursor chase ---- */
-  var spotlightSections = document.querySelectorAll('.hero, .work-scene, .process-scene, .about-terminal, .contact-scene');
+  var spotlightSections = document.querySelectorAll('.hero, .work-scene, .process-scene, .about-terminal, .generator-scene, .contact-scene');
   document.addEventListener('mousemove', function(e) {
     spotlightSections.forEach(function(section) {
       var rect = section.getBoundingClientRect();

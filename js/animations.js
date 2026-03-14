@@ -149,7 +149,7 @@
   }
 
   /* ---- Text Line Split Reveals for other sections ---- */
-  ['.process-header', '.contact-scene'].forEach(function(sectionStr){
+  ['.process-header', '.generator-scene', '.contact-scene'].forEach(function(sectionStr){
       var section = document.querySelector(sectionStr);
       if(!section) return;
       var h = section.querySelector('.scene-heading');
@@ -176,6 +176,28 @@
           scrollTrigger: {
               trigger: termBox,
               start: "top 85%"
+          }
+      });
+  }
+
+  /* ---- Build Section Reveal ---- */
+  var genOptionCards = document.querySelectorAll('.gen-option-card');
+  if (genOptionCards.length) {
+      gsap.from(genOptionCards, {
+          y: 40, opacity: 0, duration: 0.9, stagger: 0.2,
+          scrollTrigger: {
+              trigger: '.gen-options',
+              start: "top 85%"
+          }
+      });
+  }
+  var genFeatures = document.querySelectorAll('.gen-feature');
+  if (genFeatures.length) {
+      gsap.from(genFeatures, {
+          x: -20, opacity: 0, duration: 0.6, stagger: 0.08,
+          scrollTrigger: {
+              trigger: '.gen-options',
+              start: "top 80%"
           }
       });
   }

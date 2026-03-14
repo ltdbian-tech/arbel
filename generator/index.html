@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbel Generator — Build Cinematic Websites</title>
+    <meta name="description" content="Generate cinematic websites with WebGL effects, scroll animations, and premium interactions. Free. Own your code.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.github.com https://api.groq.com https://generativelanguage.googleapis.com https://arbel-auth.workers.dev; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; frame-src blob:;">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/generator.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="gen-header">
+        <a href="/" class="gen-logo">arbel<span class="dot">.</span></a>
+        <div class="gen-header-right">
+            <span class="gen-badge mono">GENERATOR</span>
+            <span class="gen-user" id="genUser" style="display:none;">
+                <img id="genUserAvatar" class="gen-avatar" alt="">
+                <span id="genUserName" class="mono"></span>
+            </span>
+        </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="gen-progress">
+        <div class="gen-progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Step Indicators -->
+    <div class="gen-steps-nav" id="stepsNav">
+        <button class="step-dot active" data-step="0"><span class="mono">AUTH</span></button>
+        <div class="step-line"></div>
+        <button class="step-dot" data-step="1"><span class="mono">STYLE</span></button>
+        <div class="step-line"></div>
+        <button class="step-dot" data-step="2"><span class="mono">CONFIGURE</span></button>
+        <div class="step-line"></div>
+        <button class="step-dot" data-step="3"><span class="mono">PREVIEW</span></button>
+        <div class="step-line"></div>
+        <button class="step-dot" data-step="4"><span class="mono">DEPLOY</span></button>
+    </div>
+
+    <!-- Wizard Container -->
+    <main class="gen-wizard" id="wizard">
+
+        <!-- Step 0: Auth -->
+        <section class="gen-step active" data-step="0" id="stepAuth">
+            <div class="step-content step-content--centered">
+                <div class="step-label mono">01 / AUTHENTICATE</div>
+                <h1 class="step-heading">Connect your <em>GitHub.</em></h1>
+                <p class="step-sub">Your generated site will live in your own GitHub repository. You own the code forever.</p>
+
+                <div class="auth-box">
+                    <!-- Primary: GitHub OAuth -->
+                    <div class="auth-oauth">
+                        <button class="gen-btn gen-btn--github" id="githubSignIn" type="button">
+                            <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+                            Sign in with GitHub
+                        </button>
+                        <div class="auth-status" id="authStatus"></div>
+                    </div>
+
+                    <div class="auth-divider">
+                        <span class="auth-divider-line"></span>
+                        <span class="auth-divider-text mono">OR</span>
+                        <span class="auth-divider-line"></span>
+                    </div>
+
+                    <!-- Advanced: PAT -->
+                    <div class="auth-advanced">
+                        <button class="auth-advanced-toggle mono" id="patToggle" type="button">
+                            <span>Use Personal Access Token (Advanced)</span>
+                            <svg class="auth-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                        </button>
+                        <div class="auth-pat-body" id="patBody" style="display:none;">
+                            <p class="auth-hint">Create a fine-grained token at <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">github.com/settings/tokens</a> with <strong>Repository</strong> read &amp; write permissions.</p>
+                            <div class="input-group">
+                                <input type="password" id="tokenInput" class="gen-input" placeholder="github_pat_...">
+                                <button class="gen-btn gen-btn--sm" id="tokenToggle" type="button">SHOW</button>
+                            </div>
+                            <button class="gen-btn gen-btn--primary" id="connectBtn">Connect with Token</button>
+                        </div>
+                    </div>
+
+                    <div class="auth-security">
+                        <div class="security-badge mono">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v3.5c0 3.5 2.5 6.5 6 7.5 3.5-1 6-4 6-7.5V4L8 1z" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M6 8l1.5 1.5L10 6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                            SECURE
+                        </div>
+                        <ul class="security-list">
+                            <li>You sign in directly on GitHub&rsquo;s website</li>
+                            <li>Token stored in sessionStorage (cleared on tab close)</li>
+                            <li>We never see your GitHub password</li>
+                            <li>Revoke access anytime in GitHub settings</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 1: Choose Style -->
+        <section class="gen-step" data-step="1" id="stepStyle">
+            <div class="step-content">
+                <div class="step-label mono">02 / CHOOSE STYLE</div>
+                <h2 class="step-heading">Pick your <em>Aesthetic.</em></h2>
+                <p class="step-sub">Each style is a unique WebGL shader, color palette, and typography pairing. Not just a color swap — a different visual DNA.</p>
+
+                <div class="style-grid" id="styleGrid">
+                    <button class="style-card selected" data-style="obsidian">
+                        <div class="style-preview" id="previewObsidian">
+                            <canvas class="style-canvas" data-shader="obsidian"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Obsidian</h3>
+                            <span class="style-desc mono">DARK INK FLUID</span>
+                            <div class="style-tags"><span>Premium</span><span>Mysterious</span><span>Luxury</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="aurora">
+                        <div class="style-preview" id="previewAurora">
+                            <canvas class="style-canvas" data-shader="aurora"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Aurora</h3>
+                            <span class="style-desc mono">NORTHERN LIGHTS</span>
+                            <div class="style-tags"><span>Vibrant</span><span>Modern</span><span>Tech</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="ember">
+                        <div class="style-preview" id="previewEmber">
+                            <canvas class="style-canvas" data-shader="ember"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Ember</h3>
+                            <span class="style-desc mono">WARM PARTICLE FIELD</span>
+                            <div class="style-tags"><span>Bold</span><span>Energetic</span><span>Food</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="frost">
+                        <div class="style-preview" id="previewFrost">
+                            <canvas class="style-canvas" data-shader="frost"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Frost</h3>
+                            <span class="style-desc mono">COOL CRYSTALLINE</span>
+                            <div class="style-tags"><span>Clean</span><span>Clinical</span><span>Finance</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="neon">
+                        <div class="style-preview" id="previewNeon">
+                            <canvas class="style-canvas" data-shader="neon"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Neon</h3>
+                            <span class="style-desc mono">ELECTRIC GLOW</span>
+                            <div class="style-tags"><span>Edgy</span><span>Futuristic</span><span>Gaming</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="silk">
+                        <div class="style-preview" id="previewSilk">
+                            <canvas class="style-canvas" data-shader="silk"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Silk</h3>
+                            <span class="style-desc mono">SOFT FLOWING</span>
+                            <div class="style-tags"><span>Elegant</span><span>Minimal</span><span>Fashion</span></div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="step-actions">
+                    <button class="gen-btn" id="backToAuth">BACK</button>
+                    <button class="gen-btn gen-btn--primary" id="toConfig">CONTINUE</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 2: Configure -->
+        <section class="gen-step" data-step="2" id="stepConfig">
+            <div class="step-content">
+                <div class="step-label mono">03 / CONFIGURE</div>
+                <h2 class="step-heading">Build your <em>Site.</em></h2>
+
+                <div class="config-layout">
+                    <div class="config-main">
+                        <!-- Brand Info -->
+                        <div class="config-group">
+                            <h3 class="config-group-title mono">BRAND</h3>
+                            <div class="field">
+                                <label class="field-label mono">BRAND NAME</label>
+                                <input type="text" id="brandName" class="gen-input" placeholder="Acme Studio" maxlength="40">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">TAGLINE</label>
+                                <input type="text" id="tagline" class="gen-input" placeholder="We build the future" maxlength="80">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">INDUSTRY</label>
+                                <select id="industry" class="gen-select">
+                                    <option value="">Select industry...</option>
+                                    <option value="agency">Creative Agency</option>
+                                    <option value="saas">SaaS / Tech</option>
+                                    <option value="ecommerce">E-Commerce</option>
+                                    <option value="restaurant">Restaurant / Food</option>
+                                    <option value="healthcare">Healthcare</option>
+                                    <option value="portfolio">Personal Portfolio</option>
+                                    <option value="fashion">Fashion / Beauty</option>
+                                    <option value="realestate">Real Estate</option>
+                                    <option value="fitness">Fitness / Wellness</option>
+                                    <option value="education">Education</option>
+                                    <option value="finance">Finance</option>
+                                    <option value="legal">Legal</option>
+                                    <option value="nonprofit">Non-Profit</option>
+                                    <option value="music">Music / Entertainment</option>
+                                    <option value="photography">Photography</option>
+                                    <option value="startup">Startup</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">EMAIL (for contact section)</label>
+                                <input type="email" id="contactEmail" class="gen-input" placeholder="hello@yourbrand.com">
+                            </div>
+                        </div>
+
+                        <!-- Color Override -->
+                        <div class="config-group">
+                            <h3 class="config-group-title mono">COLORS</h3>
+                            <div class="color-row">
+                                <div class="field field--sm">
+                                    <label class="field-label mono">ACCENT</label>
+                                    <div class="color-pick">
+                                        <input type="color" id="accentColor" value="#6C5CE7">
+                                        <span class="color-val mono" id="accentVal">#6C5CE7</span>
+                                    </div>
+                                </div>
+                                <div class="field field--sm">
+                                    <label class="field-label mono">BACKGROUND</label>
+                                    <div class="color-pick">
+                                        <input type="color" id="bgColor" value="#0a0a0f">
+                                        <span class="color-val mono" id="bgVal">#0a0a0f</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sections Toggle -->
+                        <div class="config-group">
+                            <h3 class="config-group-title mono">SECTIONS</h3>
+                            <p class="config-hint">Toggle sections on/off. Hero and Contact are always included.</p>
+                            <div class="section-toggles" id="sectionToggles">
+                                <label class="toggle-item locked"><input type="checkbox" checked disabled data-section="hero"><span class="toggle-label">Hero</span><span class="toggle-badge mono">REQUIRED</span></label>
+                                <label class="toggle-item"><input type="checkbox" checked data-section="services"><span class="toggle-label">Services</span></label>
+                                <label class="toggle-item"><input type="checkbox" checked data-section="portfolio"><span class="toggle-label">Portfolio / Work</span></label>
+                                <label class="toggle-item"><input type="checkbox" checked data-section="about"><span class="toggle-label">About</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="process"><span class="toggle-label">Process</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="testimonials"><span class="toggle-label">Testimonials</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="pricing"><span class="toggle-label">Pricing</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="faq"><span class="toggle-label">FAQ</span></label>
+                                <label class="toggle-item locked"><input type="checkbox" checked disabled data-section="contact"><span class="toggle-label">Contact</span><span class="toggle-badge mono">REQUIRED</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Section Content Editor -->
+                        <div class="config-group" id="contentEditor">
+                            <h3 class="config-group-title mono">CONTENT</h3>
+                            <p class="config-hint">Edit the content for each section. Defaults are pre-filled based on your industry.</p>
+
+                            <div class="content-section" data-for="hero">
+                                <h4 class="content-section-title">Hero</h4>
+                                <div class="field">
+                                    <label class="field-label mono">HEADING (line 1)</label>
+                                    <input type="text" class="gen-input content-input" data-key="heroLine1" placeholder="We craft" maxlength="30">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">HEADING (line 2)</label>
+                                    <input type="text" class="gen-input content-input" data-key="heroLine2" placeholder="cinematic" maxlength="30">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">HEADING (line 3, italic)</label>
+                                    <input type="text" class="gen-input content-input" data-key="heroLine3" placeholder="experiences." maxlength="30">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">SUBTITLE</label>
+                                    <textarea class="gen-textarea content-input" data-key="heroSub" placeholder="A short description of what you do..." maxlength="200" rows="2"></textarea>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">CTA BUTTON TEXT</label>
+                                    <input type="text" class="gen-input content-input" data-key="heroCta" placeholder="GET STARTED" maxlength="25">
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="services" id="servicesContent">
+                                <h4 class="content-section-title">Services</h4>
+                                <div class="field">
+                                    <label class="field-label mono">SECTION HEADING</label>
+                                    <input type="text" class="gen-input content-input" data-key="servicesHeading" placeholder="What we do" maxlength="40">
+                                </div>
+                                <div class="services-items" id="servicesItems">
+                                    <div class="service-item">
+                                        <input type="text" class="gen-input content-input" data-key="service1Title" placeholder="Service 1 title">
+                                        <textarea class="gen-textarea content-input" data-key="service1Desc" placeholder="Service 1 description" rows="2"></textarea>
+                                    </div>
+                                    <div class="service-item">
+                                        <input type="text" class="gen-input content-input" data-key="service2Title" placeholder="Service 2 title">
+                                        <textarea class="gen-textarea content-input" data-key="service2Desc" placeholder="Service 2 description" rows="2"></textarea>
+                                    </div>
+                                    <div class="service-item">
+                                        <input type="text" class="gen-input content-input" data-key="service3Title" placeholder="Service 3 title">
+                                        <textarea class="gen-textarea content-input" data-key="service3Desc" placeholder="Service 3 description" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="portfolio" id="portfolioContent">
+                                <h4 class="content-section-title">Portfolio</h4>
+                                <div class="field">
+                                    <label class="field-label mono">SECTION HEADING</label>
+                                    <input type="text" class="gen-input content-input" data-key="portfolioHeading" placeholder="Our Work" maxlength="40">
+                                </div>
+                                <div class="portfolio-items" id="portfolioItems">
+                                    <div class="portfolio-item-edit">
+                                        <input type="text" class="gen-input content-input" data-key="project1Title" placeholder="Project 1 name">
+                                        <input type="text" class="gen-input content-input" data-key="project1Tag" placeholder="Category (e.g. Web Design)">
+                                        <textarea class="gen-textarea content-input" data-key="project1Desc" placeholder="Brief description" rows="2"></textarea>
+                                    </div>
+                                    <div class="portfolio-item-edit">
+                                        <input type="text" class="gen-input content-input" data-key="project2Title" placeholder="Project 2 name">
+                                        <input type="text" class="gen-input content-input" data-key="project2Tag" placeholder="Category">
+                                        <textarea class="gen-textarea content-input" data-key="project2Desc" placeholder="Brief description" rows="2"></textarea>
+                                    </div>
+                                    <div class="portfolio-item-edit">
+                                        <input type="text" class="gen-input content-input" data-key="project3Title" placeholder="Project 3 name">
+                                        <input type="text" class="gen-input content-input" data-key="project3Tag" placeholder="Category">
+                                        <textarea class="gen-textarea content-input" data-key="project3Desc" placeholder="Brief description" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="about" id="aboutContent">
+                                <h4 class="content-section-title">About</h4>
+                                <div class="field">
+                                    <label class="field-label mono">HEADING</label>
+                                    <input type="text" class="gen-input content-input" data-key="aboutHeading" placeholder="About Us" maxlength="40">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">DESCRIPTION</label>
+                                    <textarea class="gen-textarea content-input" data-key="aboutDesc" placeholder="Tell your story..." rows="4" maxlength="500"></textarea>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">STAT 1 (value / label)</label>
+                                    <div class="stat-row">
+                                        <input type="text" class="gen-input gen-input--sm content-input" data-key="stat1Val" placeholder="50+">
+                                        <input type="text" class="gen-input gen-input--sm content-input" data-key="stat1Label" placeholder="Projects">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">STAT 2 (value / label)</label>
+                                    <div class="stat-row">
+                                        <input type="text" class="gen-input gen-input--sm content-input" data-key="stat2Val" placeholder="5Y">
+                                        <input type="text" class="gen-input gen-input--sm content-input" data-key="stat2Label" placeholder="Experience">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">STAT 3 (value / label)</label>
+                                    <div class="stat-row">
+                                        <input type="text" class="gen-input gen-input--sm content-input" data-key="stat3Val" placeholder="100%">
+                                        <input type="text" class="gen-input gen-input--sm content-input" data-key="stat3Label" placeholder="Satisfaction">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="process" id="processContent" style="display:none">
+                                <h4 class="content-section-title">Process</h4>
+                                <div class="field">
+                                    <label class="field-label mono">SECTION HEADING</label>
+                                    <input type="text" class="gen-input content-input" data-key="processHeading" placeholder="How We Work" maxlength="40">
+                                </div>
+                                <div class="process-steps-edit">
+                                    <div class="process-step-edit">
+                                        <input type="text" class="gen-input content-input" data-key="step1Title" placeholder="Step 1: Discovery">
+                                        <textarea class="gen-textarea content-input" data-key="step1Desc" placeholder="Description" rows="2"></textarea>
+                                    </div>
+                                    <div class="process-step-edit">
+                                        <input type="text" class="gen-input content-input" data-key="step2Title" placeholder="Step 2: Design">
+                                        <textarea class="gen-textarea content-input" data-key="step2Desc" placeholder="Description" rows="2"></textarea>
+                                    </div>
+                                    <div class="process-step-edit">
+                                        <input type="text" class="gen-input content-input" data-key="step3Title" placeholder="Step 3: Launch">
+                                        <textarea class="gen-textarea content-input" data-key="step3Desc" placeholder="Description" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="testimonials" id="testimonialsContent" style="display:none">
+                                <h4 class="content-section-title">Testimonials</h4>
+                                <div class="testimonial-items">
+                                    <div class="testimonial-edit">
+                                        <textarea class="gen-textarea content-input" data-key="testimonial1Quote" placeholder="What they said..." rows="2"></textarea>
+                                        <input type="text" class="gen-input content-input" data-key="testimonial1Name" placeholder="Name">
+                                        <input type="text" class="gen-input content-input" data-key="testimonial1Role" placeholder="Role / Company">
+                                    </div>
+                                    <div class="testimonial-edit">
+                                        <textarea class="gen-textarea content-input" data-key="testimonial2Quote" placeholder="What they said..." rows="2"></textarea>
+                                        <input type="text" class="gen-input content-input" data-key="testimonial2Name" placeholder="Name">
+                                        <input type="text" class="gen-input content-input" data-key="testimonial2Role" placeholder="Role / Company">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="pricing" id="pricingContent" style="display:none">
+                                <h4 class="content-section-title">Pricing</h4>
+                                <div class="field">
+                                    <label class="field-label mono">SECTION HEADING</label>
+                                    <input type="text" class="gen-input content-input" data-key="pricingHeading" placeholder="Pricing" maxlength="40">
+                                </div>
+                                <div class="pricing-tiers-edit">
+                                    <div class="pricing-tier-edit">
+                                        <input type="text" class="gen-input content-input" data-key="tier1Name" placeholder="Basic">
+                                        <input type="text" class="gen-input content-input" data-key="tier1Price" placeholder="$29/mo">
+                                        <textarea class="gen-textarea content-input" data-key="tier1Features" placeholder="Feature 1&#10;Feature 2&#10;Feature 3" rows="3"></textarea>
+                                    </div>
+                                    <div class="pricing-tier-edit">
+                                        <input type="text" class="gen-input content-input" data-key="tier2Name" placeholder="Pro">
+                                        <input type="text" class="gen-input content-input" data-key="tier2Price" placeholder="$79/mo">
+                                        <textarea class="gen-textarea content-input" data-key="tier2Features" placeholder="Feature 1&#10;Feature 2&#10;Feature 3" rows="3"></textarea>
+                                    </div>
+                                    <div class="pricing-tier-edit">
+                                        <input type="text" class="gen-input content-input" data-key="tier3Name" placeholder="Enterprise">
+                                        <input type="text" class="gen-input content-input" data-key="tier3Price" placeholder="Custom">
+                                        <textarea class="gen-textarea content-input" data-key="tier3Features" placeholder="Feature 1&#10;Feature 2&#10;Feature 3" rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="faq" id="faqContent" style="display:none">
+                                <h4 class="content-section-title">FAQ</h4>
+                                <div class="faq-items-edit">
+                                    <div class="faq-edit">
+                                        <input type="text" class="gen-input content-input" data-key="faq1Q" placeholder="Question 1?">
+                                        <textarea class="gen-textarea content-input" data-key="faq1A" placeholder="Answer" rows="2"></textarea>
+                                    </div>
+                                    <div class="faq-edit">
+                                        <input type="text" class="gen-input content-input" data-key="faq2Q" placeholder="Question 2?">
+                                        <textarea class="gen-textarea content-input" data-key="faq2A" placeholder="Answer" rows="2"></textarea>
+                                    </div>
+                                    <div class="faq-edit">
+                                        <input type="text" class="gen-input content-input" data-key="faq3Q" placeholder="Question 3?">
+                                        <textarea class="gen-textarea content-input" data-key="faq3A" placeholder="Answer" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="content-section" data-for="contact">
+                                <h4 class="content-section-title">Contact</h4>
+                                <div class="field">
+                                    <label class="field-label mono">HEADING</label>
+                                    <input type="text" class="gen-input content-input" data-key="contactHeading" placeholder="Let's Talk" maxlength="40">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">CTA BUTTON TEXT</label>
+                                    <input type="text" class="gen-input content-input" data-key="contactCta" placeholder="EMAIL US" maxlength="25">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Sidebar -->
+                    <aside class="config-sidebar">
+                        <div class="ai-panel" id="aiPanel">
+                            <div class="ai-toggle-row">
+                                <h3 class="config-group-title mono">AI FEATURES</h3>
+                                <label class="switch">
+                                    <input type="checkbox" id="aiToggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="ai-body" id="aiBody" style="display:none;">
+                                <div class="field">
+                                    <label class="field-label mono">PROVIDER</label>
+                                    <select id="aiProvider" class="gen-select">
+                                        <option value="groq">Groq (Llama 3.3)</option>
+                                        <option value="gemini">Google Gemini</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label mono">API KEY</label>
+                                    <div class="input-group">
+                                        <input type="password" id="aiKeyInput" class="gen-input" placeholder="Paste your API key...">
+                                        <button class="gen-btn gen-btn--sm" id="aiKeyRemove" style="display:none;">REMOVE</button>
+                                    </div>
+                                    <div class="ai-key-status" id="aiKeyStatus"></div>
+                                </div>
+
+                                <div class="security-badge mono">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v3.5c0 3.5 2.5 6.5 6 7.5 3.5-1 6-4 6-7.5V4L8 1z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+                                    KEY STAYS IN YOUR BROWSER
+                                </div>
+
+                                <div class="ai-generate" id="aiGenerate" style="display:none;">
+                                    <div class="field">
+                                        <label class="field-label mono">DESCRIBE YOUR BUSINESS</label>
+                                        <textarea id="aiPrompt" class="gen-textarea" placeholder="e.g. A boutique coffee roastery in Brooklyn that sources single-origin beans..." rows="3"></textarea>
+                                    </div>
+                                    <button class="gen-btn gen-btn--accent" id="aiGenerateBtn">GENERATE ALL COPY</button>
+                                    <div class="ai-status" id="aiStatus"></div>
+                                </div>
+
+                                <p class="ai-links mono">
+                                    Get a free key:<br>
+                                    <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a> &middot;
+                                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>
+                                </p>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+
+                <div class="step-actions">
+                    <button class="gen-btn" id="backToStyle">BACK</button>
+                    <button class="gen-btn gen-btn--primary" id="toPreview">PREVIEW SITE</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 3: Preview -->
+        <section class="gen-step" data-step="3" id="stepPreview">
+            <div class="step-content step-content--wide">
+                <div class="preview-header">
+                    <div>
+                        <div class="step-label mono">04 / PREVIEW</div>
+                        <h2 class="step-heading">Your <em>Site.</em></h2>
+                    </div>
+                    <div class="preview-controls">
+                        <div class="device-toggle">
+                            <button class="device-btn active" data-device="desktop" title="Desktop">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                            </button>
+                            <button class="device-btn" data-device="tablet" title="Tablet">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                            </button>
+                            <button class="device-btn" data-device="mobile" title="Mobile">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-container" id="previewContainer">
+                    <div class="preview-frame" id="previewFrame">
+                        <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin"></iframe>
+                    </div>
+                </div>
+                <div class="step-actions">
+                    <button class="gen-btn" id="backToConfig">BACK TO EDIT</button>
+                    <button class="gen-btn gen-btn--primary" id="toDeploy">DEPLOY TO GITHUB</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Step 4: Deploy -->
+        <section class="gen-step" data-step="4" id="stepDeploy">
+            <div class="step-content step-content--centered">
+                <div class="step-label mono">05 / DEPLOY</div>
+                <h2 class="step-heading">Launch <em>Now.</em></h2>
+
+                <div class="deploy-box" id="deployBox">
+                    <div class="field">
+                        <label class="field-label mono">REPOSITORY NAME</label>
+                        <div class="repo-preview mono">
+                            <span id="deployUsername">username</span> / <input type="text" id="repoName" class="gen-input gen-input--inline" placeholder="my-portfolio" maxlength="60" pattern="[a-z0-9\-]+">
+                        </div>
+                        <p class="field-hint mono">Lowercase, hyphens only. This becomes your site URL.</p>
+                    </div>
+
+                    <div class="deploy-url-preview mono" id="deployUrlPreview">
+                        Your site will be live at: <strong id="deployUrl">username.github.io/my-portfolio</strong>
+                    </div>
+
+                    <button class="gen-btn gen-btn--primary gen-btn--lg" id="deployBtn">DEPLOY NOW</button>
+
+                    <div class="deploy-progress" id="deployProgress" style="display:none;">
+                        <div class="deploy-step" id="ds1"><span class="deploy-icon">&#9675;</span> Creating repository...</div>
+                        <div class="deploy-step" id="ds2"><span class="deploy-icon">&#9675;</span> Pushing files...</div>
+                        <div class="deploy-step" id="ds3"><span class="deploy-icon">&#9675;</span> Enabling GitHub Pages...</div>
+                        <div class="deploy-step" id="ds4"><span class="deploy-icon">&#9675;</span> Site is live!</div>
+                    </div>
+
+                    <div class="deploy-success" id="deploySuccess" style="display:none;">
+                        <div class="success-icon">&#10003;</div>
+                        <h3>Your site is live!</h3>
+                        <div class="deploy-links">
+                            <a id="siteLink" href="#" target="_blank" class="gen-btn gen-btn--primary">VISIT SITE</a>
+                            <a id="repoLink" href="#" target="_blank" class="gen-btn">VIEW REPO</a>
+                        </div>
+                        <p class="deploy-note mono">GitHub Pages may take 1-2 minutes to fully deploy. If you see a 404, wait and refresh.</p>
+                    </div>
+
+                    <div class="deploy-error" id="deployError" style="display:none;">
+                        <p id="deployErrorMsg"></p>
+                        <button class="gen-btn" id="retryDeploy">TRY AGAIN</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="gen-footer mono">
+        <span>Built with arbel.live</span>
+        <span>&copy; <script>document.write(new Date().getFullYear())</script></span>
+    </footer>
+
+    <script src="js/key-manager.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ai.js"></script>
+    <script src="js/compiler.js"></script>
+    <script src="js/preview.js"></script>
+    <script src="js/deploy.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
