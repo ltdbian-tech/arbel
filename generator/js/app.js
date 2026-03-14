@@ -91,10 +91,8 @@
         previewFrame: $('previewFrame'),
         backToConfig: $('backToConfig'),
         toDeploy: $('toDeploy'),
-        // Editor
-        editorLayout: $('editorLayout'),
-        editorPanel: $('editorPanel'),
-        editModeBtn: $('editModeBtn'),
+        // Builder
+        builderFS: $('builderFS'),
         // Deploy
         deployUsername: $('deployUsername'),
         repoName: $('repoName'),
@@ -108,8 +106,6 @@
         repoLink: $('repoLink'),
         retryDeploy: $('retryDeploy')
     };
-
-    var editorActive = false;
 
     /* ─── Step Navigation ─── */
     function goToStep(n) {
@@ -1074,37 +1070,18 @@
     function generatePreview() {
         var config = buildConfig();
         state.compiledFiles = ArbelCompiler.compile(config);
-        // Always inject editor overlay so it's ready when user enables edit mode
         var editorScript = ArbelEditor.getOverlayScript();
         ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
 
-        // Initialize editor module
+        // Initialize editor in the full-screen builder container
         ArbelEditor.destroy();
-        ArbelEditor.init(els.previewIframe, els.editorPanel, function (overrides) {
+        ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
             state.editorOverrides = overrides;
         });
         if (state.editorOverrides) {
             ArbelEditor.setOverrides(state.editorOverrides);
         }
     }
-
-    // Edit mode toggle
-    if (els.editModeBtn) {
-        els.editModeBtn.addEventListener('click', function () {
-            editorActive = !editorActive;
-            els.editModeBtn.classList.toggle('active', editorActive);
-            els.editorLayout.classList.toggle('editor-active', editorActive);
-        });
-    }
-
-    // Device toggle
-    $$('.device-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            $$('.device-btn').forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-            ArbelPreview.setDevice(btn.dataset.device);
-        });
-    });
 
     /* ─── DEPLOY ─── */
     function sanitizeRepoName(name) {

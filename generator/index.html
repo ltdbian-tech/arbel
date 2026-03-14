@@ -550,122 +550,532 @@
             </div>
         </section>
 
-        <!-- Step 3: Preview + Visual Editor -->
+        <!-- Step 3: Full-Screen Visual Builder -->
         <section class="gen-step" data-step="3" id="stepPreview">
-            <div class="step-content step-content--full">
-                <div class="preview-header">
-                    <div>
-                        <div class="step-label mono">04 / PREVIEW &amp; EDIT</div>
-                        <h2 class="step-heading">Your <em>Site.</em></h2>
-                    </div>
-                    <div class="preview-controls">
-                        <button class="gen-btn gen-btn--sm editor-mode-btn" id="editModeBtn" title="Toggle Visual Editor">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            <span>EDIT MODE</span>
+            <div class="builder-fullscreen" id="builderFS">
+                <!-- Top Toolbar -->
+                <div class="bfs-toolbar">
+                    <div class="bfs-toolbar-left">
+                        <button class="bfs-btn" id="backToConfig" title="Back to Configure">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                         </button>
-                        <div class="device-toggle">
-                            <button class="device-btn active" data-device="desktop" title="Desktop">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                        <span class="bfs-brand mono" id="bfsBrand">My Site</span>
+                        <div class="bfs-divider"></div>
+                        <!-- Page Management -->
+                        <div class="bfs-pages">
+                            <select class="bfs-page-select gen-select" id="pageSelect">
+                                <option value="home">Home</option>
+                            </select>
+                            <button class="bfs-btn bfs-btn--sm" id="addPageBtn" title="Add Page">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                             </button>
-                            <button class="device-btn" data-device="tablet" title="Tablet">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
-                            </button>
-                            <button class="device-btn" data-device="mobile" title="Mobile">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                            <button class="bfs-btn bfs-btn--sm" id="delPageBtn" title="Delete Page">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
                             </button>
                         </div>
+                    </div>
+                    <div class="bfs-toolbar-center">
+                        <div class="device-toggle">
+                            <button class="device-btn active" data-device="desktop" title="Desktop">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                            </button>
+                            <button class="device-btn" data-device="tablet" title="Tablet">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                            </button>
+                            <button class="device-btn" data-device="mobile" title="Mobile">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                            </button>
+                        </div>
+                        <div class="bfs-divider"></div>
+                        <div class="bfs-zoom">
+                            <button class="bfs-btn bfs-btn--sm" id="zoomOut" title="Zoom Out">−</button>
+                            <span class="bfs-zoom-val mono" id="zoomVal">100%</span>
+                            <button class="bfs-btn bfs-btn--sm" id="zoomIn" title="Zoom In">+</button>
+                        </div>
+                    </div>
+                    <div class="bfs-toolbar-right">
+                        <button class="bfs-btn bfs-btn--accent" id="bfsFullscreen" title="Toggle Fullscreen">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+                        </button>
+                        <button class="bfs-btn bfs-btn--primary" id="toDeploy">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/><path d="M12 12v9M8 17l4 4 4-4"/></svg>
+                            <span>DEPLOY</span>
+                        </button>
                     </div>
                 </div>
 
-                <div class="editor-layout" id="editorLayout">
-                    <!-- Preview iframe area -->
-                    <div class="preview-container" id="previewContainer">
-                        <div class="preview-frame" id="previewFrame">
-                            <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin"></iframe>
+                <!-- Main Editor Area -->
+                <div class="bfs-main">
+                    <!-- Left Sidebar -->
+                    <div class="bfs-left" id="bfsLeft">
+                        <div class="bfs-panel-tabs">
+                            <button class="bfs-tab active" data-tab="layers" title="Layers">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                            </button>
+                            <button class="bfs-tab" data-tab="video" title="Video Scroll Layer">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                            </button>
+                            <button class="bfs-tab" data-tab="particles" title="Particle Builder">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="19" cy="5" r="1"/><circle cx="5" cy="19" r="1"/><circle cx="19" cy="19" r="1"/><path d="M12 12l-7-7M12 12l7-7M12 12l-7 7M12 12l7 7"/></svg>
+                            </button>
                         </div>
-                    </div>
 
-                    <!-- Editor Panel (right sidebar) -->
-                    <div class="editor-panel" id="editorPanel">
-                        <div class="editor-panel-header">
-                            <span class="editor-panel-title mono">VISUAL EDITOR</span>
-                        </div>
-
-                        <!-- Element Tree -->
-                        <div class="editor-section">
-                            <div class="editor-section-label mono">ELEMENTS <span class="editor-tree-count"></span></div>
+                        <!-- Layers Tab -->
+                        <div class="bfs-left-panel bfs-panel-content active" data-panel="layers">
+                            <div class="bfs-panel-head mono">LAYERS</div>
                             <div class="editor-tree" id="editorTree"></div>
                         </div>
 
-                        <!-- Selected Element Properties -->
-                        <div class="editor-section editor-props">
+                        <!-- Video Scroll Tab -->
+                        <div class="bfs-left-panel bfs-panel-content" data-panel="video">
+                            <div class="bfs-panel-head mono">VIDEO SCROLL LAYER</div>
+                            <p class="editor-hint mono" style="margin-bottom:8px">Create Draftly-style scroll-driven video experiences</p>
+
+                            <div class="bfs-panel-sub mono">UPLOAD VIDEO</div>
+                            <div class="video-upload-zone" id="videoUploadZone">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                <span class="mono">Drop video or click</span>
+                                <span class="editor-hint mono">MP4, WebM — max 30s</span>
+                                <input type="file" accept="video/mp4,video/webm" id="videoFileInput" style="display:none">
+                            </div>
+                            <div class="video-progress" id="videoProgress" style="display:none">
+                                <div class="video-progress-bar"><div class="video-progress-fill" id="videoProgressFill"></div></div>
+                                <span class="mono video-progress-text" id="videoProgressText">Extracting frames...</span>
+                            </div>
+                            <div class="video-preview" id="videoPreview" style="display:none">
+                                <canvas id="videoThumb" width="240" height="135"></canvas>
+                                <div class="video-info mono" id="videoInfo"></div>
+                                <button class="bfs-btn bfs-btn--sm" id="videoRemove">Remove</button>
+                            </div>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:12px">IMAGE SEQUENCE</div>
+                            <div class="video-upload-zone video-upload-zone--sm" id="seqUploadZone">
+                                <span class="mono">Drop frame images</span>
+                                <span class="editor-hint mono">PNG/JPG, named in order</span>
+                                <input type="file" accept="image/*" id="seqFileInput" multiple style="display:none">
+                            </div>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:12px">PRESETS</div>
+                            <div class="video-presets" id="videoPresets">
+                                <button class="video-preset-btn" data-preset="cosmic">
+                                    <span class="video-preset-label mono">Cosmic Drift</span>
+                                </button>
+                                <button class="video-preset-btn" data-preset="ocean">
+                                    <span class="video-preset-label mono">Deep Ocean</span>
+                                </button>
+                                <button class="video-preset-btn" data-preset="aurora">
+                                    <span class="video-preset-label mono">Aurora Waves</span>
+                                </button>
+                                <button class="video-preset-btn" data-preset="smoke">
+                                    <span class="video-preset-label mono">Smoke Cloud</span>
+                                </button>
+                                <button class="video-preset-btn" data-preset="neon">
+                                    <span class="video-preset-label mono">Neon City</span>
+                                </button>
+                                <button class="video-preset-btn" data-preset="nature">
+                                    <span class="video-preset-label mono">Nature Flow</span>
+                                </button>
+                            </div>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:12px">SETTINGS</div>
+                            <div class="field" style="margin-bottom:6px">
+                                <label class="editor-hint mono">FPS: <span id="videoFpsVal">24</span></label>
+                                <input type="range" class="gen-range" id="videoFps" min="10" max="40" value="24">
+                            </div>
+                            <div class="field" style="margin-bottom:6px">
+                                <label class="editor-hint mono">Scroll Speed: <span id="videoSpeedVal">1x</span></label>
+                                <input type="range" class="gen-range" id="videoSpeed" min="0.5" max="3" step="0.1" value="1">
+                            </div>
+                            <label class="editor-hint mono" style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+                                <input type="checkbox" id="videoLoop"> Loop playback
+                            </label>
+                            <button class="gen-btn gen-btn--accent gen-btn--sm" id="videoApplyBtn" style="width:100%;margin-top:8px">APPLY VIDEO LAYER</button>
+                        </div>
+
+                        <!-- Particle Builder Tab -->
+                        <div class="bfs-left-panel bfs-panel-content" data-panel="particles">
+                            <div class="bfs-panel-head mono">PARTICLE / SHAPE BUILDER</div>
+                            <p class="editor-hint mono" style="margin-bottom:8px">Build custom particles, blobs, or shapes for any element</p>
+
+                            <div class="bfs-panel-sub mono">TYPE</div>
+                            <select class="gen-select" id="pbuilderType" style="margin-bottom:8px">
+                                <option value="particles">Particles</option>
+                                <option value="blobs">Blobs</option>
+                                <option value="confetti">Confetti</option>
+                                <option value="matrix">Matrix Rain</option>
+                                <option value="geometric">Geometric Shapes</option>
+                                <option value="orbits">Orbits</option>
+                                <option value="dna">DNA Helix</option>
+                            </select>
+
+                            <div class="bfs-panel-sub mono">COUNT</div>
+                            <input type="range" class="gen-range" id="pbuilderCount" min="5" max="200" value="50">
+                            <span class="editor-hint mono" id="pbuilderCountVal">50</span>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:8px">SIZE</div>
+                            <input type="range" class="gen-range" id="pbuilderSize" min="1" max="20" value="4">
+                            <span class="editor-hint mono" id="pbuilderSizeVal">4</span>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:8px">SPEED</div>
+                            <input type="range" class="gen-range" id="pbuilderSpeed" min="0.1" max="5" step="0.1" value="1">
+                            <span class="editor-hint mono" id="pbuilderSpeedVal">1</span>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:8px">GLOW</div>
+                            <input type="range" class="gen-range" id="pbuilderGlow" min="0" max="20" value="5">
+                            <span class="editor-hint mono" id="pbuilderGlowVal">5</span>
+
+                            <div class="bfs-panel-sub mono" style="margin-top:8px">COLORS</div>
+                            <div class="pbuilder-colors">
+                                <input type="color" id="pbuilderColor1" value="#646cff">
+                                <input type="color" id="pbuilderColor2" value="#0bda51">
+                                <input type="color" id="pbuilderColor3" value="#ff6b6b">
+                            </div>
+
+                            <label class="editor-hint mono" style="display:flex;gap:6px;align-items:center;margin-top:8px">
+                                <input type="checkbox" id="pbuilderConnect" checked> Connect lines
+                            </label>
+                            <label class="editor-hint mono" style="display:flex;gap:6px;align-items:center;margin-top:4px">
+                                <input type="checkbox" id="pbuilderInteract" checked> Mouse interaction
+                            </label>
+
+                            <button class="gen-btn gen-btn--accent gen-btn--sm" id="pbuilderApply" style="width:100%;margin-top:10px">APPLY TO SELECTED</button>
+                            <button class="gen-btn gen-btn--sm" id="pbuilderGlobal" style="width:100%;margin-top:4px">APPLY AS BACKGROUND</button>
+
+                            <div class="pbuilder-preview-wrap" style="margin-top:10px">
+                                <canvas id="pbuilderPreview" width="240" height="140"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas / Iframe Preview -->
+                    <div class="bfs-canvas" id="bfsCanvas">
+                        <div class="preview-container" id="previewContainer">
+                            <div class="preview-frame" id="previewFrame">
+                                <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar (Properties) -->
+                    <div class="bfs-right" id="bfsRight">
+                        <div class="bfs-panel-tabs bfs-panel-tabs--right">
+                            <button class="bfs-tab active" data-tab="style" title="Style">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z"/></svg>
+                            </button>
+                            <button class="bfs-tab" data-tab="animate" title="Animation">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
+                            </button>
+                            <button class="bfs-tab" data-tab="effects" title="Effects">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            </button>
+                        </div>
+
+                        <!-- Style Properties Tab -->
+                        <div class="bfs-right-panel bfs-panel-content active" data-panel="style">
                             <div class="editor-el-header">
                                 <span class="editor-el-tag mono"></span>
                                 <span class="editor-el-id mono">Click an element</span>
                             </div>
 
-                            <!-- Text editing -->
+                            <!-- Text Content -->
                             <div class="editor-text-group" style="display:none">
-                                <div class="editor-section-label mono">TEXT CONTENT</div>
-                                <textarea class="editor-text-input gen-textarea" rows="3" placeholder="Edit text..."></textarea>
-                                <p class="editor-hint mono">Double-click element in preview to edit inline</p>
+                                <div class="editor-section-label mono">TEXT</div>
+                                <textarea class="editor-text-input gen-textarea" rows="2" placeholder="Edit text..."></textarea>
                             </div>
 
-                            <!-- Entrance Animation -->
-                            <div class="editor-anim-group">
-                                <div class="editor-section-label mono">ENTRANCE ANIMATION</div>
-                                <div class="editor-anim-row">
-                                    <select class="editor-anim-select gen-select">
-                                        <option value="none">None</option>
+                            <!-- Font -->
+                            <div class="editor-section-label mono" style="margin-top:8px">FONT</div>
+                            <select class="editor-font-select gen-select" id="editorFontSelect">
+                                <option value="">Inherit</option>
+                                <optgroup label="Sans Serif">
+                                    <option value="Inter">Inter</option>
+                                    <option value="Poppins">Poppins</option>
+                                    <option value="Montserrat">Montserrat</option>
+                                    <option value="Open Sans">Open Sans</option>
+                                    <option value="Raleway">Raleway</option>
+                                    <option value="DM Sans">DM Sans</option>
+                                    <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                                    <option value="Outfit">Outfit</option>
+                                    <option value="Sora">Sora</option>
+                                    <option value="Manrope">Manrope</option>
+                                </optgroup>
+                                <optgroup label="Serif">
+                                    <option value="Instrument Serif">Instrument Serif</option>
+                                    <option value="Playfair Display">Playfair Display</option>
+                                    <option value="Lora">Lora</option>
+                                    <option value="Merriweather">Merriweather</option>
+                                    <option value="Cormorant Garamond">Cormorant Garamond</option>
+                                    <option value="Fraunces">Fraunces</option>
+                                    <option value="Libre Baskerville">Libre Baskerville</option>
+                                </optgroup>
+                                <optgroup label="Mono">
+                                    <option value="Space Mono">Space Mono</option>
+                                    <option value="JetBrains Mono">JetBrains Mono</option>
+                                    <option value="Fira Code">Fira Code</option>
+                                    <option value="IBM Plex Mono">IBM Plex Mono</option>
+                                </optgroup>
+                                <optgroup label="Display">
+                                    <option value="Space Grotesk">Space Grotesk</option>
+                                    <option value="Clash Display">Clash Display</option>
+                                    <option value="Cabinet Grotesk">Cabinet Grotesk</option>
+                                    <option value="Satoshi">Satoshi</option>
+                                    <option value="General Sans">General Sans</option>
+                                </optgroup>
+                            </select>
+
+                            <div class="editor-row" style="margin-top:6px">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Size</span>
+                                    <input type="number" class="gen-input editor-font-size" id="editorFontSize" min="8" max="200" placeholder="px">
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Weight</span>
+                                    <select class="gen-select editor-font-weight" id="editorFontWeight">
+                                        <option value="">Auto</option>
+                                        <option value="300">Light</option>
+                                        <option value="400">Regular</option>
+                                        <option value="500">Medium</option>
+                                        <option value="600">Semibold</option>
+                                        <option value="700">Bold</option>
+                                        <option value="800">Extra Bold</option>
+                                        <option value="900">Black</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="editor-row" style="margin-top:6px">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Line Height</span>
+                                    <input type="number" class="gen-input editor-line-height" id="editorLineHeight" min="0.8" max="3" step="0.1" placeholder="1.5">
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Letter Space</span>
+                                    <input type="number" class="gen-input editor-letter-spacing" id="editorLetterSpacing" min="-5" max="20" step="0.5" placeholder="0">
+                                </div>
+                            </div>
+
+                            <!-- Alignment -->
+                            <div class="editor-section-label mono" style="margin-top:10px">ALIGNMENT</div>
+                            <div class="editor-align-row">
+                                <button class="editor-align-btn" data-align="left" title="Left">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 10H3M21 6H3M21 14H3M17 18H3"/></svg>
+                                </button>
+                                <button class="editor-align-btn" data-align="center" title="Center">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10H6M21 6H3M21 14H3M18 18H6"/></svg>
+                                </button>
+                                <button class="editor-align-btn" data-align="right" title="Right">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg>
+                                </button>
+                                <button class="editor-align-btn" data-align="justify" title="Justify">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H3M21 6H3M21 14H3M21 18H3"/></svg>
+                                </button>
+                            </div>
+
+                            <!-- Colors -->
+                            <div class="editor-section-label mono" style="margin-top:10px">COLORS</div>
+                            <div class="editor-row">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Text</span>
+                                    <input type="color" class="editor-color" id="editorTextColor" value="#ffffff">
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Background</span>
+                                    <input type="color" class="editor-color" id="editorBgColor" value="#0a0a0f">
+                                </div>
+                            </div>
+
+                            <!-- Spacing -->
+                            <div class="editor-section-label mono" style="margin-top:10px">SPACING</div>
+                            <div class="editor-spacing-grid">
+                                <div class="editor-spacing-cell">
+                                    <span class="editor-hint mono">Top</span>
+                                    <input type="number" class="gen-input editor-spacing" data-prop="paddingTop" min="0" max="200" placeholder="0">
+                                </div>
+                                <div class="editor-spacing-cell">
+                                    <span class="editor-hint mono">Right</span>
+                                    <input type="number" class="gen-input editor-spacing" data-prop="paddingRight" min="0" max="200" placeholder="0">
+                                </div>
+                                <div class="editor-spacing-cell">
+                                    <span class="editor-hint mono">Bottom</span>
+                                    <input type="number" class="gen-input editor-spacing" data-prop="paddingBottom" min="0" max="200" placeholder="0">
+                                </div>
+                                <div class="editor-spacing-cell">
+                                    <span class="editor-hint mono">Left</span>
+                                    <input type="number" class="gen-input editor-spacing" data-prop="paddingLeft" min="0" max="200" placeholder="0">
+                                </div>
+                            </div>
+
+                            <!-- Border Radius -->
+                            <div class="editor-section-label mono" style="margin-top:10px">BORDER RADIUS</div>
+                            <input type="range" class="gen-range editor-radius" id="editorRadius" min="0" max="50" value="0">
+                            <span class="editor-hint mono" id="editorRadiusVal">0px</span>
+
+                            <!-- Opacity -->
+                            <div class="editor-section-label mono" style="margin-top:10px">OPACITY</div>
+                            <input type="range" class="gen-range editor-opacity" id="editorOpacity" min="0" max="100" value="100">
+                            <span class="editor-hint mono" id="editorOpacityVal">100%</span>
+                        </div>
+
+                        <!-- Animation Tab -->
+                        <div class="bfs-right-panel bfs-panel-content" data-panel="animate">
+                            <div class="editor-section-label mono">ENTRANCE ANIMATION</div>
+                            <div class="editor-anim-row">
+                                <select class="editor-anim-select gen-select">
+                                    <option value="none">None</option>
+                                    <optgroup label="Fade">
                                         <option value="fadeIn">Fade In</option>
+                                        <option value="fadeInUp">Fade In Up</option>
+                                        <option value="fadeInDown">Fade In Down</option>
+                                    </optgroup>
+                                    <optgroup label="Slide">
                                         <option value="slideUp">Slide Up</option>
                                         <option value="slideDown">Slide Down</option>
                                         <option value="slideLeft">Slide Left</option>
                                         <option value="slideRight">Slide Right</option>
+                                    </optgroup>
+                                    <optgroup label="Scale">
                                         <option value="scaleUp">Scale Up</option>
-                                        <option value="rotateIn">Rotate In</option>
+                                        <option value="scaleDown">Scale Down</option>
                                         <option value="bounceIn">Bounce In</option>
+                                        <option value="elasticIn">Elastic In</option>
+                                    </optgroup>
+                                    <optgroup label="Rotate">
+                                        <option value="rotateIn">Rotate In</option>
+                                        <option value="rotateInLeft">Rotate In Left</option>
                                         <option value="flipIn">Flip In</option>
+                                        <option value="flipInY">Flip In Y</option>
+                                    </optgroup>
+                                    <optgroup label="Special">
                                         <option value="blurIn">Blur In</option>
-                                    </select>
-                                    <button class="editor-preview-anim gen-btn gen-btn--sm" title="Preview Animation">&#9654;</button>
+                                        <option value="glitchIn">Glitch In</option>
+                                        <option value="typewriter">Typewriter</option>
+                                        <option value="clipIn">Clip In</option>
+                                        <option value="dropIn">Drop In</option>
+                                        <option value="unfold">Unfold</option>
+                                    </optgroup>
+                                </select>
+                                <button class="editor-preview-anim bfs-btn bfs-btn--sm" title="Preview">&#9654;</button>
+                            </div>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">CONTINUOUS ANIMATION</div>
+                            <select class="editor-continuous-select gen-select" id="editorContinuous">
+                                <option value="none">None</option>
+                                <option value="pulse">Pulse</option>
+                                <option value="float">Float</option>
+                                <option value="spin">Spin</option>
+                                <option value="bounce">Bounce</option>
+                                <option value="shake">Shake</option>
+                                <option value="swing">Swing</option>
+                                <option value="breathe">Breathe</option>
+                                <option value="glow-pulse">Glow Pulse</option>
+                                <option value="wave-text">Wave Text</option>
+                            </select>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">HOVER EFFECT</div>
+                            <select class="editor-hover-select gen-select">
+                                <option value="none">None</option>
+                                <option value="lift">Lift &amp; Shadow</option>
+                                <option value="scale">Scale Up</option>
+                                <option value="glow">Glow</option>
+                                <option value="tilt">Tilt</option>
+                                <option value="skew">Skew</option>
+                                <option value="border-glow">Border Glow</option>
+                                <option value="brightness">Brighten</option>
+                                <option value="color-shift">Color Shift</option>
+                            </select>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">SCROLL BEHAVIOR</div>
+                            <select class="editor-scroll-select gen-select" id="editorScroll">
+                                <option value="none">None</option>
+                                <option value="parallax-slow">Parallax Slow</option>
+                                <option value="parallax-fast">Parallax Fast</option>
+                                <option value="reveal-on-scroll">Reveal on Scroll</option>
+                                <option value="sticky">Sticky Section</option>
+                                <option value="scale-on-scroll">Scale on Scroll</option>
+                            </select>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">TIMING</div>
+                            <div class="editor-row">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Duration</span>
+                                    <input type="number" class="gen-input" id="editorAnimDuration" min="0.1" max="5" step="0.1" value="0.8" placeholder="0.8s">
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Delay</span>
+                                    <input type="number" class="gen-input" id="editorAnimDelay" min="0" max="5" step="0.1" value="0" placeholder="0s">
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Hover Effect -->
-                            <div class="editor-hover-group">
-                                <div class="editor-section-label mono">HOVER EFFECT</div>
-                                <select class="editor-hover-select gen-select">
-                                    <option value="none">None</option>
-                                    <option value="lift">Lift &amp; Shadow</option>
-                                    <option value="scale">Scale Up</option>
-                                    <option value="glow">Glow</option>
-                                    <option value="tilt">Tilt</option>
-                                </select>
-                            </div>
-
-                            <!-- Background Effect -->
-                            <div class="editor-effect-group">
-                                <div class="editor-section-label mono">BACKGROUND EFFECT</div>
-                                <select class="editor-effect-select gen-select">
-                                    <option value="none">None</option>
+                        <!-- Effects Tab -->
+                        <div class="bfs-right-panel bfs-panel-content" data-panel="effects">
+                            <div class="editor-section-label mono">BACKGROUND EFFECT</div>
+                            <select class="editor-effect-select gen-select">
+                                <option value="none">None</option>
+                                <optgroup label="Particles">
                                     <option value="particles">Floating Particles</option>
                                     <option value="bubbles">Rising Bubbles</option>
                                     <option value="stars">Twinkling Stars</option>
                                     <option value="snow">Snowfall</option>
                                     <option value="fireflies">Fireflies</option>
+                                    <option value="confetti">Confetti</option>
+                                    <option value="matrix">Matrix Rain</option>
+                                </optgroup>
+                                <optgroup label="Shapes">
+                                    <option value="blobs">Morphing Blobs</option>
+                                    <option value="geometric">Geometric</option>
+                                    <option value="orbits">Orbiting Dots</option>
+                                    <option value="dna">DNA Helix</option>
+                                </optgroup>
+                                <optgroup label="Ambient">
                                     <option value="gradient">Animated Gradient</option>
                                     <option value="waves">Wave Lines</option>
-                                </select>
-                                <p class="editor-hint mono">Apply live effects to sections &amp; cards</p>
+                                    <option value="aurora">Aurora Glow</option>
+                                    <option value="noise">Noise Texture</option>
+                                </optgroup>
+                            </select>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">EFFECT INTENSITY</div>
+                            <input type="range" class="gen-range" id="editorEffectIntensity" min="10" max="100" value="50">
+                            <span class="editor-hint mono" id="editorEffectIntensityVal">50%</span>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">EFFECT COLORS</div>
+                            <div class="editor-row">
+                                <input type="color" class="editor-color" id="editorEffectColor1" value="#646cff">
+                                <input type="color" class="editor-color" id="editorEffectColor2" value="#0bda51">
                             </div>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">BACKDROP FILTER</div>
+                            <select class="gen-select" id="editorBackdrop">
+                                <option value="none">None</option>
+                                <option value="blur-sm">Blur (Light)</option>
+                                <option value="blur-md">Blur (Medium)</option>
+                                <option value="blur-lg">Blur (Heavy)</option>
+                                <option value="saturate">Saturate</option>
+                                <option value="grayscale">Grayscale</option>
+                                <option value="sepia">Sepia</option>
+                            </select>
+
+                            <div class="editor-section-label mono" style="margin-top:12px">BOX SHADOW</div>
+                            <select class="gen-select" id="editorShadow">
+                                <option value="none">None</option>
+                                <option value="sm">Small</option>
+                                <option value="md">Medium</option>
+                                <option value="lg">Large</option>
+                                <option value="xl">Extra Large</option>
+                                <option value="glow">Glow</option>
+                                <option value="neon">Neon</option>
+                                <option value="inner">Inner Shadow</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <div class="step-actions">
-                    <button class="gen-btn" id="backToConfig">BACK TO EDIT</button>
-                    <button class="gen-btn gen-btn--primary" id="toDeploy">DEPLOY TO GITHUB</button>
+                <!-- Status Bar -->
+                <div class="bfs-status">
+                    <span class="bfs-status-item mono" id="bfsStatusEl">No selection</span>
+                    <span class="bfs-status-item mono" id="bfsStatusSize"></span>
+                    <span class="bfs-status-item mono bfs-status-right">arbel.live builder</span>
                 </div>
             </div>
         </section>
