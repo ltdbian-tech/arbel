@@ -1,0 +1,9 @@
+name = "arbel-auth"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Non-secret env vars go here (none needed)
+
+# Secrets are set via: wrangler secret put GITHUB_CLIENT_ID
+# and: wrangler secret put GITHUB_CLIENT_SECRET

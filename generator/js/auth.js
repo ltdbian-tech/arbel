@@ -19,8 +19,8 @@ window.ArbelAuth = (function () {
 
     // OAuth config — update CLIENT_ID after registering your GitHub OAuth App
     var OAUTH_CONFIG = {
-        clientId: 'YOUR_GITHUB_CLIENT_ID',  // Replace after creating GitHub OAuth App
-        workerUrl: 'https://arbel-auth.workers.dev',
+        clientId: 'Ov23liKWWSkacoJ9AxTp',
+        workerUrl: 'https://arbel-auth.ltdb.workers.dev',
         redirectUri: window.location.origin + '/generator/',
         scope: 'public_repo'
     };
