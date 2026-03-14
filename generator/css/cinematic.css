@@ -1,0 +1,815 @@
+/* ═══════════════════════════════════════════════
+   CINEMATIC MODE — Editor UI Styles
+   
+   Scene panel, properties, timeline, dialogs.
+   Matches the existing generator.css dark theme.
+   ═══════════════════════════════════════════════ */
+
+/* ─── Mode Selector (Step 1.5) ─── */
+.mode-selector {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+.mode-card {
+    position: relative;
+    width: 320px;
+    padding: 2rem;
+    background: var(--surface, #16161e);
+    border: 2px solid var(--border, rgba(255,255,255,0.08));
+    border-radius: 16px;
+    cursor: pointer;
+    transition: border-color 0.3s, transform 0.2s, box-shadow 0.3s;
+    text-align: center;
+}
+
+.mode-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.mode-card.selected {
+    border-color: var(--accent, #6C5CE7);
+    box-shadow: 0 0 30px rgba(108, 92, 231, 0.15);
+}
+
+.mode-card-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    background: rgba(255,255,255,0.04);
+}
+
+.mode-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f0f0f0;
+    margin-bottom: 0.4rem;
+}
+
+.mode-card-desc {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.5;
+}
+
+.mode-card-badge {
+    display: inline-block;
+    margin-top: 0.8rem;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border-radius: 20px;
+    font-family: 'Space Mono', monospace;
+}
+
+.mode-card-badge--classic {
+    background: rgba(0, 212, 126, 0.12);
+    color: #00d47e;
+}
+
+.mode-card-badge--cinematic {
+    background: rgba(108, 92, 231, 0.12);
+    color: #6C5CE7;
+}
+
+/* ─── Cinematic Editor Layout ─── */
+.cne-editor {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg, #0a0a0f);
+}
+
+.cne-editor.active {
+    display: grid;
+    grid-template-rows: 48px 1fr auto;
+    grid-template-columns: 240px 1fr 280px;
+    grid-template-areas:
+        "toolbar toolbar toolbar"
+        "scenes  canvas  props"
+        "timeline timeline timeline";
+}
+
+/* ─── Toolbar (Top) ─── */
+.cne-toolbar {
+    grid-area: toolbar;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    background: #111118;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    z-index: 10;
+}
+
+.cne-toolbar-left,
+.cne-toolbar-center,
+.cne-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.cne-toolbar-brand {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f0f0f0;
+    letter-spacing: -0.01em;
+}
+
+.cne-toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.08);
+    margin: 0 0.4rem;
+}
+
+.cne-toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.cne-toolbar-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: #f0f0f0;
+}
+
+.cne-toolbar-btn--accent {
+    background: rgba(108,92,231,0.15);
+    color: #6C5CE7;
+}
+
+.cne-toolbar-btn--accent:hover {
+    background: rgba(108,92,231,0.25);
+}
+
+.cne-toolbar-btn--primary {
+    background: var(--accent, #6C5CE7);
+    color: #fff;
+    padding: 0 1rem;
+    width: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    gap: 0.4rem;
+}
+
+.cne-toolbar-btn--primary:hover {
+    filter: brightness(1.15);
+}
+
+.cne-zoom {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.cne-zoom-val {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    min-width: 36px;
+    text-align: center;
+}
+
+/* ─── Scenes Panel (Left) ─── */
+.cne-scenes-panel {
+    grid-area: scenes;
+    background: #111118;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cne-panel-head {
+    padding: 0.8rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    font-family: 'Space Mono', monospace;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.cne-scene-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.cne-scene-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+    position: relative;
+}
+
+.cne-scene-item:hover {
+    background: rgba(255,255,255,0.04);
+}
+
+.cne-scene-item.active {
+    background: rgba(108,92,231,0.12);
+}
+
+.cne-scene-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.4);
+    flex-shrink: 0;
+}
+
+.cne-scene-item.active .cne-scene-thumb {
+    background: rgba(108,92,231,0.25);
+    color: #6C5CE7;
+}
+
+.cne-scene-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cne-scene-name {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #f0f0f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cne-scene-meta {
+    display: block;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.3);
+    margin-top: 1px;
+}
+
+.cne-scene-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.cne-scene-item:hover .cne-scene-actions {
+    opacity: 1;
+}
+
+.cne-scene-action-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.35);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.cne-scene-action-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: #f0f0f0;
+}
+
+.cne-scene-action-del:hover {
+    background: rgba(255,71,87,0.15);
+    color: #ff4757;
+}
+
+/* Scene elements sub-section */
+.cne-elements-section {
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.cne-el-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.8rem;
+    cursor: pointer;
+    transition: background 0.12s;
+    font-size: 0.8rem;
+}
+
+.cne-el-item:hover {
+    background: rgba(255,255,255,0.03);
+}
+
+.cne-el-item.active {
+    background: rgba(108,92,231,0.1);
+}
+
+.cne-el-tag {
+    font-size: 0.6rem;
+    color: rgba(108,92,231,0.7);
+    padding: 1px 4px;
+    background: rgba(108,92,231,0.08);
+    border-radius: 3px;
+}
+
+.cne-el-name {
+    flex: 1;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cne-el-vis {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.25);
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+}
+
+.cne-el-vis:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.cne-el-vis.hidden-el {
+    color: rgba(255,255,255,0.1);
+}
+
+.cne-el-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px dashed rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.cne-el-add:hover {
+    border-color: rgba(108,92,231,0.4);
+    color: #6C5CE7;
+}
+
+/* Add scene button */
+.cne-add-scene-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin: 0.5rem;
+    padding: 0.6rem;
+    border: 1px dashed rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.cne-add-scene-btn:hover {
+    border-color: rgba(108,92,231,0.4);
+    color: #6C5CE7;
+}
+
+/* ─── Canvas Area (Center) ─── */
+.cne-canvas-area {
+    grid-area: canvas;
+    background: #0d0d14;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: auto;
+    padding: 2rem;
+}
+
+.cne-preview-frame {
+    width: 100%;
+    max-width: 1200px;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transition: transform 0.3s;
+    transform-origin: top center;
+}
+
+.cne-preview-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #000;
+}
+
+.cne-preview-frame.preview-tablet {
+    max-width: 768px;
+    margin: 0 auto;
+}
+
+.cne-preview-frame.preview-mobile {
+    max-width: 375px;
+    margin: 0 auto;
+}
+
+/* ─── Properties Panel (Right) ─── */
+.cne-props-panel {
+    grid-area: props;
+    background: #111118;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.cne-prop-tabs {
+    display: flex;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.cne-prop-tab {
+    flex: 1;
+    padding: 0.65rem 0;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    font-family: 'Space Mono', monospace;
+    text-align: center;
+}
+
+.cne-prop-tab:hover {
+    color: rgba(255,255,255,0.5);
+}
+
+.cne-prop-tab.active {
+    color: #f0f0f0;
+    background: rgba(255,255,255,0.03);
+    box-shadow: inset 0 -2px 0 var(--accent, #6C5CE7);
+}
+
+.cne-prop-panel {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.8rem;
+}
+
+.cne-prop-panel.active {
+    display: block;
+}
+
+.cne-el-header {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    padding: 0.4rem 0 0.8rem;
+    font-family: 'Space Mono', monospace;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    margin-bottom: 0.8rem;
+}
+
+.cne-section-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin: 1rem 0 0.4rem;
+    font-family: 'Space Mono', monospace;
+}
+
+.cne-section-label:first-child {
+    margin-top: 0;
+}
+
+.cne-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+}
+
+.cne-col {
+    flex: 1;
+    min-width: 0;
+}
+
+.cne-hint {
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.25);
+    display: block;
+    margin-bottom: 2px;
+    font-family: 'Space Mono', monospace;
+}
+
+.cne-prop-panel .gen-input,
+.cne-prop-panel .gen-select {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.5rem;
+}
+
+.cne-prop-panel .gen-range {
+    width: 100%;
+}
+
+.cne-color-input {
+    width: 32px;
+    height: 32px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+/* ─── Scroll Tab ─── */
+.cne-scroll-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+}
+
+.cne-scroll-toggle label {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+}
+
+.cne-scroll-opts {
+    padding-top: 0.4rem;
+}
+
+.cne-scroll-prop-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 1fr;
+    gap: 0.4rem;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.cne-scroll-prop-label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.35);
+    font-family: 'Space Mono', monospace;
+}
+
+/* Toggle switch */
+.cne-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: none;
+}
+
+.cne-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.cne-toggle:checked {
+    background: rgba(108,92,231,0.5);
+}
+
+.cne-toggle:checked::after {
+    transform: translateX(16px);
+    background: #6C5CE7;
+}
+
+/* ─── Timeline (Bottom) ─── */
+.cne-timeline {
+    grid-area: timeline;
+    background: #0e0e16;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    height: 32px;
+    transition: height 0.3s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cne-timeline.open {
+    height: 200px;
+}
+
+.cne-timeline-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 32px;
+    min-height: 32px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: color 0.2s;
+    width: 100%;
+}
+
+.cne-timeline-toggle:hover,
+.cne-timeline-toggle.active {
+    color: rgba(255,255,255,0.6);
+}
+
+.cne-timeline-toggle svg {
+    transition: transform 0.3s;
+}
+
+.cne-timeline-toggle.active svg {
+    transform: rotate(180deg);
+}
+
+.cne-timeline-canvas {
+    flex: 1;
+    width: 100%;
+    display: block;
+}
+
+/* ─── Scene Template Picker Dialog ─── */
+.cne-add-scene-dialog {
+    max-width: 560px;
+}
+
+.cne-template-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin: 1rem 0;
+}
+
+.cne-template-card {
+    padding: 1rem;
+    background: rgba(255,255,255,0.03);
+    border: 2px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    text-align: center;
+}
+
+.cne-template-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.12);
+}
+
+.cne-template-card.selected {
+    border-color: var(--accent, #6C5CE7);
+    background: rgba(108,92,231,0.06);
+}
+
+.cne-template-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f0f0f0;
+    margin-bottom: 0.25rem;
+}
+
+.cne-template-desc {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.35);
+}
+
+/* ─── Element Type Picker ─── */
+.cne-el-type-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.8rem;
+}
+
+.cne-el-type-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: left;
+}
+
+.cne-el-type-btn:hover {
+    border-color: rgba(108,92,231,0.4);
+    background: rgba(108,92,231,0.05);
+}
+
+.cne-el-type-btn .mono {
+    font-size: 0.65rem;
+    color: rgba(108,92,231,0.6);
+    background: rgba(108,92,231,0.08);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+/* ─── Scene Settings Section ─── */
+.cne-scene-settings {
+    padding: 0.8rem;
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+/* ─── No Selection State ─── */
+.cne-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: rgba(255,255,255,0.2);
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 2rem;
+}
+
+.cne-empty-state svg {
+    margin-bottom: 0.8rem;
+    opacity: 0.3;
+}
+
+/* ─── Scrollbar in panels ─── */
+.cne-scene-list::-webkit-scrollbar,
+.cne-prop-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.cne-scene-list::-webkit-scrollbar-track,
+.cne-prop-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cne-scene-list::-webkit-scrollbar-thumb,
+.cne-prop-panel::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+}

@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/generator.css">
+    <link rel="stylesheet" href="css/cinematic.css">
 </head>
 <body>
 
@@ -210,6 +211,22 @@
                 <div class="step-actions">
                     <button class="gen-btn" id="backToAuth">BACK</button>
                     <button class="gen-btn gen-btn--primary" id="toConfig">CONTINUE</button>
+                </div>
+
+                <!-- Mode Selector -->
+                <div class="mode-selector" id="modeSelector">
+                    <div class="mode-card selected" data-mode="classic" id="modeClassic">
+                        <div class="mode-card-icon">&#9776;</div>
+                        <div class="mode-card-title">Classic</div>
+                        <div class="mode-card-desc">Section-based website with hero, services, portfolio, contact — great for businesses and portfolios.</div>
+                        <span class="mode-card-badge mode-card-badge--classic mono">STABLE</span>
+                    </div>
+                    <div class="mode-card" data-mode="cinematic" id="modeCinematic">
+                        <div class="mode-card-icon">&#127916;</div>
+                        <div class="mode-card-title">Cinematic</div>
+                        <div class="mode-card-desc">Scroll-driven scenes with pinned sections, parallax, split-text reveals — for product launches and showcases.</div>
+                        <span class="mode-card-badge mode-card-badge--cinematic mono">NEW</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1299,6 +1316,256 @@
             </div>
         </section>
 
+        <!-- Cinematic Editor (Step 3 alternate — shown when mode=cinematic) -->
+        <div class="cne-editor" id="cinematicEditor">
+            <!-- Toolbar -->
+            <div class="cne-toolbar">
+                <div class="cne-toolbar-left">
+                    <button class="cne-toolbar-btn" id="cneBackBtn" title="Back to Style">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                    <span class="cne-toolbar-brand" id="cneBrand">My Site</span>
+                    <div class="cne-toolbar-divider"></div>
+                    <div class="device-toggle">
+                        <button class="device-btn active" data-device="desktop" title="Desktop">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                        </button>
+                        <button class="device-btn" data-device="tablet" title="Tablet">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                        </button>
+                        <button class="device-btn" data-device="mobile" title="Mobile">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="cne-toolbar-center">
+                    <div class="cne-zoom">
+                        <button class="cne-toolbar-btn" id="cneZoomOut" title="Zoom Out">&minus;</button>
+                        <span class="cne-zoom-val mono" id="cneZoomVal">100%</span>
+                        <button class="cne-toolbar-btn" id="cneZoomIn" title="Zoom In">+</button>
+                    </div>
+                    <div class="cne-toolbar-divider"></div>
+                    <button class="cne-toolbar-btn" id="cneDeleteEl" title="Delete Element">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                    </button>
+                </div>
+                <div class="cne-toolbar-right">
+                    <button class="cne-toolbar-btn--accent cne-toolbar-btn" id="cnePreviewBtn" title="Preview">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
+                    </button>
+                    <button class="cne-toolbar-btn--primary cne-toolbar-btn" id="cneDeploy">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/><path d="M12 12v9M8 17l4 4 4-4"/></svg>
+                        DEPLOY
+                    </button>
+                </div>
+            </div>
+
+            <!-- Left: Scenes + Elements -->
+            <div class="cne-scenes-panel">
+                <div class="cne-panel-head">SCENES</div>
+                <div class="cne-scene-list" id="cneSceneList"></div>
+                <button class="cne-add-scene-btn" id="cneAddScene">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                    Add Scene
+                </button>
+                <div class="cne-elements-section">
+                    <div class="cne-panel-head">ELEMENTS</div>
+                    <div id="cneElementList"></div>
+                </div>
+            </div>
+
+            <!-- Center: Canvas -->
+            <div class="cne-canvas-area">
+                <div class="cne-preview-frame" id="cnePreviewFrame">
+                    <iframe id="cnePreviewIframe" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
+            </div>
+
+            <!-- Right: Properties -->
+            <div class="cne-props-panel">
+                <div class="cne-prop-tabs">
+                    <button class="cne-prop-tab active" data-tab="style">STYLE</button>
+                    <button class="cne-prop-tab" data-tab="scroll">SCROLL</button>
+                    <button class="cne-prop-tab" data-tab="scene">SCENE</button>
+                </div>
+
+                <!-- Style Panel -->
+                <div class="cne-prop-panel active" data-panel="style" id="cnePropsContainer">
+                    <div class="cne-el-header" id="cneElHeader">Select an element</div>
+
+                    <div class="cne-section-label">TEXT</div>
+                    <textarea class="gen-input" id="cneTextInput" rows="2" placeholder="Edit text..." style="resize:vertical;width:100%"></textarea>
+
+                    <div class="cne-section-label">POSITION</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Top</span>
+                            <input type="text" class="gen-input" id="cnePosTop" placeholder="50%">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Left</span>
+                            <input type="text" class="gen-input" id="cnePosLeft" placeholder="50%">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Width</span>
+                            <input type="text" class="gen-input" id="cnePosWidth" placeholder="auto">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Height</span>
+                            <input type="text" class="gen-input" id="cnePosHeight" placeholder="auto">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">FONT</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Size</span>
+                            <input type="number" class="gen-input" id="cneFontSize" min="8" max="200" placeholder="px">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Weight</span>
+                            <select class="gen-select" id="cneFontWeight">
+                                <option value="">Auto</option>
+                                <option value="300">Light</option>
+                                <option value="400">Regular</option>
+                                <option value="500">Medium</option>
+                                <option value="600">Semibold</option>
+                                <option value="700">Bold</option>
+                                <option value="800">Extra Bold</option>
+                                <option value="900">Black</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">COLORS</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Text</span>
+                            <input type="color" class="cne-color-input" id="cneColor" value="#ffffff">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Background</span>
+                            <input type="color" class="cne-color-input" id="cneBgColor" value="#000000">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">APPEARANCE</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Opacity</span>
+                            <input type="range" class="gen-range" id="cneOpacity" min="0" max="100" value="100">
+                            <span class="cne-hint" id="cneOpacityVal">100%</span>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Border Radius</span>
+                            <input type="range" class="gen-range" id="cneRadius" min="0" max="50" value="0">
+                            <span class="cne-hint" id="cneRadiusVal">0px</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scroll Panel -->
+                <div class="cne-prop-panel" data-panel="scroll">
+                    <div class="cne-el-header">Scroll Animation</div>
+
+                    <div class="cne-scroll-toggle">
+                        <label>Enable scroll animation</label>
+                        <input type="checkbox" class="cne-toggle" id="cneScrollEnable">
+                    </div>
+
+                    <div class="cne-scroll-opts" id="cneScrollOpts" style="display:none">
+                        <div class="cne-section-label">SCROLL RANGE</div>
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Start %</span>
+                                <input type="number" class="gen-input" id="cneScrollStart" min="0" max="100" value="0">
+                            </div>
+                            <div class="cne-col">
+                                <span class="cne-hint mono">End %</span>
+                                <input type="number" class="gen-input" id="cneScrollEnd" min="0" max="100" value="50">
+                            </div>
+                        </div>
+
+                        <div class="cne-section-label">PROPERTIES</div>
+                        <div class="cne-scroll-prop-row">
+                            <span class="cne-scroll-prop-label">Opacity</span>
+                            <input type="number" class="gen-input" id="cneScroll_opacity_from" placeholder="From" step="0.1" min="0" max="1">
+                            <input type="number" class="gen-input" id="cneScroll_opacity_to" placeholder="To" step="0.1" min="0" max="1">
+                        </div>
+                        <div class="cne-scroll-prop-row">
+                            <span class="cne-scroll-prop-label">Y</span>
+                            <input type="number" class="gen-input" id="cneScroll_y_from" placeholder="From">
+                            <input type="number" class="gen-input" id="cneScroll_y_to" placeholder="To">
+                        </div>
+                        <div class="cne-scroll-prop-row">
+                            <span class="cne-scroll-prop-label">X</span>
+                            <input type="number" class="gen-input" id="cneScroll_x_from" placeholder="From">
+                            <input type="number" class="gen-input" id="cneScroll_x_to" placeholder="To">
+                        </div>
+                        <div class="cne-scroll-prop-row">
+                            <span class="cne-scroll-prop-label">Scale</span>
+                            <input type="number" class="gen-input" id="cneScroll_scale_from" placeholder="From" step="0.1">
+                            <input type="number" class="gen-input" id="cneScroll_scale_to" placeholder="To" step="0.1">
+                        </div>
+                        <div class="cne-scroll-prop-row">
+                            <span class="cne-scroll-prop-label">Rotate</span>
+                            <input type="number" class="gen-input" id="cneScroll_rotation_from" placeholder="From">
+                            <input type="number" class="gen-input" id="cneScroll_rotation_to" placeholder="To">
+                        </div>
+
+                        <div class="cne-section-label" style="margin-top:1.2rem">EXTRAS</div>
+                        <div class="cne-scroll-toggle">
+                            <label>Split text (per-char anim)</label>
+                            <input type="checkbox" class="cne-toggle" id="cneSplitText">
+                        </div>
+                        <div class="cne-section-label" style="margin-top:0.6rem">PARALLAX DEPTH</div>
+                        <input type="range" class="gen-range" id="cneParallax" min="0.5" max="2" step="0.1" value="1">
+                        <span class="cne-hint" id="cneParallaxVal">1x</span>
+                    </div>
+                </div>
+
+                <!-- Scene Panel -->
+                <div class="cne-prop-panel" data-panel="scene">
+                    <div class="cne-el-header">Scene Settings</div>
+
+                    <div class="cne-section-label">PIN</div>
+                    <div class="cne-scroll-toggle">
+                        <label>Pin scene on scroll</label>
+                        <input type="checkbox" class="cne-toggle" id="cneScenePin" checked>
+                    </div>
+
+                    <div class="cne-section-label">DURATION</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Scroll length (%)</span>
+                            <input type="number" class="gen-input" id="cneSceneDuration" min="50" max="500" value="100">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">BACKGROUND</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Color</span>
+                            <input type="color" class="cne-color-input" id="cneSceneBg" value="#0a0a0f">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline (Bottom, collapsed by default) -->
+            <div class="cne-timeline" id="cneTimeline">
+                <button class="cne-timeline-toggle" id="cneTimelineToggle">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 8l3-4 3 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    TIMELINE
+                </button>
+                <canvas class="cne-timeline-canvas" id="cneTimelineCanvas"></canvas>
+            </div>
+        </div>
+
         <!-- Step 4: Deploy -->
         <section class="gen-step" data-step="4" id="stepDeploy">
             <div class="step-content step-content--centered">
@@ -1444,8 +1711,10 @@
     <script src="js/auth.js"></script>
     <script src="js/ai.js"></script>
     <script src="js/compiler.js"></script>
+    <script src="js/cinematic-compiler.js"></script>
     <script src="js/preview.js"></script>
     <script src="js/editor.js"></script>
+    <script src="js/cinematic-editor.js"></script>
     <script src="js/deploy.js"></script>
     <script src="js/app.js"></script>
 </body>

@@ -13,10 +13,12 @@
         step: 0,
         style: 'obsidian',
         styleMode: 'preset',
+        mode: 'classic',
         authenticated: false,
         compiledFiles: null,
         editorOverrides: null,
-        templateContent: null
+        templateContent: null,
+        cinematicScenes: null
     };
 
     /* ─── DOM Refs ─── */
@@ -148,10 +150,20 @@
         if (n > 0 && !state.authenticated) return;
         state.step = n;
 
+        // Hide cinematic editor when leaving step 3
+        var cineEd = document.getElementById('cinematicEditor');
+        if (cineEd && n !== 3) cineEd.classList.remove('active');
+
         // Update step visibility
         $$('.gen-step').forEach(function (el) {
             el.classList.toggle('active', parseInt(el.dataset.step) === n);
         });
+
+        // In cinematic mode, hide classic step 3 when going to step 3
+        if (n === 3 && state.mode === 'cinematic') {
+            var classicStep = document.querySelector('.gen-step[data-step="3"]');
+            if (classicStep) classicStep.classList.remove('active');
+        }
 
         // Update progress bar (0-100%)
         els.progressFill.style.width = (n / 4 * 100) + '%';
@@ -168,7 +180,13 @@
 
         // Step-specific actions on enter
         if (n === 1) initStylePreviews();
-        if (n === 3) generatePreview();
+        if (n === 3) {
+            if (state.mode === 'cinematic') {
+                generateCinematicPreview();
+            } else {
+                generatePreview();
+            }
+        }
     }
 
     // Step dot navigation (only backwards or to current)
@@ -1227,14 +1245,27 @@
         }
 
         if (!state.compiledFiles) {
-            state.compiledFiles = ArbelCompiler.compile(buildConfig());
+            if (state.mode === 'cinematic') {
+                state.compiledFiles = ArbelCinematicCompiler.compile(buildCinematicConfig());
+            } else {
+                state.compiledFiles = ArbelCompiler.compile(buildConfig());
+            }
         }
         // Re-compile with latest editor overrides for deploy
-        var deployConfig = buildConfig();
-        var latestOverrides = ArbelEditor.getOverrides();
-        if (latestOverrides && Object.keys(latestOverrides).length > 0) {
-            deployConfig.editorOverrides = latestOverrides;
-            state.compiledFiles = ArbelCompiler.compile(deployConfig);
+        if (state.mode === 'cinematic') {
+            var cineCfg = buildCinematicConfig();
+            var cineScenes = ArbelCinematicEditor.getScenes();
+            if (cineScenes && cineScenes.length) cineCfg.scenes = cineScenes;
+            var cineOvr = ArbelCinematicEditor.getOverrides();
+            if (cineOvr && Object.keys(cineOvr).length > 0) cineCfg.editorOverrides = cineOvr;
+            state.compiledFiles = ArbelCinematicCompiler.compile(cineCfg);
+        } else {
+            var deployConfig = buildConfig();
+            var latestOverrides = ArbelEditor.getOverrides();
+            if (latestOverrides && Object.keys(latestOverrides).length > 0) {
+                deployConfig.editorOverrides = latestOverrides;
+                state.compiledFiles = ArbelCompiler.compile(deployConfig);
+            }
         }
 
         els.deployBtn.style.display = 'none';
@@ -1357,5 +1388,125 @@
 
     // Start at step 0
     goToStep(0);
+
+    /* ═══════════════════════════════════════════
+       CINEMATIC MODE — Wiring
+       ═══════════════════════════════════════════ */
+
+    /* Mode selector cards */
+    var modeCards = $$('.mode-card');
+    modeCards.forEach(function (card) {
+        card.addEventListener('click', function () {
+            state.mode = card.dataset.mode;
+            modeCards.forEach(function (c) { c.classList.toggle('selected', c.dataset.mode === state.mode); });
+        });
+    });
+
+    /* Cinematic step handling — when going to step 3 in cinematic mode,
+       show the cinematic editor instead of the classic builder */
+    var cinematicEditor = $('cinematicEditor');
+
+    function generateCinematicPreview() {
+        var cfg = buildCinematicConfig();
+        state.compiledFiles = ArbelCinematicCompiler.compile(cfg);
+
+        // Show cinematic editor layout
+        if (cinematicEditor) cinematicEditor.classList.add('active');
+
+        // Hide classic step 3
+        var classicPreview = $('stepPreview');
+        if (classicPreview) classicPreview.classList.remove('active');
+
+        // Render preview in cinematic iframe (with editor overlay)
+        var cneIframe = $('cnePreviewIframe');
+        if (cneIframe) {
+            var cneOverlay = ArbelCinematicEditor.getOverlayScript();
+            ArbelPreview.render(cneIframe, state.compiledFiles, cneOverlay);
+        }
+
+        // Set brand name in toolbar
+        var cneBrand = $('cneBrand');
+        if (cneBrand) cneBrand.textContent = els.brandName.value.trim() || 'My Site';
+
+        // Init cinematic editor
+        ArbelCinematicEditor.destroy();
+        ArbelCinematicEditor.init(cneIframe, cinematicEditor, function (data) {
+            state.cinematicScenes = data.scenes;
+            state.editorOverrides = data.overrides;
+            if (data.rerender) {
+                clearTimeout(state._cneRerenderTimer);
+                state._cneRerenderTimer = setTimeout(function () {
+                    var cfg = buildCinematicConfig();
+                    state.compiledFiles = ArbelCinematicCompiler.compile(cfg);
+                    var overlay = ArbelCinematicEditor.getOverlayScript();
+                    ArbelPreview.render(cneIframe, state.compiledFiles, overlay);
+                }, 500);
+            }
+        });
+    }
+
+    function buildCinematicConfig() {
+        var cfg = {
+            brandName: els.brandName.value.trim() || 'My Site',
+            tagline: els.tagline.value.trim(),
+            style: state.style,
+            accent: els.accentColor.value,
+            bgColor: els.bgColor.value,
+            contactEmail: els.contactEmail.value.trim(),
+            scenes: state.cinematicScenes || undefined,
+            nav: { logo: els.brandName.value.trim() || 'My Site', links: [] }
+        };
+
+        if (state.editorOverrides) {
+            cfg.editorOverrides = state.editorOverrides;
+        }
+
+        return cfg;
+    }
+
+    /* Cinematic back button */
+    var cneBackBtn = $('cneBackBtn');
+    if (cneBackBtn) {
+        cneBackBtn.addEventListener('click', function () {
+            if (cinematicEditor) cinematicEditor.classList.remove('active');
+            goToStep(1);
+        });
+    }
+
+    /* Cinematic deploy button */
+    var cneDeploy = $('cneDeploy');
+    if (cneDeploy) {
+        cneDeploy.addEventListener('click', function () {
+            // Refresh compiled files with latest scene data
+            var cfg = buildCinematicConfig();
+            var scenes = ArbelCinematicEditor.getScenes();
+            if (scenes && scenes.length) cfg.scenes = scenes;
+            var overrides = ArbelCinematicEditor.getOverrides();
+            if (overrides && Object.keys(overrides).length > 0) cfg.editorOverrides = overrides;
+            state.compiledFiles = ArbelCinematicCompiler.compile(cfg);
+
+            // Hide cinematic editor, show deploy step
+            if (cinematicEditor) cinematicEditor.classList.remove('active');
+            goToStep(4);
+        });
+    }
+
+    /* Cinematic preview button (full-page scroll preview) */
+    var cnePreviewBtn = $('cnePreviewBtn');
+    if (cnePreviewBtn) {
+        cnePreviewBtn.addEventListener('click', function () {
+            var cfg = buildCinematicConfig();
+            var scenes = ArbelCinematicEditor.getScenes();
+            if (scenes && scenes.length) cfg.scenes = scenes;
+            state.compiledFiles = ArbelCinematicCompiler.compile(cfg);
+            var cneIframe = $('cnePreviewIframe');
+            if (cneIframe) {
+                var cneOverlay = ArbelCinematicEditor.getOverlayScript();
+                ArbelPreview.render(cneIframe, state.compiledFiles, cneOverlay);
+            }
+        });
+    }
+
+    /* When navigating back from deploy to step 3 in cinematic mode */
 
 })();

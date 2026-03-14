@@ -1,0 +1,622 @@
+/* ═══════════════════════════════════════════════
+   CINEMATIC COMPILER — Scroll-Cinema Engine
+
+   Generates scroll-pinned, timeline-driven
+   cinematic websites from scene-based config.
+   Shares runtime libs with Classic compiler.
+   ═══════════════════════════════════════════════ */
+
+window.ArbelCinematicCompiler = (function () {
+    'use strict';
+
+    /* ─── Helpers ─── */
+    function esc(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    function uid() {
+        return 'cne-' + Math.random().toString(36).substr(2, 8);
+    }
+
+    /* ─── Scene Templates ─── */
+    var SCENE_TEMPLATES = {
+        hero: {
+            label: 'Hero',
+            desc: 'Full-screen title with subtitle',
+            elements: [
+                { id: 'hero-title', tag: 'h1', text: 'Your Headline', style: { fontSize: '6vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%' }, scroll: { opacity: [1, 0], y: [0, -120], start: 0.3, end: 0.8 } },
+                { id: 'hero-sub', tag: 'p', text: 'Your subtitle goes here', style: { fontSize: '1.4rem', color: 'rgba(255,255,255,0.6)', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,0)', textAlign: 'center', width: '60%' }, scroll: { opacity: [0, 1, 0], y: [40, 0, -60], start: 0.05, end: 0.85 } }
+            ]
+        },
+        splitMedia: {
+            label: 'Split + Media',
+            desc: 'Left text, right image area',
+            elements: [
+                { id: 'split-title', tag: 'h2', text: 'Feature Title', style: { fontSize: '3.5vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '30%', left: '8%', width: '38%' }, scroll: { opacity: [0, 1], x: [-80, 0], start: 0, end: 0.4 } },
+                { id: 'split-desc', tag: 'p', text: 'Describe your feature in detail. This text reveals as you scroll.', style: { fontSize: '1.2rem', color: 'rgba(255,255,255,0.65)', position: 'absolute', top: '48%', left: '8%', width: '35%', lineHeight: '1.7' }, scroll: { opacity: [0, 1], x: [-60, 0], start: 0.1, end: 0.5 } },
+                { id: 'split-media', tag: 'div', text: '', style: { position: 'absolute', top: '15%', right: '5%', width: '42%', height: '70%', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(108,92,231,0.3), rgba(0,206,201,0.2))', border: '1px solid rgba(255,255,255,0.1)' }, scroll: { opacity: [0, 1], scale: [0.85, 1], start: 0.05, end: 0.5 } }
+            ]
+        },
+        showcase: {
+            label: 'Showcase',
+            desc: 'Centered large element with caption',
+            elements: [
+                { id: 'showcase-item', tag: 'div', text: '', style: { position: 'absolute', top: '10%', left: '10%', width: '80%', height: '65%', borderRadius: '20px', background: 'linear-gradient(180deg, rgba(108,92,231,0.2), rgba(0,0,0,0.4))', border: '1px solid rgba(255,255,255,0.08)' }, scroll: { scale: [0.8, 1, 0.95], opacity: [0, 1, 0.8], start: 0, end: 0.9 } },
+                { id: 'showcase-title', tag: 'h2', text: 'Product Name', style: { fontSize: '2.8vw', fontWeight: '700', color: '#ffffff', position: 'absolute', bottom: '15%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [40, 0], start: 0.2, end: 0.6 } },
+                { id: 'showcase-tag', tag: 'span', text: 'Category — Year', style: { fontSize: '0.85rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)' }, scroll: { opacity: [0, 1], start: 0.3, end: 0.65 } }
+            ]
+        },
+        stats: {
+            label: 'Stats',
+            desc: 'Animated numbers with labels',
+            elements: [
+                { id: 'stats-heading', tag: 'h2', text: 'By The Numbers', style: { fontSize: '3vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [-30, 0], start: 0, end: 0.3 } },
+                { id: 'stat-1', tag: 'div', text: '500+', style: { fontSize: '4vw', fontWeight: '800', color: '#6C5CE7', position: 'absolute', top: '45%', left: '15%', textAlign: 'center', width: '20%' }, scroll: { opacity: [0, 1], scale: [0.5, 1], start: 0.1, end: 0.5 } },
+                { id: 'stat-2', tag: 'div', text: '98%', style: { fontSize: '4vw', fontWeight: '800', color: '#00CEC9', position: 'absolute', top: '45%', left: '40%', textAlign: 'center', width: '20%' }, scroll: { opacity: [0, 1], scale: [0.5, 1], start: 0.2, end: 0.6 } },
+                { id: 'stat-3', tag: 'div', text: '24/7', style: { fontSize: '4vw', fontWeight: '800', color: '#fd79a8', position: 'absolute', top: '45%', left: '65%', textAlign: 'center', width: '20%' }, scroll: { opacity: [0, 1], scale: [0.5, 1], start: 0.3, end: 0.7 } }
+            ]
+        },
+        textReveal: {
+            label: 'Text Reveal',
+            desc: 'Split-text cinematic reveal',
+            elements: [
+                { id: 'reveal-line1', tag: 'h1', text: 'Built for', style: { fontSize: '7vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', overflow: 'hidden' }, scroll: { opacity: [0, 1], y: [100, 0], start: 0, end: 0.35 }, splitText: true },
+                { id: 'reveal-line2', tag: 'h1', text: 'the future.', style: { fontSize: '7vw', fontWeight: '800', color: '#6C5CE7', position: 'absolute', top: '48%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', overflow: 'hidden' }, scroll: { opacity: [0, 1], y: [100, 0], start: 0.15, end: 0.5 }, splitText: true }
+            ]
+        },
+        blank: {
+            label: 'Blank',
+            desc: 'Empty scene — build from scratch',
+            elements: []
+        }
+    };
+
+    /* ─── Default Scene Factory ─── */
+    function createScene(templateId, index) {
+        var tpl = SCENE_TEMPLATES[templateId] || SCENE_TEMPLATES.blank;
+        var sceneId = 'scene-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+        var elems = [];
+        tpl.elements.forEach(function (e) {
+            elems.push({
+                id: e.id + '-' + sceneId.substr(-4),
+                tag: e.tag,
+                text: e.text,
+                style: JSON.parse(JSON.stringify(e.style)),
+                scroll: e.scroll ? JSON.parse(JSON.stringify(e.scroll)) : null,
+                splitText: e.splitText || false,
+                parallax: e.parallax || 1,
+                visible: true,
+                locked: false
+            });
+        });
+        return {
+            id: sceneId,
+            name: tpl.label + (index !== undefined ? ' ' + (index + 1) : ''),
+            template: templateId,
+            duration: 100,
+            pin: true,
+            bgColor: '',
+            bgImage: '',
+            elements: elems
+        };
+    }
+
+    /* ─── Compile ─── */
+    function compile(cfg) {
+        var files = {};
+        var c = _defaults(cfg);
+
+        files['index.html'] = _buildHTML(c);
+        files['css/style.css'] = _buildCSS(c);
+        files['js/cinema.js'] = _buildCinemaJS(c);
+        files['js/main.js'] = _buildMainJS(c);
+
+        // Background animation JS (reuse from classic compiler for the same style)
+        var cat = ArbelCompiler.getAnimCategory(c.style);
+        if (cat === 'shader') {
+            files['js/shader.js'] = _buildShaderBridge(c);
+        }
+
+        files['README.md'] = _buildReadme(c);
+
+        return files;
+    }
+
+    function _defaults(cfg) {
+        return Object.assign({
+            brandName: 'My Site',
+            tagline: '',
+            style: 'obsidian',
+            accent: '#6C5CE7',
+            bgColor: '#0a0a0f',
+            scenes: [createScene('hero', 0)],
+            nav: { logo: '', links: [] }
+        }, cfg);
+    }
+
+    /* ─── HTML Builder ─── */
+    function _buildHTML(cfg) {
+        var scenes = cfg.scenes || [];
+        var accent = esc(cfg.accent);
+        var bg = esc(cfg.bgColor);
+
+        var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
+        html += '<meta charset="UTF-8">\n';
+        html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+        html += '<title>' + esc(cfg.brandName) + '</title>\n';
+        if (cfg.tagline) html += '<meta name="description" content="' + esc(cfg.tagline) + '">\n';
+        html += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
+        html += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
+        html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">\n';
+        html += '<link rel="stylesheet" href="css/style.css">\n';
+        html += '</head>\n<body>\n';
+
+        // Preloader
+        html += '<div class="cne-preloader" id="preloader">\n';
+        html += '  <div class="cne-preloader-inner">\n';
+        html += '    <span class="cne-preloader-text mono">' + esc(cfg.brandName) + '</span>\n';
+        html += '    <div class="cne-preloader-bar"><div class="cne-preloader-fill"></div></div>\n';
+        html += '  </div>\n</div>\n\n';
+
+        // Navigation
+        html += '<nav class="cne-nav" data-arbel-id="site-nav">\n';
+        html += '  <a href="#" class="cne-nav-logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n';
+        html += '  <div class="cne-nav-links">\n';
+        if (cfg.nav && cfg.nav.links) {
+            cfg.nav.links.forEach(function (link) {
+                html += '    <a href="' + esc(link.href) + '" class="cne-nav-link" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
+            });
+        }
+        html += '  </div>\n';
+        html += '  <div class="cne-scroll-progress"><div class="cne-scroll-progress-fill" id="scrollProgress"></div></div>\n';
+        html += '</nav>\n\n';
+
+        // Background canvas
+        html += '<canvas id="bgCanvas" class="cne-bg-canvas"></canvas>\n\n';
+
+        // Scenes
+        html += '<main class="cne-scenes">\n';
+        scenes.forEach(function (scene, i) {
+            var sceneBg = '';
+            if (scene.bgColor) sceneBg += 'background-color:' + esc(scene.bgColor) + ';';
+            if (scene.bgImage) sceneBg += 'background-image:url(' + esc(scene.bgImage) + ');background-size:cover;background-position:center;';
+
+            html += '  <section class="cne-scene"';
+            html += ' data-scene-id="' + esc(scene.id) + '"';
+            html += ' data-scene-index="' + i + '"';
+            html += ' data-pin="' + (scene.pin !== false ? 'true' : 'false') + '"';
+            html += ' data-duration="' + (scene.duration || 100) + '"';
+            if (sceneBg) html += ' style="' + sceneBg + '"';
+            html += '>\n';
+
+            (scene.elements || []).forEach(function (el) {
+                if (!el.visible) return;
+                var tag = el.tag || 'div';
+                var style = '';
+                if (el.style) {
+                    Object.keys(el.style).forEach(function (prop) {
+                        style += _camelToDash(prop) + ':' + el.style[prop] + ';';
+                    });
+                }
+                var scrollData = '';
+                if (el.scroll) {
+                    scrollData = " data-scroll='" + JSON.stringify(el.scroll) + "'";
+                }
+                var splitAttr = el.splitText ? ' data-split-text="true"' : '';
+                var parallaxAttr = el.parallax && el.parallax !== 1 ? ' data-parallax="' + el.parallax + '"' : '';
+
+                html += '    <' + tag + ' class="cne-element"';
+                html += ' data-arbel-id="' + esc(el.id) + '"';
+                html += ' data-arbel-edit="text"';
+                html += scrollData;
+                html += splitAttr;
+                html += parallaxAttr;
+                if (style) html += ' style="' + style + '"';
+                html += '>' + esc(el.text) + '</' + tag + '>\n';
+            });
+
+            html += '  </section>\n\n';
+        });
+        html += '</main>\n\n';
+
+        // Footer
+        html += '<footer class="cne-footer">\n';
+        html += '  <span class="mono">' + esc(cfg.brandName) + ' &copy; ' + new Date().getFullYear() + '</span>\n';
+        html += '</footer>\n\n';
+
+        // Scripts
+        html += '<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>\n';
+        html += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n';
+        html += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>\n';
+
+        var cat = ArbelCompiler.getAnimCategory(cfg.style);
+        if (cat === 'shader') {
+            html += '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n';
+            html += '<script src="js/shader.js"><\/script>\n';
+        }
+
+        html += '<script src="js/cinema.js"><\/script>\n';
+        html += '<script src="js/main.js"><\/script>\n';
+
+        html += '</body>\n</html>';
+
+        // Apply editor overrides if present
+        if (cfg.editorOverrides) {
+            html = _applyOverrides(html, cfg.editorOverrides);
+        }
+
+        return html;
+    }
+
+    /* ─── CSS Builder ─── */
+    function _buildCSS(cfg) {
+        var accent = cfg.accent || '#6C5CE7';
+        var bg = cfg.bgColor || '#0a0a0f';
+        var surface = _lighten(bg, 8);
+        var fg = '#f0f0f0';
+        var fg2 = 'rgba(240,240,240,0.5)';
+        var border = 'rgba(255,255,255,0.08)';
+
+        var css = '/* Cinematic Mode — Generated by Arbel */\n\n';
+
+        // Reset + Variables
+        css += ':root {\n';
+        css += '  --accent: ' + accent + ';\n';
+        css += '  --bg: ' + bg + ';\n';
+        css += '  --surface: ' + surface + ';\n';
+        css += '  --fg: ' + fg + ';\n';
+        css += '  --fg2: ' + fg2 + ';\n';
+        css += '  --border: ' + border + ';\n';
+        css += '  --font-body: "Inter", system-ui, -apple-system, sans-serif;\n';
+        css += '  --font-display: "Instrument Serif", Georgia, serif;\n';
+        css += '}\n\n';
+
+        css += '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n';
+        css += 'html { scroll-behavior: auto; }\n';
+        css += 'body { font-family: var(--font-body); background: var(--bg); color: var(--fg); overflow-x: hidden; -webkit-font-smoothing: antialiased; }\n';
+        css += '.mono { font-family: "Space Mono", "SF Mono", monospace; }\n\n';
+
+        // Preloader
+        css += '.cne-preloader { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity 0.6s, visibility 0.6s; }\n';
+        css += '.cne-preloader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }\n';
+        css += '.cne-preloader-inner { text-align: center; }\n';
+        css += '.cne-preloader-text { font-size: 1.4rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg2); display: block; margin-bottom: 1.5rem; }\n';
+        css += '.cne-preloader-bar { width: 200px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }\n';
+        css += '.cne-preloader-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }\n\n';
+
+        // Navigation
+        css += '.cne-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 1.2rem 2.5rem; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(10,10,15,0.5); border-bottom: 1px solid var(--border); transition: transform 0.4s; }\n';
+        css += '.cne-nav.hidden { transform: translateY(-100%); }\n';
+        css += '.cne-nav-logo { font-size: 1.1rem; font-weight: 700; color: var(--fg); text-decoration: none; letter-spacing: -0.02em; }\n';
+        css += '.cne-nav-links { display: flex; gap: 2rem; }\n';
+        css += '.cne-nav-link { font-size: 0.8rem; color: var(--fg2); text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.3s; }\n';
+        css += '.cne-nav-link:hover { color: var(--fg); }\n';
+        css += '.cne-scroll-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: transparent; }\n';
+        css += '.cne-scroll-progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.1s linear; }\n\n';
+
+        // Background canvas
+        css += '.cne-bg-canvas { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }\n\n';
+
+        // Scenes
+        css += '.cne-scenes { position: relative; z-index: 1; }\n';
+        css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
+        css += '.cne-element { position: absolute; will-change: transform, opacity; }\n\n';
+
+        // Split text
+        css += '.cne-char, .cne-word { display: inline-block; will-change: transform, opacity; }\n';
+        css += '.cne-word { margin-right: 0.3em; }\n';
+        css += '.cne-char { white-space: pre; }\n\n';
+
+        // Footer
+        css += '.cne-footer { padding: 3rem 2.5rem; text-align: center; color: var(--fg2); font-size: 0.8rem; letter-spacing: 0.1em; border-top: 1px solid var(--border); }\n\n';
+
+        // Scrollbar
+        css += '::-webkit-scrollbar { width: 6px; }\n';
+        css += '::-webkit-scrollbar-track { background: transparent; }\n';
+        css += '::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }\n';
+        css += '::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }\n\n';
+
+        // Responsive
+        css += '@media (max-width: 768px) {\n';
+        css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
+        css += '  .cne-nav-links { display: none; }\n';
+        css += '  .cne-element { font-size: 0.85em; }\n';
+        css += '}\n';
+
+        return css;
+    }
+
+    /* ─── Cinema JS (ScrollTrigger engine) ─── */
+    function _buildCinemaJS(cfg) {
+        var js = '/* Cinematic Engine — Generated by Arbel */\n';
+        js += '(function(){\n';
+        js += '"use strict";\n\n';
+
+        // Preloader
+        js += '/* Preloader */\n';
+        js += 'var preloader = document.getElementById("preloader");\n';
+        js += 'var fill = preloader ? preloader.querySelector(".cne-preloader-fill") : null;\n';
+        js += 'var loadPct = 0;\n';
+        js += 'var loadTimer = setInterval(function(){\n';
+        js += '  loadPct += Math.random() * 20 + 5;\n';
+        js += '  if(loadPct > 100) loadPct = 100;\n';
+        js += '  if(fill) fill.style.width = loadPct + "%";\n';
+        js += '  if(loadPct >= 100){ clearInterval(loadTimer); setTimeout(function(){ if(preloader) preloader.classList.add("hidden"); initCinema(); },400); }\n';
+        js += '}, 150);\n\n';
+
+        // Smooth scroll
+        js += '/* Lenis smooth scroll */\n';
+        js += 'var lenis;\n';
+        js += 'function initLenis(){\n';
+        js += '  if(window.innerWidth < 768) return;\n';
+        js += '  lenis = new Lenis({ duration: 1.2, easing: function(t){ return Math.min(1, 1.001 - Math.pow(2, -10 * t)); } });\n';
+        js += '  lenis.on("scroll", ScrollTrigger.update);\n';
+        js += '  gsap.ticker.add(function(time){ lenis.raf(time * 1000); });\n';
+        js += '  gsap.ticker.lagSmoothing(0);\n';
+        js += '}\n\n';
+
+        // Split text utility
+        js += '/* Split text into chars */\n';
+        js += 'function splitText(el){\n';
+        js += '  var text = el.textContent;\n';
+        js += '  var words = text.split(/\\s+/);\n';
+        js += '  el.innerHTML = "";\n';
+        js += '  words.forEach(function(word, wi){\n';
+        js += '    var wSpan = document.createElement("span");\n';
+        js += '    wSpan.className = "cne-word";\n';
+        js += '    word.split("").forEach(function(ch){\n';
+        js += '      var cSpan = document.createElement("span");\n';
+        js += '      cSpan.className = "cne-char";\n';
+        js += '      cSpan.textContent = ch;\n';
+        js += '      wSpan.appendChild(cSpan);\n';
+        js += '    });\n';
+        js += '    el.appendChild(wSpan);\n';
+        js += '  });\n';
+        js += '  return el.querySelectorAll(".cne-char");\n';
+        js += '}\n\n';
+
+        // Scroll progress
+        js += '/* Scroll progress bar */\n';
+        js += 'function initScrollProgress(){\n';
+        js += '  var bar = document.getElementById("scrollProgress");\n';
+        js += '  if(!bar) return;\n';
+        js += '  window.addEventListener("scroll", function(){\n';
+        js += '    var pct = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) * 100;\n';
+        js += '    bar.style.width = Math.min(pct, 100) + "%";\n';
+        js += '  });\n';
+        js += '}\n\n';
+
+        // Main cinema init
+        js += '/* Init cinema engine */\n';
+        js += 'function initCinema(){\n';
+        js += '  gsap.registerPlugin(ScrollTrigger);\n';
+        js += '  initLenis();\n';
+        js += '  initScrollProgress();\n\n';
+
+        js += '  var scenes = document.querySelectorAll(".cne-scene");\n';
+        js += '  scenes.forEach(function(scene){\n';
+        js += '    var shouldPin = scene.dataset.pin === "true";\n';
+        js += '    var duration = parseInt(scene.dataset.duration) || 100;\n\n';
+
+        // Pin the scene
+        js += '    if(shouldPin){\n';
+        js += '      ScrollTrigger.create({\n';
+        js += '        trigger: scene,\n';
+        js += '        start: "top top",\n';
+        js += '        end: "+=" + (duration) + "%",\n';
+        js += '        pin: true,\n';
+        js += '        pinSpacing: true,\n';
+        js += '        anticipatePin: 1\n';
+        js += '      });\n';
+        js += '    }\n\n';
+
+        // Animate elements within each scene
+        js += '    var elems = scene.querySelectorAll("[data-scroll]");\n';
+        js += '    elems.forEach(function(el){\n';
+        js += '      var sd;\n';
+        js += '      try { sd = JSON.parse(el.dataset.scroll); } catch(e){ return; }\n';
+        js += '      if(!sd) return;\n\n';
+
+        // Split text handling
+        js += '      /* Split text if flagged */\n';
+        js += '      var isSplit = el.dataset.splitText === "true";\n';
+        js += '      var chars;\n';
+        js += '      if(isSplit){ chars = splitText(el); }\n\n';
+
+        // Build GSAP timeline
+        js += '      var tl = gsap.timeline({\n';
+        js += '        scrollTrigger: {\n';
+        js += '          trigger: scene,\n';
+        js += '          start: "top top",\n';
+        js += '          end: "+=" + duration + "%",\n';
+        js += '          scrub: 1\n';
+        js += '        }\n';
+        js += '      });\n\n';
+
+        // Handle multi-keyframe scroll animations
+        js += '      var startPct = sd.start || 0;\n';
+        js += '      var endPct = sd.end || 1;\n\n';
+
+        js += '      /* Build from/to tweens for each property */\n';
+        js += '      var props = ["opacity","x","y","scale","rotation"];\n';
+        js += '      props.forEach(function(prop){\n';
+        js += '        if(!sd[prop]) return;\n';
+        js += '        var vals = Array.isArray(sd[prop]) ? sd[prop] : [sd[prop]];\n';
+        js += '        if(vals.length < 2) return;\n\n';
+
+        js += '        var target = isSplit ? chars : el;\n';
+        js += '        var segLen = (endPct - startPct) / (vals.length - 1);\n\n';
+
+        js += '        for(var i = 0; i < vals.length - 1; i++){\n';
+        js += '          var from = {}; from[prop] = vals[i];\n';
+        js += '          var to = {}; to[prop] = vals[i+1];\n';
+        js += '          to.ease = "none";\n';
+        js += '          if(isSplit) to.stagger = 0.02;\n';
+        js += '          var pos = startPct + (segLen * i);\n';
+        js += '          tl.fromTo(target, from, to, pos);\n';
+        js += '        }\n';
+        js += '      });\n';
+        js += '    });\n\n';
+
+        // Parallax elements
+        js += '    /* Parallax */\n';
+        js += '    var pxEls = scene.querySelectorAll("[data-parallax]");\n';
+        js += '    pxEls.forEach(function(pxEl){\n';
+        js += '      var depth = parseFloat(pxEl.dataset.parallax) || 1;\n';
+        js += '      gsap.to(pxEl, {\n';
+        js += '        y: (depth - 1) * -200,\n';
+        js += '        ease: "none",\n';
+        js += '        scrollTrigger: { trigger: scene, start: "top bottom", end: "bottom top", scrub: true }\n';
+        js += '      });\n';
+        js += '    });\n';
+        js += '  });\n\n';
+
+        // Nav hide/show
+        js += '  /* Nav auto-hide on scroll */\n';
+        js += '  var nav = document.querySelector(".cne-nav");\n';
+        js += '  if(nav){\n';
+        js += '    var lastY = 0;\n';
+        js += '    window.addEventListener("scroll", function(){\n';
+        js += '      var y = window.scrollY;\n';
+        js += '      if(y > lastY && y > 100) nav.classList.add("hidden");\n';
+        js += '      else nav.classList.remove("hidden");\n';
+        js += '      lastY = y;\n';
+        js += '    });\n';
+        js += '  }\n';
+
+        js += '}\n';
+        js += '})();\n';
+
+        return js;
+    }
+
+    /* ─── Main JS (cursor, interactions) ─── */
+    function _buildMainJS(cfg) {
+        var js = '/* Main interactions — Generated by Arbel */\n';
+        js += '(function(){\n';
+        js += '"use strict";\n\n';
+
+        // Custom cursor
+        js += '/* Custom cursor */\n';
+        js += 'var cursor = document.createElement("div");\n';
+        js += 'cursor.className = "cne-cursor";\n';
+        js += 'document.body.appendChild(cursor);\n';
+        js += 'var cx = 0, cy = 0, tx = 0, ty = 0;\n';
+        js += 'document.addEventListener("mousemove", function(e){ tx = e.clientX; ty = e.clientY; });\n';
+        js += '(function tick(){ cx += (tx - cx) * 0.15; cy += (ty - cy) * 0.15; cursor.style.transform = "translate(" + cx + "px," + cy + "px)"; requestAnimationFrame(tick); })();\n\n';
+
+        // Cursor style inject
+        js += 'var cursorCSS = document.createElement("style");\n';
+        js += 'cursorCSS.textContent = ".cne-cursor{position:fixed;top:-10px;left:-10px;width:20px;height:20px;border:1.5px solid rgba(255,255,255,0.5);border-radius:50%;pointer-events:none;z-index:9998;mix-blend-mode:difference;transition:width 0.3s,height 0.3s,border-color 0.3s;will-change:transform} a:hover~.cne-cursor,.cne-cursor.hover{width:44px;height:44px;border-color:' + (cfg.accent || '#6C5CE7') + '}";\n';
+        js += 'document.head.appendChild(cursorCSS);\n\n';
+
+        // Link hover effect on cursor
+        js += 'document.querySelectorAll("a, button").forEach(function(el){\n';
+        js += '  el.addEventListener("mouseenter", function(){ cursor.classList.add("hover"); });\n';
+        js += '  el.addEventListener("mouseleave", function(){ cursor.classList.remove("hover"); });\n';
+        js += '});\n';
+
+        js += '})();\n';
+        return js;
+    }
+
+    /* ─── Shader bridge (reuses classic compiler) ─── */
+    function _buildShaderBridge(cfg) {
+        // Delegate to classic compiler's shader builder
+        var frag = ArbelCompiler.getShaderFragment(cfg.style);
+        if (!frag) return '/* No shader */';
+
+        var js = '/* WebGL Background — Generated by Arbel */\n';
+        js += '(function(){\n';
+        js += '"use strict";\n';
+        js += 'var canvas = document.getElementById("bgCanvas");\n';
+        js += 'if(!canvas || !window.THREE) return;\n\n';
+        js += 'var scene = new THREE.Scene();\n';
+        js += 'var camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);\n';
+        js += 'var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: false });\n';
+        js += 'renderer.setSize(window.innerWidth, window.innerHeight);\n';
+        js += 'renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));\n\n';
+
+        js += 'var uniforms = { uTime: {value:0}, uMouse: {value: new THREE.Vector2(0.5,0.5)}, uRes: {value: new THREE.Vector2(window.innerWidth, window.innerHeight)} };\n\n';
+
+        js += 'var snoise = `' + (frag.snoise || '') + '`;\n';
+        js += 'var vertShader = "void main(){gl_Position = vec4(position,1.0);}";\n';
+        js += 'var fragShader = "precision mediump float; uniform float uTime; uniform vec2 uMouse; uniform vec2 uRes;\\n" + snoise + "\\n' + (frag.core || '').replace(/\n/g, '\\n').replace(/"/g, '\\"') + '";\n\n';
+
+        js += 'var geo = new THREE.PlaneGeometry(2,2);\n';
+        js += 'var mat = new THREE.ShaderMaterial({ uniforms: uniforms, vertexShader: vertShader, fragmentShader: fragShader });\n';
+        js += 'scene.add(new THREE.Mesh(geo, mat));\n\n';
+
+        js += 'document.addEventListener("mousemove", function(e){ uniforms.uMouse.value.set(e.clientX/window.innerWidth, 1.0 - e.clientY/window.innerHeight); });\n';
+        js += 'window.addEventListener("resize", function(){ renderer.setSize(window.innerWidth, window.innerHeight); uniforms.uRes.value.set(window.innerWidth, window.innerHeight); });\n\n';
+
+        js += 'function tick(){ uniforms.uTime.value += 0.01; renderer.render(scene, camera); requestAnimationFrame(tick); }\n';
+        js += 'tick();\n';
+        js += '})();\n';
+
+        return js;
+    }
+
+    /* ─── Readme ─── */
+    function _buildReadme(cfg) {
+        var md = '# ' + esc(cfg.brandName) + '\n\n';
+        md += '> ' + esc(cfg.tagline || 'A cinematic website built with Arbel') + '\n\n';
+        md += '## Built With\n\n';
+        md += '- **Arbel Generator** — Cinematic Mode\n';
+        md += '- **GSAP** + **ScrollTrigger** — Scroll-driven animations\n';
+        md += '- **Lenis** — Smooth scrolling\n';
+        md += '- **Three.js** — WebGL background\n\n';
+        md += '## Scenes\n\n';
+        (cfg.scenes || []).forEach(function (s, i) {
+            md += (i + 1) + '. **' + esc(s.name) + '** — ' + (s.elements || []).length + ' elements\n';
+        });
+        md += '\n---\n\nGenerated by [Arbel](https://arbel.live)\n';
+        return md;
+    }
+
+    /* ─── Override applicator (same as classic) ─── */
+    function _applyOverrides(html, overrides) {
+        if (!overrides) return html;
+        Object.keys(overrides).forEach(function (id) {
+            var ov = overrides[id];
+            if (ov.text !== undefined) {
+                var re = new RegExp('(data-arbel-id="' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"[^>]*>)[^<]*', 'g');
+                html = html.replace(re, function (match, prefix) {
+                    var div = document.createElement('div');
+                    div.appendChild(document.createTextNode(ov.text));
+                    return prefix + div.innerHTML;
+                });
+            }
+        });
+        return html;
+    }
+
+    /* ─── Utilities ─── */
+    function _camelToDash(str) {
+        return str.replace(/([A-Z])/g, '-$1').toLowerCase();
+    }
+
+    function _lighten(hex, pct) {
+        var num = parseInt(hex.replace('#', ''), 16);
+        var r = Math.min(255, (num >> 16) + Math.round(255 * pct / 100));
+        var g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * pct / 100));
+        var b = Math.min(255, (num & 0xff) + Math.round(255 * pct / 100));
+        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    /* ─── Public API ─── */
+    return {
+        compile: compile,
+        getSceneTemplates: function () {
+            var out = [];
+            Object.keys(SCENE_TEMPLATES).forEach(function (k) {
+                out.push({ id: k, label: SCENE_TEMPLATES[k].label, desc: SCENE_TEMPLATES[k].desc });
+            });
+            return out;
+        },
+        createScene: createScene
+    };
+})();
