@@ -35,7 +35,7 @@ s.textContent=\`
 font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;
 opacity:0;transition:opacity .2s}.arbel-lbl.vis{opacity:1}
 .arbel-fx-cv{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.arbel-video-layer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.arbel-video-layer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 .arbel-video-layer canvas{width:100%;height:100%;object-fit:cover}
 @keyframes arbel-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @keyframes arbel-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -355,20 +355,13 @@ function setupVideoLayer(frames,cfg){
     videoLayer=null;
   }
   if(!frames||!frames.length){
-    document.documentElement.style.background="";
-    document.body.style.background="";
+    document.body.style.position="";
+    document.body.style.zIndex="";
     return;
   }
-  /* Make page background transparent so video shows through */
-  document.documentElement.style.background="transparent";
-  document.body.style.background="transparent";
-  /* Ensure existing content sits above the video layer */
-  Array.from(document.body.children).forEach(function(ch){
-    if(!ch.classList||ch.classList.contains("arbel-video-layer"))return;
-    var cs=getComputedStyle(ch);
-    if(cs.position==="static")ch.style.position="relative";
-    if(!ch.style.zIndex||ch.style.zIndex==="auto")ch.style.zIndex="2";
-  });
+  /* Create stacking context on body so z-index:-1 video stays above root canvas paint */
+  document.body.style.position="relative";
+  document.body.style.zIndex="0";
   var div=document.createElement("div");div.className="arbel-video-layer";
   var cvl=document.createElement("canvas");div.appendChild(cvl);document.body.insertBefore(div,document.body.firstChild);
   var ctxl=cvl.getContext("2d");
@@ -622,7 +615,18 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
     function _adjustZIndex(delta) {
         if (!_selectedId) return;
-        var cur = (_overrides[_selectedId] && _overrides[_selectedId].zIndex) || 0;
+        var cur;
+        if (_overrides[_selectedId] && _overrides[_selectedId].zIndex !== undefined) {
+            cur = _overrides[_selectedId].zIndex;
+        } else {
+            cur = 0;
+            for (var i = 0; i < _lastTree.length; i++) {
+                if (_lastTree[i].id === _selectedId) {
+                    cur = _lastTree[i].zIndex === 'auto' ? 0 : (parseInt(_lastTree[i].zIndex) || 0);
+                    break;
+                }
+            }
+        }
         _setZIndex(cur + delta);
     }
 
@@ -949,7 +953,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
 
     function _generatePresetFrames(preset) {
-        var w = 640, h = 360, total = 120;
+        var w = 640, h = 360, total = Math.max(30, Math.round((_videoConfig.fps || 24) * 5));
         var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
         var ctx = canvas.getContext('2d'), frames = [], idx = 0;
         var progressEl = _qs('#videoProgress'), fillEl = _qs('#videoProgressFill'), textEl = _qs('#videoProgressText');
