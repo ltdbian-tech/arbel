@@ -35,12 +35,26 @@ window.ArbelCompiler = (function () {
 
     /** Check if a style uses particles instead of shaders */
     function _isParticleStyle(style) {
-        return !!PARTICLES[style];
+        return _getAnimCategory(style) !== 'shader';
+    }
+
+    /** Get the CSS bg class for a style */
+    function _getBgClass(style) {
+        var cat = _getAnimCategory(style);
+        if (cat === 'shader') return 'webgl-bg';
+        return 'anim-bg';
+    }
+
+    /** Map animation category to JS filename */
+    function _getAnimJsFile(cat) {
+        var map = { shader: 'shader.js', particle: 'particles.js', blob: 'blobs.js', gradient: 'gradient.js', wave: 'waves.js' };
+        return map[cat] || 'shader.js';
     }
 
     /* ─── SHADERS ─── */
     var SHADERS = {
         obsidian: {
+            label: 'Obsidian', desc: 'DARK INK FLUID', tags: ['Premium', 'Mysterious', 'Luxury'],
             colors: { accent: '#6C5CE7', bg: '#0a0a0f', surface: '#12121a', fg: '#f0f0f0', fg2: '#a0a0b0', border: 'rgba(255,255,255,0.08)' },
             fragmentCore: [
                 'vec2 uv = vUv;',
@@ -56,6 +70,7 @@ window.ArbelCompiler = (function () {
             ].join('\n')
         },
         aurora: {
+            label: 'Aurora', desc: 'NORTHERN LIGHTS', tags: ['Vibrant', 'Modern', 'Tech'],
             colors: { accent: '#00d4aa', bg: '#050a12', surface: '#0a1220', fg: '#e8f4f0', fg2: '#8cb0a8', border: 'rgba(255,255,255,0.06)' },
             fragmentCore: [
                 'vec2 uv = vUv;',
@@ -73,6 +88,7 @@ window.ArbelCompiler = (function () {
             ].join('\n')
         },
         ember: {
+            label: 'Ember', desc: 'WARM PARTICLE FIELD', tags: ['Bold', 'Energetic', 'Food'],
             colors: { accent: '#E8610A', bg: '#0a0604', surface: '#14100c', fg: '#f5ebe0', fg2: '#b09880', border: 'rgba(255,200,150,0.08)' },
             fragmentCore: [
                 'vec2 uv = vUv;',
@@ -89,6 +105,7 @@ window.ArbelCompiler = (function () {
             ].join('\n')
         },
         frost: {
+            label: 'Frost', desc: 'COOL CRYSTALLINE', tags: ['Clean', 'Clinical', 'Finance'],
             colors: { accent: '#4facfe', bg: '#060a10', surface: '#0c1218', fg: '#e4eef8', fg2: '#7a9ab8', border: 'rgba(150,200,255,0.08)' },
             fragmentCore: [
                 'vec2 uv = vUv;',
@@ -104,6 +121,7 @@ window.ArbelCompiler = (function () {
             ].join('\n')
         },
         neon: {
+            label: 'Neon', desc: 'ELECTRIC GLOW', tags: ['Edgy', 'Futuristic', 'Gaming'],
             colors: { accent: '#ff006e', bg: '#05020a', surface: '#100818', fg: '#f0e8f8', fg2: '#a080c0', border: 'rgba(255,100,200,0.08)' },
             fragmentCore: [
                 'vec2 uv = vUv;',
@@ -121,6 +139,7 @@ window.ArbelCompiler = (function () {
             ].join('\n')
         },
         silk: {
+            label: 'Silk', desc: 'SOFT FLOWING', tags: ['Elegant', 'Minimal', 'Fashion'],
             colors: { accent: '#c4b5fd', bg: '#0a0a0e', surface: '#131318', fg: '#f0eef5', fg2: '#9090a8', border: 'rgba(200,180,255,0.08)' },
             fragmentCore: [
                 'vec2 uv = vUv;',
@@ -140,30 +159,185 @@ window.ArbelCompiler = (function () {
     /* ─── PARTICLE STYLES ─── */
     var PARTICLES = {
         constellation: {
+            label: 'Constellation', desc: 'CONNECTED STARS', tags: ['Tech','Clean','Futuristic'],
             colors: { accent: '#60a5fa', bg: '#06080f', surface: '#0c1018', fg: '#e8eef5', fg2: '#7090b0', border: 'rgba(100,160,255,0.08)' },
             config: { shape: 'circle', glow: true, connectDist: 120, baseColor: [96,165,250], bgGrad: ['#06080f','#0a1020'] }
         },
         fireflies: {
+            label: 'Fireflies', desc: 'GLOWING FLOATS', tags: ['Warm','Organic','Ambient'],
             colors: { accent: '#fbbf24', bg: '#080a04', surface: '#10120c', fg: '#f5f0e0', fg2: '#a09870', border: 'rgba(250,190,40,0.08)' },
             config: { shape: 'circle', glow: true, connectDist: 0, baseColor: [251,191,36], bgGrad: ['#080a04','#0c1008'] }
         },
         snow: {
+            label: 'Snow', desc: 'GENTLE SNOWFALL', tags: ['Calm','Pure','Seasonal'],
             colors: { accent: '#e2e8f0', bg: '#0a0e14', surface: '#10141c', fg: '#f0f2f5', fg2: '#8090a0', border: 'rgba(200,210,230,0.06)' },
             config: { shape: 'circle', glow: false, connectDist: 0, baseColor: [226,232,240], bgGrad: ['#0a0e14','#141820'] }
         },
         nebula: {
+            label: 'Nebula', desc: 'COSMIC GLOW MESH', tags: ['Space','Premium','Creative'],
             colors: { accent: '#c084fc', bg: '#08060e', surface: '#12101a', fg: '#f0e8f8', fg2: '#9080b0', border: 'rgba(190,130,255,0.08)' },
             config: { shape: 'circle', glow: true, connectDist: 80, baseColor: [192,132,252], bgGrad: ['#08060e','#140e20'] }
         },
         matrix: {
+            label: 'Matrix', desc: 'FALLING CODE RAIN', tags: ['Hacker','Cyber','Dev'],
             colors: { accent: '#22c55e', bg: '#030806', surface: '#081008', fg: '#d0f0d0', fg2: '#60a060', border: 'rgba(30,200,80,0.08)' },
             config: { shape: 'text', glow: true, connectDist: 0, baseColor: [34,197,94], bgGrad: ['#030806','#061008'] }
         },
         bokeh: {
+            label: 'Bokeh', desc: 'DREAMY LIGHT ORBS', tags: ['Photography','Soft','Romantic'],
             colors: { accent: '#f472b6', bg: '#0c060a', surface: '#14101a', fg: '#f8e8f0', fg2: '#b08090', border: 'rgba(240,110,180,0.08)' },
             config: { shape: 'circle', glow: true, connectDist: 0, baseColor: [244,114,182], bgGrad: ['#0c060a','#180e18'] }
+        },
+        spark: {
+            label: 'Spark', desc: 'ELECTRIC SPARKS', tags: ['Energy','Fast','Dynamic'],
+            colors: { accent: '#facc15', bg: '#0a0804', surface: '#141008', fg: '#f5f0d0', fg2: '#b0a060', border: 'rgba(250,200,20,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 60, baseColor: [250,204,21], bgGrad: ['#0a0804','#141008'] }
+        },
+        plasma: {
+            label: 'Plasma', desc: 'HOT PLASMA FIELD', tags: ['Sci-Fi','Intense','Bold'],
+            colors: { accent: '#f97316', bg: '#0c0604', surface: '#180c08', fg: '#f5e8e0', fg2: '#b08060', border: 'rgba(250,120,20,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 100, baseColor: [249,115,22], bgGrad: ['#0c0604','#180c08'] }
+        },
+        stardust: {
+            label: 'Stardust', desc: 'COSMIC DUST TRAIL', tags: ['Space','Dreamy','Portfolio'],
+            colors: { accent: '#a78bfa', bg: '#080610', surface: '#100c18', fg: '#ece8f5', fg2: '#8878a8', border: 'rgba(170,140,250,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 40, baseColor: [167,139,250], bgGrad: ['#080610','#100c20'] }
+        },
+        rain: {
+            label: 'Rain', desc: 'FALLING RAIN DROPS', tags: ['Moody','Dark','Immersive'],
+            colors: { accent: '#94a3b8', bg: '#0a0c10', surface: '#10121a', fg: '#e8eaf0', fg2: '#8090a0', border: 'rgba(150,165,185,0.06)' },
+            config: { shape: 'line', glow: false, connectDist: 0, baseColor: [148,163,184], bgGrad: ['#0a0c10','#141620'] }
+        },
+        vortex: {
+            label: 'Vortex', desc: 'SPINNING SPIRAL', tags: ['Abstract','Motion','Creative'],
+            colors: { accent: '#06b6d4', bg: '#040a0e', surface: '#081218', fg: '#e0f0f5', fg2: '#70a0b0', border: 'rgba(6,180,210,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 70, baseColor: [6,182,212], bgGrad: ['#040a0e','#081420'] }
+        },
+        circuits: {
+            label: 'Circuits', desc: 'CIRCUIT BOARD LINES', tags: ['Tech','Hardware','Dev'],
+            colors: { accent: '#34d399', bg: '#040a08', surface: '#081410', fg: '#e0f5e8', fg2: '#60a080', border: 'rgba(50,210,150,0.08)' },
+            config: { shape: 'square', glow: true, connectDist: 100, baseColor: [52,211,153], bgGrad: ['#040a08','#081810'] }
+        },
+        confetti: {
+            label: 'Confetti', desc: 'CELEBRATION BURST', tags: ['Fun','Events','Colorful'],
+            colors: { accent: '#f472b6', bg: '#0c080e', surface: '#141018', fg: '#f5e8f0', fg2: '#a080a0', border: 'rgba(240,110,180,0.08)' },
+            config: { shape: 'rect', glow: false, connectDist: 0, baseColor: [244,114,182], bgGrad: ['#0c080e','#140e18'], multi: true }
+        },
+        galaxy: {
+            label: 'Galaxy', desc: 'SPIRAL GALAXY', tags: ['Space','Epic','Premium'],
+            colors: { accent: '#818cf8', bg: '#06040c', surface: '#0e0a16', fg: '#eae8f5', fg2: '#8080b0', border: 'rgba(130,140,250,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 50, baseColor: [129,140,248], bgGrad: ['#06040c','#0e0a1c'] }
         }
     };
+
+    /* ─── BLOB STYLES ─── */
+    var BLOBS = {
+        morphBlob: {
+            label: 'Morph Blob', desc: 'ORGANIC MORPHING', tags: ['Modern','Startup','Clean'],
+            colors: { accent: '#8b5cf6', bg: '#0a0a12', surface: '#12121c', fg: '#f0f0f5', fg2: '#9090b0', border: 'rgba(140,90,250,0.08)' },
+            config: { count: 3, blur: 60, speed: 0.8, baseColors: ['#8b5cf6','#3b82f6','#ec4899'], bgGrad: ['#0a0a12','#0c0c18'] }
+        },
+        lavaLamp: {
+            label: 'Lava Lamp', desc: 'RETRO LAVA FLOW', tags: ['Retro','Warm','Playful'],
+            colors: { accent: '#f97316', bg: '#0c0804', surface: '#180e08', fg: '#f5e8d8', fg2: '#b09060', border: 'rgba(250,120,20,0.08)' },
+            config: { count: 4, blur: 80, speed: 0.5, baseColors: ['#f97316','#ef4444','#eab308','#f472b6'], bgGrad: ['#0c0804','#180c06'] }
+        },
+        auroraBlob: {
+            label: 'Aurora Blob', desc: 'NORTHERN GLOW FIELDS', tags: ['Premium','Nature','Elegant'],
+            colors: { accent: '#34d399', bg: '#040a08', surface: '#081210', fg: '#e0f5e8', fg2: '#60a080', border: 'rgba(50,210,150,0.08)' },
+            config: { count: 3, blur: 70, speed: 0.6, baseColors: ['#34d399','#06b6d4','#22d3ee'], bgGrad: ['#040a08','#061410'] }
+        },
+        sunsetBlob: {
+            label: 'Sunset Blob', desc: 'WARM SUNSET GLOW', tags: ['Warm','Fashion','Lifestyle'],
+            colors: { accent: '#fb923c', bg: '#0c0806', surface: '#180e08', fg: '#f5e8d0', fg2: '#b09060', border: 'rgba(250,150,60,0.08)' },
+            config: { count: 3, blur: 65, speed: 0.7, baseColors: ['#fb923c','#f472b6','#a855f7'], bgGrad: ['#0c0806','#140a08'] }
+        },
+        oceanBlob: {
+            label: 'Ocean Blob', desc: 'DEEP OCEAN FLOW', tags: ['Calm','Corporate','SaaS'],
+            colors: { accent: '#0ea5e9', bg: '#040810', surface: '#081018', fg: '#e0eaf5', fg2: '#6080b0', border: 'rgba(14,165,230,0.08)' },
+            config: { count: 4, blur: 75, speed: 0.5, baseColors: ['#0ea5e9','#3b82f6','#6366f1','#06b6d4'], bgGrad: ['#040810','#060c1a'] }
+        },
+        cosmicBlob: {
+            label: 'Cosmic Blob', desc: 'COSMIC NEBULA BLOBS', tags: ['Space','Creative','Dark'],
+            colors: { accent: '#c084fc', bg: '#08060e', surface: '#12101a', fg: '#f0e8f5', fg2: '#9080b0', border: 'rgba(190,130,250,0.08)' },
+            config: { count: 5, blur: 90, speed: 0.4, baseColors: ['#c084fc','#818cf8','#f472b6','#a855f7','#6366f1'], bgGrad: ['#08060e','#100a18'] }
+        }
+    };
+
+    /* ─── GRADIENT STYLES ─── */
+    var GRADIENTS = {
+        meshGrad: {
+            label: 'Mesh Gradient', desc: 'ANIMATED MESH', tags: ['Apple','Modern','SaaS'],
+            colors: { accent: '#8b5cf6', bg: '#0a0a14', surface: '#12121e', fg: '#f0f0f5', fg2: '#9090b0', border: 'rgba(140,90,250,0.08)' },
+            config: { stops: ['#8b5cf6','#3b82f6','#ec4899','#06b6d4'], speed: 0.6, type: 'mesh', bgGrad: ['#0a0a14','#06060e'] }
+        },
+        noiseGrad: {
+            label: 'Noise Gradient', desc: 'ORGANIC NOISE FLOW', tags: ['Abstract','Minimal','Art'],
+            colors: { accent: '#a78bfa', bg: '#080810', surface: '#101018', fg: '#ece8f5', fg2: '#8878a8', border: 'rgba(170,140,250,0.08)' },
+            config: { stops: ['#a78bfa','#818cf8','#c084fc'], speed: 0.4, type: 'noise', bgGrad: ['#080810','#0c0c18'] }
+        },
+        prism: {
+            label: 'Prism', desc: 'RAINBOW REFRACT', tags: ['Colorful','Creative','Portfolio'],
+            colors: { accent: '#f472b6', bg: '#0a0810', surface: '#141018', fg: '#f5e8f0', fg2: '#a080a0', border: 'rgba(240,110,180,0.08)' },
+            config: { stops: ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6'], speed: 0.5, type: 'prism', bgGrad: ['#0a0810','#0e0a14'] }
+        },
+        iridescent: {
+            label: 'Iridescent', desc: 'HOLOGRAPHIC SHEEN', tags: ['Futuristic','Fashion','Luxury'],
+            colors: { accent: '#67e8f9', bg: '#060a0e', surface: '#0c1218', fg: '#e0f0f5', fg2: '#70a0b0', border: 'rgba(100,230,250,0.06)' },
+            config: { stops: ['#67e8f9','#a78bfa','#f472b6','#34d399'], speed: 0.7, type: 'mesh', bgGrad: ['#060a0e','#0a0e16'] }
+        },
+        northern: {
+            label: 'Northern Lights', desc: 'AURORA BOREALIS GRAD', tags: ['Nature','Calm','Premium'],
+            colors: { accent: '#34d399', bg: '#040a08', surface: '#081210', fg: '#e0f5e8', fg2: '#60a080', border: 'rgba(50,210,150,0.08)' },
+            config: { stops: ['#34d399','#06b6d4','#8b5cf6'], speed: 0.3, type: 'noise', bgGrad: ['#040a08','#081410'] }
+        }
+    };
+
+    /* ─── WAVE STYLES ─── */
+    var WAVES = {
+        sineWaves: {
+            label: 'Sine Waves', desc: 'FLOWING SINE CURVES', tags: ['Music','Calm','Elegant'],
+            colors: { accent: '#3b82f6', bg: '#060810', surface: '#0c1018', fg: '#e0e8f5', fg2: '#7088b0', border: 'rgba(60,130,250,0.08)' },
+            config: { layers: 4, amplitude: 0.15, speed: 0.8, colors: ['#3b82f6','#60a5fa','#93c5fd','#bfdbfe'], bgGrad: ['#060810','#0a1020'] }
+        },
+        topology: {
+            label: 'Topology', desc: 'TOPOGRAPHIC LINES', tags: ['Minimal','Cartography','Dev'],
+            colors: { accent: '#a3e635', bg: '#0a0c08', surface: '#121408', fg: '#f0f2e8', fg2: '#90a060', border: 'rgba(160,230,50,0.06)' },
+            config: { layers: 8, amplitude: 0.08, speed: 0.3, colors: ['#a3e635','#84cc16','#65a30d','#4d7c0f'], bgGrad: ['#0a0c08','#0e1008'] }
+        },
+        ripple: {
+            label: 'Ripple', desc: 'WATER RIPPLE RINGS', tags: ['Zen','Calm','Wellness'],
+            colors: { accent: '#06b6d4', bg: '#040a0e', surface: '#081218', fg: '#e0f0f5', fg2: '#70a0b0', border: 'rgba(6,180,210,0.08)' },
+            config: { layers: 5, amplitude: 0.12, speed: 0.5, colors: ['#06b6d4','#22d3ee','#67e8f9','#a5f3fc'], bgGrad: ['#040a0e','#081420'] }
+        },
+        liquidWave: {
+            label: 'Liquid Wave', desc: 'THICK LIQUID MOTION', tags: ['Bold','Abstract','Creative'],
+            colors: { accent: '#ec4899', bg: '#0c060a', surface: '#18101a', fg: '#f5e0e8', fg2: '#b07080', border: 'rgba(236,72,153,0.08)' },
+            config: { layers: 3, amplitude: 0.25, speed: 1.0, colors: ['#ec4899','#f472b6','#f9a8d4'], bgGrad: ['#0c060a','#180e18'] }
+        }
+    };
+
+    /* ─── All non-shader categories ─── */
+    var ANIM_CATEGORIES = {
+        particle: PARTICLES,
+        blob: BLOBS,
+        gradient: GRADIENTS,
+        wave: WAVES
+    };
+
+    /** Determine animation category for a style ID */
+    function _getAnimCategory(style) {
+        if (PARTICLES[style]) return 'particle';
+        if (BLOBS[style]) return 'blob';
+        if (GRADIENTS[style]) return 'gradient';
+        if (WAVES[style]) return 'wave';
+        return 'shader';
+    }
+
+    /** Get the style config regardless of category */
+    function _getStyleConfig(style) {
+        return PARTICLES[style] || BLOBS[style] || GRADIENTS[style] || WAVES[style] || SHADERS[style] || SHADERS.obsidian;
+    }
 
     /* ─── SNOISE GLSL (shared) ─── */
     var SNOISE_GLSL = [
@@ -267,7 +441,7 @@ window.ArbelCompiler = (function () {
         return '/* Particle Engine — ' + style + ' */\n' +
             '(function(){\n' +
             '"use strict";\n' +
-            'var surfaces=document.querySelectorAll(".particle-bg");\n' +
+            'var surfaces=document.querySelectorAll(".anim-bg");\n' +
             'if(!surfaces.length)return;\n' +
             'var mx=0.5,my=0.5;\n' +
             'document.addEventListener("mousemove",function(e){\n' +
@@ -373,6 +547,198 @@ window.ArbelCompiler = (function () {
             '  function tick(){requestAnimationFrame(tick);if(!vis)return;draw();}\n' +
             '  resize();spawn();tick();\n' +
             '  window.addEventListener("resize",function(){resize();spawn();});\n' +
+            '});\n' +
+            '})();';
+    }
+
+    /* ─── Blob Engine JS builder ─── */
+    function _buildBlobsJS(style, userCfg) {
+        var b = BLOBS[style] || BLOBS.morphBlob;
+        var c = b.config;
+        var count = (userCfg && userCfg.count) || c.count;
+        var blur = (userCfg && userCfg.blur) || c.blur;
+        var speed = (userCfg && userCfg.speed) || c.speed;
+        var colorsArr = JSON.stringify(c.baseColors);
+
+        return '/* Blob Animation — ' + style + ' */\n' +
+            '(function(){\n' +
+            '"use strict";\n' +
+            'var surfaces=document.querySelectorAll(".anim-bg");\n' +
+            'if(!surfaces.length)return;\n' +
+            'surfaces.forEach(function(el){\n' +
+            '  var canvas=document.createElement("canvas");\n' +
+            '  canvas.style.cssText="width:100%;height:100%;display:block;";\n' +
+            '  el.appendChild(canvas);\n' +
+            '  var ctx=canvas.getContext("2d");\n' +
+            '  var W,H,dpr=Math.min(window.devicePixelRatio,2);\n' +
+            '  var COLORS=' + colorsArr + ';\n' +
+            '  var COUNT=' + count + ';\n' +
+            '  var BLUR=' + blur + ';\n' +
+            '  var SPEED=' + speed + ';\n' +
+            '  var blobs=[];\n\n' +
+            '  function resize(){\n' +
+            '    W=el.offsetWidth;H=el.offsetHeight;\n' +
+            '    canvas.width=W*dpr;canvas.height=H*dpr;\n' +
+            '    ctx.setTransform(dpr,0,0,dpr,0,0);\n' +
+            '  }\n\n' +
+            '  function spawn(){\n' +
+            '    blobs=[];\n' +
+            '    for(var i=0;i<COUNT;i++){\n' +
+            '      blobs.push({x:W*0.2+Math.random()*W*0.6,y:H*0.2+Math.random()*H*0.6,\n' +
+            '        r:Math.min(W,H)*0.15+Math.random()*Math.min(W,H)*0.2,\n' +
+            '        vx:(Math.random()-0.5)*0.6*SPEED,vy:(Math.random()-0.5)*0.6*SPEED,\n' +
+            '        color:COLORS[i%COLORS.length],phase:Math.random()*Math.PI*2});\n' +
+            '    }\n' +
+            '  }\n\n' +
+            '  function draw(){\n' +
+            '    var grad=ctx.createLinearGradient(0,0,0,H);\n' +
+            '    grad.addColorStop(0,"' + c.bgGrad[0] + '");\n' +
+            '    grad.addColorStop(1,"' + c.bgGrad[1] + '");\n' +
+            '    ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);\n' +
+            '    ctx.filter="blur("+BLUR+"px)";\n' +
+            '    blobs.forEach(function(b){\n' +
+            '      b.phase+=0.008*SPEED;\n' +
+            '      b.x+=b.vx+Math.sin(b.phase)*0.5;\n' +
+            '      b.y+=b.vy+Math.cos(b.phase*0.7)*0.5;\n' +
+            '      if(b.x<-b.r)b.x=W+b.r;if(b.x>W+b.r)b.x=-b.r;\n' +
+            '      if(b.y<-b.r)b.y=H+b.r;if(b.y>W+b.r)b.y=-b.r;\n' +
+            '      var rg=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r);\n' +
+            '      rg.addColorStop(0,b.color+"cc");\n' +
+            '      rg.addColorStop(1,b.color+"00");\n' +
+            '      ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);\n' +
+            '      ctx.fillStyle=rg;ctx.fill();\n' +
+            '    });\n' +
+            '    ctx.filter="none";\n' +
+            '  }\n\n' +
+            '  var vis=true;\n' +
+            '  var obs=new IntersectionObserver(function(e){e.forEach(function(en){vis=en.isIntersecting;});},{threshold:0});\n' +
+            '  obs.observe(el);\n' +
+            '  function tick(){requestAnimationFrame(tick);if(!vis)return;draw();}\n' +
+            '  resize();spawn();tick();\n' +
+            '  window.addEventListener("resize",function(){resize();spawn();});\n' +
+            '});\n' +
+            '})();';
+    }
+
+    /* ─── Gradient Engine JS builder ─── */
+    function _buildGradientJS(style, userCfg) {
+        var g = GRADIENTS[style] || GRADIENTS.meshGrad;
+        var c = g.config;
+        var speed = (userCfg && userCfg.speed) || c.speed;
+        var stopsArr = JSON.stringify(c.stops);
+
+        return '/* Gradient Animation — ' + style + ' */\n' +
+            '(function(){\n' +
+            '"use strict";\n' +
+            'var surfaces=document.querySelectorAll(".anim-bg");\n' +
+            'if(!surfaces.length)return;\n' +
+            'surfaces.forEach(function(el){\n' +
+            '  var canvas=document.createElement("canvas");\n' +
+            '  canvas.style.cssText="width:100%;height:100%;display:block;";\n' +
+            '  el.appendChild(canvas);\n' +
+            '  var ctx=canvas.getContext("2d");\n' +
+            '  var W,H,dpr=Math.min(window.devicePixelRatio,2);\n' +
+            '  var STOPS=' + stopsArr + ';\n' +
+            '  var SPEED=' + speed + ';\n' +
+            '  var t=0;\n\n' +
+            '  function resize(){\n' +
+            '    W=el.offsetWidth;H=el.offsetHeight;\n' +
+            '    canvas.width=W*dpr;canvas.height=H*dpr;\n' +
+            '    ctx.setTransform(dpr,0,0,dpr,0,0);\n' +
+            '  }\n\n' +
+            '  function hexToRgb(hex){\n' +
+            '    var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);\n' +
+            '    return[r,g,b];\n' +
+            '  }\n\n' +
+            '  function draw(){\n' +
+            '    t+=0.005*SPEED;\n' +
+            '    var grad=ctx.createLinearGradient(0,0,0,H);\n' +
+            '    grad.addColorStop(0,"' + c.bgGrad[0] + '");\n' +
+            '    grad.addColorStop(1,"' + c.bgGrad[1] + '");\n' +
+            '    ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);\n' +
+            '    ctx.filter="blur(40px)";\n' +
+            '    for(var i=0;i<STOPS.length;i++){\n' +
+            '      var angle=t+i*(Math.PI*2/STOPS.length);\n' +
+            '      var cx=W*0.5+Math.cos(angle)*W*0.3;\n' +
+            '      var cy=H*0.5+Math.sin(angle*0.7)*H*0.3;\n' +
+            '      var r=Math.min(W,H)*0.3;\n' +
+            '      var rg=ctx.createRadialGradient(cx,cy,0,cx,cy,r);\n' +
+            '      rg.addColorStop(0,STOPS[i]+"99");\n' +
+            '      rg.addColorStop(1,STOPS[i]+"00");\n' +
+            '      ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);\n' +
+            '      ctx.fillStyle=rg;ctx.fill();\n' +
+            '    }\n' +
+            '    ctx.filter="none";\n' +
+            '  }\n\n' +
+            '  var vis=true;\n' +
+            '  var obs=new IntersectionObserver(function(e){e.forEach(function(en){vis=en.isIntersecting;});},{threshold:0});\n' +
+            '  obs.observe(el);\n' +
+            '  function tick(){requestAnimationFrame(tick);if(!vis)return;draw();}\n' +
+            '  resize();tick();\n' +
+            '  window.addEventListener("resize",function(){resize();});\n' +
+            '});\n' +
+            '})();';
+    }
+
+    /* ─── Wave Engine JS builder ─── */
+    function _buildWaveJS(style, userCfg) {
+        var w = WAVES[style] || WAVES.sineWaves;
+        var c = w.config;
+        var layers = (userCfg && userCfg.layers) || c.layers;
+        var amplitude = (userCfg && userCfg.amplitude) || c.amplitude;
+        var speed = (userCfg && userCfg.speed) || c.speed;
+        var colorsArr = JSON.stringify(c.colors);
+
+        return '/* Wave Animation — ' + style + ' */\n' +
+            '(function(){\n' +
+            '"use strict";\n' +
+            'var surfaces=document.querySelectorAll(".anim-bg");\n' +
+            'if(!surfaces.length)return;\n' +
+            'surfaces.forEach(function(el){\n' +
+            '  var canvas=document.createElement("canvas");\n' +
+            '  canvas.style.cssText="width:100%;height:100%;display:block;";\n' +
+            '  el.appendChild(canvas);\n' +
+            '  var ctx=canvas.getContext("2d");\n' +
+            '  var W,H,dpr=Math.min(window.devicePixelRatio,2);\n' +
+            '  var COLORS=' + colorsArr + ';\n' +
+            '  var LAYERS=' + layers + ';\n' +
+            '  var AMP=' + amplitude + ';\n' +
+            '  var SPEED=' + speed + ';\n' +
+            '  var t=0;\n\n' +
+            '  function resize(){\n' +
+            '    W=el.offsetWidth;H=el.offsetHeight;\n' +
+            '    canvas.width=W*dpr;canvas.height=H*dpr;\n' +
+            '    ctx.setTransform(dpr,0,0,dpr,0,0);\n' +
+            '  }\n\n' +
+            '  function draw(){\n' +
+            '    t+=0.01*SPEED;\n' +
+            '    var grad=ctx.createLinearGradient(0,0,0,H);\n' +
+            '    grad.addColorStop(0,"' + c.bgGrad[0] + '");\n' +
+            '    grad.addColorStop(1,"' + c.bgGrad[1] + '");\n' +
+            '    ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);\n' +
+            '    for(var l=0;l<LAYERS;l++){\n' +
+            '      var color=COLORS[l%COLORS.length];\n' +
+            '      var baseY=H*(0.4+l*0.12);\n' +
+            '      var freq=2+l*0.5;\n' +
+            '      var amp=H*AMP*(1-l*0.1);\n' +
+            '      ctx.beginPath();\n' +
+            '      ctx.moveTo(0,H);\n' +
+            '      for(var x=0;x<=W;x+=3){\n' +
+            '        var y=baseY+Math.sin(x/W*freq*Math.PI+t+l*0.8)*amp;\n' +
+            '        y+=Math.sin(x/W*freq*2*Math.PI+t*1.3)*amp*0.3;\n' +
+            '        ctx.lineTo(x,y);\n' +
+            '      }\n' +
+            '      ctx.lineTo(W,H);ctx.closePath();\n' +
+            '      ctx.fillStyle=color+Math.round(40-l*6).toString(16).padStart(2,"0");\n' +
+            '      ctx.fill();\n' +
+            '    }\n' +
+            '  }\n\n' +
+            '  var vis=true;\n' +
+            '  var obs=new IntersectionObserver(function(e){e.forEach(function(en){vis=en.isIntersecting;});},{threshold:0});\n' +
+            '  obs.observe(el);\n' +
+            '  function tick(){requestAnimationFrame(tick);if(!vis)return;draw();}\n' +
+            '  resize();tick();\n' +
+            '  window.addEventListener("resize",function(){resize();});\n' +
             '});\n' +
             '})();';
     }
@@ -576,8 +942,8 @@ window.ArbelCompiler = (function () {
 
     /* ─── Main HTML builder ─── */
     function _buildHTML(cfg) {
-        var isParticle = _isParticleStyle(cfg.style);
-        var bgClass = isParticle ? 'particle-bg' : 'webgl-bg';
+        var cat = _getAnimCategory(cfg.style);
+        var bgClass = cat === 'shader' ? 'webgl-bg' : 'anim-bg';
         var sections = cfg.sections || ['hero', 'services', 'about', 'contact'];
         var c = cfg.content || {};
         var sectionsHTML = '';
@@ -639,11 +1005,11 @@ window.ArbelCompiler = (function () {
             '      <span class="mono">&copy; ' + new Date().getFullYear() + ' All rights reserved.</span>\n' +
             '    </div>\n' +
             '  </footer>\n\n' +
-            (isParticle ? '' : '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n') +
+            (cat === 'shader' ? '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' : '') +
             '  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"><\/script>\n' +
             '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n' +
             '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>\n' +
-            (isParticle ? '  <script src="js/particles.js"><\/script>\n' : '  <script src="js/shader.js"><\/script>\n') +
+            '  <script src="js/' + _getAnimJsFile(cat) + '"><\/script>\n' +
             '  <script src="js/animations.js"><\/script>\n' +
             '  <script src="js/main.js"><\/script>\n' +
             '</body>\n</html>';
@@ -651,7 +1017,7 @@ window.ArbelCompiler = (function () {
 
     /* ─── CSS builder ─── */
     function _buildCSS(cfg) {
-        var src = _isParticleStyle(cfg.style) ? PARTICLES[cfg.style] : (SHADERS[cfg.style] || SHADERS.obsidian);
+        var src = _getStyleConfig(cfg.style) || SHADERS.obsidian;
         var colors = src.colors;
         var accent = cfg.accent || colors.accent;
         var bg = cfg.bgColor || colors.bg;
@@ -803,8 +1169,8 @@ window.ArbelCompiler = (function () {
             '.reveal-up { will-change: transform, opacity; }\n' +
             '.line-inner { display: inline-block; will-change: transform; }\n\n' +
             '/* ═══ WEBGL / PARTICLES ═══ */\n' +
-            '.webgl-bg, .particle-bg { position: absolute; inset: 0; overflow: hidden; }\n' +
-            '.webgl-bg canvas, .particle-bg canvas { width: 100% !important; height: 100% !important; display: block; }\n\n' +
+            '.webgl-bg, .anim-bg { position: absolute; inset: 0; overflow: hidden; }\n' +
+            '.webgl-bg canvas, .anim-bg canvas { width: 100% !important; height: 100% !important; display: block; }\n\n' +
             '/* ═══ RESPONSIVE ═══ */\n' +
             '@media (max-width: 768px) {\n' +
             '  .section { padding: 5rem 0; }\n' +
@@ -966,7 +1332,7 @@ window.ArbelCompiler = (function () {
     /* ═══ PUBLIC: Compile full site ═══ */
     function compile(userConfig) {
         var cfg = _defaults(userConfig);
-        var isParticle = _isParticleStyle(cfg.style);
+        var cat = _getAnimCategory(cfg.style);
         var files = {
             'index.html': _buildHTML(cfg),
             'css/style.css': _buildCSS(cfg),
@@ -975,10 +1341,13 @@ window.ArbelCompiler = (function () {
             'README.md': _buildReadme(cfg),
             'arbel.config.json': _buildConfig(cfg)
         };
-        if (isParticle) {
-            files['js/particles.js'] = _buildParticlesJS(cfg.style, cfg.particles);
-        } else {
-            files['js/shader.js'] = _buildShaderJS(cfg.style);
+        var jsFile = _getAnimJsFile(cat);
+        switch (cat) {
+            case 'particle': files['js/' + jsFile] = _buildParticlesJS(cfg.style, cfg.particles); break;
+            case 'blob':     files['js/' + jsFile] = _buildBlobsJS(cfg.style, cfg.particles); break;
+            case 'gradient': files['js/' + jsFile] = _buildGradientJS(cfg.style, cfg.particles); break;
+            case 'wave':     files['js/' + jsFile] = _buildWaveJS(cfg.style, cfg.particles); break;
+            default:         files['js/' + jsFile] = _buildShaderJS(cfg.style); break;
         }
         return files;
     }
@@ -987,10 +1356,19 @@ window.ArbelCompiler = (function () {
     function getStyles() {
         var list = [];
         Object.keys(SHADERS).forEach(function (key) {
-            list.push({ id: key, type: 'shader', colors: SHADERS[key].colors });
+            list.push({ id: key, type: 'shader', label: SHADERS[key].label || key, desc: SHADERS[key].desc || '', colors: SHADERS[key].colors });
         });
         Object.keys(PARTICLES).forEach(function (key) {
-            list.push({ id: key, type: 'particle', colors: PARTICLES[key].colors, config: PARTICLES[key].config });
+            list.push({ id: key, type: 'particle', label: PARTICLES[key].label || key, desc: PARTICLES[key].desc || '', tags: PARTICLES[key].tags || [], colors: PARTICLES[key].colors, config: PARTICLES[key].config });
+        });
+        Object.keys(BLOBS).forEach(function (key) {
+            list.push({ id: key, type: 'blob', label: BLOBS[key].label || key, desc: BLOBS[key].desc || '', tags: BLOBS[key].tags || [], colors: BLOBS[key].colors, config: BLOBS[key].config });
+        });
+        Object.keys(GRADIENTS).forEach(function (key) {
+            list.push({ id: key, type: 'gradient', label: GRADIENTS[key].label || key, desc: GRADIENTS[key].desc || '', tags: GRADIENTS[key].tags || [], colors: GRADIENTS[key].colors, config: GRADIENTS[key].config });
+        });
+        Object.keys(WAVES).forEach(function (key) {
+            list.push({ id: key, type: 'wave', label: WAVES[key].label || key, desc: WAVES[key].desc || '', tags: WAVES[key].tags || [], colors: WAVES[key].colors, config: WAVES[key].config });
         });
         return list;
     }
@@ -1009,10 +1387,22 @@ window.ArbelCompiler = (function () {
         return PARTICLES[style] || null;
     }
 
+    /** Get config for any animation style */
+    function getAnimConfig(style) {
+        return _getStyleConfig(style) || null;
+    }
+
+    /** Get the animation category for a style */
+    function getAnimCategory(style) {
+        return _getAnimCategory(style);
+    }
+
     return {
         compile: compile,
         getStyles: getStyles,
         getShaderFragment: getShaderFragment,
-        getParticleConfig: getParticleConfig
+        getParticleConfig: getParticleConfig,
+        getAnimConfig: getAnimConfig,
+        getAnimCategory: getAnimCategory
     };
 })();

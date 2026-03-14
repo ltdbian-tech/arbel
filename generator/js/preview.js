@@ -36,17 +36,18 @@ window.ArbelPreview = (function () {
         );
 
         // Replace external JS script tags with inline <script>
-        var jsMap = {
-            'js/shader.js': files['js/shader.js'] || '',
-            'js/animations.js': files['js/animations.js'] || '',
-            'js/main.js': files['js/main.js'] || ''
-        };
-
-        Object.keys(jsMap).forEach(function (path) {
-            html = html.replace(
-                '<script src="' + path + '"><\/script>',
-                '<script>' + jsMap[path] + '<\/script>'
-            );
+        var jsFiles = ['js/shader.js', 'js/particles.js', 'js/blobs.js', 'js/gradient.js', 'js/waves.js', 'js/animations.js', 'js/main.js'];
+        jsFiles.forEach(function (path) {
+            var content = files[path];
+            if (content) {
+                html = html.replace(
+                    '<script src="' + path + '"><\/script>',
+                    '<script>' + content + '<\/script>'
+                );
+            } else {
+                // Remove script tags for files that don't exist in this build
+                html = html.replace('<script src="' + path + '"><\/script>', '');
+            }
         });
 
         return html;

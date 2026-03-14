@@ -39,6 +39,16 @@
         genUserName: $('genUserName'),
         // Style
         styleGrid: $('styleGrid'),
+        styleModeToggle: $('styleModeToggle'),
+        presetsPanel: $('presetsPanel'),
+        builderPanel: $('builderPanel'),
+        styleCatTabs: $('styleCatTabs'),
+        builderCatSelect: $('builderCatSelect'),
+        builderCanvas: $('builderCanvas'),
+        builderParams: $('builderParams'),
+        builderColor1: $('builderColor1'),
+        builderColor2: $('builderColor2'),
+        builderColor3: $('builderColor3'),
         backToAuth: $('backToAuth'),
         toConfig: $('toConfig'),
         // Config
@@ -236,20 +246,81 @@
 
     /* ─── STYLE PICKER ─── */
     var styleCanvasesInit = false;
+    var allStyles = [];
+    var styleMode = 'presets'; // 'presets' or 'builder'
+    var builderCat = 'particle';
+    var builderAnim = null; // requestAnimationFrame id
 
-    function initStylePreviews() {
-        if (styleCanvasesInit) return;
-        styleCanvasesInit = true;
+    /** Render style cards dynamically from compiler */
+    function renderStyleGrid(filterCat) {
+        allStyles = ArbelCompiler.getStyles();
+        var grid = els.styleGrid;
+        // Stop any running card animations
+        grid.querySelectorAll('canvas').forEach(function (c) {
+            if (c._raf) cancelAnimationFrame(c._raf);
+        });
+        grid.innerHTML = '';
 
-        $$('.style-canvas').forEach(function (canvas) {
-            if (canvas.dataset.shader) {
-                var frag = ArbelCompiler.getShaderFragment(canvas.dataset.shader);
+        var catLabels = { shader: 'WEBGL SHADERS', particle: 'PARTICLES', blob: 'BLOBS', gradient: 'GRADIENTS', wave: 'WAVES' };
+        var lastType = '';
+
+        allStyles.forEach(function (s) {
+            if (filterCat && filterCat !== 'all' && s.type !== filterCat) return;
+
+            // Add category divider when type changes (only in "all" view)
+            if ((!filterCat || filterCat === 'all') && s.type !== lastType) {
+                lastType = s.type;
+                var divider = document.createElement('div');
+                divider.className = 'style-divider';
+                divider.innerHTML = '<span class="mono">' + (catLabels[s.type] || s.type.toUpperCase()) + '</span>';
+                grid.appendChild(divider);
+            }
+
+            var btn = document.createElement('button');
+            btn.className = 'style-card' + (s.id === state.style ? ' selected' : '');
+            btn.dataset.style = s.id;
+            btn.dataset.type = s.type;
+
+            var tags = (s.tags || []).map(function (t) { return '<span>' + t + '</span>'; }).join('');
+            btn.innerHTML =
+                '<div class="style-preview"><canvas class="style-canvas" data-anim-type="' + s.type + '" data-anim-id="' + s.id + '"></canvas></div>' +
+                '<div class="style-info">' +
+                '<h3 class="style-name">' + (s.label || s.id) + '</h3>' +
+                '<span class="style-desc mono">' + (s.desc || s.type.toUpperCase()) + '</span>' +
+                (tags ? '<div class="style-tags">' + tags + '</div>' : '') +
+                '</div>';
+
+            grid.appendChild(btn);
+        });
+
+        // Animate visible canvases
+        initCardCanvases();
+    }
+
+    /** Initialize mini-preview canvases on cards */
+    function initCardCanvases() {
+        els.styleGrid.querySelectorAll('.style-canvas').forEach(function (canvas) {
+            var type = canvas.dataset.animType;
+            var id = canvas.dataset.animId;
+            if (type === 'shader') {
+                var frag = ArbelCompiler.getShaderFragment(id);
                 _drawMiniShader(canvas, frag);
-            } else if (canvas.dataset.particle) {
-                var pCfg = ArbelCompiler.getParticleConfig(canvas.dataset.particle);
-                if (pCfg) _drawMiniParticles(canvas, pCfg);
+            } else {
+                var cfg = ArbelCompiler.getAnimConfig(id);
+                if (!cfg) return;
+                switch (type) {
+                    case 'particle': _drawMiniParticles(canvas, cfg); break;
+                    case 'blob': _drawMiniBlobs(canvas, cfg); break;
+                    case 'gradient': _drawMiniGradient(canvas, cfg); break;
+                    case 'wave': _drawMiniWaves(canvas, cfg); break;
+                }
             }
         });
+    }
+
+    function initStylePreviews() {
+        renderStyleGrid('all');
+        styleCanvasesInit = true;
     }
 
     function _drawMiniShader(canvas, frag) {
@@ -317,7 +388,7 @@
         var cfg = pCfg.config;
         var baseColor = cfg.baseColor;
         var grad = cfg.bgGrad;
-        var isMatrix = cfg.shape === 'char';
+        var isMatrix = cfg.shape === 'char' || cfg.shape === 'text';
         var count = 40;
         var pts = [];
         for (var i = 0; i < count; i++) {
@@ -383,17 +454,172 @@
         draw();
     }
 
+    function _drawMiniBlobs(canvas, bCfg) {
+        var w = canvas.parentElement.offsetWidth || 200;
+        var h = canvas.parentElement.offsetHeight || 120;
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        var cfg = bCfg.config;
+        var colors = cfg.baseColors || ['#6C5CE7', '#00CEC9', '#FD79A8'];
+        var count = Math.min(cfg.count || 4, 5);
+        var blobs = [];
+        for (var i = 0; i < count; i++) {
+            blobs.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                r: 30 + Math.random() * 30,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                color: colors[i % colors.length],
+                phase: Math.random() * Math.PI * 2
+            });
+        }
+        var t = 0;
+
+        function draw() {
+            t += 0.02;
+            var grd = ctx.createLinearGradient(0, 0, 0, h);
+            var bg = cfg.bgGrad || ['#0a0a1a', '#1a0a2a'];
+            grd.addColorStop(0, bg[0]);
+            grd.addColorStop(1, bg[1]);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, w, h);
+            ctx.filter = 'blur(12px)';
+
+            blobs.forEach(function (b) {
+                b.x += b.vx + Math.sin(t + b.phase) * 0.3;
+                b.y += b.vy + Math.cos(t + b.phase) * 0.3;
+                if (b.x < -b.r) b.x = w + b.r;
+                if (b.x > w + b.r) b.x = -b.r;
+                if (b.y < -b.r) b.y = h + b.r;
+                if (b.y > h + b.r) b.y = -b.r;
+
+                var grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+                grad.addColorStop(0, b.color);
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1;
+            canvas._raf = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function _drawMiniGradient(canvas, gCfg) {
+        var w = canvas.parentElement.offsetWidth || 200;
+        var h = canvas.parentElement.offsetHeight || 120;
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        var cfg = gCfg.config;
+        var stops = cfg.stops || ['#6C5CE7', '#00CEC9', '#FD79A8'];
+        var orbCount = stops.length;
+        var orbs = [];
+        for (var i = 0; i < orbCount; i++) {
+            orbs.push({
+                angle: (i / orbCount) * Math.PI * 2,
+                speed: 0.008 + Math.random() * 0.005,
+                rx: w * 0.3 + Math.random() * w * 0.1,
+                ry: h * 0.3 + Math.random() * h * 0.1,
+                color: stops[i]
+            });
+        }
+
+        function draw() {
+            var bg = cfg.bgGrad || ['#0a0a1a', '#1a0a2a'];
+            var grd = ctx.createLinearGradient(0, 0, 0, h);
+            grd.addColorStop(0, bg[0]);
+            grd.addColorStop(1, bg[1]);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, w, h);
+            ctx.filter = 'blur(20px)';
+
+            orbs.forEach(function (o) {
+                o.angle += o.speed;
+                var ox = w / 2 + Math.cos(o.angle) * o.rx;
+                var oy = h / 2 + Math.sin(o.angle) * o.ry;
+                var r = Math.min(w, h) * 0.35;
+                var grad = ctx.createRadialGradient(ox, oy, 0, ox, oy, r);
+                grad.addColorStop(0, o.color);
+                grad.addColorStop(1, 'transparent');
+                ctx.fillStyle = grad;
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(0, 0, w, h);
+            });
+
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1;
+            canvas._raf = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function _drawMiniWaves(canvas, wCfg) {
+        var w = canvas.parentElement.offsetWidth || 200;
+        var h = canvas.parentElement.offsetHeight || 120;
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        var cfg = wCfg.config;
+        var colors = cfg.colors || ['#6C5CE7', '#00CEC9', '#FD79A8'];
+        var layers = Math.min(cfg.layers || 3, 4);
+        var t = 0;
+
+        function draw() {
+            t += 0.02;
+            var bg = cfg.bgGrad || ['#0a0a1a', '#1a0a2a'];
+            var grd = ctx.createLinearGradient(0, 0, 0, h);
+            grd.addColorStop(0, bg[0]);
+            grd.addColorStop(1, bg[1]);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, w, h);
+
+            for (var l = 0; l < layers; l++) {
+                var amp = (cfg.amplitude || 20) * (0.5 + l * 0.3) * (h / 200);
+                var baseY = h * 0.4 + l * (h * 0.15);
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (var x = 0; x <= w; x += 3) {
+                    var y = baseY + Math.sin(x * 0.02 + t + l * 1.5) * amp + Math.sin(x * 0.01 + t * 0.7) * amp * 0.5;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = colors[l % colors.length];
+                ctx.globalAlpha = 0.3;
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            canvas._raf = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    /* ─── Style card click handler ─── */
     els.styleGrid.addEventListener('click', function (e) {
         var card = e.target.closest('.style-card');
         if (!card) return;
 
-        $$('.style-card').forEach(function (c) { c.classList.remove('selected'); });
+        els.styleGrid.querySelectorAll('.style-card').forEach(function (c) { c.classList.remove('selected'); });
         card.classList.add('selected');
         state.style = card.dataset.style;
+        state.styleMode = 'preset';
 
         // Update color pickers to match new style
-        var styles = ArbelCompiler.getStyles();
-        var match = styles.find(function (s) { return s.id === state.style; });
+        var match = allStyles.find(function (s) { return s.id === state.style; });
         if (match) {
             els.accentColor.value = match.colors.accent;
             els.accentVal.textContent = match.colors.accent;
@@ -401,10 +627,255 @@
             els.bgVal.textContent = match.colors.bg;
         }
 
-        // Show/hide particle config panel
-        var isParticle = card.dataset.type === 'particle';
-        els.particleConfig.style.display = isParticle ? '' : 'none';
+        // Show/hide particle config panel (works for all canvas-based animations)
+        var cat = ArbelCompiler.getAnimCategory(state.style);
+        els.particleConfig.style.display = (cat !== 'shader') ? '' : 'none';
     });
+
+    /* ─── Mode Toggle: Presets / Builder ─── */
+    els.styleModeToggle.addEventListener('click', function (e) {
+        var btn = e.target.closest('.mode-btn');
+        if (!btn) return;
+        var mode = btn.dataset.mode;
+        els.styleModeToggle.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        styleMode = mode;
+
+        if (mode === 'presets') {
+            els.presetsPanel.style.display = '';
+            els.builderPanel.style.display = 'none';
+            stopBuilder();
+        } else {
+            els.presetsPanel.style.display = 'none';
+            els.builderPanel.style.display = '';
+            startBuilder();
+        }
+    });
+
+    /* ─── Category Filter Tabs ─── */
+    els.styleCatTabs.addEventListener('click', function (e) {
+        var tab = e.target.closest('.cat-tab');
+        if (!tab) return;
+        els.styleCatTabs.querySelectorAll('.cat-tab').forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        renderStyleGrid(tab.dataset.cat);
+    });
+
+    /* ─── Builder ─── */
+    var builderState = {
+        cat: 'particle',
+        params: { count: 80, speed: 1, size: 3, glow: 0.6, connect: true, layers: 3, amplitude: 30, blur: 40 },
+        colors: ['#6C5CE7', '#00CEC9', '#0a0a0f']
+    };
+
+    function startBuilder() {
+        renderBuilderParams();
+        runBuilderPreview();
+    }
+
+    function stopBuilder() {
+        if (builderAnim) cancelAnimationFrame(builderAnim);
+        builderAnim = null;
+    }
+
+    function renderBuilderParams() {
+        var cat = builderState.cat;
+        var html = '';
+
+        if (cat === 'particle') {
+            html =
+                '<div class="field"><label class="field-label mono">COUNT — <span id="bp_count">' + builderState.params.count + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="count" min="20" max="300" value="' + builderState.params.count + '" step="10"></div>' +
+                '<div class="field"><label class="field-label mono">SPEED — <span id="bp_speed">' + builderState.params.speed + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="speed" min="0.2" max="3" value="' + builderState.params.speed + '" step="0.1"></div>' +
+                '<div class="field"><label class="field-label mono">SIZE — <span id="bp_size">' + builderState.params.size + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="size" min="1" max="8" value="' + builderState.params.size + '" step="0.5"></div>' +
+                '<div class="field"><label class="field-label mono">GLOW — <span id="bp_glow">' + builderState.params.glow + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="glow" min="0" max="1" value="' + builderState.params.glow + '" step="0.05"></div>' +
+                '<div class="toggle-row"><label class="toggle-item"><input type="checkbox" class="bp-check" data-param="connect"' + (builderState.params.connect ? ' checked' : '') + '><span class="toggle-label">Connections</span></label></div>';
+        } else if (cat === 'blob') {
+            html =
+                '<div class="field"><label class="field-label mono">BLOB COUNT — <span id="bp_count">' + builderState.params.count + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="count" min="2" max="8" value="' + Math.min(builderState.params.count, 8) + '" step="1"></div>' +
+                '<div class="field"><label class="field-label mono">SPEED — <span id="bp_speed">' + builderState.params.speed + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="speed" min="0.3" max="2" value="' + builderState.params.speed + '" step="0.1"></div>' +
+                '<div class="field"><label class="field-label mono">BLUR — <span id="bp_blur">' + builderState.params.blur + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="blur" min="10" max="80" value="' + builderState.params.blur + '" step="5"></div>';
+        } else if (cat === 'gradient') {
+            html =
+                '<div class="field"><label class="field-label mono">SPEED — <span id="bp_speed">' + builderState.params.speed + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="speed" min="0.2" max="2" value="' + builderState.params.speed + '" step="0.1"></div>' +
+                '<div class="field"><label class="field-label mono">GLOW — <span id="bp_glow">' + builderState.params.glow + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="glow" min="0" max="1" value="' + builderState.params.glow + '" step="0.05"></div>';
+        } else if (cat === 'wave') {
+            html =
+                '<div class="field"><label class="field-label mono">LAYERS — <span id="bp_layers">' + builderState.params.layers + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="layers" min="2" max="8" value="' + builderState.params.layers + '" step="1"></div>' +
+                '<div class="field"><label class="field-label mono">AMPLITUDE — <span id="bp_amplitude">' + builderState.params.amplitude + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="amplitude" min="10" max="80" value="' + builderState.params.amplitude + '" step="5"></div>' +
+                '<div class="field"><label class="field-label mono">SPEED — <span id="bp_speed">' + builderState.params.speed + '</span></label>' +
+                '<input type="range" class="gen-range bp-range" data-param="speed" min="0.5" max="3" value="' + builderState.params.speed + '" step="0.1"></div>';
+        }
+
+        els.builderParams.innerHTML = html;
+
+        // Bind range inputs
+        els.builderParams.querySelectorAll('.bp-range').forEach(function (inp) {
+            inp.addEventListener('input', function () {
+                var param = inp.dataset.param;
+                var val = parseFloat(inp.value);
+                builderState.params[param] = val;
+                var label = document.getElementById('bp_' + param);
+                if (label) label.textContent = val;
+            });
+        });
+        els.builderParams.querySelectorAll('.bp-check').forEach(function (inp) {
+            inp.addEventListener('change', function () {
+                builderState.params[inp.dataset.param] = inp.checked;
+            });
+        });
+    }
+
+    /** Builder category tabs */
+    els.builderCatSelect.addEventListener('click', function (e) {
+        var btn = e.target.closest('.builder-cat');
+        if (!btn) return;
+        els.builderCatSelect.querySelectorAll('.builder-cat').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        builderState.cat = btn.dataset.cat;
+        renderBuilderParams();
+        // Restart preview with new category
+        if (builderAnim) cancelAnimationFrame(builderAnim);
+        runBuilderPreview();
+    });
+
+    /** Builder color inputs */
+    [els.builderColor1, els.builderColor2, els.builderColor3].forEach(function (inp, i) {
+        if (inp) inp.addEventListener('input', function () { builderState.colors[i] = inp.value; });
+    });
+
+    /** Run the live builder preview canvas */
+    function runBuilderPreview() {
+        var canvas = els.builderCanvas;
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var w = canvas.width;
+        var h = canvas.height;
+        var bp = builderState;
+        var t = 0;
+
+        // Create particles/blobs for the preview
+        var entities = [];
+        var maxCount = 200;
+        for (var i = 0; i < maxCount; i++) {
+            entities.push({
+                x: Math.random() * w, y: Math.random() * h,
+                vx: (Math.random() - 0.5), vy: (Math.random() - 0.5),
+                r: 2 + Math.random() * 4, phase: Math.random() * Math.PI * 2,
+                angle: (i / maxCount) * Math.PI * 2,
+                ch: String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96))
+            });
+        }
+
+        function draw() {
+            t += 0.016;
+            var params = bp.params;
+            var colors = bp.colors;
+            var bgColor = colors[2] || '#0a0a0f';
+
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, w, h);
+
+            if (bp.cat === 'particle') {
+                var pCount = Math.min(params.count || 80, maxCount);
+                for (var i = 0; i < pCount; i++) {
+                    var p = entities[i];
+                    p.x += p.vx * (params.speed || 1);
+                    p.y += p.vy * (params.speed || 1);
+                    if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+                    if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, params.size || 3, 0, Math.PI * 2);
+                    ctx.fillStyle = colors[0];
+                    ctx.globalAlpha = params.glow || 0.6;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    if (params.connect) {
+                        for (var j = i + 1; j < pCount; j++) {
+                            var dx = entities[j].x - p.x, dy = entities[j].y - p.y;
+                            if (Math.sqrt(dx * dx + dy * dy) < 60) {
+                                ctx.beginPath();
+                                ctx.moveTo(p.x, p.y);
+                                ctx.lineTo(entities[j].x, entities[j].y);
+                                ctx.strokeStyle = colors[1] || colors[0];
+                                ctx.globalAlpha = 0.15;
+                                ctx.stroke();
+                                ctx.globalAlpha = 1;
+                            }
+                        }
+                    }
+                }
+            } else if (bp.cat === 'blob') {
+                var bCount = Math.min(params.count || 4, 8);
+                ctx.filter = 'blur(' + (params.blur || 40) + 'px)';
+                for (var i = 0; i < bCount; i++) {
+                    var b = entities[i];
+                    var bx = w / 2 + Math.sin(t * (params.speed || 1) + b.phase) * w * 0.3;
+                    var by = h / 2 + Math.cos(t * (params.speed || 1) * 0.7 + b.phase) * h * 0.3;
+                    var br = 40 + i * 15;
+                    var grad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+                    grad.addColorStop(0, colors[i % 2]);
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.arc(bx, by, br, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.filter = 'none';
+                ctx.globalAlpha = 1;
+            } else if (bp.cat === 'gradient') {
+                ctx.filter = 'blur(30px)';
+                for (var i = 0; i < 3; i++) {
+                    var angle = t * (params.speed || 0.5) + (i / 3) * Math.PI * 2;
+                    var ox = w / 2 + Math.cos(angle) * w * 0.3;
+                    var oy = h / 2 + Math.sin(angle) * h * 0.3;
+                    var r = Math.min(w, h) * 0.4;
+                    var grad = ctx.createRadialGradient(ox, oy, 0, ox, oy, r);
+                    grad.addColorStop(0, colors[i % colors.length]);
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.globalAlpha = (params.glow || 0.5) * 0.8;
+                    ctx.fillRect(0, 0, w, h);
+                }
+                ctx.filter = 'none';
+                ctx.globalAlpha = 1;
+            } else if (bp.cat === 'wave') {
+                var layers = params.layers || 3;
+                for (var l = 0; l < layers; l++) {
+                    var amp = (params.amplitude || 30) * (0.5 + l * 0.3);
+                    var baseY = h * 0.35 + l * (h * 0.12);
+                    ctx.beginPath();
+                    ctx.moveTo(0, h);
+                    for (var x = 0; x <= w; x += 3) {
+                        var y = baseY + Math.sin(x * 0.015 + t * (params.speed || 1) + l * 1.5) * amp;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.lineTo(w, h);
+                    ctx.closePath();
+                    ctx.fillStyle = colors[l % colors.length];
+                    ctx.globalAlpha = 0.25;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            builderAnim = requestAnimationFrame(draw);
+        }
+        draw();
+    }
 
     // Navigation
     els.backToAuth.addEventListener('click', function () { goToStep(0); });
@@ -553,9 +1024,9 @@
             content: content
         };
 
-        // Include particle settings if a particle style is selected
-        var pCfg = ArbelCompiler.getParticleConfig(state.style);
-        if (pCfg) {
+        // Include animation settings for non-shader styles
+        var cat = ArbelCompiler.getAnimCategory(state.style);
+        if (cat !== 'shader') {
             cfg.particles = {
                 count: parseInt(els.particleCount.value, 10),
                 speed: parseFloat(els.particleSpeed.value),
@@ -710,8 +1181,8 @@
     }
 
     // Pre-fill accent color from selected style
-    var styles = ArbelCompiler.getStyles();
-    var defaultMatch = styles.find(function (s) { return s.id === state.style; });
+    allStyles = ArbelCompiler.getStyles();
+    var defaultMatch = allStyles.find(function (s) { return s.id === state.style; });
     if (defaultMatch) {
         els.accentColor.value = defaultMatch.colors.accent;
         els.accentVal.textContent = defaultMatch.colors.accent;
