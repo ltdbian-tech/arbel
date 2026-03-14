@@ -15,7 +15,8 @@
         styleMode: 'preset',
         authenticated: false,
         compiledFiles: null,
-        editorOverrides: null
+        editorOverrides: null,
+        templateContent: null
     };
 
     /* ─── DOM Refs ─── */
@@ -703,11 +704,22 @@
             });
         }
 
-        // 5. Show/hide particle config
+        // 5. Fill content inputs from template
+        if (d.content) {
+            state.templateContent = d.content;
+            document.querySelectorAll('.content-input').forEach(function (el) {
+                var key = el.dataset.key;
+                if (key && d.content[key] !== undefined) {
+                    el.value = d.content[key];
+                }
+            });
+        }
+
+        // 6. Show/hide particle config
         var animCat = ArbelCompiler.getAnimCategory(state.style);
         els.particleConfig.style.display = (animCat !== 'shader') ? '' : 'none';
 
-        // 6. Re-generate preview
+        // 7. Re-generate preview
         generatePreview();
     });
 
@@ -1086,6 +1098,13 @@
 
     function buildConfig() {
         var content = {};
+        // Merge template content first (labels, nav, non-input keys)
+        if (state.templateContent) {
+            Object.keys(state.templateContent).forEach(function (k) {
+                content[k] = state.templateContent[k];
+            });
+        }
+        // User input values override template defaults
         $$('.content-input').forEach(function (el) {
             var key = el.dataset.key;
             if (key && el.value.trim()) content[key] = el.value.trim();
@@ -1136,6 +1155,18 @@
         // Store element-level edits from visual editor
         if (state.editorOverrides) {
             cfg.editorOverrides = state.editorOverrides;
+        }
+
+        // Include video layer config from editor
+        var vc = ArbelEditor.getVideoConfig();
+        if (vc && vc.config && vc.config.active && vc.frames && vc.frames.length) {
+            cfg.videoLayer = {
+                preset: vc.config.preset || null,
+                fps: vc.config.fps || 24,
+                speed: vc.config.speed || 1,
+                loop: vc.config.loop || false,
+                frames: vc.config.preset ? null : vc.frames
+            };
         }
 
         return cfg;

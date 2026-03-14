@@ -776,7 +776,7 @@ window.ArbelCompiler = (function () {
         }
         return '<section class="section services" id="services" data-arbel-id="services">\n' +
             '<div class="container">\n' +
-            '  <div class="section-label mono">SERVICES</div>\n' +
+            '  <div class="section-label mono">' + esc(c.servicesLabel || 'SERVICES') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="services-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.servicesHeading || 'What we do') + '</span></span></h2>\n' +
             '  <div class="services-grid">\n' + items + '  </div>\n' +
             '</div>\n</section>';
@@ -799,7 +799,7 @@ window.ArbelCompiler = (function () {
         }
         return '<section class="section portfolio" id="portfolio" data-arbel-id="portfolio">\n' +
             '<div class="container">\n' +
-            '  <div class="section-label mono">PORTFOLIO</div>\n' +
+            '  <div class="section-label mono">' + esc(c.portfolioLabel || 'PORTFOLIO') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="portfolio-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.portfolioHeading || 'Our Work') + '</span></span></h2>\n' +
             '  <div class="portfolio-grid">\n' + items + '  </div>\n' +
             '</div>\n</section>';
@@ -816,7 +816,7 @@ window.ArbelCompiler = (function () {
             '<div class="container">\n' +
             '  <div class="about-grid">\n' +
             '    <div class="about-left">\n' +
-            '      <div class="section-label mono">ABOUT</div>\n' +
+            '      <div class="section-label mono">' + esc(c.aboutLabel || 'ABOUT') + '</div>\n' +
             '      <h2 class="section-heading" data-arbel-id="about-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.aboutHeading || 'About Us') + '</span></span></h2>\n' +
             '    </div>\n' +
             '    <div class="about-right">\n' +
@@ -840,7 +840,7 @@ window.ArbelCompiler = (function () {
         }
         return '<section class="section process" id="process" data-arbel-id="process">\n' +
             '<div class="container">\n' +
-            '  <div class="section-label mono">PROCESS</div>\n' +
+            '  <div class="section-label mono">' + esc(c.processLabel || 'PROCESS') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="process-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.processHeading || 'How We Work') + '</span></span></h2>\n' +
             '  <div class="process-grid">\n' + steps + '  </div>\n' +
             '</div>\n</section>';
@@ -863,8 +863,8 @@ window.ArbelCompiler = (function () {
         }
         return '<section class="section testimonials" id="testimonials" data-arbel-id="testimonials">\n' +
             '<div class="container">\n' +
-            '  <div class="section-label mono">TESTIMONIALS</div>\n' +
-            '  <h2 class="section-heading" data-arbel-id="testimonials-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">What they <em>say.</em></span></span></h2>\n' +
+            '  <div class="section-label mono">' + esc(c.testimonialsLabel || 'TESTIMONIALS') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="testimonials-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + (c.testimonialsHeading ? esc(c.testimonialsHeading) : 'What they <em>say.</em>') + '</span></span></h2>\n' +
             '  <div class="testimonials-grid">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -886,7 +886,7 @@ window.ArbelCompiler = (function () {
         }
         return '<section class="section pricing" id="pricing" data-arbel-id="pricing">\n' +
             '<div class="container">\n' +
-            '  <div class="section-label mono">PRICING</div>\n' +
+            '  <div class="section-label mono">' + esc(c.pricingLabel || 'PRICING') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="pricing-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.pricingHeading || 'Pricing') + '</span></span></h2>\n' +
             '  <div class="pricing-grid">\n' + tiers + '  </div>\n' +
             '</div>\n</section>';
@@ -905,8 +905,8 @@ window.ArbelCompiler = (function () {
         }
         return '<section class="section faq" id="faq" data-arbel-id="faq">\n' +
             '<div class="container">\n' +
-            '  <div class="section-label mono">FAQ</div>\n' +
-            '  <h2 class="section-heading" data-arbel-id="faq-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">Frequently <em>Asked.</em></span></span></h2>\n' +
+            '  <div class="section-label mono">' + esc(c.faqLabel || 'FAQ') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="faq-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + (c.faqHeading ? esc(c.faqHeading) : 'Frequently <em>Asked.</em>') + '</span></span></h2>\n' +
             '  <div class="faq-list">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
@@ -916,7 +916,7 @@ window.ArbelCompiler = (function () {
             '  <div class="' + bgClass + ' contact-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
             '  <div class="container contact-inner">\n' +
-            '    <div class="section-label mono">CONTACT</div>\n' +
+            '    <div class="section-label mono">' + esc(c.contactLabel || 'CONTACT') + '</div>\n' +
             '    <h2 class="section-heading text-center" data-arbel-id="contact-heading" data-arbel-edit="text">\n' +
             '      <span class="line"><span class="line-inner">' + esc(c.contactHeading || "Let's Talk") + '</span></span>\n' +
             '    </h2>\n' +
@@ -961,7 +961,7 @@ window.ArbelCompiler = (function () {
         });
 
         var navLinks = '';
-        var navMap = { services: 'Services', portfolio: 'Work', about: 'About', process: 'Process', pricing: 'Pricing', contact: 'Contact' };
+        var navMap = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', contact: c.contactNav || 'Contact' };
         sections.forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
             if (navMap[s]) navLinks += '        <a href="#' + s + '" class="nav-link">' + navMap[s] + '</a>\n';
@@ -1329,6 +1329,69 @@ window.ArbelCompiler = (function () {
         }, null, 2);
     }
 
+    /* ═══ Build Video Layer JS ═══ */
+    function _buildVideoLayerJS(vl) {
+        var js = '/* Arbel — Video Scroll Layer */\n(function(){\n';
+        js += 'var SPEED=' + (vl.speed || 1) + ',LOOP=' + (vl.loop ? 'true' : 'false') + ',FPS=' + (vl.fps || 24) + ';\n';
+        js += 'var css=document.createElement("style");css.textContent=".arbel-vl{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none}.arbel-vl canvas{width:100%;height:100%;object-fit:cover}";document.head.appendChild(css);\n';
+        js += 'var div=document.createElement("div");div.className="arbel-vl";\n';
+        js += 'var cv=document.createElement("canvas");div.appendChild(cv);document.body.insertBefore(div,document.body.firstChild);\n';
+        js += 'var ctx=cv.getContext("2d"),frames=[],lastF=-1;\n';
+        js += 'function rsz(){cv.width=window.innerWidth;cv.height=window.innerHeight;draw(lastF<0?0:lastF,true)}rsz();\n';
+        js += 'window.addEventListener("resize",rsz);\n';
+        js += 'function draw(i,force){if(i<0||i>=frames.length)return;if(!force&&i===lastF)return;if(frames[i]&&frames[i].complete&&frames[i].naturalWidth>0){ctx.clearRect(0,0,cv.width,cv.height);ctx.drawImage(frames[i],0,0,cv.width,cv.height);lastF=i}}\n';
+        js += 'function onScroll(){var mx=document.documentElement.scrollHeight-window.innerHeight;if(mx<=0){draw(0);return}var p=window.scrollY/mx*SPEED;if(LOOP)p=p%1;else p=Math.min(p,1);draw(Math.min(Math.floor(p*frames.length),frames.length-1))}\n';
+        js += 'window.addEventListener("scroll",onScroll,{passive:true});\n';
+
+        if (vl.preset) {
+            // For presets: embed the generation code so frames are created on page load
+            js += _getPresetGenCode(vl.preset);
+        } else if (vl.frames && vl.frames.length) {
+            // For uploaded videos/sequences: embed frame data URLs
+            js += 'var srcs=' + JSON.stringify(vl.frames) + ';\n';
+            js += 'srcs.forEach(function(s){var im=new Image();im.src=s;frames.push(im)});\n';
+            js += 'if(frames[0])frames[0].onload=function(){draw(0,true);onScroll()};\n';
+        }
+
+        js += '})();\n';
+        return js;
+    }
+
+    function _getPresetGenCode(preset) {
+        var code = '';
+        code += 'var genCv=document.createElement("canvas");genCv.width=640;genCv.height=360;\n';
+        code += 'var gCtx=genCv.getContext("2d"),total=120,idx=0;\n';
+        code += 'function gen(){\n';
+        code += '  if(idx>=total){if(frames[0])frames[0].onload=function(){draw(0,true);onScroll()};return}\n';
+        code += '  var t=idx/total;gCtx.clearRect(0,0,640,360);\n';
+
+        // Include the specific preset drawing code
+        code += _getPresetDrawCode(preset);
+
+        code += '  var im=new Image();im.src=genCv.toDataURL("image/jpeg",0.7);frames.push(im);idx++;\n';
+        code += '  requestAnimationFrame(gen);\n';
+        code += '}\ngen();\n';
+        return code;
+    }
+
+    function _getPresetDrawCode(preset) {
+        // Each preset's per-frame drawing code (same logic as editor.js _generatePresetFrames)
+        var w = 640, h = 360;
+        var presets = {
+            cosmic: '  gCtx.fillStyle="#050510";gCtx.fillRect(0,0,640,360);for(var i=0;i<80;i++){var sx=(Math.sin(i*47.3+t*2)*.5+.5)*640,sy=(Math.cos(i*31.7+t*1.5)*.5+.5)*360;gCtx.fillStyle="rgba("+(150+i%100)+","+(100+i%50)+",255,"+(.3+Math.sin(i+t*5)*.2)+")";gCtx.beginPath();gCtx.arc(sx,sy,1+Math.sin(i+t*3)*.5,0,6.28);gCtx.fill()}var g=gCtx.createRadialGradient(640*(.3+t*.4),180,0,320,180,384);g.addColorStop(0,"rgba(100,50,200,0.08)");g.addColorStop(1,"transparent");gCtx.fillStyle=g;gCtx.fillRect(0,0,640,360);\n',
+            ocean: '  gCtx.fillStyle="#020818";gCtx.fillRect(0,0,640,360);for(var wv=0;wv<5;wv++){gCtx.strokeStyle="rgba(0,"+(100+wv*30)+",255,"+(.1-wv*.015)+")";gCtx.lineWidth=2;gCtx.beginPath();for(var x=0;x<=640;x+=4){var y=360*(.3+wv*.12)+Math.sin(x*.01+t*6.28+wv)*30;x===0?gCtx.moveTo(x,y):gCtx.lineTo(x,y)}gCtx.stroke()}\n',
+            aurora: '  gCtx.fillStyle="#050812";gCtx.fillRect(0,0,640,360);for(var ab=0;ab<4;ab++){gCtx.fillStyle="rgba("+(ab%2===0?"0,200,100":"100,0,200")+",0.04)";gCtx.beginPath();for(var ax=0;ax<=640;ax+=5){var ay=360*.3+Math.sin(ax*.006+t*6.28+ab*1.5)*360*.15;ax===0?gCtx.moveTo(ax,ay):gCtx.lineTo(ax,ay)}gCtx.lineTo(640,360);gCtx.lineTo(0,360);gCtx.fill()}\n',
+            smoke: '  gCtx.fillStyle="#0a0a0a";gCtx.fillRect(0,0,640,360);for(var si=0;si<8;si++){var sx2=640*(.2+si*.08)+Math.sin(t*6.28+si)*40,sy2=360-360*t*.8-si*30;var g2=gCtx.createRadialGradient(sx2,sy2,0,sx2,sy2,80+si*10);g2.addColorStop(0,"rgba(150,150,150,0.05)");g2.addColorStop(1,"transparent");gCtx.fillStyle=g2;gCtx.fillRect(0,0,640,360)}\n',
+            neon: '  gCtx.fillStyle="#08080f";gCtx.fillRect(0,0,640,360);gCtx.strokeStyle="rgba(100,108,255,0.15)";gCtx.lineWidth=.5;for(var gx=0;gx<640;gx+=40){gCtx.beginPath();gCtx.moveTo(gx,0);gCtx.lineTo(gx,360);gCtx.stroke()}for(var gy=0;gy<360;gy+=40){gCtx.beginPath();gCtx.moveTo(0,gy);gCtx.lineTo(640,gy);gCtx.stroke()}var ny=360*(1-t);gCtx.shadowBlur=20;gCtx.shadowColor="#646cff";gCtx.strokeStyle="#646cff";gCtx.lineWidth=2;gCtx.beginPath();gCtx.moveTo(0,ny);gCtx.lineTo(640,ny);gCtx.stroke();gCtx.shadowBlur=0;\n',
+            nature: '  gCtx.fillStyle="#051008";gCtx.fillRect(0,0,640,360);for(var ni=0;ni<15;ni++){var nx=(Math.sin(ni*23.7+t*3)*.5+.5)*640,ny2=(ni*360/15+t*360)%(360+20)-10;gCtx.fillStyle="rgba(30,"+(120+ni*8)+",40,0.3)";gCtx.beginPath();gCtx.ellipse(nx,ny2,5+Math.sin(ni)*2,3,Math.sin(t*6.28+ni)*.5,0,6.28);gCtx.fill()}\n',
+            glitch: '  gCtx.fillStyle="#0a0a12";gCtx.fillRect(0,0,640,360);for(var gi=0;gi<12;gi++){var gy2=Math.random()*360,gh2=2+Math.random()*8;gCtx.fillStyle="rgba("+(Math.random()>.5?"255,0,100":"0,200,255")+","+(0.1+Math.random()*0.2)+")";gCtx.fillRect(Math.random()*192,gy2,256+Math.random()*192,gh2)}gCtx.globalCompositeOperation="lighter";gCtx.fillStyle="rgba(255,0,80,0.05)";gCtx.fillRect(Math.sin(t*30)*10,0,640,360);gCtx.fillStyle="rgba(0,200,255,0.05)";gCtx.fillRect(-Math.sin(t*30)*10,0,640,360);gCtx.globalCompositeOperation="source-over";\n',
+            fire: '  gCtx.fillStyle="#0a0400";gCtx.fillRect(0,0,640,360);for(var fi=0;fi<20;fi++){var fx=640*(.2+fi*0.03)+Math.sin(t*8+fi*2)*20;var fy=360-(t*360*0.7+fi*15+Math.sin(fi*3+t*5)*20);var fr=15+fi*2+Math.sin(t*6+fi)*8;var fGrad=gCtx.createRadialGradient(fx,fy,0,fx,fy,fr);fGrad.addColorStop(0,"rgba(255,"+(100+fi*5)+",0,0.15)");fGrad.addColorStop(1,"transparent");gCtx.fillStyle=fGrad;gCtx.fillRect(0,0,640,360)}\n',
+            rain: '  gCtx.fillStyle="#060810";gCtx.fillRect(0,0,640,360);gCtx.strokeStyle="rgba(140,180,255,0.3)";gCtx.lineWidth=1;for(var ri=0;ri<60;ri++){var rx=(ri*17.3+t*50)%640;var ry=((ri*31.7+t*200)%(360+40))-20;gCtx.beginPath();gCtx.moveTo(rx,ry);gCtx.lineTo(rx-1,ry+12);gCtx.stroke()}\n',
+            galaxy: '  gCtx.fillStyle="#030308";gCtx.fillRect(0,0,640,360);for(var spi=0;spi<120;spi++){var angle=spi*0.15+t*3;var dist=spi*1.5+Math.sin(spi*0.3)*10;var spx=320+Math.cos(angle)*dist;var spy=180+Math.sin(angle)*dist*0.6;var spBright=0.2+Math.sin(spi*0.5+t*4)*0.15;gCtx.fillStyle="rgba("+(180+spi%70)+","+(140+spi%80)+",255,"+spBright+")";gCtx.beginPath();gCtx.arc(spx,spy,1+Math.random(),0,6.28);gCtx.fill()}\n'
+        };
+        return presets[preset] || presets.cosmic;
+    }
+
     /* ═══ PUBLIC: Compile full site ═══ */
     function compile(userConfig) {
         var cfg = _defaults(userConfig);
@@ -1353,6 +1416,13 @@ window.ArbelCompiler = (function () {
         // Apply editor overrides (text changes, animations, hover, effects)
         if (cfg.editorOverrides) {
             files['index.html'] = _applyOverrides(files['index.html'], cfg.editorOverrides);
+        }
+
+        // Include video scroll layer
+        if (cfg.videoLayer) {
+            files['js/video-layer.js'] = _buildVideoLayerJS(cfg.videoLayer);
+            // Inject <script> tag before </body>
+            files['index.html'] = files['index.html'].replace('</body>', '<script src="js/video-layer.js"></script>\n</body>');
         }
 
         return files;

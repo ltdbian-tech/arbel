@@ -15,7 +15,7 @@ window.ArbelEditor = (function () {
     var _overrides = {};
     var _onUpdate = null;
     var _videoFrames = [];
-    var _videoConfig = { fps: 24, speed: 1, loop: false, active: false };
+    var _videoConfig = { fps: 24, speed: 1, loop: false, active: false, preset: null };
     var _pages = [{ id: 'home', name: 'Home' }];
     var _currentPage = 'home';
     var _zoom = 100;
@@ -296,20 +296,27 @@ function setupVideoLayer(frames,cfg){
   var ctxl=cvl.getContext("2d");
   var imgs=frames.map(function(src){var im=new Image();im.src=src;return im});
   var speed=cfg.speed||1;var loop2=cfg.loop||false;
-  function rsz(){cvl.width=window.innerWidth;cvl.height=window.innerHeight}rsz();
+  function rsz(){cvl.width=window.innerWidth;cvl.height=window.innerHeight;drawFrame(lastFrame<0?0:lastFrame,true)}rsz();
   window.addEventListener("resize",rsz);
   var lastFrame=-1;
-  function onScroll(){
-    var scrollMax=document.documentElement.scrollHeight-window.innerHeight;
-    if(scrollMax<=0)return;
-    var progress=window.scrollY/scrollMax*speed;
-    if(loop2)progress=progress%1;else progress=Math.min(progress,1);
-    var idx2=Math.min(Math.floor(progress*imgs.length),imgs.length-1);
-    if(idx2!==lastFrame&&imgs[idx2]&&imgs[idx2].complete){
+  function drawFrame(idx2,force){
+    if(idx2<0||idx2>=imgs.length)return;
+    if(!force&&idx2===lastFrame)return;
+    if(imgs[idx2]&&imgs[idx2].complete&&imgs[idx2].naturalWidth>0){
       ctxl.clearRect(0,0,cvl.width,cvl.height);
       ctxl.drawImage(imgs[idx2],0,0,cvl.width,cvl.height);lastFrame=idx2}
   }
-  window.addEventListener("scroll",onScroll,{passive:true});onScroll();
+  function onScroll(){
+    var scrollMax=document.documentElement.scrollHeight-window.innerHeight;
+    if(scrollMax<=0){drawFrame(0);return}
+    var progress=window.scrollY/scrollMax*speed;
+    if(loop2)progress=progress%1;else progress=Math.min(progress,1);
+    var idx2=Math.min(Math.floor(progress*imgs.length),imgs.length-1);
+    drawFrame(idx2)
+  }
+  window.addEventListener("scroll",onScroll,{passive:true});
+  /* Wait for first image to load before initial draw */
+  if(imgs[0]){imgs[0].onload=function(){drawFrame(0,true);onScroll()}}else{onScroll()}
   videoLayer={el:div,imgs:imgs};
 }
 
@@ -738,6 +745,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             btn.addEventListener('click', function () {
                 _container.querySelectorAll('.video-preset-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
+                _videoConfig.preset = btn.getAttribute('data-preset');
                 _generatePresetFrames(btn.getAttribute('data-preset'));
             });
         });
@@ -782,12 +790,22 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                     video.removeEventListener('seeked', onSeek);
                     if (progressEl) progressEl.style.display = 'none';
                     _showVideoPreview(frames, total, fps, duration);
+                    _videoConfig.preset = null;
+                    /* Auto-apply to preview */
+                    if (_iframe) { _videoConfig.active = true; _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig }); }
                     return;
                 }
                 video.currentTime = idx / fps;
             }
             video.addEventListener('seeked', onSeek);
-            video.currentTime = 0;
+            // Some browsers don't fire 'seeked' when setting currentTime to 0 if already there
+            if (video.currentTime === 0) {
+                setTimeout(function () {
+                    if (idx === 0) onSeek();
+                }, 100);
+            } else {
+                video.currentTime = 0;
+            }
         });
         video.src = URL.createObjectURL(file);
         video.load();
@@ -804,7 +822,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 frames[i] = e.target.result; loaded++;
                 if (fillEl) fillEl.style.width = Math.round((loaded / sorted.length) * 100) + '%';
                 if (textEl) textEl.textContent = 'Loading: ' + loaded + '/' + sorted.length;
-                if (loaded === sorted.length) { _videoFrames = frames.filter(Boolean); if (progressEl) progressEl.style.display = 'none'; _showVideoPreview(_videoFrames, _videoFrames.length, _videoConfig.fps, _videoFrames.length / _videoConfig.fps); }
+                if (loaded === sorted.length) {
+                    _videoFrames = frames.filter(Boolean);
+                    _videoConfig.preset = null;
+                    if (progressEl) progressEl.style.display = 'none';
+                    _showVideoPreview(_videoFrames, _videoFrames.length, _videoConfig.fps, _videoFrames.length / _videoConfig.fps);
+                    if (_iframe) { _videoConfig.active = true; _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig }); }
+                }
             };
             reader.readAsDataURL(file);
         });
@@ -817,7 +841,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         var progressEl = _qs('#videoProgress'), fillEl = _qs('#videoProgressFill'), textEl = _qs('#videoProgressText');
         if (progressEl) progressEl.style.display = '';
         function gen() {
-            if (idx >= total) { _videoFrames = frames; if (progressEl) progressEl.style.display = 'none'; _showVideoPreview(frames, total, _videoConfig.fps, total / _videoConfig.fps); return; }
+            if (idx >= total) {
+            _videoFrames = frames; if (progressEl) progressEl.style.display = 'none';
+            _showVideoPreview(frames, total, _videoConfig.fps, total / _videoConfig.fps);
+            /* Auto-apply to preview */
+            if (_iframe) { _videoConfig.active = true; _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig }); }
+            return;
+        }
             var t = idx / total;
             ctx.clearRect(0, 0, w, h);
             if (preset === 'cosmic') {
@@ -1246,37 +1276,379 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
     /* ─── Templates (industry-matched website presets) ─── */
     var _templates = [
-        // Tech / SaaS
-        { id: 'saas-landing', name: 'SaaS Platform', desc: 'Modern SaaS landing with gradient mesh backgrounds and pricing tiers', cat: 'tech', tags: ['saas', 'gradient', 'pricing'], style: 'meshGrad', industry: 'saas', accent: '#8b5cf6', bg: '#0a0a14', sections: ['hero', 'services', 'pricing', 'faq', 'testimonials', 'contact'] },
-        { id: 'tech-startup', name: 'Tech Startup', desc: 'Bold aurora-lit startup site with feature showcase', cat: 'tech', tags: ['startup', 'aurora', 'bold'], style: 'aurora', industry: 'startup', accent: '#00d4ff', bg: '#080810', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
-        { id: 'dev-portfolio', name: 'Developer Portfolio', desc: 'Code-themed portfolio with matrix rain effects', cat: 'tech', tags: ['matrix', 'developer', 'code'], style: 'matrix', industry: 'portfolio', accent: '#00ff41', bg: '#050a05', sections: ['hero', 'portfolio', 'about', 'contact'] },
-        { id: 'cyber-security', name: 'Cyber Security', desc: 'Dark circuit-board aesthetic with neon accents', cat: 'tech', tags: ['cyber', 'circuits', 'neon'], style: 'circuits', industry: 'saas', accent: '#00e5ff', bg: '#060810', sections: ['hero', 'services', 'about', 'process', 'faq', 'contact'] },
+        // ── Tech / SaaS ──
+        { id: 'saas-landing', name: 'SaaS Platform', desc: 'Modern SaaS landing with gradient mesh backgrounds and pricing tiers', cat: 'tech', tags: ['saas', 'gradient', 'pricing'], style: 'meshGrad', industry: 'saas', accent: '#8b5cf6', bg: '#0a0a14',
+          sections: ['hero', 'services', 'pricing', 'faq', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Scale your', heroLine2: 'business', heroLine3: 'smarter.',
+            heroSub: 'All-in-one platform to automate workflows, track analytics, and grow your revenue — without the complexity.', heroCta: 'START FREE TRIAL',
+            servicesLabel: 'FEATURES', servicesNav: 'Features', servicesHeading: 'Platform Features',
+            service1Title: 'Smart Automation', service1Desc: 'Automate repetitive tasks with intelligent workflows that learn and adapt to your processes.',
+            service2Title: 'Real-time Analytics', service2Desc: 'Track every metric that matters with live dashboards, custom reports, and predictive insights.',
+            service3Title: 'Team Collaboration', service3Desc: 'Shared workspaces, inline comments, and real-time editing for your entire organization.',
+            pricingHeading: 'Simple, Transparent Pricing',
+            tier1Name: 'Starter', tier1Price: '$29/mo', tier1Features: '5 team members\n10 automated workflows\nBasic analytics\nEmail support',
+            tier2Name: 'Professional', tier2Price: '$79/mo', tier2Features: 'Unlimited members\n100 workflows\nAdvanced analytics\nPriority support\nAPI access',
+            tier3Name: 'Enterprise', tier3Price: 'Custom', tier3Features: 'Unlimited everything\nDedicated account manager\nCustom integrations\n99.99% SLA',
+            faq1Q: 'How does the free trial work?', faq1A: 'Start with a full 14-day free trial on any plan. No credit card required. Cancel anytime.',
+            faq2Q: 'Can I switch plans later?', faq2A: 'Absolutely. Upgrade or downgrade anytime — changes apply on your next billing cycle.',
+            faq3Q: 'Is my data secure?', faq3A: 'We use bank-level 256-bit encryption and store data in SOC 2 Type II certified data centers.',
+            testimonialsHeading: 'Trusted by Teams',
+            testimonial1Quote: 'This platform cut our workflow time by 60%. The automation features are game-changing.', testimonial1Name: 'Sarah Chen', testimonial1Role: 'CTO, TechFlow',
+            testimonial2Quote: 'Best investment we made this year. The analytics dashboards alone are worth it.', testimonial2Name: 'Marcus Rivera', testimonial2Role: 'Head of Growth, ScaleUp',
+            contactHeading: 'Ready to Scale?', contactCta: 'START FREE TRIAL'
+          }},
 
-        // Shopping / E-Commerce
-        { id: 'elegant-boutique', name: 'Elegant Boutique', desc: 'Luxurious fashion store with flowing silk textures', cat: 'shopping', tags: ['luxury', 'silk', 'fashion'], style: 'silk', industry: 'fashion', accent: '#e8a87c', bg: '#0a0a0f', sections: ['hero', 'services', 'portfolio', 'testimonials', 'contact'] },
-        { id: 'modern-store', name: 'Modern Store', desc: 'Clean e-commerce layout with bokeh light effects', cat: 'shopping', tags: ['shop', 'bokeh', 'clean'], style: 'bokeh', industry: 'ecommerce', accent: '#f59e0b', bg: '#08080e', sections: ['hero', 'services', 'portfolio', 'pricing', 'faq', 'contact'] },
-        { id: 'product-launch', name: 'Product Launch', desc: 'Single product showcase with blob animations', cat: 'shopping', tags: ['product', 'blobs', 'launch'], style: 'morphBlob', industry: 'ecommerce', accent: '#ec4899', bg: '#0a0a12', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
+        { id: 'tech-startup', name: 'Tech Startup', desc: 'Bold aurora-lit startup site with feature showcase', cat: 'tech', tags: ['startup', 'aurora', 'bold'], style: 'aurora', industry: 'startup', accent: '#00d4ff', bg: '#080810',
+          sections: ['hero', 'services', 'about', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Build the', heroLine2: 'future', heroLine3: 'today.',
+            heroSub: 'We help startups turn bold ideas into market-ready products with cutting-edge technology.', heroCta: 'GET IN TOUCH',
+            servicesLabel: 'WHAT WE DO', servicesNav: 'Services', servicesHeading: 'Our Expertise',
+            service1Title: 'Product Strategy', service1Desc: 'From concept to launch — we map your product roadmap and validate market fit.',
+            service2Title: 'Full-Stack Development', service2Desc: 'Scalable web and mobile applications built with modern frameworks and cloud infrastructure.',
+            service3Title: 'Growth Engineering', service3Desc: 'Data-driven growth loops, A/B testing frameworks, and performance optimization.',
+            aboutHeading: 'Our Story', aboutDesc: 'Founded by engineers who believe great technology should be accessible to every ambitious team. We have helped 50+ startups ship products that users love.',
+            stat1Val: '50+', stat1Label: 'Startups Launched', stat2Val: '3Y', stat2Label: 'Track Record', stat3Val: '$12M+', stat3Label: 'Raised by Clients',
+            testimonialsHeading: 'Founder Feedback',
+            testimonial1Quote: 'They turned our napkin sketch into a working MVP in just 6 weeks. Incredible team.', testimonial1Name: 'Alex Park', testimonial1Role: 'CEO, NovaByte',
+            testimonial2Quote: 'Not just developers — they are true product partners who care about outcomes.', testimonial2Name: 'Priya Sharma', testimonial2Role: 'Founder, LeapAI',
+            contactHeading: 'Launch Your Vision', contactCta: 'BOOK A CALL'
+          }},
 
-        // Creative / Agency
-        { id: 'dark-agency', name: 'Dark Agency', desc: 'Premium agency site with obsidian ink fluid background', cat: 'creative', tags: ['agency', 'dark', 'premium'], style: 'obsidian', industry: 'agency', accent: '#6C5CE7', bg: '#0a0a0f', sections: ['hero', 'services', 'portfolio', 'about', 'testimonials', 'contact'] },
-        { id: 'neon-studio', name: 'Neon Studio', desc: 'Electric neon-glow creative showcase', cat: 'creative', tags: ['neon', 'electric', 'glow'], style: 'neon', industry: 'agency', accent: '#ff006e', bg: '#0a0a10', sections: ['hero', 'services', 'portfolio', 'process', 'contact'] },
-        { id: 'nebula-creative', name: 'Nebula Creative', desc: 'Cosmic nebula particles with deep space atmosphere', cat: 'creative', tags: ['space', 'nebula', 'creative'], style: 'nebula', industry: 'agency', accent: '#a78bfa', bg: '#06060e', sections: ['hero', 'portfolio', 'about', 'testimonials', 'contact'] },
-        { id: 'minimal-folio', name: 'Minimal Portfolio', desc: 'Clean portfolio with connected constellation dots', cat: 'creative', tags: ['minimal', 'constellation', 'clean'], style: 'constellation', industry: 'portfolio', accent: '#60a5fa', bg: '#06080f', sections: ['hero', 'portfolio', 'about', 'contact'] },
+        { id: 'dev-portfolio', name: 'Developer Portfolio', desc: 'Code-themed portfolio with matrix rain effects', cat: 'tech', tags: ['matrix', 'developer', 'code'], style: 'matrix', industry: 'portfolio', accent: '#00ff41', bg: '#050a05',
+          sections: ['hero', 'portfolio', 'about', 'contact'],
+          content: {
+            heroLine1: 'Code.', heroLine2: 'Create.', heroLine3: 'Deploy.',
+            heroSub: 'Full-stack developer building clean, performant applications that solve real problems.', heroCta: 'VIEW PROJECTS',
+            portfolioLabel: 'PROJECTS', portfolioNav: 'Projects', portfolioHeading: 'Selected Work',
+            project1Title: 'CloudSync Dashboard', project1Tag: 'React · Node.js', project1Desc: 'Real-time monitoring dashboard for cloud infrastructure with WebSocket feeds.',
+            project2Title: 'CryptoTrack API', project2Tag: 'Python · FastAPI', project2Desc: 'High-performance REST API serving live cryptocurrency data to 10K+ daily users.',
+            project3Title: 'TaskFlow Mobile', project3Tag: 'React Native', project3Desc: 'Cross-platform task management app with offline sync and team collaboration.',
+            aboutHeading: 'About Me', aboutDesc: 'Self-taught developer with 5 years of experience shipping production code. I focus on performance, clean architecture, and great developer experience.',
+            stat1Val: '200+', stat1Label: 'Commits/Month', stat2Val: '5Y', stat2Label: 'Experience', stat3Val: '30+', stat3Label: 'Projects Shipped',
+            contactHeading: 'Let\'s Build Something', contactCta: 'HIRE ME'
+          }},
 
-        // Food / Restaurant
-        { id: 'fine-dining', name: 'Fine Dining', desc: 'Warm ember-lit restaurant site with rich textures', cat: 'food', tags: ['restaurant', 'ember', 'warm'], style: 'ember', industry: 'restaurant', accent: '#f97316', bg: '#0f0a06', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
-        { id: 'food-brand', name: 'Food Brand', desc: 'Sunset-toned food brand with organic blob shapes', cat: 'food', tags: ['food', 'sunset', 'organic'], style: 'sunsetBlob', industry: 'restaurant', accent: '#fb923c', bg: '#0e0a08', sections: ['hero', 'services', 'portfolio', 'contact'] },
-        { id: 'cafe-cozy', name: 'Cozy Café', desc: 'Warm firefly-lit ambiance for coffee shops and cafes', cat: 'food', tags: ['cafe', 'fireflies', 'cozy'], style: 'fireflies', industry: 'restaurant', accent: '#fbbf24', bg: '#0a0806', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
+        { id: 'cyber-security', name: 'Cyber Security', desc: 'Dark circuit-board aesthetic with neon accents', cat: 'tech', tags: ['cyber', 'circuits', 'neon'], style: 'circuits', industry: 'saas', accent: '#00e5ff', bg: '#060810',
+          sections: ['hero', 'services', 'about', 'process', 'faq', 'contact'],
+          content: {
+            heroLine1: 'Protect your', heroLine2: 'digital', heroLine3: 'fortress.',
+            heroSub: 'Enterprise-grade cybersecurity solutions that defend your data, infrastructure, and reputation.', heroCta: 'GET ASSESSMENT',
+            servicesLabel: 'SOLUTIONS', servicesNav: 'Solutions', servicesHeading: 'Security Solutions',
+            service1Title: 'Threat Detection', service1Desc: 'AI-powered 24/7 monitoring that identifies and neutralizes threats before they reach you.',
+            service2Title: 'Data Encryption', service2Desc: 'End-to-end encryption for data at rest and in transit with zero-knowledge architecture.',
+            service3Title: 'Compliance Audit', service3Desc: 'SOC 2, ISO 27001, and GDPR compliance readiness assessments and remediation.',
+            aboutHeading: 'Why Us', aboutDesc: 'Our team of ex-NSA analysts and white-hat hackers has protected Fortune 500 companies for over a decade.',
+            stat1Val: '0', stat1Label: 'Breaches on Watch', stat2Val: '99.99%', stat2Label: 'Uptime SLA', stat3Val: '500+', stat3Label: 'Clients Protected',
+            processLabel: 'HOW IT WORKS', processHeading: 'Our Process',
+            step1Title: 'Assess', step1Desc: 'Comprehensive vulnerability scan and risk assessment of your entire digital footprint.',
+            step2Title: 'Fortify', step2Desc: 'Deploy layered defenses, encryption protocols, and real-time monitoring systems.',
+            step3Title: 'Monitor', step3Desc: 'Continuous 24/7 threat intelligence and incident response with SLA guarantees.',
+            faq1Q: 'How fast can you deploy?', faq1A: 'Initial protection is active within 24 hours. Full deployment takes 2-4 weeks depending on scope.',
+            faq2Q: 'Do you handle incident response?', faq2A: 'Yes — our SOC team provides 24/7 incident response with guaranteed 15-minute acknowledgment time.',
+            faq3Q: 'What compliance frameworks do you support?', faq3A: 'SOC 2 Type II, ISO 27001, GDPR, HIPAA, PCI DSS, and FedRAMP.',
+            contactHeading: 'Secure Your Business', contactCta: 'REQUEST DEMO'
+          }},
 
-        // Health / Wellness
-        { id: 'medical-clinic', name: 'Medical Clinic', desc: 'Clean frost-crystalline healthcare site with trust design', cat: 'health', tags: ['medical', 'frost', 'clean'], style: 'frost', industry: 'healthcare', accent: '#38bdf8', bg: '#060a0e', sections: ['hero', 'services', 'about', 'testimonials', 'faq', 'contact'] },
-        { id: 'wellness-spa', name: 'Wellness Spa', desc: 'Tranquil ocean-wave spa with calming blue tones', cat: 'health', tags: ['spa', 'ocean', 'calm'], style: 'oceanBlob', industry: 'fitness', accent: '#22d3ee', bg: '#060a0e', sections: ['hero', 'services', 'about', 'pricing', 'testimonials', 'contact'] },
-        { id: 'fitness-gym', name: 'Fitness Studio', desc: 'High-energy spark particles with bold sports aesthetic', cat: 'health', tags: ['fitness', 'spark', 'energy'], style: 'spark', industry: 'fitness', accent: '#ef4444', bg: '#0a0608', sections: ['hero', 'services', 'about', 'pricing', 'contact'] },
+        // ── Shopping / E-Commerce ──
+        { id: 'elegant-boutique', name: 'Elegant Boutique', desc: 'Luxurious fashion store with flowing silk textures', cat: 'shopping', tags: ['luxury', 'silk', 'fashion'], style: 'silk', industry: 'fashion', accent: '#e8a87c', bg: '#0a0a0f',
+          sections: ['hero', 'services', 'portfolio', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Curated', heroLine2: 'luxury', heroLine3: 'fashion.',
+            heroSub: 'Discover timeless pieces crafted for the discerning eye. New collection now available.', heroCta: 'SHOP NOW',
+            servicesLabel: 'COLLECTIONS', servicesNav: 'Collections', servicesHeading: 'Our Collections',
+            service1Title: 'Spring/Summer \'26', service1Desc: 'Light fabrics, pastel tones, and effortless silhouettes for the warmer months ahead.',
+            service2Title: 'Evening Wear', service2Desc: 'Elegant gowns and tailored suits for galas, dinners, and unforgettable nights.',
+            service3Title: 'Accessories', service3Desc: 'Handcrafted bags, scarves, and jewelry to complete every look with distinction.',
+            portfolioLabel: 'LOOKBOOK', portfolioNav: 'Lookbook', portfolioHeading: 'Latest Lookbook',
+            project1Title: 'Coastal Serenity', project1Tag: 'Resort Wear', project1Desc: 'Sun-washed linens and flowing silhouettes inspired by Mediterranean shores.',
+            project2Title: 'Urban Edge', project2Tag: 'Streetwear', project2Desc: 'Bold cuts and modern textures that own the city from dawn to dusk.',
+            project3Title: 'Black Tie', project3Tag: 'Formal', project3Desc: 'Timeless elegance reimagined with contemporary tailoring and luxurious fabrics.',
+            testimonialsHeading: 'Client Love',
+            testimonial1Quote: 'Every piece feels like it was made just for me. The quality is unmatched.', testimonial1Name: 'Isabella Moreau', testimonial1Role: 'Fashion Editor',
+            testimonial2Quote: 'My go-to boutique for anything special. The curation is impeccable.', testimonial2Name: 'Sophia Laurent', testimonial2Role: 'Loyal Client',
+            contactHeading: 'Visit Our Boutique', contactCta: 'BOOK APPOINTMENT'
+          }},
 
-        // Landing Pages
-        { id: 'aurora-launch', name: 'Aurora Landing', desc: 'Northern lights backdrop for stunning app launches', cat: 'landing', tags: ['aurora', 'launch', 'app'], style: 'northern', industry: 'startup', accent: '#34d399', bg: '#060810', sections: ['hero', 'services', 'pricing', 'faq', 'contact'] },
-        { id: 'galaxy-event', name: 'Galaxy Event', desc: 'Swirling galaxy particles for event or conference pages', cat: 'landing', tags: ['galaxy', 'event', 'swirl'], style: 'galaxy', industry: 'music', accent: '#c084fc', bg: '#08060e', sections: ['hero', 'about', 'services', 'contact'] },
-        { id: 'prism-app', name: 'Prism App', desc: 'Iridescent prism gradients for mobile app showcases', cat: 'landing', tags: ['prism', 'app', 'color'], style: 'prism', industry: 'saas', accent: '#f472b6', bg: '#0a0810', sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'] },
+        { id: 'modern-store', name: 'Modern Store', desc: 'Clean e-commerce layout with bokeh light effects', cat: 'shopping', tags: ['shop', 'bokeh', 'clean'], style: 'bokeh', industry: 'ecommerce', accent: '#f59e0b', bg: '#08080e',
+          sections: ['hero', 'services', 'portfolio', 'pricing', 'faq', 'contact'],
+          content: {
+            heroLine1: 'Shop the', heroLine2: 'latest', heroLine3: 'trends.',
+            heroSub: 'Premium products curated for your lifestyle. Free shipping on all orders over $50.', heroCta: 'BROWSE CATALOG',
+            servicesLabel: 'CATEGORIES', servicesNav: 'Shop', servicesHeading: 'Browse Categories',
+            service1Title: 'Electronics', service1Desc: 'Latest gadgets, audio gear, and smart home devices from top brands worldwide.',
+            service2Title: 'Home & Living', service2Desc: 'Furniture, decor, and kitchen essentials that transform your space beautifully.',
+            service3Title: 'Fashion & Style', service3Desc: 'Curated clothing, shoes, and accessories for every season and occasion.',
+            portfolioLabel: 'FEATURED', portfolioNav: 'Featured', portfolioHeading: 'Featured Products',
+            project1Title: 'Wireless Earbuds Pro', project1Tag: '$129', project1Desc: 'Active noise cancellation, 32-hour battery, and studio-quality sound.',
+            project2Title: 'Smart Home Hub', project2Tag: '$249', project2Desc: 'Control all your devices from one sleek hub with voice and app control.',
+            project3Title: 'Designer Watch', project3Tag: '$399', project3Desc: 'Swiss movement, sapphire crystal, and Italian leather — timeless craftsmanship.',
+            pricingLabel: 'MEMBERSHIP', pricingNav: 'Membership', pricingHeading: 'Membership Perks',
+            tier1Name: 'Free', tier1Price: '$0', tier1Features: 'Standard shipping\nBasic rewards points\nSale notifications\nEmail support',
+            tier2Name: 'Premium', tier2Price: '$9.99/mo', tier2Features: 'Free express shipping\n2x reward points\nEarly access to sales\nPriority support\nExclusive deals',
+            tier3Name: 'VIP', tier3Price: '$29.99/mo', tier3Features: 'Same-day delivery\n5x reward points\nPersonal shopper\nFree returns\nVIP events access',
+            faqLabel: 'HELP', faqHeading: 'Shopping Help',
+            faq1Q: 'What is your return policy?', faq1A: 'Free returns within 30 days, no questions asked. Premium and VIP members get 60 days.',
+            faq2Q: 'How long does shipping take?', faq2A: 'Standard: 5-7 days. Express: 2-3 days. Same-day available for VIP members in select cities.',
+            faq3Q: 'Do you ship internationally?', faq3A: 'Yes! We ship to 50+ countries. International orders over $100 qualify for free shipping.',
+            contactHeading: 'Need Help?', contactCta: 'CONTACT SUPPORT'
+          }},
+
+        { id: 'product-launch', name: 'Product Launch', desc: 'Single product showcase with blob animations', cat: 'shopping', tags: ['product', 'blobs', 'launch'], style: 'morphBlob', industry: 'ecommerce', accent: '#ec4899', bg: '#0a0a12',
+          sections: ['hero', 'services', 'about', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Introducing', heroLine2: 'the next', heroLine3: 'generation.',
+            heroSub: 'Revolutionary design meets cutting-edge technology. Pre-order now and be the first to experience it.', heroCta: 'PRE-ORDER NOW',
+            servicesLabel: 'FEATURES', servicesNav: 'Features', servicesHeading: 'Why You\'ll Love It',
+            service1Title: 'Premium Build', service1Desc: 'Aerospace-grade materials and precision engineering for something you can feel.',
+            service2Title: 'Smart Features', service2Desc: 'AI-powered intelligence that adapts to your habits and anticipates your needs.',
+            service3Title: 'All-Day Battery', service3Desc: '48-hour battery life with fast wireless charging — go from 0 to 80% in 20 minutes.',
+            aboutLabel: 'THE STORY', aboutHeading: 'Built Different', aboutDesc: 'Three years in the making. Our team of 40 engineers obsessed over every detail — from the tactile click of each button to the seamless software experience.',
+            stat1Val: '3Y', stat1Label: 'In Development', stat2Val: '40+', stat2Label: 'Engineers', stat3Val: '200+', stat3Label: 'Prototypes Tested',
+            testimonialsHeading: 'Early Reviews',
+            testimonial1Quote: 'This changes everything. The build quality and attention to detail are on another level.', testimonial1Name: 'David Kim', testimonial1Role: 'Tech Reviewer, The Verge',
+            testimonial2Quote: 'Used it for a week — I cannot go back. This is the future.', testimonial2Name: 'Emma Wilson', testimonial2Role: 'Beta Tester',
+            contactHeading: 'Get Yours First', contactCta: 'PRE-ORDER'
+          }},
+
+        // ── Creative / Agency ──
+        { id: 'dark-agency', name: 'Dark Agency', desc: 'Premium agency site with obsidian ink fluid background', cat: 'creative', tags: ['agency', 'dark', 'premium'], style: 'obsidian', industry: 'agency', accent: '#6C5CE7', bg: '#0a0a0f',
+          sections: ['hero', 'services', 'portfolio', 'about', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'We craft', heroLine2: 'digital', heroLine3: 'experiences.',
+            heroSub: 'Award-winning design studio creating brands, websites, and campaigns that resonate and convert.', heroCta: 'START A PROJECT',
+            servicesHeading: 'Our Expertise',
+            service1Title: 'Brand Identity', service1Desc: 'Logos, visual systems, and brand guidelines that capture your essence and stand the test of time.',
+            service2Title: 'Web Design & Dev', service2Desc: 'Pixel-perfect responsive websites with immersive interactions and blazing performance.',
+            service3Title: 'Motion & Video', service3Desc: 'Motion graphics, product videos, and animated content that brings your story to life.',
+            portfolioHeading: 'Selected Work',
+            project1Title: 'Nexus Rebrand', project1Tag: 'Branding', project1Desc: 'Complete visual identity overhaul for a Fortune 500 fintech company.',
+            project2Title: 'Flux App', project2Tag: 'UI/UX Design', project2Desc: 'Mobile app design for a productivity tool now used by 2M+ people.',
+            project3Title: 'Prism Campaign', project3Tag: 'Motion Design', project3Desc: 'Multi-platform video campaign that generated 50M+ impressions in 30 days.',
+            aboutHeading: 'About Us', aboutDesc: 'A tight-knit team of strategists, designers, and developers who believe great design is great business.',
+            stat1Val: '120+', stat1Label: 'Projects Delivered', stat2Val: '8Y', stat2Label: 'In Business', stat3Val: '15', stat3Label: 'Industry Awards',
+            testimonialsHeading: 'Client Testimonials',
+            testimonial1Quote: 'They completely transformed our digital presence. Revenue up 40% since the rebrand.', testimonial1Name: 'James Mitchell', testimonial1Role: 'CMO, Nexus Finance',
+            testimonial2Quote: 'Best agency we have worked with. They treat every brief like it is their own product.', testimonial2Name: 'Lisa Nakamura', testimonial2Role: 'VP Marketing, Flux',
+            contactHeading: 'Let\'s Create Together', contactCta: 'GET IN TOUCH'
+          }},
+
+        { id: 'neon-studio', name: 'Neon Studio', desc: 'Electric neon-glow creative showcase', cat: 'creative', tags: ['neon', 'electric', 'glow'], style: 'neon', industry: 'agency', accent: '#ff006e', bg: '#0a0a10',
+          sections: ['hero', 'services', 'portfolio', 'process', 'contact'],
+          content: {
+            heroLine1: 'Creative', heroLine2: 'without', heroLine3: 'limits.',
+            heroSub: 'We are a creative studio that turns wild ideas into stunning visual experiences.', heroCta: 'SEE OUR WORK',
+            servicesHeading: 'What We Do',
+            service1Title: '3D & CGI', service1Desc: 'Photorealistic 3D renders, product visualizations, and immersive virtual environments.',
+            service2Title: 'Interactive Design', service2Desc: 'WebGL experiences, creative coding, and interactive installations that captivate.',
+            service3Title: 'Art Direction', service3Desc: 'Visual storytelling, campaign concepts, and creative direction for bold brands.',
+            portfolioHeading: 'Recent Projects',
+            project1Title: 'Synthwave Festival', project1Tag: 'Event Design', project1Desc: 'Complete visual identity and immersive stage design for a 20K attendee music festival.',
+            project2Title: 'NeoTech Product Film', project2Tag: 'Motion', project2Desc: 'Cinematic product launch video that hit 5M views in its first week.',
+            project3Title: 'Arcadia VR', project3Tag: 'Interactive', project3Desc: 'Virtual reality art gallery exhibited at three international design conferences.',
+            processHeading: 'Our Workflow',
+            step1Title: 'Concept', step1Desc: 'We start with mood boards, references, and wild brainstorming to find the creative direction.',
+            step2Title: 'Craft', step2Desc: 'Our team brings the concept to life through iterative design, prototyping, and refinement.',
+            step3Title: 'Deliver', step3Desc: 'Final assets delivered on time in all formats, with ongoing support and optimization.',
+            contactHeading: 'Start Something Bold', contactCta: 'REACH OUT'
+          }},
+
+        { id: 'nebula-creative', name: 'Nebula Creative', desc: 'Cosmic nebula particles with deep space atmosphere', cat: 'creative', tags: ['space', 'nebula', 'creative'], style: 'nebula', industry: 'agency', accent: '#a78bfa', bg: '#06060e',
+          sections: ['hero', 'portfolio', 'about', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Imagine.', heroLine2: 'Create.', heroLine3: 'Inspire.',
+            heroSub: 'Multidisciplinary creative studio specializing in visual storytelling and experiential design.', heroCta: 'EXPLORE WORK',
+            portfolioHeading: 'Our Work',
+            project1Title: 'Ethereal Collection', project1Tag: 'Photography', project1Desc: 'Fine art photography series exploring light, texture, and human connection.',
+            project2Title: 'Pulse Magazine', project2Tag: 'Editorial', project2Desc: 'Complete editorial redesign of a leading culture and arts publication.',
+            project3Title: 'Aurora Installation', project3Tag: 'Experiential', project3Desc: 'Large-scale light installation exhibited at the Museum of Contemporary Art.',
+            aboutHeading: 'The Studio', aboutDesc: 'We are a collective of artists, designers, and technologists based in Brooklyn. We believe in work that makes people stop, look, and feel something.',
+            stat1Val: '80+', stat1Label: 'Projects', stat2Val: '6Y', stat2Label: 'Creating', stat3Val: '12', stat3Label: 'Countries Exhibited',
+            testimonialsHeading: 'Kind Words',
+            testimonial1Quote: 'Their visual language is unlike anything else. Every collaboration has been extraordinary.', testimonial1Name: 'Ana Torres', testimonial1Role: 'Creative Director, Vogue',
+            testimonial2Quote: 'They see what others cannot. Working with them elevated our entire brand vision.', testimonial2Name: 'Chris Lee', testimonial2Role: 'Founder, Pulse Media',
+            contactHeading: 'Collaborate With Us', contactCta: 'SAY HELLO'
+          }},
+
+        { id: 'minimal-folio', name: 'Minimal Portfolio', desc: 'Clean portfolio with connected constellation dots', cat: 'creative', tags: ['minimal', 'constellation', 'clean'], style: 'constellation', industry: 'portfolio', accent: '#60a5fa', bg: '#06080f',
+          sections: ['hero', 'portfolio', 'about', 'contact'],
+          content: {
+            heroLine1: 'Design &', heroLine2: 'development', heroLine3: 'portfolio.',
+            heroSub: 'Crafting clean, user-centered digital experiences with modern technology and thoughtful design.', heroCta: 'SEE MY WORK',
+            portfolioLabel: 'WORK', portfolioNav: 'Work', portfolioHeading: 'Featured Projects',
+            project1Title: 'HealthTrack App', project1Tag: 'UI/UX · Mobile', project1Desc: 'Health and wellness tracking app with intuitive data visualization.',
+            project2Title: 'Notion Redesign', project2Tag: 'Web Design', project2Desc: 'A concept redesign focused on accessibility and streamlined navigation.',
+            project3Title: 'Finova Dashboard', project3Tag: 'SaaS · React', project3Desc: 'Financial analytics dashboard for startup founders and investors.',
+            aboutHeading: 'About', aboutDesc: 'Product designer and front-end developer with a passion for clean interfaces and meaningful interactions. Currently open to freelance opportunities.',
+            stat1Val: '50+', stat1Label: 'Projects', stat2Val: '7Y', stat2Label: 'Experience', stat3Val: '100%', stat3Label: 'Satisfaction',
+            contactHeading: 'Work Together', contactCta: 'EMAIL ME'
+          }},
+
+        // ── Food / Restaurant ──
+        { id: 'fine-dining', name: 'Fine Dining', desc: 'Warm ember-lit restaurant site with rich textures', cat: 'food', tags: ['restaurant', 'ember', 'warm'], style: 'ember', industry: 'restaurant', accent: '#f97316', bg: '#0f0a06',
+          sections: ['hero', 'services', 'about', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Savor the', heroLine2: 'art of', heroLine3: 'cuisine.',
+            heroSub: 'An unforgettable dining experience with locally sourced ingredients and world-class technique.', heroCta: 'RESERVE A TABLE',
+            servicesLabel: 'OUR MENU', servicesNav: 'Menu', servicesHeading: 'Signature Dishes',
+            service1Title: 'Wagyu Tartare', service1Desc: 'Hand-cut A5 wagyu with truffle aioli, microgreens, and gold leaf — a house signature.',
+            service2Title: 'Pan-Seared Scallops', service2Desc: 'Fresh diver scallops on cauliflower purée with brown butter and crispy capers.',
+            service3Title: 'Dark Chocolate Soufflé', service3Desc: 'Rich Valrhona chocolate soufflé with vanilla bean crème anglaise. Allow 20 minutes.',
+            aboutLabel: 'OUR STORY', aboutHeading: 'A Culinary Journey', aboutDesc: 'Founded by Chef Laurent Dubois, we have spent 15 years perfecting the art of combining local ingredients with French technique. Every dish tells a story.',
+            stat1Val: '15Y', stat1Label: 'Heritage', stat2Val: '3', stat2Label: 'Michelin Stars', stat3Val: '50+', stat3Label: 'Local Farm Partners',
+            testimonialsHeading: 'Guest Reviews',
+            testimonial1Quote: 'The best dining experience of my life. Every course was a work of art.', testimonial1Name: 'Robert Sterling', testimonial1Role: 'Food & Wine Magazine',
+            testimonial2Quote: 'Chef Dubois creates magic. This restaurant is worth a trip from anywhere in the world.', testimonial2Name: 'Marie Kondo', testimonial2Role: 'Culinary Critic',
+            contactHeading: 'Make a Reservation', contactLabel: 'RESERVATIONS', contactCta: 'BOOK A TABLE'
+          }},
+
+        { id: 'food-brand', name: 'Food Brand', desc: 'Sunset-toned food brand with organic blob shapes', cat: 'food', tags: ['food', 'sunset', 'organic'], style: 'sunsetBlob', industry: 'restaurant', accent: '#fb923c', bg: '#0e0a08',
+          sections: ['hero', 'services', 'portfolio', 'contact'],
+          content: {
+            heroLine1: 'Fresh.', heroLine2: 'Organic.', heroLine3: 'Delicious.',
+            heroSub: 'Farm-to-table ingredients for the modern kitchen. Sustainably sourced, beautifully crafted.', heroCta: 'SHOP NOW',
+            servicesLabel: 'PRODUCTS', servicesNav: 'Products', servicesHeading: 'Our Products',
+            service1Title: 'Cold-Pressed Juices', service1Desc: 'Raw, unpasteurized fruit and vegetable blends made fresh daily from organic farms.',
+            service2Title: 'Artisan Granola', service2Desc: 'Small-batch granola with locally sourced honey, nuts, and dried fruits. No added sugar.',
+            service3Title: 'Organic Honey', service3Desc: 'Single-origin raw honey harvested from our partner beekeepers across the Pacific Northwest.',
+            portfolioLabel: 'OUR RANGE', portfolioNav: 'Range', portfolioHeading: 'Product Range',
+            project1Title: 'Morning Collection', project1Tag: 'Breakfast', project1Desc: 'Start your day right with our cold-pressed juices, granola, and overnight oat kits.',
+            project2Title: 'Snack Bar Series', project2Tag: 'On-the-Go', project2Desc: 'Nutrient-dense bars made with dates, nuts, and superfoods. No artificial anything.',
+            project3Title: 'Pantry Essentials', project3Tag: 'Staples', project3Desc: 'Olive oils, vinegars, spice blends, and preserves for your everyday cooking.',
+            contactHeading: 'Wholesale Inquiries', contactCta: 'PARTNER WITH US'
+          }},
+
+        { id: 'cafe-cozy', name: 'Cozy Café', desc: 'Warm firefly-lit ambiance for coffee shops and cafes', cat: 'food', tags: ['cafe', 'fireflies', 'cozy'], style: 'fireflies', industry: 'restaurant', accent: '#fbbf24', bg: '#0a0806',
+          sections: ['hero', 'services', 'about', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Your daily', heroLine2: 'dose of', heroLine3: 'comfort.',
+            heroSub: 'Specialty coffee, homemade pastries, and a warm atmosphere — your neighborhood escape.', heroCta: 'VIEW MENU',
+            servicesLabel: 'MENU', servicesNav: 'Menu', servicesHeading: 'Today\'s Menu',
+            service1Title: 'Signature Lattes', service1Desc: 'Lavender oat, caramel brûlée, and our famous honey cinnamon — all made with house-roasted beans.',
+            service2Title: 'Fresh Pastries', service2Desc: 'Baked in-house every morning: croissants, scones, banana bread, and seasonal specials.',
+            service3Title: 'Brunch Specials', service3Desc: 'Available weekends 9am-2pm. Avocado toast, eggs benedict, and our legendary pancake stack.',
+            aboutLabel: 'OUR STORY', aboutHeading: 'Welcome Home', aboutDesc: 'What started as a small corner shop in 2019 has become the neighborhood living room. We source our beans directly from farmers and bake everything fresh, every single day.',
+            stat1Val: '6Y', stat1Label: 'Brewing', stat2Val: '12', stat2Label: 'Bean Origins', stat3Val: '500+', stat3Label: 'Cups Daily',
+            testimonialsHeading: 'What Regulars Say',
+            testimonial1Quote: 'Best coffee in the city, hands down. And the banana bread is dangerously good.', testimonial1Name: 'Tom Richards', testimonial1Role: 'Daily Regular',
+            testimonial2Quote: 'My remote office. Great WiFi, better coffee, and the warmest staff you will ever meet.', testimonial2Name: 'Ava Chen', testimonial2Role: 'Freelancer',
+            contactHeading: 'Visit Us', contactCta: 'GET DIRECTIONS'
+          }},
+
+        // ── Health / Wellness ──
+        { id: 'medical-clinic', name: 'Medical Clinic', desc: 'Clean frost-crystalline healthcare site with trust design', cat: 'health', tags: ['medical', 'frost', 'clean'], style: 'frost', industry: 'healthcare', accent: '#38bdf8', bg: '#060a0e',
+          sections: ['hero', 'services', 'about', 'testimonials', 'faq', 'contact'],
+          content: {
+            heroLine1: 'Your health', heroLine2: 'our', heroLine3: 'priority.',
+            heroSub: 'Comprehensive healthcare with compassion, expertise, and the latest medical technology.', heroCta: 'BOOK APPOINTMENT',
+            servicesLabel: 'DEPARTMENTS', servicesNav: 'Departments', servicesHeading: 'Our Departments',
+            service1Title: 'General Practice', service1Desc: 'Routine check-ups, preventive care, and chronic disease management with a personal touch.',
+            service2Title: 'Cardiology', service2Desc: 'Advanced cardiac diagnostics, treatment, and rehabilitation with board-certified specialists.',
+            service3Title: 'Orthopedics', service3Desc: 'Sports medicine, joint replacement, and physical therapy to get you back in motion.',
+            aboutLabel: 'ABOUT US', aboutHeading: 'Trusted Care', aboutDesc: 'Serving our community for over 25 years with a patient-first approach. Our team of 50+ physicians and specialists is committed to your well-being.',
+            stat1Val: '25Y', stat1Label: 'Serving Community', stat2Val: '50+', stat2Label: 'Specialists', stat3Val: '100K+', stat3Label: 'Patients Cared For',
+            testimonialsHeading: 'Patient Stories',
+            testimonial1Quote: 'Dr. Patel and her team saved my life. The care and attention here is beyond anything I have experienced.', testimonial1Name: 'Frank Gonzalez', testimonial1Role: 'Patient',
+            testimonial2Quote: 'From reception to recovery, every step was handled with genuine kindness and expertise.', testimonial2Name: 'Dorothy Mills', testimonial2Role: 'Patient',
+            faqLabel: 'PATIENT INFO', faqHeading: 'Patient Information',
+            faq1Q: 'Do you accept insurance?', faq1A: 'We accept all major insurance providers including Aetna, Blue Cross, Cigna, and United Healthcare.',
+            faq2Q: 'How do I book an appointment?', faq2A: 'Book online 24/7, call our reception at (555) 100-2000, or walk in during business hours.',
+            faq3Q: 'Do you offer telehealth visits?', faq3A: 'Yes — video consultations are available for follow-ups and non-emergency consultations.',
+            contactHeading: 'Schedule a Visit', contactCta: 'CALL NOW'
+          }},
+
+        { id: 'wellness-spa', name: 'Wellness Spa', desc: 'Tranquil ocean-wave spa with calming blue tones', cat: 'health', tags: ['spa', 'ocean', 'calm'], style: 'oceanBlob', industry: 'fitness', accent: '#22d3ee', bg: '#060a0e',
+          sections: ['hero', 'services', 'about', 'pricing', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Restore.', heroLine2: 'Rejuvenate.', heroLine3: 'Renew.',
+            heroSub: 'Luxury wellness treatments tailored to your body and mind. Your journey to balance starts here.', heroCta: 'BOOK SESSION',
+            servicesLabel: 'TREATMENTS', servicesNav: 'Treatments', servicesHeading: 'Our Treatments',
+            service1Title: 'Deep Tissue Massage', service1Desc: 'Targeted pressure therapy to release tension, improve circulation, and restore mobility.',
+            service2Title: 'Aromatherapy Facial', service2Desc: 'Organic botanical extracts and essential oils for radiant, deeply nourished skin.',
+            service3Title: 'Hot Stone Therapy', service3Desc: 'Heated basalt stones placed on key energy points to melt away stress and align your body.',
+            aboutLabel: 'THE SPA', aboutHeading: 'Your Sanctuary', aboutDesc: 'Nestled in nature, our spa combines ancient healing traditions with modern wellness science. Every treatment is customized to your unique needs.',
+            stat1Val: '10Y', stat1Label: 'Experience', stat2Val: '5K+', stat2Label: 'Happy Clients', stat3Val: '20+', stat3Label: 'Certified Therapists',
+            pricingLabel: 'PACKAGES', pricingNav: 'Packages', pricingHeading: 'Spa Packages',
+            tier1Name: 'Day Pass', tier1Price: '$89', tier1Features: '1 treatment of choice\nSauna & steam access\nHerbal tea service\nRelaxation lounge',
+            tier2Name: 'Retreat', tier2Price: '$249', tier2Features: '3 treatments\nFull spa access all day\nOrganic lunch included\nAromatherapy gift set\nPriority booking',
+            tier3Name: 'Annual', tier3Price: '$1,999/yr', tier3Features: 'Monthly treatment credits\nUnlimited spa access\nGuest passes (4/year)\nExclusive member events\n20% off all add-ons',
+            testimonialsHeading: 'Guest Experiences',
+            testimonial1Quote: 'I walked in stressed and walked out floating. The hot stone therapy was life-changing.', testimonial1Name: 'Hannah Brooks', testimonial1Role: 'Wellness Blogger',
+            testimonial2Quote: 'The annual membership pays for itself. This spa is my sanctuary.', testimonial2Name: 'Michael Tanaka', testimonial2Role: 'Member since 2023',
+            contactHeading: 'Book Your Escape', contactCta: 'RESERVE NOW'
+          }},
+
+        { id: 'fitness-gym', name: 'Fitness Studio', desc: 'High-energy spark particles with bold sports aesthetic', cat: 'health', tags: ['fitness', 'spark', 'energy'], style: 'spark', industry: 'fitness', accent: '#ef4444', bg: '#0a0608',
+          sections: ['hero', 'services', 'about', 'pricing', 'contact'],
+          content: {
+            heroLine1: 'Push your', heroLine2: 'limits', heroLine3: 'further.',
+            heroSub: 'High-intensity training programs designed to transform your body and mindset.', heroCta: 'JOIN NOW',
+            servicesLabel: 'PROGRAMS', servicesNav: 'Programs', servicesHeading: 'Our Programs',
+            service1Title: 'HIIT Training', service1Desc: '45-minute full-body sessions that burn fat, build muscle, and boost endurance.',
+            service2Title: 'Strength & Conditioning', service2Desc: 'Progressive overload programs with certified coaches for serious strength gains.',
+            service3Title: 'Yoga & Recovery', service3Desc: 'Active recovery, flexibility, and mindfulness classes to complement your training.',
+            aboutLabel: 'THE GYM', aboutHeading: 'More Than a Gym', aboutDesc: 'State-of-the-art equipment, expert coaches, and a community that pushes each other to be better every day.',
+            stat1Val: '5K+', stat1Label: 'Active Members', stat2Val: '20+', stat2Label: 'Expert Trainers', stat3Val: '50+', stat3Label: 'Classes per Week',
+            pricingLabel: 'MEMBERSHIPS', pricingNav: 'Memberships', pricingHeading: 'Membership Plans',
+            tier1Name: 'Basic', tier1Price: '$39/mo', tier1Features: 'Gym floor access\nGroup classes\nLocker room\nFitness assessment',
+            tier2Name: 'Premium', tier2Price: '$79/mo', tier2Features: 'All Basic perks\n4 PT sessions/month\nNutrition plan\nSauna & recovery zone\nGuest pass (1/month)',
+            tier3Name: 'Elite', tier3Price: '$149/mo', tier3Features: 'All Premium perks\nUnlimited personal training\nCustom meal prep plan\n24/7 gym access\nPriority class booking',
+            contactHeading: 'Start Your Journey', contactCta: 'GET FREE TRIAL'
+          }},
+
+        // ── Landing Pages ──
+        { id: 'aurora-launch', name: 'Aurora Landing', desc: 'Northern lights backdrop for stunning app launches', cat: 'landing', tags: ['aurora', 'launch', 'app'], style: 'northern', industry: 'startup', accent: '#34d399', bg: '#060810',
+          sections: ['hero', 'services', 'pricing', 'faq', 'contact'],
+          content: {
+            heroLine1: 'Build apps', heroLine2: 'that', heroLine3: 'scale.',
+            heroSub: 'The developer platform for shipping production-ready apps in days, not months. Start free.', heroCta: 'GET STARTED FREE',
+            servicesLabel: 'FEATURES', servicesNav: 'Features', servicesHeading: 'Why Developers Choose Us',
+            service1Title: 'One-Click Deploy', service1Desc: 'Push to production with zero configuration. Automatic SSL, CDN, and global edge caching.',
+            service2Title: 'Built-in Database', service2Desc: 'Serverless Postgres with branching, instant rollbacks, and automatic scaling.',
+            service3Title: 'Edge Functions', service3Desc: 'Run server-side code at the edge in 50+ regions. Sub-10ms response times globally.',
+            pricingHeading: 'Start Free, Scale Up',
+            tier1Name: 'Hobby', tier1Price: '$0/mo', tier1Features: '3 projects\n100K requests/month\n1GB database\nCommunity support',
+            tier2Name: 'Pro', tier2Price: '$20/mo', tier2Features: 'Unlimited projects\n10M requests/month\n10GB database\nEmail support\nCustom domains',
+            tier3Name: 'Team', tier3Price: '$50/seat/mo', tier3Features: 'Everything in Pro\nSSO & audit logs\n100GB database\nDedicated support\nSLA guarantee',
+            faq1Q: 'Do I need a credit card to start?', faq1A: 'Nope. The Hobby plan is completely free with no credit card required. Upgrade when you are ready.',
+            faq2Q: 'Can I migrate from another platform?', faq2A: 'Yes — we provide automated migration tools for Heroku, Vercel, Netlify, and Railway.',
+            faq3Q: 'What languages do you support?', faq3A: 'Node.js, Python, Go, Rust, Ruby, and Deno. Bring your own Docker image for anything else.',
+            contactHeading: 'Ready to Ship?', contactCta: 'START BUILDING'
+          }},
+
+        { id: 'galaxy-event', name: 'Galaxy Event', desc: 'Swirling galaxy particles for event or conference pages', cat: 'landing', tags: ['galaxy', 'event', 'swirl'], style: 'galaxy', industry: 'music', accent: '#c084fc', bg: '#08060e',
+          sections: ['hero', 'about', 'services', 'contact'],
+          content: {
+            heroLine1: 'The biggest', heroLine2: 'event of', heroLine3: '2026.',
+            heroSub: 'Join 10,000+ attendees for three days of keynotes, workshops, and unforgettable performances.', heroCta: 'GET TICKETS',
+            aboutLabel: 'THE EVENT', aboutNav: 'Event', aboutHeading: 'What to Expect', aboutDesc: 'Three stages, 80+ speakers, live music, food trucks, and networking events — all in one extraordinary weekend at the Convention Center, March 20-22.',
+            stat1Val: '10K+', stat1Label: 'Attendees', stat2Val: '80+', stat2Label: 'Speakers', stat3Val: '3', stat3Label: 'Days of Inspiration',
+            servicesLabel: 'SPEAKERS', servicesNav: 'Speakers', servicesHeading: 'Featured Speakers',
+            service1Title: 'Dr. Aisha Patel', service1Desc: 'AI researcher and bestselling author on the future of human-AI collaboration.',
+            service2Title: 'Marcus Zhang', service2Desc: 'Ex-Google engineer turned startup founder. Building the next generation of dev tools.',
+            service3Title: 'Elena Voss', service3Desc: 'Grammy-winning musician and creative technologist. Live performance + talk on art and code.',
+            contactHeading: 'Don\'t Miss Out', contactCta: 'REGISTER NOW'
+          }},
+
+        { id: 'prism-app', name: 'Prism App', desc: 'Iridescent prism gradients for mobile app showcases', cat: 'landing', tags: ['prism', 'app', 'color'], style: 'prism', industry: 'saas', accent: '#f472b6', bg: '#0a0810',
+          sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'],
+          content: {
+            heroLine1: 'Your all-in-one', heroLine2: 'mobile', heroLine3: 'companion.',
+            heroSub: 'Track habits, manage tasks, and achieve goals — all in one beautiful, intuitive app.', heroCta: 'DOWNLOAD FREE',
+            servicesLabel: 'FEATURES', servicesNav: 'Features', servicesHeading: 'Powerful Features',
+            service1Title: 'Smart Habits', service1Desc: 'AI-powered habit tracking that learns your patterns and sends gentle, well-timed reminders.',
+            service2Title: 'Focus Timer', service2Desc: 'Pomodoro-style deep work sessions with ambient soundscapes and distraction blocking.',
+            service3Title: 'Progress Insights', service3Desc: 'Beautiful charts and weekly reports showing your growth, streaks, and personal records.',
+            pricingHeading: 'Choose Your Plan',
+            tier1Name: 'Free', tier1Price: '$0', tier1Features: '3 habit trackers\nBasic focus timer\nDaily streaks\n7-day history',
+            tier2Name: 'Pro', tier2Price: '$4.99/mo', tier2Features: 'Unlimited habits\nAll sounds & themes\nFull analytics\nCloud sync\nWidget support',
+            tier3Name: 'Lifetime', tier3Price: '$49.99', tier3Features: 'Everything in Pro\nForever — one payment\nBeta feature access\nPriority support\nFamily sharing (5)',
+            testimonialsHeading: 'User Love',
+            testimonial1Quote: 'This app replaced 4 others for me. The habit tracking is incredibly smart.', testimonial1Name: 'Jordan Ellis', testimonial1Role: '★★★★★ App Store',
+            testimonial2Quote: 'Focus timer + habit streaks = productivity superpower. Best $5/month I spend.', testimonial2Name: 'Megan Sharp', testimonial2Role: '★★★★★ Google Play',
+            contactHeading: 'Join 2M+ Users', contactCta: 'DOWNLOAD NOW'
+          }}
     ];
 
     function _setupTemplates() {
@@ -1338,7 +1710,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             accent: tpl.accent,
             bg: tpl.bg,
             sections: tpl.sections,
-            name: tpl.name
+            name: tpl.name,
+            content: tpl.content || {}
         } }));
         _updateStatus({ tag: 'template', id: tpl.name, rect: null });
     }
