@@ -1418,14 +1418,18 @@ window.ArbelCompiler = (function () {
             }
 
             // Collect inline style overrides
-            var styleProps = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing',
-                'textAlign', 'color', 'backgroundColor', 'paddingTop', 'paddingRight',
-                'paddingBottom', 'paddingLeft', 'borderRadius', 'opacity'];
+            var styleProps = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing',
+                'textAlign', 'textDecoration', 'textTransform', 'color', 'backgroundColor',
+                'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                'border', 'borderRadius', 'opacity', 'zIndex', 'transform',
+                'filter', 'objectFit', 'visibility'];
             var styleParts = [];
             styleProps.forEach(function (prop) {
                 if (o[prop] !== undefined && o[prop] !== '') {
                     var cssProp = prop.replace(/([A-Z])/g, '-$1').toLowerCase();
-                    styleParts.push(cssProp + ':' + o[prop]);
+                    var val = o[prop];
+                    if (prop === 'zIndex') styleParts.push('z-index:' + val + ';position:relative');
+                    else styleParts.push(cssProp + ':' + val);
                 }
             });
             if (o.backdrop && o.backdrop !== 'none') {

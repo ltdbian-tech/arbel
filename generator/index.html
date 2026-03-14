@@ -623,6 +623,27 @@
                         <!-- Layers Tab -->
                         <div class="bfs-left-panel bfs-panel-content active" data-panel="layers">
                             <div class="bfs-panel-head mono">LAYERS</div>
+                            <div class="layer-actions" id="layerActions">
+                                <button class="layer-action-btn" id="layerBringFront" title="Bring to Front">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M17 7H8M17 7V16"/></svg>
+                                </button>
+                                <button class="layer-action-btn" id="layerForward" title="Bring Forward">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                                </button>
+                                <button class="layer-action-btn" id="layerBackward" title="Send Backward">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                                </button>
+                                <button class="layer-action-btn" id="layerSendBack" title="Send to Back">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 7L7 17M7 17h9M7 17V8"/></svg>
+                                </button>
+                                <span class="layer-divider"></span>
+                                <button class="layer-action-btn" id="layerToggleVis" title="Toggle Visibility">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                                <button class="layer-action-btn" id="layerToggleLock" title="Toggle Lock">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                                </button>
+                            </div>
                             <div class="editor-tree" id="editorTree"></div>
                         </div>
 
@@ -781,6 +802,21 @@
                             <div class="editor-text-group" style="display:none">
                                 <div class="editor-section-label mono">TEXT</div>
                                 <textarea class="editor-text-input gen-textarea" rows="2" placeholder="Edit text..."></textarea>
+                                <div class="editor-text-format" id="editorTextFormat">
+                                    <button class="editor-format-btn" data-format="bold" title="Bold"><b>B</b></button>
+                                    <button class="editor-format-btn" data-format="italic" title="Italic"><i>I</i></button>
+                                    <button class="editor-format-btn" data-format="underline" title="Underline"><u>U</u></button>
+                                    <button class="editor-format-btn" data-format="strikethrough" title="Strikethrough"><s>S</s></button>
+                                    <button class="editor-format-btn" data-format="uppercase" title="Uppercase">AA</button>
+                                </div>
+                            </div>
+
+                            <!-- Link -->
+                            <div class="editor-section-label mono" style="margin-top:8px">LINK</div>
+                            <div class="editor-row">
+                                <input type="url" class="gen-input editor-link-input" id="editorLinkUrl" placeholder="https://...">
+                                <button class="bfs-btn bfs-btn--sm" id="editorLinkSet" title="Set Link">&#128279;</button>
+                                <button class="bfs-btn bfs-btn--sm" id="editorLinkRemove" title="Remove Link">&times;</button>
                             </div>
 
                             <!-- Font -->
@@ -905,15 +941,91 @@
                                 </div>
                             </div>
 
+                            <!-- Border -->
+                            <div class="editor-section-label mono" style="margin-top:10px">BORDER</div>
+                            <div class="editor-row">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Width</span>
+                                    <input type="number" class="gen-input" id="editorBorderWidth" min="0" max="20" placeholder="0">
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Style</span>
+                                    <select class="gen-select" id="editorBorderStyle">
+                                        <option value="none">None</option>
+                                        <option value="solid">Solid</option>
+                                        <option value="dashed">Dashed</option>
+                                        <option value="dotted">Dotted</option>
+                                        <option value="double">Double</option>
+                                        <option value="groove">Groove</option>
+                                    </select>
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Color</span>
+                                    <input type="color" class="editor-color" id="editorBorderColor" value="#646cff">
+                                </div>
+                            </div>
+
                             <!-- Border Radius -->
                             <div class="editor-section-label mono" style="margin-top:10px">BORDER RADIUS</div>
                             <input type="range" class="gen-range editor-radius" id="editorRadius" min="0" max="50" value="0">
                             <span class="editor-hint mono" id="editorRadiusVal">0px</span>
 
+                            <!-- Transform -->
+                            <div class="editor-section-label mono" style="margin-top:10px">TRANSFORM</div>
+                            <div class="editor-row">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Rotate</span>
+                                    <input type="range" class="gen-range" id="editorRotate" min="-180" max="180" value="0">
+                                    <span class="editor-hint mono" id="editorRotateVal">0&deg;</span>
+                                </div>
+                            </div>
+
                             <!-- Opacity -->
                             <div class="editor-section-label mono" style="margin-top:10px">OPACITY</div>
                             <input type="range" class="gen-range editor-opacity" id="editorOpacity" min="0" max="100" value="100">
                             <span class="editor-hint mono" id="editorOpacityVal">100%</span>
+
+                            <!-- Z-Index -->
+                            <div class="editor-section-label mono" style="margin-top:10px">LAYER ORDER (Z-INDEX)</div>
+                            <div class="editor-row">
+                                <input type="number" class="gen-input" id="editorZIndex" min="-10" max="9999" placeholder="auto">
+                                <button class="bfs-btn bfs-btn--sm" id="editorZFront" title="Bring to Front">&#8593;&#8593;</button>
+                                <button class="bfs-btn bfs-btn--sm" id="editorZBack" title="Send to Back">&#8595;&#8595;</button>
+                            </div>
+
+                            <!-- Image Filters (shown for IMG elements) -->
+                            <div class="editor-img-group" id="editorImgGroup" style="display:none">
+                                <div class="editor-section-label mono" style="margin-top:10px">IMAGE FILTERS</div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Brightness</span>
+                                    <input type="range" class="gen-range" id="editorFilterBrightness" min="0" max="200" value="100">
+                                    <span class="editor-hint mono" id="editorFilterBrightnessVal">100%</span>
+                                </div>
+                                <div class="editor-col" style="margin-top:4px">
+                                    <span class="editor-hint mono">Contrast</span>
+                                    <input type="range" class="gen-range" id="editorFilterContrast" min="0" max="200" value="100">
+                                    <span class="editor-hint mono" id="editorFilterContrastVal">100%</span>
+                                </div>
+                                <div class="editor-col" style="margin-top:4px">
+                                    <span class="editor-hint mono">Saturate</span>
+                                    <input type="range" class="gen-range" id="editorFilterSaturate" min="0" max="200" value="100">
+                                    <span class="editor-hint mono" id="editorFilterSaturateVal">100%</span>
+                                </div>
+                                <div class="editor-col" style="margin-top:4px">
+                                    <span class="editor-hint mono">Blur</span>
+                                    <input type="range" class="gen-range" id="editorFilterBlur" min="0" max="20" value="0">
+                                    <span class="editor-hint mono" id="editorFilterBlurVal">0px</span>
+                                </div>
+                                <div class="editor-col" style="margin-top:4px">
+                                    <span class="editor-hint mono">Object Fit</span>
+                                    <select class="gen-select" id="editorObjectFit">
+                                        <option value="cover">Cover</option>
+                                        <option value="contain">Contain</option>
+                                        <option value="fill">Fill</option>
+                                        <option value="none">None</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Animation Tab -->
