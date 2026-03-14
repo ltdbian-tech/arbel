@@ -52,6 +52,15 @@
         bgVal: $('bgVal'),
         sectionToggles: $('sectionToggles'),
         contentEditor: $('contentEditor'),
+        particleConfig: $('particleConfig'),
+        particleCount: $('particleCount'),
+        particleCountVal: $('particleCountVal'),
+        particleSpeed: $('particleSpeed'),
+        particleSpeedVal: $('particleSpeedVal'),
+        particleGlow: $('particleGlow'),
+        particleGlowVal: $('particleGlowVal'),
+        particleConnect: $('particleConnect'),
+        particleInteract: $('particleInteract'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -233,9 +242,13 @@
         styleCanvasesInit = true;
 
         $$('.style-canvas').forEach(function (canvas) {
-            var style = canvas.dataset.shader;
-            var frag = ArbelCompiler.getShaderFragment(style);
-            _drawMiniShader(canvas, frag);
+            if (canvas.dataset.shader) {
+                var frag = ArbelCompiler.getShaderFragment(canvas.dataset.shader);
+                _drawMiniShader(canvas, frag);
+            } else if (canvas.dataset.particle) {
+                var pCfg = ArbelCompiler.getParticleConfig(canvas.dataset.particle);
+                if (pCfg) _drawMiniParticles(canvas, pCfg);
+            }
         });
     }
 
@@ -293,6 +306,83 @@
         draw();
     }
 
+    function _drawMiniParticles(canvas, pCfg) {
+        var w = canvas.parentElement.offsetWidth || 200;
+        var h = canvas.parentElement.offsetHeight || 120;
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        var cfg = pCfg.config;
+        var baseColor = cfg.baseColor;
+        var grad = cfg.bgGrad;
+        var isMatrix = cfg.shape === 'char';
+        var count = 40;
+        var pts = [];
+        for (var i = 0; i < count; i++) {
+            pts.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: isMatrix ? Math.random() * 1.5 + 0.5 : (Math.random() - 0.5) * 0.5,
+                r: isMatrix ? 0 : Math.random() * 2 + 1,
+                ch: isMatrix ? String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96)) : null
+            });
+        }
+
+        function draw() {
+            var grd = ctx.createLinearGradient(0, 0, 0, h);
+            grd.addColorStop(0, grad[0]);
+            grd.addColorStop(1, grad[1]);
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, w, h);
+
+            for (var i = 0; i < pts.length; i++) {
+                var p = pts[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0) p.x = w;
+                if (p.x > w) p.x = 0;
+                if (p.y < 0) p.y = h;
+                if (p.y > h) p.y = 0;
+
+                if (isMatrix) {
+                    ctx.fillStyle = baseColor;
+                    ctx.font = '10px monospace';
+                    ctx.globalAlpha = Math.random() * 0.5 + 0.3;
+                    ctx.fillText(p.ch, p.x, p.y);
+                    ctx.globalAlpha = 1;
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fillStyle = baseColor;
+                    ctx.globalAlpha = 0.7;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+
+                if (cfg.connectDist > 0 && !isMatrix) {
+                    for (var j = i + 1; j < pts.length; j++) {
+                        var dx = pts[j].x - p.x, dy = pts[j].y - p.y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 40) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(pts[j].x, pts[j].y);
+                            ctx.strokeStyle = baseColor;
+                            ctx.globalAlpha = 0.2;
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                        }
+                    }
+                }
+            }
+            canvas._raf = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
     els.styleGrid.addEventListener('click', function (e) {
         var card = e.target.closest('.style-card');
         if (!card) return;
@@ -307,7 +397,13 @@
         if (match) {
             els.accentColor.value = match.colors.accent;
             els.accentVal.textContent = match.colors.accent;
+            els.bgColor.value = match.colors.bg;
+            els.bgVal.textContent = match.colors.bg;
         }
+
+        // Show/hide particle config panel
+        var isParticle = card.dataset.type === 'particle';
+        els.particleConfig.style.display = isParticle ? '' : 'none';
     });
 
     // Navigation
@@ -324,6 +420,17 @@
     });
     els.bgColor.addEventListener('input', function () {
         els.bgVal.textContent = els.bgColor.value;
+    });
+
+    /* ─── PARTICLE SLIDERS ─── */
+    els.particleCount.addEventListener('input', function () {
+        els.particleCountVal.textContent = els.particleCount.value;
+    });
+    els.particleSpeed.addEventListener('input', function () {
+        els.particleSpeedVal.textContent = parseFloat(els.particleSpeed.value).toFixed(1);
+    });
+    els.particleGlow.addEventListener('input', function () {
+        els.particleGlowVal.textContent = parseFloat(els.particleGlow.value).toFixed(2);
     });
 
     /* ─── SECTION TOGGLES ─── */
@@ -434,7 +541,7 @@
             if (key && el.value.trim()) content[key] = el.value.trim();
         });
 
-        return {
+        var cfg = {
             brandName: els.brandName.value.trim() || 'My Site',
             tagline: els.tagline.value.trim(),
             style: state.style,
@@ -445,6 +552,20 @@
             sections: getActiveSections(),
             content: content
         };
+
+        // Include particle settings if a particle style is selected
+        var pCfg = ArbelCompiler.getParticleConfig(state.style);
+        if (pCfg) {
+            cfg.particles = {
+                count: parseInt(els.particleCount.value, 10),
+                speed: parseFloat(els.particleSpeed.value),
+                glow: parseFloat(els.particleGlow.value),
+                interact: els.particleInteract.checked,
+                connect: els.particleConnect.checked
+            };
+        }
+
+        return cfg;
     }
 
     /* ─── PREVIEW ─── */

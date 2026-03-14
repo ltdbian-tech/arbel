@@ -27,9 +27,15 @@ window.ArbelCompiler = (function () {
             bgColor: '#0a0a0f',
             contactEmail: '',
             sections: ['hero', 'services', 'about', 'contact'],
-            content: {}
+            content: {},
+            particles: { count: 120, speed: 1, glow: 0.6, interact: true, connect: true }
         }, cfg);
         return d;
+    }
+
+    /** Check if a style uses particles instead of shaders */
+    function _isParticleStyle(style) {
+        return !!PARTICLES[style];
     }
 
     /* ─── SHADERS ─── */
@@ -131,6 +137,34 @@ window.ArbelCompiler = (function () {
         }
     };
 
+    /* ─── PARTICLE STYLES ─── */
+    var PARTICLES = {
+        constellation: {
+            colors: { accent: '#60a5fa', bg: '#06080f', surface: '#0c1018', fg: '#e8eef5', fg2: '#7090b0', border: 'rgba(100,160,255,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 120, baseColor: [96,165,250], bgGrad: ['#06080f','#0a1020'] }
+        },
+        fireflies: {
+            colors: { accent: '#fbbf24', bg: '#080a04', surface: '#10120c', fg: '#f5f0e0', fg2: '#a09870', border: 'rgba(250,190,40,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 0, baseColor: [251,191,36], bgGrad: ['#080a04','#0c1008'] }
+        },
+        snow: {
+            colors: { accent: '#e2e8f0', bg: '#0a0e14', surface: '#10141c', fg: '#f0f2f5', fg2: '#8090a0', border: 'rgba(200,210,230,0.06)' },
+            config: { shape: 'circle', glow: false, connectDist: 0, baseColor: [226,232,240], bgGrad: ['#0a0e14','#141820'] }
+        },
+        nebula: {
+            colors: { accent: '#c084fc', bg: '#08060e', surface: '#12101a', fg: '#f0e8f8', fg2: '#9080b0', border: 'rgba(190,130,255,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 80, baseColor: [192,132,252], bgGrad: ['#08060e','#140e20'] }
+        },
+        matrix: {
+            colors: { accent: '#22c55e', bg: '#030806', surface: '#081008', fg: '#d0f0d0', fg2: '#60a060', border: 'rgba(30,200,80,0.08)' },
+            config: { shape: 'text', glow: true, connectDist: 0, baseColor: [34,197,94], bgGrad: ['#030806','#061008'] }
+        },
+        bokeh: {
+            colors: { accent: '#f472b6', bg: '#0c060a', surface: '#14101a', fg: '#f8e8f0', fg2: '#b08090', border: 'rgba(240,110,180,0.08)' },
+            config: { shape: 'circle', glow: true, connectDist: 0, baseColor: [244,114,182], bgGrad: ['#0c060a','#180e18'] }
+        }
+    };
+
     /* ─── SNOISE GLSL (shared) ─── */
     var SNOISE_GLSL = [
         'vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}',
@@ -219,10 +253,134 @@ window.ArbelCompiler = (function () {
             '})();';
     }
 
+    /* ─── Particle Engine JS builder ─── */
+    function _buildParticlesJS(style, pCfg) {
+        var p = PARTICLES[style] || PARTICLES.constellation;
+        var c = p.config;
+        var count = pCfg.count || 120;
+        var speed = pCfg.speed || 1;
+        var glow = pCfg.glow || 0.6;
+        var interact = pCfg.interact !== false;
+        var connect = pCfg.connect !== false && c.connectDist > 0;
+        var isMatrix = c.shape === 'text';
+
+        return '/* Particle Engine — ' + style + ' */\n' +
+            '(function(){\n' +
+            '"use strict";\n' +
+            'var surfaces=document.querySelectorAll(".particle-bg");\n' +
+            'if(!surfaces.length)return;\n' +
+            'var mx=0.5,my=0.5;\n' +
+            'document.addEventListener("mousemove",function(e){\n' +
+            '  mx=e.clientX/window.innerWidth;\n' +
+            '  my=e.clientY/window.innerHeight;\n' +
+            '},{passive:true});\n\n' +
+            'surfaces.forEach(function(el){\n' +
+            '  var canvas=document.createElement("canvas");\n' +
+            '  canvas.style.cssText="width:100%;height:100%;display:block;";\n' +
+            '  el.appendChild(canvas);\n' +
+            '  var ctx=canvas.getContext("2d");\n' +
+            '  var W,H,dpr=Math.min(window.devicePixelRatio,2);\n' +
+            '  var particles=[];\n' +
+            '  var COUNT=' + count + ';\n' +
+            '  var SPEED=' + speed + ';\n' +
+            '  var GLOW=' + glow + ';\n' +
+            '  var CONNECT=' + (connect ? 'true' : 'false') + ';\n' +
+            '  var INTERACT=' + (interact ? 'true' : 'false') + ';\n' +
+            '  var CDIST=' + (c.connectDist || 0) + ';\n' +
+            '  var BASE=[' + c.baseColor.join(',') + '];\n\n' +
+            (isMatrix ?
+                '  var chars="01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン";\n' +
+                '  function rChar(){return chars[Math.floor(Math.random()*chars.length)];}\n\n' :
+                '') +
+            '  function resize(){\n' +
+            '    W=el.offsetWidth;H=el.offsetHeight;\n' +
+            '    canvas.width=W*dpr;canvas.height=H*dpr;\n' +
+            '    ctx.setTransform(dpr,0,0,dpr,0,0);\n' +
+            '  }\n\n' +
+            '  function spawn(){\n' +
+            '    particles=[];\n' +
+            '    for(var i=0;i<COUNT;i++){\n' +
+            (isMatrix ?
+                '      particles.push({x:Math.random()*W,y:Math.random()*H-H,\n' +
+                '        vy:0.5+Math.random()*2*SPEED,size:8+Math.random()*10,\n' +
+                '        ch:rChar(),tick:Math.random()*60|0,alpha:0.15+Math.random()*0.7});\n' :
+                '      var r=1+Math.random()*3;\n' +
+                '      particles.push({x:Math.random()*W,y:Math.random()*H,\n' +
+                '        vx:(Math.random()-0.5)*0.5*SPEED,vy:(Math.random()-0.5)*0.5*SPEED,\n' +
+                '        r:r,baseR:r,alpha:0.2+Math.random()*0.6,\n' +
+                '        pulse:Math.random()*Math.PI*2,pulseSpeed:0.01+Math.random()*0.03});\n') +
+            '    }\n' +
+            '  }\n\n' +
+            '  function draw(){\n' +
+            '    ctx.clearRect(0,0,W,H);\n' +
+            // Gradient background
+            '    var grad=ctx.createLinearGradient(0,0,0,H);\n' +
+            '    grad.addColorStop(0,"' + c.bgGrad[0] + '");\n' +
+            '    grad.addColorStop(1,"' + c.bgGrad[1] + '");\n' +
+            '    ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);\n\n' +
+            (isMatrix ?
+                // Matrix rain
+                '    particles.forEach(function(p){\n' +
+                '      p.y+=p.vy;\n' +
+                '      p.tick++;\n' +
+                '      if(p.tick%6===0)p.ch=rChar();\n' +
+                '      if(p.y>H){p.y=-20;p.x=Math.random()*W;}\n' +
+                '      ctx.font=p.size+"px monospace";\n' +
+                '      if(GLOW>0.2){ctx.shadowBlur=p.size*GLOW;ctx.shadowColor="rgba("+BASE.join(",")+",0.8)";}\n' +
+                '      ctx.fillStyle="rgba("+BASE.join(",")+","+p.alpha+")";\n' +
+                '      ctx.fillText(p.ch,p.x,p.y);\n' +
+                '      ctx.shadowBlur=0;\n' +
+                '    });\n' :
+                // Circle particles
+                '    if(CONNECT&&CDIST>0){\n' +
+                '      for(var i=0;i<particles.length;i++){\n' +
+                '        for(var j=i+1;j<particles.length;j++){\n' +
+                '          var dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y;\n' +
+                '          var d=Math.sqrt(dx*dx+dy*dy);\n' +
+                '          if(d<CDIST){\n' +
+                '            ctx.strokeStyle="rgba("+BASE.join(",")+","+(1-d/CDIST)*0.15+")";\n' +
+                '            ctx.lineWidth=0.5;\n' +
+                '            ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);\n' +
+                '            ctx.lineTo(particles[j].x,particles[j].y);ctx.stroke();\n' +
+                '          }\n' +
+                '        }\n' +
+                '      }\n' +
+                '    }\n' +
+                '    particles.forEach(function(p){\n' +
+                '      p.pulse+=p.pulseSpeed;\n' +
+                '      p.r=p.baseR*(0.8+Math.sin(p.pulse)*0.3);\n' +
+                '      p.x+=p.vx;p.y+=p.vy;\n' +
+                '      if(INTERACT){\n' +
+                '        var dx=mx*W-p.x,dy=my*H-p.y;\n' +
+                '        var d=Math.sqrt(dx*dx+dy*dy);\n' +
+                '        if(d<150){var f=0.02*(1-d/150);p.vx+=dx*f;p.vy+=dy*f;}\n' +
+                '      }\n' +
+                '      p.vx*=0.99;p.vy*=0.99;\n' +
+                '      if(p.x<-10)p.x=W+10;if(p.x>W+10)p.x=-10;\n' +
+                '      if(p.y<-10)p.y=H+10;if(p.y>H+10)p.y=-10;\n' +
+                '      if(GLOW>0.2){ctx.shadowBlur=p.r*4*GLOW;ctx.shadowColor="rgba("+BASE.join(",")+",0.6)";}\n' +
+                '      ctx.beginPath();\n' +
+                '      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);\n' +
+                '      ctx.fillStyle="rgba("+BASE.join(",")+","+p.alpha+")";\n' +
+                '      ctx.fill();ctx.shadowBlur=0;\n' +
+                '    });\n') +
+            '  }\n\n' +
+            '  var vis=true;\n' +
+            '  var obs=new IntersectionObserver(function(entries){\n' +
+            '    entries.forEach(function(e){vis=e.isIntersecting;});\n' +
+            '  },{threshold:0});\n' +
+            '  obs.observe(el);\n\n' +
+            '  function tick(){requestAnimationFrame(tick);if(!vis)return;draw();}\n' +
+            '  resize();spawn();tick();\n' +
+            '  window.addEventListener("resize",function(){resize();spawn();});\n' +
+            '});\n' +
+            '})();';
+    }
+
     /* ─── Section HTML generators ─── */
-    function _heroHTML(c) {
+    function _heroHTML(c, bgClass) {
         return '<section class="hero" id="hero">\n' +
-            '  <div class="webgl-bg hero-bg"></div>\n' +
+            '  <div class="' + bgClass + ' hero-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
             '  <div class="hero-content">\n' +
             '    <h1 class="hero-heading">\n' +
@@ -387,9 +545,9 @@ window.ArbelCompiler = (function () {
             '</div>\n</section>';
     }
 
-    function _contactHTML(c, email) {
+    function _contactHTML(c, email, bgClass) {
         return '<section class="section contact" id="contact">\n' +
-            '  <div class="webgl-bg contact-bg"></div>\n' +
+            '  <div class="' + bgClass + ' contact-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
             '  <div class="container contact-inner">\n' +
             '    <div class="section-label mono">CONTACT</div>\n' +
@@ -418,7 +576,8 @@ window.ArbelCompiler = (function () {
 
     /* ─── Main HTML builder ─── */
     function _buildHTML(cfg) {
-        var style = SHADERS[cfg.style] || SHADERS.obsidian;
+        var isParticle = _isParticleStyle(cfg.style);
+        var bgClass = isParticle ? 'particle-bg' : 'webgl-bg';
         var sections = cfg.sections || ['hero', 'services', 'about', 'contact'];
         var c = cfg.content || {};
         var sectionsHTML = '';
@@ -426,8 +585,10 @@ window.ArbelCompiler = (function () {
         sections.forEach(function (s) {
             var builder = SECTION_BUILDERS[s];
             if (!builder) return;
-            if (s === 'contact') {
-                sectionsHTML += builder(c, cfg.contactEmail) + '\n\n';
+            if (s === 'hero') {
+                sectionsHTML += builder(c, bgClass) + '\n\n';
+            } else if (s === 'contact') {
+                sectionsHTML += builder(c, cfg.contactEmail, bgClass) + '\n\n';
             } else {
                 sectionsHTML += builder(c) + '\n\n';
             }
@@ -478,11 +639,11 @@ window.ArbelCompiler = (function () {
             '      <span class="mono">&copy; ' + new Date().getFullYear() + ' All rights reserved.</span>\n' +
             '    </div>\n' +
             '  </footer>\n\n' +
-            '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' +
+            (isParticle ? '' : '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n') +
             '  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"><\/script>\n' +
             '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n' +
             '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>\n' +
-            '  <script src="js/shader.js"><\/script>\n' +
+            (isParticle ? '  <script src="js/particles.js"><\/script>\n' : '  <script src="js/shader.js"><\/script>\n') +
             '  <script src="js/animations.js"><\/script>\n' +
             '  <script src="js/main.js"><\/script>\n' +
             '</body>\n</html>';
@@ -490,8 +651,8 @@ window.ArbelCompiler = (function () {
 
     /* ─── CSS builder ─── */
     function _buildCSS(cfg) {
-        var shader = SHADERS[cfg.style] || SHADERS.obsidian;
-        var colors = shader.colors;
+        var src = _isParticleStyle(cfg.style) ? PARTICLES[cfg.style] : (SHADERS[cfg.style] || SHADERS.obsidian);
+        var colors = src.colors;
         var accent = cfg.accent || colors.accent;
         var bg = cfg.bgColor || colors.bg;
 
@@ -641,9 +802,9 @@ window.ArbelCompiler = (function () {
             '/* ═══ REVEAL ANIMATIONS ═══ */\n' +
             '.reveal-up { will-change: transform, opacity; }\n' +
             '.line-inner { display: inline-block; will-change: transform; }\n\n' +
-            '/* ═══ WEBGL ═══ */\n' +
-            '.webgl-bg { position: absolute; inset: 0; }\n' +
-            '.webgl-bg canvas { width: 100% !important; height: 100% !important; display: block; }\n\n' +
+            '/* ═══ WEBGL / PARTICLES ═══ */\n' +
+            '.webgl-bg, .particle-bg { position: absolute; inset: 0; overflow: hidden; }\n' +
+            '.webgl-bg canvas, .particle-bg canvas { width: 100% !important; height: 100% !important; display: block; }\n\n' +
             '/* ═══ RESPONSIVE ═══ */\n' +
             '@media (max-width: 768px) {\n' +
             '  .section { padding: 5rem 0; }\n' +
@@ -776,7 +937,7 @@ window.ArbelCompiler = (function () {
             (cfg.tagline ? cfg.tagline + '\n\n' : '') +
             'Built with [Arbel Generator](https://arbeltechnologies.github.io/generator) — cinematic websites, free.\n\n' +
             '## Tech Stack\n' +
-            '- WebGL shader backgrounds (Three.js)\n' +
+            '- Cinematic backgrounds (WebGL shaders / Canvas particles)\n' +
             '- Scroll-driven animations (GSAP + ScrollTrigger)\n' +
             '- Smooth scrolling (Lenis)\n' +
             '- Custom cursor & magnetic interactions\n' +
@@ -805,23 +966,33 @@ window.ArbelCompiler = (function () {
     /* ═══ PUBLIC: Compile full site ═══ */
     function compile(userConfig) {
         var cfg = _defaults(userConfig);
-
-        return {
+        var isParticle = _isParticleStyle(cfg.style);
+        var files = {
             'index.html': _buildHTML(cfg),
             'css/style.css': _buildCSS(cfg),
-            'js/shader.js': _buildShaderJS(cfg.style),
             'js/animations.js': _buildAnimationsJS(),
             'js/main.js': _buildMainJS(),
             'README.md': _buildReadme(cfg),
             'arbel.config.json': _buildConfig(cfg)
         };
+        if (isParticle) {
+            files['js/particles.js'] = _buildParticlesJS(cfg.style, cfg.particles);
+        } else {
+            files['js/shader.js'] = _buildShaderJS(cfg.style);
+        }
+        return files;
     }
 
     /** Get available styles for the picker */
     function getStyles() {
-        return Object.keys(SHADERS).map(function (key) {
-            return { id: key, colors: SHADERS[key].colors };
+        var list = [];
+        Object.keys(SHADERS).forEach(function (key) {
+            list.push({ id: key, type: 'shader', colors: SHADERS[key].colors });
         });
+        Object.keys(PARTICLES).forEach(function (key) {
+            list.push({ id: key, type: 'particle', colors: PARTICLES[key].colors, config: PARTICLES[key].config });
+        });
+        return list;
     }
 
     /** Get shader fragment for preview canvases */
@@ -833,9 +1004,15 @@ window.ArbelCompiler = (function () {
         };
     }
 
+    /** Get particle config for preview */
+    function getParticleConfig(style) {
+        return PARTICLES[style] || null;
+    }
+
     return {
         compile: compile,
         getStyles: getStyles,
-        getShaderFragment: getShaderFragment
+        getShaderFragment: getShaderFragment,
+        getParticleConfig: getParticleConfig
     };
 })();

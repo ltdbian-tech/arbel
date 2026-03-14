@@ -106,7 +106,7 @@
             <div class="step-content">
                 <div class="step-label mono">02 / CHOOSE STYLE</div>
                 <h2 class="step-heading">Pick your <em>Aesthetic.</em></h2>
-                <p class="step-sub">Each style is a unique WebGL shader, color palette, and typography pairing. Not just a color swap — a different visual DNA.</p>
+                <p class="step-sub">Each style features a unique background animation, color palette, and visual feel. Choose from WebGL shaders or canvas particle effects.</p>
 
                 <div class="style-grid" id="styleGrid">
                     <button class="style-card selected" data-style="obsidian">
@@ -172,6 +172,74 @@
                             <h3 class="style-name">Silk</h3>
                             <span class="style-desc mono">SOFT FLOWING</span>
                             <div class="style-tags"><span>Elegant</span><span>Minimal</span><span>Fashion</span></div>
+                        </div>
+                    </button>
+
+                    <div class="style-divider"><span class="mono">PARTICLE ANIMATIONS</span></div>
+
+                    <button class="style-card" data-style="constellation" data-type="particle">
+                        <div class="style-preview" id="previewConstellation">
+                            <canvas class="style-canvas" data-particle="constellation"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Constellation</h3>
+                            <span class="style-desc mono">CONNECTED STARS</span>
+                            <div class="style-tags"><span>Tech</span><span>Clean</span><span>Futuristic</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="fireflies" data-type="particle">
+                        <div class="style-preview" id="previewFireflies">
+                            <canvas class="style-canvas" data-particle="fireflies"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Fireflies</h3>
+                            <span class="style-desc mono">GLOWING FLOATS</span>
+                            <div class="style-tags"><span>Warm</span><span>Organic</span><span>Ambient</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="snow" data-type="particle">
+                        <div class="style-preview" id="previewSnow">
+                            <canvas class="style-canvas" data-particle="snow"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Snow</h3>
+                            <span class="style-desc mono">GENTLE SNOWFALL</span>
+                            <div class="style-tags"><span>Calm</span><span>Pure</span><span>Seasonal</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="nebula" data-type="particle">
+                        <div class="style-preview" id="previewNebula">
+                            <canvas class="style-canvas" data-particle="nebula"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Nebula</h3>
+                            <span class="style-desc mono">COSMIC GLOW MESH</span>
+                            <div class="style-tags"><span>Space</span><span>Premium</span><span>Creative</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="matrix" data-type="particle">
+                        <div class="style-preview" id="previewMatrix">
+                            <canvas class="style-canvas" data-particle="matrix"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Matrix</h3>
+                            <span class="style-desc mono">FALLING CODE RAIN</span>
+                            <div class="style-tags"><span>Hacker</span><span>Cyber</span><span>Dev</span></div>
+                        </div>
+                    </button>
+
+                    <button class="style-card" data-style="bokeh" data-type="particle">
+                        <div class="style-preview" id="previewBokeh">
+                            <canvas class="style-canvas" data-particle="bokeh"></canvas>
+                        </div>
+                        <div class="style-info">
+                            <h3 class="style-name">Bokeh</h3>
+                            <span class="style-desc mono">DREAMY LIGHT ORBS</span>
+                            <div class="style-tags"><span>Photography</span><span>Soft</span><span>Romantic</span></div>
                         </div>
                     </button>
                 </div>
@@ -249,6 +317,28 @@
                                         <span class="color-val mono" id="bgVal">#0a0a0f</span>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Particle Settings (shown only for particle styles) -->
+                        <div class="config-group" id="particleConfig" style="display:none">
+                            <h3 class="config-group-title mono">PARTICLE SETTINGS</h3>
+                            <p class="config-hint">Fine-tune the particle animation for your background.</p>
+                            <div class="field">
+                                <label class="field-label mono">PARTICLE COUNT — <span id="particleCountVal">120</span></label>
+                                <input type="range" id="particleCount" class="gen-range" min="30" max="400" value="120" step="10">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">SPEED — <span id="particleSpeedVal">1.0</span></label>
+                                <input type="range" id="particleSpeed" class="gen-range" min="0.2" max="3" value="1" step="0.1">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">GLOW INTENSITY — <span id="particleGlowVal">0.6</span></label>
+                                <input type="range" id="particleGlow" class="gen-range" min="0" max="1" value="0.6" step="0.05">
+                            </div>
+                            <div class="toggle-row">
+                                <label class="toggle-item"><input type="checkbox" id="particleConnect" checked><span class="toggle-label">Connect nearby particles</span></label>
+                                <label class="toggle-item"><input type="checkbox" id="particleInteract" checked><span class="toggle-label">Mouse interaction</span></label>
                             </div>
                         </div>
 
