@@ -13,6 +13,41 @@
 </head>
 <body>
 
+    <!-- Consent Modal -->
+    <div class="consent-overlay" id="consentOverlay">
+        <div class="consent-modal">
+            <div class="consent-header">
+                <div class="consent-logo">arbel<span class="dot">.</span></div>
+                <p class="consent-tagline mono">BEFORE YOU BEGIN</p>
+            </div>
+            <div class="consent-body">
+                <p>By using Arbel, you agree to our Terms&nbsp;of&nbsp;Service and acknowledge our Privacy&nbsp;Policy. Key points:</p>
+                <ul class="consent-points">
+                    <li>The service is provided <strong>"as is"</strong> with no warranties of any kind</li>
+                    <li>Arbel and its creator bear <strong>zero liability</strong> for any damages, losses, or issues arising from use of the platform</li>
+                    <li>You are solely responsible for the websites you generate and deploy</li>
+                    <li>Your data (tokens, API keys, content) stays <strong>in your browser</strong> — we do not store it on servers</li>
+                    <li>You indemnify Arbel against any claims arising from your use of the service</li>
+                </ul>
+                <div class="consent-links">
+                    <a href="terms.html" target="_blank" rel="noopener">Read full Terms of Service &rarr;</a>
+                    <a href="privacy.html" target="_blank" rel="noopener">Read full Privacy Policy &rarr;</a>
+                </div>
+            </div>
+            <div class="consent-actions">
+                <label class="consent-check">
+                    <input type="checkbox" id="consentAgree">
+                    <span>I have read and agree to the <strong>Terms of Service</strong> and <strong>Privacy Policy</strong></span>
+                </label>
+                <label class="consent-check consent-remember">
+                    <input type="checkbox" id="consentRemember" checked>
+                    <span>Remember my choice on this device</span>
+                </label>
+                <button class="gen-btn consent-accept" id="consentAccept" disabled>ACCEPT &amp; CONTINUE</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="gen-header">
         <a href="/" class="gen-logo">arbel<span class="dot">.</span></a>
@@ -1355,6 +1390,11 @@
     <!-- Footer -->
     <footer class="gen-footer mono">
         <span>Built with arbel.live</span>
+        <span class="footer-legal">
+            <a href="terms.html" target="_blank" rel="noopener">Terms</a>
+            <span class="footer-sep">&middot;</span>
+            <a href="privacy.html" target="_blank" rel="noopener">Privacy</a>
+        </span>
         <span>&copy; <script>document.write(new Date().getFullYear())</script></span>
     </footer>
 

@@ -107,6 +107,40 @@
         retryDeploy: $('retryDeploy')
     };
 
+    /* ─── Consent Gate ─── */
+    (function initConsent() {
+        var overlay = $('consentOverlay');
+        var agree   = $('consentAgree');
+        var accept  = $('consentAccept');
+        var remember = $('consentRemember');
+
+        if (!overlay) return;
+
+        // Already consented — hide immediately
+        if (localStorage.getItem('arbel-consent') === '1') {
+            overlay.style.display = 'none';
+            return;
+        }
+
+        // Show overlay
+        overlay.classList.remove('hidden');
+
+        // Enable/disable accept button based on checkbox
+        agree.addEventListener('change', function () {
+            accept.disabled = !agree.checked;
+        });
+
+        // Accept click
+        accept.addEventListener('click', function () {
+            if (!agree.checked) return;
+            if (remember.checked) {
+                localStorage.setItem('arbel-consent', '1');
+            }
+            overlay.classList.add('hidden');
+            setTimeout(function () { overlay.style.display = 'none'; }, 400);
+        });
+    })();
+
     /* ─── Step Navigation ─── */
     function goToStep(n) {
         if (n < 0 || n > 4) return;
