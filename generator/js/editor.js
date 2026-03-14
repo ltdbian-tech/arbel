@@ -625,20 +625,31 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
 
     /* ─── Effect listeners ─── */
+    function _reapplyEffect() {
+        if (!_selectedId) return;
+        var sel = _qs('.editor-effect-select');
+        var int = _qs('#editorEffectIntensity');
+        var c1 = _qs('#editorEffectColor1');
+        var c2 = _qs('#editorEffectColor2');
+        var effect = sel ? sel.value : 'none';
+        _postIframe('arbel-set-effect', {
+            id: _selectedId, effect: effect,
+            intensity: int ? parseInt(int.value) : 50,
+            color1: c1 ? _hexToRgb(c1.value) : '100,108,255',
+            color2: c2 ? _hexToRgb(c2.value) : '11,218,81'
+        });
+        _setOv(_selectedId, 'effect', effect);
+    }
+
     function _setupEffectListeners() {
         if (!_container) return;
-        _on('.editor-effect-select', 'change', function () {
-            if (!_selectedId) return;
-            var int = _qs('#editorEffectIntensity'), c1 = _qs('#editorEffectColor1'), c2 = _qs('#editorEffectColor2');
-            _postIframe('arbel-set-effect', {
-                id: _selectedId, effect: this.value,
-                intensity: int ? parseInt(int.value) : 50,
-                color1: c1 ? _hexToRgb(c1.value) : '100,108,255',
-                color2: c2 ? _hexToRgb(c2.value) : '11,218,81'
-            });
-            _setOv(_selectedId, 'effect', this.value);
+        _on('.editor-effect-select', 'change', function () { _reapplyEffect(); });
+        _on('#editorEffectIntensity', 'input', function () {
+            var v = _qs('#editorEffectIntensityVal'); if (v) v.textContent = this.value + '%';
+            _reapplyEffect();
         });
-        _on('#editorEffectIntensity', 'input', function () { var v = _qs('#editorEffectIntensityVal'); if (v) v.textContent = this.value + '%'; });
+        _on('#editorEffectColor1', 'input', function () { _reapplyEffect(); });
+        _on('#editorEffectColor2', 'input', function () { _reapplyEffect(); });
     }
 
     /* ─── Video scroll layer ─── */
@@ -1139,18 +1150,39 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         });
     }
 
-    /* ─── Templates ─── */
+    /* ─── Templates (industry-matched website presets) ─── */
     var _templates = [
-        { id: 'minimal-portfolio', name: 'Minimal Portfolio', desc: 'Clean, text-focused portfolio with scroll animations', cat: 'portfolio', tags: ['scroll', 'particles', 'minimal'], style: 0 },
-        { id: 'dark-agency', name: 'Dark Agency', desc: 'Bold dark theme agency site with particle backgrounds', cat: 'business', tags: ['particles', 'bold', 'dark'], style: 1 },
-        { id: 'neon-creative', name: 'Neon Creative', desc: 'Vibrant neon-accented creative showcase', cat: 'creative', tags: ['neon', 'effects', 'video'], style: 2 },
-        { id: 'glass-landing', name: 'Glass Landing', desc: 'Glassmorphism landing page with aurora effects', cat: 'landing', tags: ['glass', 'aurora', 'modern'], style: 3 },
-        { id: 'shop-elegant', name: 'Elegant Shop', desc: 'Clean e-commerce layout with product grid', cat: 'ecommerce', tags: ['grid', 'clean', 'products'], style: 4 },
-        { id: 'brutalist-folio', name: 'Brutalist Folio', desc: 'Raw, experimental portfolio with glitch effects', cat: 'portfolio', tags: ['brutalist', 'glitch', 'bold'], style: 5 },
-        { id: 'gradient-saas', name: 'Gradient SaaS', desc: 'Gradient-rich SaaS landing page with blob effects', cat: 'landing', tags: ['gradient', 'blobs', 'saas'], style: 6 },
-        { id: 'studio-minimal', name: 'Studio Minimal', desc: 'Minimalist design studio with large typography', cat: 'creative', tags: ['minimal', 'type', 'scroll'], style: 7 },
-        { id: 'modern-business', name: 'Modern Business', desc: 'Professional business site with clean sections', cat: 'business', tags: ['professional', 'clean', 'modern'], style: 8 },
-        { id: 'product-showcase', name: 'Product Showcase', desc: 'Single product landing with video scroll', cat: 'ecommerce', tags: ['product', 'video', 'scroll'], style: 9 },
+        // Tech / SaaS
+        { id: 'saas-landing', name: 'SaaS Platform', desc: 'Modern SaaS landing with gradient mesh backgrounds and pricing tiers', cat: 'tech', tags: ['saas', 'gradient', 'pricing'], style: 'meshGrad', industry: 'saas', accent: '#8b5cf6', bg: '#0a0a14', sections: ['hero', 'services', 'pricing', 'faq', 'testimonials', 'contact'] },
+        { id: 'tech-startup', name: 'Tech Startup', desc: 'Bold aurora-lit startup site with feature showcase', cat: 'tech', tags: ['startup', 'aurora', 'bold'], style: 'aurora', industry: 'startup', accent: '#00d4ff', bg: '#080810', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
+        { id: 'dev-portfolio', name: 'Developer Portfolio', desc: 'Code-themed portfolio with matrix rain effects', cat: 'tech', tags: ['matrix', 'developer', 'code'], style: 'matrix', industry: 'portfolio', accent: '#00ff41', bg: '#050a05', sections: ['hero', 'portfolio', 'about', 'contact'] },
+        { id: 'cyber-security', name: 'Cyber Security', desc: 'Dark circuit-board aesthetic with neon accents', cat: 'tech', tags: ['cyber', 'circuits', 'neon'], style: 'circuits', industry: 'saas', accent: '#00e5ff', bg: '#060810', sections: ['hero', 'services', 'about', 'process', 'faq', 'contact'] },
+
+        // Shopping / E-Commerce
+        { id: 'elegant-boutique', name: 'Elegant Boutique', desc: 'Luxurious fashion store with flowing silk textures', cat: 'shopping', tags: ['luxury', 'silk', 'fashion'], style: 'silk', industry: 'fashion', accent: '#e8a87c', bg: '#0a0a0f', sections: ['hero', 'services', 'portfolio', 'testimonials', 'contact'] },
+        { id: 'modern-store', name: 'Modern Store', desc: 'Clean e-commerce layout with bokeh light effects', cat: 'shopping', tags: ['shop', 'bokeh', 'clean'], style: 'bokeh', industry: 'ecommerce', accent: '#f59e0b', bg: '#08080e', sections: ['hero', 'services', 'portfolio', 'pricing', 'faq', 'contact'] },
+        { id: 'product-launch', name: 'Product Launch', desc: 'Single product showcase with blob animations', cat: 'shopping', tags: ['product', 'blobs', 'launch'], style: 'morphBlob', industry: 'ecommerce', accent: '#ec4899', bg: '#0a0a12', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
+
+        // Creative / Agency
+        { id: 'dark-agency', name: 'Dark Agency', desc: 'Premium agency site with obsidian ink fluid background', cat: 'creative', tags: ['agency', 'dark', 'premium'], style: 'obsidian', industry: 'agency', accent: '#6C5CE7', bg: '#0a0a0f', sections: ['hero', 'services', 'portfolio', 'about', 'testimonials', 'contact'] },
+        { id: 'neon-studio', name: 'Neon Studio', desc: 'Electric neon-glow creative showcase', cat: 'creative', tags: ['neon', 'electric', 'glow'], style: 'neon', industry: 'agency', accent: '#ff006e', bg: '#0a0a10', sections: ['hero', 'services', 'portfolio', 'process', 'contact'] },
+        { id: 'nebula-creative', name: 'Nebula Creative', desc: 'Cosmic nebula particles with deep space atmosphere', cat: 'creative', tags: ['space', 'nebula', 'creative'], style: 'nebula', industry: 'agency', accent: '#a78bfa', bg: '#06060e', sections: ['hero', 'portfolio', 'about', 'testimonials', 'contact'] },
+        { id: 'minimal-folio', name: 'Minimal Portfolio', desc: 'Clean portfolio with connected constellation dots', cat: 'creative', tags: ['minimal', 'constellation', 'clean'], style: 'constellation', industry: 'portfolio', accent: '#60a5fa', bg: '#06080f', sections: ['hero', 'portfolio', 'about', 'contact'] },
+
+        // Food / Restaurant
+        { id: 'fine-dining', name: 'Fine Dining', desc: 'Warm ember-lit restaurant site with rich textures', cat: 'food', tags: ['restaurant', 'ember', 'warm'], style: 'ember', industry: 'restaurant', accent: '#f97316', bg: '#0f0a06', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
+        { id: 'food-brand', name: 'Food Brand', desc: 'Sunset-toned food brand with organic blob shapes', cat: 'food', tags: ['food', 'sunset', 'organic'], style: 'sunsetBlob', industry: 'restaurant', accent: '#fb923c', bg: '#0e0a08', sections: ['hero', 'services', 'portfolio', 'contact'] },
+        { id: 'cafe-cozy', name: 'Cozy Café', desc: 'Warm firefly-lit ambiance for coffee shops and cafes', cat: 'food', tags: ['cafe', 'fireflies', 'cozy'], style: 'fireflies', industry: 'restaurant', accent: '#fbbf24', bg: '#0a0806', sections: ['hero', 'services', 'about', 'testimonials', 'contact'] },
+
+        // Health / Wellness
+        { id: 'medical-clinic', name: 'Medical Clinic', desc: 'Clean frost-crystalline healthcare site with trust design', cat: 'health', tags: ['medical', 'frost', 'clean'], style: 'frost', industry: 'healthcare', accent: '#38bdf8', bg: '#060a0e', sections: ['hero', 'services', 'about', 'testimonials', 'faq', 'contact'] },
+        { id: 'wellness-spa', name: 'Wellness Spa', desc: 'Tranquil ocean-wave spa with calming blue tones', cat: 'health', tags: ['spa', 'ocean', 'calm'], style: 'oceanBlob', industry: 'fitness', accent: '#22d3ee', bg: '#060a0e', sections: ['hero', 'services', 'about', 'pricing', 'testimonials', 'contact'] },
+        { id: 'fitness-gym', name: 'Fitness Studio', desc: 'High-energy spark particles with bold sports aesthetic', cat: 'health', tags: ['fitness', 'spark', 'energy'], style: 'spark', industry: 'fitness', accent: '#ef4444', bg: '#0a0608', sections: ['hero', 'services', 'about', 'pricing', 'contact'] },
+
+        // Landing Pages
+        { id: 'aurora-launch', name: 'Aurora Landing', desc: 'Northern lights backdrop for stunning app launches', cat: 'landing', tags: ['aurora', 'launch', 'app'], style: 'northern', industry: 'startup', accent: '#34d399', bg: '#060810', sections: ['hero', 'services', 'pricing', 'faq', 'contact'] },
+        { id: 'galaxy-event', name: 'Galaxy Event', desc: 'Swirling galaxy particles for event or conference pages', cat: 'landing', tags: ['galaxy', 'event', 'swirl'], style: 'galaxy', industry: 'music', accent: '#c084fc', bg: '#08060e', sections: ['hero', 'about', 'services', 'contact'] },
+        { id: 'prism-app', name: 'Prism App', desc: 'Iridescent prism gradients for mobile app showcases', cat: 'landing', tags: ['prism', 'app', 'color'], style: 'prism', industry: 'saas', accent: '#f472b6', bg: '#0a0810', sections: ['hero', 'services', 'pricing', 'testimonials', 'contact'] },
     ];
 
     function _setupTemplates() {
@@ -1169,26 +1201,34 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         var grid = _qs('#templateGrid'); if (!grid) return;
         grid.innerHTML = '';
         var filtered = cat === 'all' ? _templates : _templates.filter(function (t) { return t.cat === cat; });
+        // Color map for template thumbnails based on accent
+        var catIcons = {
+            tech: '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+            shopping: '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>',
+            creative: '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+            food: '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><path d="M6 1v3M10 1v3M14 1v3"/></svg>',
+            health: '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+            landing: '<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/></svg>'
+        };
         filtered.forEach(function (tpl) {
             var card = document.createElement('div');
             card.className = 'template-card';
-            // Generate a unique gradient thumbnail based on style index
-            var colors = [
-                ['#1a1a2e', '#16213e', '#0f3460'], ['#0a0a14', '#1a0a2e', '#2d0a4e'],
-                ['#0f0f1a', '#1a0030', '#003050'], ['#060614', '#101040', '#002040'],
-                ['#0a0a0a', '#1a1a2a', '#2a1a3a'], ['#141414', '#0a0a1e', '#1e0a28'],
-                ['#080818', '#180830', '#301848'], ['#0c0c0c', '#1c1c1c', '#2c2c2c'],
-                ['#0a1020', '#102040', '#204060'], ['#100a1e', '#200a3e', '#301060'],
-            ];
-            var c = colors[tpl.style % colors.length];
-            card.innerHTML = '<div class="template-thumb" style="background:linear-gradient(135deg,' + c[0] + ',' + c[1] + ',' + c[2] + ');display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.15);font-size:2rem;font-weight:700">' + tpl.name.charAt(0) + '</div>' +
+            var accent = tpl.accent || '#646cff';
+            var bg = tpl.bg || '#0a0a0f';
+            // Create a gradient from the template's actual colors
+            var thumbBg = 'linear-gradient(135deg, ' + bg + ' 0%, ' + _mixColor(bg, accent, 0.25) + ' 50%, ' + _mixColor(bg, accent, 0.5) + ' 100%)';
+            var icon = catIcons[tpl.cat] || '';
+            card.innerHTML = '<div class="template-thumb" style="background:' + thumbBg + ';display:flex;align-items:center;justify-content:center;position:relative">' +
+                '<div style="color:' + accent + ';opacity:0.35;font-size:2.2rem;font-weight:700">' + tpl.name.charAt(0) + '</div>' +
+                '<div style="position:absolute;top:8px;right:8px;color:' + accent + ';opacity:0.5">' + icon + '</div>' +
+                '</div>' +
                 '<div class="template-card-body">' +
                     '<div class="template-card-name">' + tpl.name + '</div>' +
                     '<div class="template-card-desc">' + tpl.desc + '</div>' +
                     '<div class="template-card-tags">' + tpl.tags.map(function (t) { return '<span class="template-tag">' + t + '</span>'; }).join('') + '</div>' +
                 '</div>';
             card.addEventListener('click', function () {
-                if (confirm('Apply "' + tpl.name + '" template? This will update your current design style.')) {
+                if (confirm('Apply "' + tpl.name + '" template? This will update your style, sections, and colors.')) {
                     _applyTemplate(tpl);
                 }
             });
@@ -1197,10 +1237,24 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
 
     function _applyTemplate(tpl) {
-        // When a template is chosen, we dispatch a custom event that app.js can listen to
-        // to switch to the corresponding style and re-generate
-        window.dispatchEvent(new CustomEvent('arbel-apply-template', { detail: { template: tpl } }));
+        // Dispatch a detailed event that app.js uses to reconfigure everything
+        window.dispatchEvent(new CustomEvent('arbel-apply-template', { detail: {
+            style: tpl.style,
+            industry: tpl.industry,
+            accent: tpl.accent,
+            bg: tpl.bg,
+            sections: tpl.sections,
+            name: tpl.name
+        } }));
         _updateStatus({ tag: 'template', id: tpl.name, rect: null });
+    }
+
+    // Simple hex color mixer for thumbnail gradients
+    function _mixColor(hex1, hex2, ratio) {
+        var r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
+        var r2 = parseInt(hex2.slice(1, 3), 16), g2 = parseInt(hex2.slice(3, 5), 16), b2 = parseInt(hex2.slice(5, 7), 16);
+        var r = Math.round(r1 + (r2 - r1) * ratio), g = Math.round(g1 + (g2 - g1) * ratio), b = Math.round(b1 + (b2 - b1) * ratio);
+        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
     }
 
     /* ─── Helpers ─── */

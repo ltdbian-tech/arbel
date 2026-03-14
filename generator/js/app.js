@@ -636,6 +636,47 @@
         els.particleConfig.style.display = (cat !== 'shader') ? '' : 'none';
     });
 
+    /* ─── Template Apply (from editor sidebar) ─── */
+    window.addEventListener('arbel-apply-template', function (e) {
+        var d = e.detail;
+        if (!d || !d.style) return;
+
+        // 1. Set visual style
+        state.style = d.style;
+        state.styleMode = 'preset';
+
+        // 2. Set colors
+        if (d.accent) {
+            els.accentColor.value = d.accent;
+            els.accentVal.textContent = d.accent;
+        }
+        if (d.bg) {
+            els.bgColor.value = d.bg;
+            els.bgVal.textContent = d.bg;
+        }
+
+        // 3. Set industry
+        if (d.industry && els.industry) {
+            els.industry.value = d.industry;
+        }
+
+        // 4. Set sections (check/uncheck toggles)
+        if (d.sections && d.sections.length) {
+            document.querySelectorAll('[data-section]').forEach(function (cb) {
+                if (cb.disabled) return; // hero & contact are locked
+                var sec = cb.dataset.section;
+                cb.checked = d.sections.indexOf(sec) !== -1;
+            });
+        }
+
+        // 5. Show/hide particle config
+        var animCat = ArbelCompiler.getAnimCategory(state.style);
+        els.particleConfig.style.display = (animCat !== 'shader') ? '' : 'none';
+
+        // 6. Re-generate preview
+        generatePreview();
+    });
+
     /* ─── Mode Toggle: Presets / Builder ─── */
     els.styleModeToggle.addEventListener('click', function (e) {
         var btn = e.target.closest('.mode-btn');
