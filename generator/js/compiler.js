@@ -1333,9 +1333,11 @@ window.ArbelCompiler = (function () {
     function _buildVideoLayerJS(vl) {
         var js = '/* Arbel — Video Scroll Layer */\n(function(){\n';
         js += 'var SPEED=' + (vl.speed || 1) + ',LOOP=' + (vl.loop ? 'true' : 'false') + ',FPS=' + (vl.fps || 24) + ';\n';
-        js += 'var css=document.createElement("style");css.textContent=".arbel-vl{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none}.arbel-vl canvas{width:100%;height:100%;object-fit:cover}";document.head.appendChild(css);\n';
+        js += 'var css=document.createElement("style");css.textContent=".arbel-vl{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}.arbel-vl canvas{width:100%;height:100%;object-fit:cover}";document.head.appendChild(css);\n';
+        js += 'document.documentElement.style.background="transparent";document.body.style.background="transparent";\n';
         js += 'var div=document.createElement("div");div.className="arbel-vl";\n';
         js += 'var cv=document.createElement("canvas");div.appendChild(cv);document.body.insertBefore(div,document.body.firstChild);\n';
+        js += 'Array.from(document.body.children).forEach(function(ch){if(!ch.classList||ch.classList.contains("arbel-vl"))return;var cs=getComputedStyle(ch);if(cs.position==="static")ch.style.position="relative";if(!ch.style.zIndex||ch.style.zIndex==="auto")ch.style.zIndex="2"});\n';
         js += 'var ctx=cv.getContext("2d"),frames=[],lastF=-1;\n';
         js += 'function rsz(){cv.width=window.innerWidth;cv.height=window.innerHeight;draw(lastF<0?0:lastF,true)}rsz();\n';
         js += 'window.addEventListener("resize",rsz);\n';

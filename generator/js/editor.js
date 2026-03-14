@@ -19,6 +19,7 @@ window.ArbelEditor = (function () {
     var _pages = [{ id: 'home', name: 'Home' }];
     var _currentPage = 'home';
     var _zoom = 100;
+    var _lastTree = [];
 
     /* ─── Overlay script injected into iframe ─── */
     function _getOverlayScript() {
@@ -34,7 +35,7 @@ s.textContent=\`
 font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;
 opacity:0;transition:opacity .2s}.arbel-lbl.vis{opacity:1}
 .arbel-fx-cv{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
-.arbel-video-layer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+.arbel-video-layer{position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none}
 .arbel-video-layer canvas{width:100%;height:100%;object-fit:cover}
 @keyframes arbel-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @keyframes arbel-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -346,8 +347,28 @@ function applyFx(el,name,intensity,c1,c2,opts){
 
 var videoLayer=null;
 function setupVideoLayer(frames,cfg){
-  if(videoLayer){if(videoLayer.el.parentNode)videoLayer.el.parentNode.removeChild(videoLayer.el);cancelAnimationFrame(videoLayer.scrollRaf||0);videoLayer=null}
-  if(!frames||!frames.length)return;
+  if(videoLayer){
+    if(videoLayer.el.parentNode)videoLayer.el.parentNode.removeChild(videoLayer.el);
+    cancelAnimationFrame(videoLayer.scrollRaf||0);
+    if(videoLayer._rsz)window.removeEventListener("resize",videoLayer._rsz);
+    if(videoLayer._scroll)window.removeEventListener("scroll",videoLayer._scroll);
+    videoLayer=null;
+  }
+  if(!frames||!frames.length){
+    document.documentElement.style.background="";
+    document.body.style.background="";
+    return;
+  }
+  /* Make page background transparent so video shows through */
+  document.documentElement.style.background="transparent";
+  document.body.style.background="transparent";
+  /* Ensure existing content sits above the video layer */
+  Array.from(document.body.children).forEach(function(ch){
+    if(!ch.classList||ch.classList.contains("arbel-video-layer"))return;
+    var cs=getComputedStyle(ch);
+    if(cs.position==="static")ch.style.position="relative";
+    if(!ch.style.zIndex||ch.style.zIndex==="auto")ch.style.zIndex="2";
+  });
   var div=document.createElement("div");div.className="arbel-video-layer";
   var cvl=document.createElement("canvas");div.appendChild(cvl);document.body.insertBefore(div,document.body.firstChild);
   var ctxl=cvl.getContext("2d");
@@ -381,7 +402,7 @@ function setupVideoLayer(frames,cfg){
   });
   window.addEventListener("resize",rsz);
   window.addEventListener("scroll",onScroll,{passive:true});
-  videoLayer={el:div,imgs:imgs,scrollRaf:0};
+  videoLayer={el:div,imgs:imgs,scrollRaf:0,_rsz:rsz,_scroll:onScroll};
 }
 
 window.addEventListener("message",function(e){
@@ -836,8 +857,14 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             });
         });
         _on('#videoFps', 'input', function () { _videoConfig.fps = parseInt(this.value); _qs('#videoFpsVal').textContent = this.value; });
-        _on('#videoSpeed', 'input', function () { _videoConfig.speed = parseFloat(this.value); _qs('#videoSpeedVal').textContent = parseFloat(this.value).toFixed(1) + 'x'; });
-        _on('#videoLoop', 'change', function () { _videoConfig.loop = this.checked; });
+        _on('#videoSpeed', 'input', function () {
+            _videoConfig.speed = parseFloat(this.value); _qs('#videoSpeedVal').textContent = parseFloat(this.value).toFixed(1) + 'x';
+            if (_videoConfig.active && _videoFrames.length && _iframe) _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig });
+        });
+        _on('#videoLoop', 'change', function () {
+            _videoConfig.loop = this.checked;
+            if (_videoConfig.active && _videoFrames.length && _iframe) _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig });
+        });
         _on('#videoApplyBtn', 'click', function () {
             if (_videoFrames.length && _iframe) { _videoConfig.active = true; _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig }); }
         });
@@ -1291,25 +1318,36 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
     /* ─── Element tree (Canva-style) ─── */
     var _currentTree = [];
+    function _getItemZ(item) {
+        var ov = _overrides[item.id];
+        if (ov && ov.zIndex !== undefined) return ov.zIndex;
+        return item.zIndex === 'auto' ? 0 : (parseInt(item.zIndex) || 0);
+    }
     function _renderElementTree(tree) {
         _currentTree = tree;
+        _lastTree = tree.slice();
         var treeEl = _qs('#editorTree'); if (!treeEl) return;
         var searchEl = _qs('#layerSearch');
         var filter = searchEl ? searchEl.value.toLowerCase() : '';
         treeEl.innerHTML = '';
+        // Apply overrides and sort by z-index descending (highest = top of list)
         tree.forEach(function (item) {
-            // Apply overrides to tree item state so re-renders preserve user changes
             var ov = _overrides[item.id];
             if (ov) {
                 if (ov.visibility !== undefined) item.visible = ov.visibility !== 'hidden';
                 if (ov.locked !== undefined) item.locked = ov.locked;
+                if (ov.zIndex !== undefined) item.zIndex = ov.zIndex;
             }
+        });
+        var sorted = tree.slice().sort(function (a, b) { return _getItemZ(b) - _getItemZ(a); });
+        sorted.forEach(function (item) {
             var displayName = _getLayerName(item);
             var detail = item.id;
             if (filter && displayName.toLowerCase().indexOf(filter) < 0 && detail.toLowerCase().indexOf(filter) < 0) return;
 
             var div = document.createElement('div');
             div.className = 'editor-tree-item';
+            if (item.id === _selectedId) div.classList.add('active');
             div.setAttribute('data-tree-id', item.id);
             div.draggable = true;
 
@@ -1348,8 +1386,12 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 this.innerHTML = !cur ? '&#128274;' : '&#128275;';
                 this.classList.toggle('is-locked', !cur);
             });
-            // Click = select element
-            div.addEventListener('click', function () { if (_iframe) _iframe.contentWindow.postMessage({ type: 'arbel-select-by-id', id: item.id }, '*'); });
+            // Click = select element (set _selectedId immediately, then notify iframe)
+            div.addEventListener('click', function () {
+                _selectedId = item.id;
+                treeEl.querySelectorAll('.editor-tree-item').forEach(function (it) { it.classList.toggle('active', it.getAttribute('data-tree-id') === item.id); });
+                if (_iframe) _iframe.contentWindow.postMessage({ type: 'arbel-select-by-id', id: item.id }, '*');
+            });
 
             // Drag & drop reorder
             div.addEventListener('dragstart', function (e) {
@@ -1362,15 +1404,31 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             div.addEventListener('drop', function (e) {
                 e.preventDefault(); div.classList.remove('drag-over');
                 var draggedId = e.dataTransfer.getData('text/plain');
-                if (draggedId && draggedId !== item.id) {
-                    // Swap z-index to reorder
-                    var draggedZ = (_overrides[draggedId] && _overrides[draggedId].zIndex) || 0;
-                    var targetZ = (_overrides[item.id] && _overrides[item.id].zIndex) || 0;
-                    _postIframe('arbel-set-zindex', { id: draggedId, value: targetZ });
-                    _postIframe('arbel-set-zindex', { id: item.id, value: draggedZ });
-                    _setOv(draggedId, 'zIndex', targetZ);
-                    _setOv(item.id, 'zIndex', draggedZ);
-                }
+                if (!draggedId || draggedId === item.id || !_lastTree.length) return;
+                // Reorder: move dragged item to target's position, assign sequential z-index
+                var arr = _lastTree.slice();
+                // Apply current overrides to get latest z-index
+                arr.forEach(function (it) {
+                    var ov = _overrides[it.id];
+                    if (ov && ov.zIndex !== undefined) it.zIndex = ov.zIndex;
+                });
+                arr.sort(function (a, b) { return _getItemZ(b) - _getItemZ(a); });
+                var dragIdx = -1, targetIdx = -1;
+                arr.forEach(function (it, i) { if (it.id === draggedId) dragIdx = i; if (it.id === item.id) targetIdx = i; });
+                if (dragIdx < 0 || targetIdx < 0) return;
+                var dragged = arr.splice(dragIdx, 1)[0];
+                var newTarget = targetIdx > dragIdx ? targetIdx - 1 : targetIdx;
+                arr.splice(newTarget, 0, dragged);
+                // Assign sequential z-index: top of list = highest
+                var total = arr.length;
+                arr.forEach(function (it, i) {
+                    var newZ = total - i;
+                    _postIframe('arbel-set-zindex', { id: it.id, value: newZ });
+                    _setOv(it.id, 'zIndex', newZ);
+                    it.zIndex = newZ;
+                });
+                _lastTree = arr;
+                _renderElementTree(arr);
             });
 
             treeEl.appendChild(div);
