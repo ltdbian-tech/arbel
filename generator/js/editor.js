@@ -16,7 +16,7 @@ window.ArbelEditor = (function () {
     var _onUpdate = null;
     var _videoFrames = [];
     var _videoConfig = { fps: 24, speed: 1, loop: false, active: false, preset: null };
-    var _pages = [{ id: 'home', name: 'Home' }];
+    var _pages = [{ id: 'home', name: 'Home', path: '/', isHome: true, showInNav: false }];
     var _currentPage = 'home';
     var _zoom = 100;
     var _lastTree = [];
@@ -1228,21 +1228,158 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     /* ─── Page management ─── */
     function _setupPageManagement() {
         if (!_container) return;
-        _on('#addPageBtn', 'click', function () {
-            var name = prompt('Page name:');
-            if (!name || !name.trim()) return;
-            _pages.push({ id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), name: name.trim() });
+        _on('#addPageBtn', 'click', function () { _showAddPageDialog(); });
+        _on('#delPageBtn', 'click', function () { _deleteCurrentPage(); });
+        _on('#pageSelect', 'change', function () { _currentPage = this.value; _renderPageList(); });
+        _on('#addPageBtn2', 'click', function () { _showAddPageDialog(); });
+        _renderPageList();
+    }
+
+    function _slugify(str) {
+        return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    function _showAddPageDialog() {
+        var old = _qs('#arbelPageDialog'); if (old) old.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'arbelPageDialog';
+        overlay.className = 'arbel-dialog-overlay';
+        overlay.innerHTML =
+            '<div class="arbel-dialog">' +
+                '<div class="arbel-dialog-title">Add New Page</div>' +
+                '<label class="arbel-dialog-label">Page Name</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgPageName" placeholder="About Us">' +
+                '<label class="arbel-dialog-label">URL Path</label>' +
+                '<input type="text" class="arbel-dialog-input" id="dlgPagePath" placeholder="/about">' +
+                '<label class="arbel-dialog-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
+                    '<input type="checkbox" id="dlgPageNav" checked> Show in navigation' +
+                '</label>' +
+                '<div class="arbel-dialog-actions">' +
+                    '<button class="arbel-dialog-btn arbel-dialog-cancel">Cancel</button>' +
+                    '<button class="arbel-dialog-btn arbel-dialog-confirm">Add Page</button>' +
+                '</div>' +
+            '</div>';
+        _container.appendChild(overlay);
+
+        var nameIn = overlay.querySelector('#dlgPageName');
+        var pathIn = overlay.querySelector('#dlgPagePath');
+        nameIn.addEventListener('input', function () {
+            pathIn.value = '/' + _slugify(this.value.trim());
+        });
+        overlay.querySelector('.arbel-dialog-cancel').addEventListener('click', function () { overlay.remove(); });
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+        overlay.querySelector('.arbel-dialog-confirm').addEventListener('click', function () {
+            var name = nameIn.value.trim();
+            if (!name) { nameIn.focus(); return; }
+            var path = pathIn.value.trim() || '/' + _slugify(name);
+            var id = _slugify(path.replace(/^\//, '')) || 'page-' + Date.now();
+            var showNav = overlay.querySelector('#dlgPageNav').checked;
+            for (var i = 0; i < _pages.length; i++) {
+                if (_pages[i].id === id) { nameIn.setCustomValidity('Page already exists'); nameIn.reportValidity(); return; }
+            }
+            _pages.push({ id: id, name: name, path: path, isHome: false, showInNav: showNav });
+            _currentPage = id;
             _updatePageSelect();
+            _renderPageList();
+            overlay.remove();
         });
-        _on('#delPageBtn', 'click', function () {
-            if (_pages.length <= 1) return;
-            var sel = _qs('#pageSelect'); if (!sel) return;
-            if (sel.value === 'home') { alert('Cannot delete home page'); return; }
-            if (!confirm('Delete page "' + sel.value + '"?')) return;
-            _pages = _pages.filter(function (p) { return p.id !== sel.value; });
-            _currentPage = 'home'; _updatePageSelect();
+        nameIn.focus();
+    }
+
+    function _deleteCurrentPage() {
+        if (_pages.length <= 1) return;
+        var sel = _qs('#pageSelect'); if (!sel) return;
+        var page = null;
+        for (var i = 0; i < _pages.length; i++) { if (_pages[i].id === sel.value) { page = _pages[i]; break; } }
+        if (!page || page.isHome) { alert('Cannot delete the home page.'); return; }
+        if (!confirm('Delete "' + page.name + '"?')) return;
+        _pages = _pages.filter(function (p) { return p.id !== page.id; });
+        _currentPage = 'home';
+        _updatePageSelect();
+        _renderPageList();
+    }
+
+    function _renderPageList() {
+        var list = _qs('#pageList'); if (!list) return;
+        list.innerHTML = '';
+        _pages.forEach(function (page) {
+            var row = document.createElement('div');
+            row.className = 'page-item' + (page.id === _currentPage ? ' active' : '');
+            var homeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+            var pageIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+            row.innerHTML =
+                '<div class="page-item-icon">' + (page.isHome ? homeIcon : pageIcon) + '</div>' +
+                '<div class="page-item-info">' +
+                    '<span class="page-item-name">' + _escHtml(page.name) + '</span>' +
+                    '<span class="page-item-path">' + _escHtml(page.path || '/') + '</span>' +
+                '</div>' +
+                '<div class="page-item-actions">' +
+                    (page.showInNav !== false && !page.isHome ? '<span class="page-item-nav-badge" title="In navigation">NAV</span>' : '') +
+                    (!page.isHome ? '<button class="page-item-btn page-dup-btn" title="Duplicate">&#128464;</button>' : '') +
+                    (!page.isHome ? '<button class="page-item-btn page-del-btn" title="Delete">&times;</button>' : '') +
+                '</div>';
+
+            /* Click to select */
+            row.querySelector('.page-item-info').addEventListener('click', function () {
+                _currentPage = page.id;
+                _updatePageSelect();
+                _renderPageList();
+            });
+
+            /* Double-click name to rename */
+            var nameEl = row.querySelector('.page-item-name');
+            nameEl.addEventListener('dblclick', function (e) {
+                e.stopPropagation();
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'page-item-rename';
+                input.value = page.name;
+                nameEl.replaceWith(input);
+                input.focus();
+                input.select();
+                function commit() {
+                    var v = input.value.trim();
+                    if (v && v !== page.name) {
+                        page.name = v;
+                        if (!page.isHome) {
+                            page.path = '/' + _slugify(v);
+                            page.id = _slugify(v);
+                        }
+                    }
+                    _updatePageSelect();
+                    _renderPageList();
+                }
+                input.addEventListener('blur', commit);
+                input.addEventListener('keydown', function (e2) {
+                    if (e2.key === 'Enter') { e2.preventDefault(); commit(); }
+                    if (e2.key === 'Escape') _renderPageList();
+                });
+            });
+
+            /* Duplicate */
+            var dupBtn = row.querySelector('.page-dup-btn');
+            if (dupBtn) dupBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var base = page.id + '-copy', newId = base, n = 1;
+                while (_pages.some(function (p) { return p.id === newId; })) { newId = base + '-' + (++n); }
+                _pages.push({ id: newId, name: page.name + ' (copy)', path: page.path + '-copy' + (n > 1 ? '-' + n : ''), isHome: false, showInNav: page.showInNav });
+                _updatePageSelect();
+                _renderPageList();
+            });
+
+            /* Delete */
+            var delBtn = row.querySelector('.page-del-btn');
+            if (delBtn) delBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (!confirm('Delete "' + page.name + '"?')) return;
+                _pages = _pages.filter(function (p) { return p.id !== page.id; });
+                if (_currentPage === page.id) _currentPage = 'home';
+                _updatePageSelect();
+                _renderPageList();
+            });
+
+            list.appendChild(row);
         });
-        _on('#pageSelect', 'change', function () { _currentPage = this.value; });
     }
 
     function _updatePageSelect() {

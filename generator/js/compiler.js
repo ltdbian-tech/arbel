@@ -964,8 +964,15 @@ window.ArbelCompiler = (function () {
         var navMap = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', contact: c.contactNav || 'Contact' };
         sections.forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
-            if (navMap[s]) navLinks += '        <a href="#' + s + '" class="nav-link">' + navMap[s] + '</a>\n';
+            if (navMap[s]) navLinks += '        <a href="#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap[s] + '</a>\n';
         });
+        if (cfg.pages) {
+            cfg.pages.forEach(function (pg) {
+                if (pg.isHome || pg.showInNav === false) return;
+                var href = pg.path || '/' + pg.id;
+                navLinks += '        <a href="' + esc(href) + '" class="nav-link" data-arbel-id="nav-page-' + pg.id + '" data-arbel-edit="text">' + esc(pg.name) + '</a>\n';
+            });
+        }
 
         return '<!DOCTYPE html>\n' +
             '<html lang="en">\n<head>\n' +
@@ -992,7 +999,7 @@ window.ArbelCompiler = (function () {
             '  <!-- Header -->\n' +
             '  <header class="header" id="header">\n' +
             '    <div class="header-inner">\n' +
-            '      <a href="#" class="logo">' + esc(cfg.brandName) + '</a>\n' +
+            '      <a href="#" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
             '      <nav class="nav" id="nav">\n' + navLinks +
             '      </nav>\n' +
             '      <button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span></button>\n' +
@@ -1393,6 +1400,56 @@ window.ArbelCompiler = (function () {
         return presets[preset] || presets.cosmic;
     }
 
+    /* ═══ Build sub-page HTML ═══ */
+    function _buildPageHTML(cfg, page) {
+        var esc = _escHtml;
+        var c = cfg.content || {};
+        var parts = (page.path || '').replace(/^\//, '').replace(/\/$/, '').split('/').filter(Boolean);
+        var prefix = parts.length > 0 ? parts.map(function () { return '..'; }).join('/') + '/' : '';
+
+        // Build nav with links back to home sections + other pages
+        var navLinks2 = '';
+        var navMap2 = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', contact: c.contactNav || 'Contact' };
+        (cfg.sections || []).forEach(function (s) {
+            if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
+            if (navMap2[s]) navLinks2 += '        <a href="' + prefix + '#' + s + '" class="nav-link">' + navMap2[s] + '</a>\n';
+        });
+        if (cfg.pages) {
+            cfg.pages.forEach(function (pg) {
+                if (pg.isHome || pg.showInNav === false || pg.id === page.id) return;
+                navLinks2 += '        <a href="' + prefix + (pg.path || '/' + pg.id).replace(/^\//, '') + '/" class="nav-link">' + esc(pg.name) + '</a>\n';
+            });
+        }
+
+        return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+            '  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+            '  <title>' + esc(page.seoTitle || page.name) + ' — ' + esc(cfg.brandName) + '</title>\n' +
+            (page.seoDesc ? '  <meta name="description" content="' + esc(page.seoDesc) + '">\n' : '') +
+            '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+            '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +
+            '  <link rel="stylesheet" href="' + prefix + 'css/style.css">\n' +
+            '</head>\n<body>\n\n' +
+            '  <div class="cursor" id="cursor"><div class="cursor-dot"></div><div class="cursor-ring"></div></div>\n' +
+            '  <div class="noise-bg"></div>\n\n' +
+            '  <header class="header" id="header">\n    <div class="header-inner">\n' +
+            '      <a href="' + prefix + '" class="logo">' + esc(cfg.brandName) + '</a>\n' +
+            '      <nav class="nav" id="nav">\n' + navLinks2 + '      </nav>\n' +
+            '      <button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span></button>\n' +
+            '    </div>\n  </header>\n\n' +
+            '  <section class="section" style="padding-top:12rem;min-height:60vh">\n' +
+            '    <span class="section-label mono">' + esc(page.name.toUpperCase()) + '</span>\n' +
+            '    <h2 class="section-heading"><span class="line"><span class="line-inner">' + esc(page.name) + '</span></span></h2>\n' +
+            '    <p style="max-width:600px;color:var(--fg2);line-height:1.8;margin-top:2rem">' +
+                esc(page.seoDesc || 'Welcome to the ' + page.name + ' page.') + '</p>\n' +
+            '  </section>\n\n' +
+            '  <footer class="footer">\n    <div class="footer-inner">\n' +
+            '      <p class="footer-copy">&copy; ' + new Date().getFullYear() + ' ' + esc(cfg.brandName) + '</p>\n' +
+            '    </div>\n  </footer>\n\n' +
+            '  <script src="' + prefix + 'js/main.js"></script>\n' +
+            '</body>\n</html>';
+    }
+
     /* ═══ PUBLIC: Compile full site ═══ */
     function compile(userConfig) {
         var cfg = _defaults(userConfig);
@@ -1412,6 +1469,15 @@ window.ArbelCompiler = (function () {
             case 'gradient': files['js/' + jsFile] = _buildGradientJS(cfg.style, cfg.particles); break;
             case 'wave':     files['js/' + jsFile] = _buildWaveJS(cfg.style, cfg.particles); break;
             default:         files['js/' + jsFile] = _buildShaderJS(cfg.style); break;
+        }
+
+        // Generate additional page files
+        if (cfg.pages) {
+            cfg.pages.forEach(function (pg) {
+                if (pg.isHome) return;
+                var pagePath = (pg.path || '/' + pg.id).replace(/^\//, '').replace(/\/$/, '');
+                if (pagePath) files[pagePath + '/index.html'] = _buildPageHTML(cfg, pg);
+            });
         }
 
         // Apply editor overrides (text changes, animations, hover, effects)

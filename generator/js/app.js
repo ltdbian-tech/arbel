@@ -1159,6 +1159,12 @@
             cfg.editorOverrides = state.editorOverrides;
         }
 
+        // Include pages from editor
+        var editorPages = ArbelEditor.getPages();
+        if (editorPages && editorPages.length > 1) {
+            cfg.pages = editorPages;
+        }
+
         // Include video layer config from editor
         var vc = ArbelEditor.getVideoConfig();
         if (vc && vc.config && vc.config.active && vc.frames && vc.frames.length) {

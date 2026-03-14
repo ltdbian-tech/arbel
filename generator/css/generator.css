@@ -1081,6 +1081,85 @@ em { font-family: var(--font-display); font-style: italic; }
     background: rgba(108,92,231,0.15); color: var(--accent); font-family: var(--font-mono);
 }
 
+/* ═══ PAGES PANEL ═══ */
+.page-list { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; max-height: calc(100vh - 230px); }
+.page-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 8px; cursor: pointer; transition: background 0.15s;
+    border: 1px solid transparent;
+}
+.page-item:hover { background: var(--surface2); }
+.page-item.active { background: rgba(108,92,231,0.12); border-color: var(--accent); }
+.page-item-icon { flex-shrink: 0; color: var(--fg3); display: flex; align-items: center; }
+.page-item.active .page-item-icon { color: var(--accent); }
+.page-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.page-item-name {
+    font-size: 0.72rem; font-weight: 600; color: var(--fg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: text;
+}
+.page-item-path {
+    font-size: 0.56rem; color: var(--fg3); font-family: var(--font-mono);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.page-item-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.page-item-nav-badge {
+    font-size: 0.45rem; padding: 1px 5px; border-radius: 6px;
+    background: rgba(108,92,231,0.15); color: var(--accent); font-family: var(--font-mono);
+    font-weight: 700; letter-spacing: 0.04em;
+}
+.page-item-btn {
+    background: none; border: none; color: var(--fg3); cursor: pointer;
+    font-size: 0.8rem; padding: 2px 4px; border-radius: 4px; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+}
+.page-item-btn:hover { color: var(--fg); background: var(--surface2); }
+.page-del-btn:hover { color: #e74c3c !important; }
+.page-item-rename {
+    background: var(--bg2); border: 1px solid var(--accent); color: var(--fg);
+    font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+    outline: none; width: 100%; font-family: inherit;
+}
+.page-add-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 10px; margin-top: 8px; border: 1px dashed var(--border);
+    background: transparent; color: var(--fg3); border-radius: 8px;
+    cursor: pointer; font-size: 0.68rem; font-family: var(--font-mono);
+    transition: all 0.2s;
+}
+.page-add-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,92,231,0.06); }
+
+/* ═══ ADD PAGE DIALOG ═══ */
+.arbel-dialog-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center; z-index: 99999;
+}
+.arbel-dialog {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 28px 24px; width: 360px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.arbel-dialog-title { font-size: 1rem; font-weight: 700; color: var(--fg); margin-bottom: 18px; }
+.arbel-dialog-label {
+    font-size: 0.68rem; color: var(--fg3); margin-bottom: 5px; display: block;
+    font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em;
+}
+.arbel-dialog-input {
+    width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg2); color: var(--fg); font-size: 0.82rem;
+    margin-bottom: 14px; outline: none; transition: border-color 0.2s;
+    font-family: inherit; box-sizing: border-box;
+}
+.arbel-dialog-input:focus { border-color: var(--accent); }
+.arbel-dialog-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.arbel-dialog-btn {
+    padding: 8px 18px; border-radius: 8px; font-size: 0.74rem; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border); transition: all 0.2s;
+    font-family: inherit;
+}
+.arbel-dialog-cancel { background: transparent; color: var(--fg3); }
+.arbel-dialog-cancel:hover { color: var(--fg); background: var(--surface2); }
+.arbel-dialog-confirm { background: var(--accent); color: #fff; border-color: var(--accent); }
+.arbel-dialog-confirm:hover { filter: brightness(1.1); }
+
 /* ═══ INSERT PANEL ACCORDION ═══ */
 .insert-section { border-bottom: 1px solid var(--border); }
 .insert-section:last-child { border-bottom: none; }
