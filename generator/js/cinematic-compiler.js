@@ -271,7 +271,44 @@ window.ArbelCinematicCompiler = (function () {
         if (cfg.tagline) html += '<meta name="description" content="' + esc(cfg.tagline) + '">\n';
         html += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
         html += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
-        html += '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">\n';
+
+        // Collect used font families from elements
+        var usedFonts = { 'Inter': 'Inter:wght@300;400;500;600;700;800;900' };
+        var fontMap = {
+            'Space Mono': 'Space+Mono:wght@400;700',
+            'Space Grotesk': 'Space+Grotesk:wght@300;400;500;600;700',
+            'Playfair Display': 'Playfair+Display:wght@400;500;600;700;800;900',
+            'DM Sans': 'DM+Sans:wght@300;400;500;600;700',
+            'DM Serif Display': 'DM+Serif+Display',
+            'Sora': 'Sora:wght@300;400;500;600;700;800',
+            'Outfit': 'Outfit:wght@300;400;500;600;700;800',
+            'Poppins': 'Poppins:wght@300;400;500;600;700;800;900',
+            'Montserrat': 'Montserrat:wght@300;400;500;600;700;800;900',
+            'Raleway': 'Raleway:wght@300;400;500;600;700;800;900',
+            'Oswald': 'Oswald:wght@300;400;500;600;700',
+            'Lora': 'Lora:wght@400;500;600;700',
+            'Merriweather': 'Merriweather:wght@300;400;700;900',
+            'Roboto': 'Roboto:wght@300;400;500;700;900',
+            'Open Sans': 'Open+Sans:wght@300;400;500;600;700;800',
+            'Bebas Neue': 'Bebas+Neue',
+            'Archivo Black': 'Archivo+Black',
+            'Crimson Text': 'Crimson+Text:wght@400;600;700',
+            'JetBrains Mono': 'JetBrains+Mono:wght@400;500;600;700',
+            'Fira Code': 'Fira+Code:wght@400;500;600;700'
+        };
+        (cfg.scenes || []).forEach(function (scene) {
+            (scene.elements || []).forEach(function (el) {
+                if (el.style && el.style.fontFamily) {
+                    Object.keys(fontMap).forEach(function (name) {
+                        if (el.style.fontFamily.indexOf(name) >= 0) {
+                            usedFonts[name] = fontMap[name];
+                        }
+                    });
+                }
+            });
+        });
+        var fontFamilies = Object.keys(usedFonts).map(function (k) { return 'family=' + usedFonts[k]; }).join('&');
+        html += '<link href="https://fonts.googleapis.com/css2?' + fontFamilies + '&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">\n';
         html += '<link rel="stylesheet" href="css/style.css">\n';
         html += '</head>\n<body>\n';
 
@@ -315,7 +352,7 @@ window.ArbelCinematicCompiler = (function () {
 
             (scene.elements || []).forEach(function (el) {
                 if (!el.visible) return;
-                var validTags = ['h1','h2','h3','p','span','div','img','a','section','header','footer','nav','ul','li','ol'];
+                var validTags = ['h1','h2','h3','p','span','div','img','video','a','section','header','footer','nav','ul','li','ol'];
                 var tag = (validTags.indexOf(el.tag) >= 0) ? el.tag : 'div';
                 var style = '';
                 if (el.style) {
@@ -381,7 +418,32 @@ window.ArbelCinematicCompiler = (function () {
                 html += splitAttr;
                 html += parallaxAttr;
                 if (style) html += ' style="' + style + '"';
-                html += '>' + esc(el.text) + '</' + tag + '>\n';
+
+                if (tag === 'img') {
+                    var imgSrc = el.src ? esc(el.src) : '';
+                    html += ' src="' + imgSrc + '" alt="' + esc(el.text || '') + '" loading="lazy"';
+                    html += '>\n';
+                } else if (tag === 'video') {
+                    var vidSrc = el.src ? esc(el.src) : '';
+                    html += (el.videoAutoplay !== false ? ' autoplay' : '');
+                    html += (el.videoLoop !== false ? ' loop' : '');
+                    html += (el.videoMuted !== false ? ' muted' : '');
+                    html += ' playsinline';
+                    if (vidSrc) html += ' src="' + vidSrc + '"';
+                    html += '></video>\n';
+                } else if (tag === 'a') {
+                    var href = el.href ? esc(el.href) : '#';
+                    html += ' href="' + href + '"';
+                    if (el.linkNewTab) html += ' target="_blank" rel="noopener noreferrer"';
+                    html += '>' + esc(el.text) + '</a>\n';
+                } else {
+                    // For button divs with href, wrap in anchor
+                    if (el.href && el.href !== '#' && el.href !== '') {
+                        html += '>' + esc(el.text) + '</' + tag + '>\n';
+                    } else {
+                        html += '>' + esc(el.text) + '</' + tag + '>\n';
+                    }
+                }
             });
 
             html += '  </section>\n\n';

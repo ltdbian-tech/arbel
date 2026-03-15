@@ -640,6 +640,118 @@
     background: #6C5CE7;
 }
 
+/* ─── Upload Button ─── */
+.cne-upload-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    color: rgba(255,255,255,0.5);
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    justify-content: center;
+}
+.cne-upload-btn:hover {
+    border-color: rgba(108,92,231,0.5);
+    color: rgba(255,255,255,0.8);
+    background: rgba(108,92,231,0.08);
+}
+
+/* ─── Mini Toggle Label ─── */
+.cne-mini-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+}
+.cne-mini-toggle input[type="checkbox"] {
+    accent-color: #6C5CE7;
+    width: 14px;
+    height: 14px;
+}
+
+/* ─── Alignment Button Group ─── */
+.cne-btn-group {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    padding: 2px;
+}
+.cne-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.cne-icon-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.6);
+}
+.cne-icon-btn.active {
+    background: rgba(108,92,231,0.3);
+    color: #fff;
+}
+
+/* ─── Element List Actions ─── */
+.cne-el-actions {
+    display: flex;
+    gap: 1px;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+.cne-el-item:hover .cne-el-actions {
+    opacity: 1;
+}
+.cne-el-action-btn {
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.25);
+    cursor: pointer;
+    font-size: 8px;
+    padding: 2px 3px;
+    line-height: 1;
+    border-radius: 3px;
+    transition: all 0.15s;
+}
+.cne-el-action-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.6);
+}
+
+/* ─── Add Element Type Categories ─── */
+.cne-el-type-cat {
+    font-size: 0.65rem;
+    font-family: 'Space Mono', monospace;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 10px 0 4px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    margin-top: 4px;
+}
+.cne-el-type-cat:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
 /* ─── Timeline (Bottom) ─── */
 .cne-timeline {
     grid-area: timeline;

@@ -1397,6 +1397,70 @@
                 <div class="cne-prop-panel active" data-panel="style" id="cnePropsContainer">
                     <div class="cne-el-header" id="cneElHeader">Select an element</div>
 
+                    <!-- Media section (shown for img/video) -->
+                    <div class="cne-section-media" id="cneMediaSection" style="display:none">
+                        <div class="cne-section-label">MEDIA</div>
+                        <div class="cne-row" id="cneImgRow" style="display:none">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Image URL</span>
+                                <input type="text" class="gen-input" id="cneImgSrc" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneImgUploadRow" style="display:none">
+                            <div class="cne-col" style="flex:1">
+                                <label class="cne-upload-btn" id="cneImgUploadLabel">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                    Upload Image
+                                    <input type="file" accept="image/*" id="cneImgUpload" style="display:none">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneImgFitRow" style="display:none">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Object Fit</span>
+                                <select class="gen-select" id="cneImgFit">
+                                    <option value="cover">Cover</option>
+                                    <option value="contain">Contain</option>
+                                    <option value="fill">Fill</option>
+                                    <option value="none">None</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneVideoRow" style="display:none">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Video URL (MP4)</span>
+                                <input type="text" class="gen-input" id="cneVideoSrc" placeholder="https://...mp4">
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneVideoOptsRow" style="display:none">
+                            <div class="cne-col">
+                                <label class="cne-mini-toggle"><input type="checkbox" id="cneVideoAutoplay" checked> Autoplay</label>
+                            </div>
+                            <div class="cne-col">
+                                <label class="cne-mini-toggle"><input type="checkbox" id="cneVideoLoop" checked> Loop</label>
+                            </div>
+                            <div class="cne-col">
+                                <label class="cne-mini-toggle"><input type="checkbox" id="cneVideoMuted" checked> Muted</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Link section (shown for <a> and button variant) -->
+                    <div class="cne-section-link" id="cneLinkSection" style="display:none">
+                        <div class="cne-section-label">LINK</div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">URL</span>
+                                <input type="text" class="gen-input" id="cneLinkHref" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <label class="cne-mini-toggle"><input type="checkbox" id="cneLinkNewTab" checked> Open in new tab</label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="cne-section-label">TEXT</div>
                     <textarea class="gen-input" id="cneTextInput" rows="2" placeholder="Edit text..." style="resize:vertical;width:100%"></textarea>
 
@@ -1424,6 +1488,35 @@
 
                     <div class="cne-section-label">FONT</div>
                     <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Family</span>
+                            <select class="gen-select" id="cneFontFamily">
+                                <option value="">Default (Inter)</option>
+                                <option value="'Inter', sans-serif">Inter</option>
+                                <option value="'Space Mono', monospace">Space Mono</option>
+                                <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                                <option value="'Playfair Display', serif">Playfair Display</option>
+                                <option value="'DM Sans', sans-serif">DM Sans</option>
+                                <option value="'DM Serif Display', serif">DM Serif Display</option>
+                                <option value="'Sora', sans-serif">Sora</option>
+                                <option value="'Outfit', sans-serif">Outfit</option>
+                                <option value="'Poppins', sans-serif">Poppins</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Raleway', sans-serif">Raleway</option>
+                                <option value="'Oswald', sans-serif">Oswald</option>
+                                <option value="'Lora', serif">Lora</option>
+                                <option value="'Merriweather', serif">Merriweather</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Open Sans', sans-serif">Open Sans</option>
+                                <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                                <option value="'Archivo Black', sans-serif">Archivo Black</option>
+                                <option value="'Crimson Text', serif">Crimson Text</option>
+                                <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                                <option value="'Fira Code', monospace">Fira Code</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
                         <div class="cne-col">
                             <span class="cne-hint mono">Size</span>
                             <input type="number" class="gen-input" id="cneFontSize" min="8" max="200" placeholder="px">
@@ -1440,6 +1533,26 @@
                                 <option value="800">Extra Bold</option>
                                 <option value="900">Black</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Line Height</span>
+                            <input type="number" class="gen-input" id="cneLineHeight" min="0.5" max="5" step="0.1" placeholder="1.5">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Spacing</span>
+                            <input type="text" class="gen-input" id="cneLetterSpacing" placeholder="0em">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Align</span>
+                            <div class="cne-btn-group" id="cneTextAlign">
+                                <button class="cne-icon-btn" data-val="left" title="Left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 10H3M21 6H3M21 14H3M17 18H3"/></svg></button>
+                                <button class="cne-icon-btn" data-val="center" title="Center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10H6M21 6H3M21 14H3M18 18H6"/></svg></button>
+                                <button class="cne-icon-btn" data-val="right" title="Right"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg></button>
+                            </div>
                         </div>
                     </div>
 
@@ -1468,6 +1581,77 @@
                             <span class="cne-hint mono">Border Radius</span>
                             <input type="range" class="gen-range" id="cneRadius" min="0" max="50" value="0">
                             <span class="cne-hint" id="cneRadiusVal">0px</span>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Z-Index</span>
+                            <input type="number" class="gen-input" id="cneZIndex" min="-10" max="100" placeholder="auto">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">EFFECTS</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Box Shadow</span>
+                            <select class="gen-select" id="cneBoxShadow">
+                                <option value="">None</option>
+                                <option value="0 2px 8px rgba(0,0,0,0.3)">Small</option>
+                                <option value="0 4px 16px rgba(0,0,0,0.4)">Medium</option>
+                                <option value="0 8px 32px rgba(0,0,0,0.5)">Large</option>
+                                <option value="0 16px 64px rgba(0,0,0,0.6)">XL</option>
+                                <option value="0 0 30px rgba(108,92,231,0.4)">Glow (Purple)</option>
+                                <option value="0 0 30px rgba(59,130,246,0.4)">Glow (Blue)</option>
+                                <option value="0 0 30px rgba(16,185,129,0.4)">Glow (Green)</option>
+                                <option value="inset 0 2px 10px rgba(0,0,0,0.4)">Inner</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Backdrop</span>
+                            <select class="gen-select" id="cneBackdrop">
+                                <option value="">None</option>
+                                <option value="blur(8px)">Blur Light</option>
+                                <option value="blur(20px)">Blur Medium</option>
+                                <option value="blur(40px)">Blur Heavy</option>
+                                <option value="blur(20px) saturate(180%)">Blur + Saturate</option>
+                                <option value="blur(12px) brightness(0.8)">Blur + Darken</option>
+                                <option value="grayscale(100%)">Grayscale</option>
+                                <option value="sepia(100%)">Sepia</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">BORDER</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Width</span>
+                            <input type="number" class="gen-input" id="cneBorderWidth" min="0" max="20" placeholder="0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Color</span>
+                            <input type="color" class="cne-color-input" id="cneBorderColor" value="#ffffff">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">PADDING</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Top</span>
+                            <input type="text" class="gen-input" id="cnePadTop" placeholder="0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Right</span>
+                            <input type="text" class="gen-input" id="cnePadRight" placeholder="0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Bottom</span>
+                            <input type="text" class="gen-input" id="cnePadBottom" placeholder="0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Left</span>
+                            <input type="text" class="gen-input" id="cnePadLeft" placeholder="0">
                         </div>
                     </div>
                 </div>
@@ -1633,6 +1817,12 @@
                         <div class="cne-col">
                             <span class="cne-hint mono">Color</span>
                             <input type="color" class="cne-color-input" id="cneSceneBg" value="#0a0a0f">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Background Image URL</span>
+                            <input type="text" class="gen-input" id="cneSceneBgImage" placeholder="https://...">
                         </div>
                     </div>
                 </div>
