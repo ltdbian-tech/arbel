@@ -315,19 +315,39 @@ window.ArbelCinematicCompiler = (function () {
 
             (scene.elements || []).forEach(function (el) {
                 if (!el.visible) return;
-                var tag = el.tag || 'div';
+                var validTags = ['h1','h2','h3','p','span','div','img','a','section','header','footer','nav','ul','li','ol'];
+                var tag = (validTags.indexOf(el.tag) >= 0) ? el.tag : 'div';
                 var style = '';
                 if (el.style) {
                     Object.keys(el.style).forEach(function (prop) {
-                        style += _camelToDash(prop) + ':' + el.style[prop] + ';';
+                        var val = String(el.style[prop]);
+                        // Sanitize: escape characters that could break the style/HTML context
+                        val = val.replace(/[<>"'`]/g, '');
+                        if (/javascript\s*:/i.test(val) || /expression\s*\(/i.test(val) || /-moz-binding/i.test(val)) return;
+                        style += _camelToDash(prop) + ':' + val + ';';
                     });
                 }
                 var scrollData = '';
                 if (el.scroll) {
-                    scrollData = " data-scroll='" + JSON.stringify(el.scroll) + "'";
+                    // Sanitize scroll JSON — only allow known keys with safe value types
+                    var safeScroll = {};
+                    var allowedScrollKeys = {opacity:1,x:1,y:1,scale:1,rotation:1,blur:1,clipPath:1,rotateX:1,rotateY:1,skewX:1,skewY:1,start:1,end:1};
+                    Object.keys(el.scroll).forEach(function (k) {
+                        if (!allowedScrollKeys[k]) return;
+                        var v = el.scroll[k];
+                        if (typeof v === 'number') { safeScroll[k] = v; }
+                        else if (Array.isArray(v)) {
+                            safeScroll[k] = v.map(function (item) {
+                                if (typeof item === 'number') return item;
+                                if (typeof item === 'string' && item.length < 100 && !/[<>"'`]/.test(item)) return item;
+                                return 0;
+                            });
+                        }
+                    });
+                    scrollData = " data-scroll='" + esc(JSON.stringify(safeScroll)) + "'";
                 }
                 var splitAttr = el.splitText ? ' data-split-text="true"' : '';
-                var parallaxAttr = el.parallax && el.parallax !== 1 ? ' data-parallax="' + el.parallax + '"' : '';
+                var parallaxAttr = el.parallax && el.parallax !== 1 ? ' data-parallax="' + parseFloat(el.parallax) + '"' : '';
 
                 html += '    <' + tag + ' class="cne-element"';
                 html += ' data-arbel-id="' + esc(el.id) + '"';

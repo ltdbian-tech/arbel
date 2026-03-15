@@ -639,8 +639,40 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
-        // Scroll property rows (opacity, y, x, scale, rotation, blur)
+        // Scroll property rows (opacity, y, x, scale, rotation, blur, clipPath, rotateX, rotateY, skewX, skewY)
         ['opacity', 'y', 'x', 'scale', 'rotation', 'blur'].forEach(function (prop) {
+            var fromInput = _qs('#cneScroll_' + prop + '_from');
+            var toInput = _qs('#cneScroll_' + prop + '_to');
+            if (fromInput) {
+                fromInput.addEventListener('input', function () {
+                    _setScrollValues(prop, fromInput, toInput);
+                });
+            }
+            if (toInput) {
+                toInput.addEventListener('input', function () {
+                    _setScrollValues(prop, fromInput, toInput);
+                });
+            }
+        });
+
+        // String-valued scroll properties (clipPath)
+        ['clipPath'].forEach(function (prop) {
+            var fromInput = _qs('#cneScroll_' + prop + '_from');
+            var toInput = _qs('#cneScroll_' + prop + '_to');
+            if (fromInput) {
+                fromInput.addEventListener('input', function () {
+                    _setScrollStringValues(prop, fromInput, toInput);
+                });
+            }
+            if (toInput) {
+                toInput.addEventListener('input', function () {
+                    _setScrollStringValues(prop, fromInput, toInput);
+                });
+            }
+        });
+
+        // Numeric special scroll properties (rotateX, rotateY, skewX, skewY)
+        ['rotateX', 'rotateY', 'skewX', 'skewY'].forEach(function (prop) {
             var fromInput = _qs('#cneScroll_' + prop + '_from');
             var toInput = _qs('#cneScroll_' + prop + '_to');
             if (fromInput) {
@@ -690,6 +722,19 @@ window.ArbelCinematicEditor = (function () {
         if (isNaN(from)) from = 0;
         if (isNaN(to)) to = 0;
         el.scroll[prop] = [from, to];
+        _notifyUpdate(true);
+    }
+
+    function _setScrollStringValues(prop, fromInput, toInput) {
+        var el = _getSelectedElement();
+        if (!el || !el.scroll) return;
+        var from = fromInput ? fromInput.value.trim() : '';
+        var to = toInput ? toInput.value.trim() : '';
+        if (!from && !to) {
+            delete el.scroll[prop];
+        } else {
+            el.scroll[prop] = [from || '', to || ''];
+        }
         _notifyUpdate(true);
     }
 
@@ -981,14 +1026,21 @@ window.ArbelCinematicEditor = (function () {
             if (startInput) startInput.value = Math.round((el.scroll.start || 0) * 100);
             if (endInput) endInput.value = Math.round((el.scroll.end || 1) * 100);
 
-            // Populate from/to for each property
-            ['opacity', 'y', 'x', 'scale', 'rotation', 'blur'].forEach(function (prop) {
+            // Populate from/to for each numeric property
+            ['opacity', 'y', 'x', 'scale', 'rotation', 'blur', 'rotateX', 'rotateY', 'skewX', 'skewY'].forEach(function (prop) {
                 var vals = el.scroll[prop];
                 var fromInput = _qs('#cneScroll_' + prop + '_from');
                 var toInput = _qs('#cneScroll_' + prop + '_to');
                 if (fromInput) fromInput.value = (Array.isArray(vals) && vals[0] !== undefined) ? vals[0] : '';
                 if (toInput) toInput.value = (Array.isArray(vals) && vals[1] !== undefined) ? vals[1] : '';
             });
+
+            // Populate clipPath (string values)
+            var clipVals = el.scroll.clipPath;
+            var clipFrom = _qs('#cneScroll_clipPath_from');
+            var clipTo = _qs('#cneScroll_clipPath_to');
+            if (clipFrom) clipFrom.value = (Array.isArray(clipVals) && clipVals[0]) ? clipVals[0] : '';
+            if (clipTo) clipTo.value = (Array.isArray(clipVals) && clipVals[1]) ? clipVals[1] : '';
         }
 
         // Split text
@@ -1107,6 +1159,105 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /* ─── AI Scene Generation ─── */
+
+    /* Allowlisted CSS properties for AI-generated styles */
+    var _ALLOWED_STYLE_PROPS = {
+        fontSize: true, fontWeight: true, fontStyle: true, fontFamily: true,
+        color: true, background: true, backgroundColor: true,
+        position: true, top: true, left: true, right: true, bottom: true,
+        width: true, height: true, minWidth: true, minHeight: true, maxWidth: true, maxHeight: true,
+        margin: true, marginTop: true, marginLeft: true, marginRight: true, marginBottom: true,
+        padding: true, paddingTop: true, paddingLeft: true, paddingRight: true, paddingBottom: true,
+        borderRadius: true, border: true, borderColor: true, borderWidth: true,
+        textAlign: true, lineHeight: true, letterSpacing: true, textTransform: true,
+        transform: true, opacity: true, overflow: true, zIndex: true,
+        display: true, whiteSpace: true, cursor: true,
+        backdropFilter: true, filter: true,
+        backgroundImage: true, backgroundSize: true, backgroundPosition: true
+    };
+
+    /* Allowlisted scroll animation properties */
+    var _ALLOWED_SCROLL_PROPS = {
+        opacity: true, x: true, y: true, scale: true, rotation: true,
+        blur: true, clipPath: true, rotateX: true, rotateY: true,
+        skewX: true, skewY: true, start: true, end: true
+    };
+
+    /* Validate a single CSS value — reject anything that looks like injection */
+    function _isSafeCSSValue(val) {
+        if (typeof val !== 'string' && typeof val !== 'number') return false;
+        var s = String(val);
+        if (s.length > 200) return false;
+        // Block script injection patterns
+        if (/[<>"'`]/.test(s)) return false;
+        if (/javascript\s*:/i.test(s)) return false;
+        if (/expression\s*\(/i.test(s)) return false;
+        if (/url\s*\(/i.test(s) && !/url\s*\(\s*data:image\//i.test(s)) return false;
+        if (/-moz-binding/i.test(s)) return false;
+        if (/behavior\s*:/i.test(s)) return false;
+        return true;
+    }
+
+    /* Validate a clipPath value */
+    function _isSafeClipPath(val) {
+        if (typeof val !== 'string') return false;
+        // Only allow inset(), circle(), ellipse(), polygon()
+        return /^(inset|circle|ellipse|polygon)\([^)]*\)$/.test(val.trim());
+    }
+
+    /* Sanitize AI-generated style object */
+    function _sanitizeStyle(style) {
+        if (!style || typeof style !== 'object') return { position: 'absolute', top: '50%', left: '50%', color: '#ffffff' };
+        var clean = {};
+        Object.keys(style).forEach(function (prop) {
+            if (!_ALLOWED_STYLE_PROPS[prop]) return;
+            var val = style[prop];
+            if (_isSafeCSSValue(val)) clean[prop] = val;
+        });
+        if (!clean.position) clean.position = 'absolute';
+        return clean;
+    }
+
+    /* Sanitize AI-generated scroll object */
+    function _sanitizeScroll(scroll) {
+        if (!scroll || typeof scroll !== 'object') return null;
+        var clean = {};
+        Object.keys(scroll).forEach(function (prop) {
+            if (!_ALLOWED_SCROLL_PROPS[prop]) return;
+            var val = scroll[prop];
+            if (prop === 'start' || prop === 'end') {
+                var n = parseFloat(val);
+                if (!isNaN(n)) clean[prop] = Math.max(0, Math.min(1, n));
+            } else if (prop === 'clipPath') {
+                if (Array.isArray(val)) {
+                    var safe = val.filter(_isSafeClipPath).slice(0, 4);
+                    if (safe.length >= 2) clean[prop] = safe;
+                }
+            } else if (prop === 'opacity') {
+                if (Array.isArray(val)) {
+                    clean[prop] = val.slice(0, 4).map(function (v) { return Math.max(0, Math.min(1, parseFloat(v) || 0)); });
+                }
+            } else if (prop === 'scale') {
+                if (Array.isArray(val)) {
+                    clean[prop] = val.slice(0, 4).map(function (v) { return Math.max(0, Math.min(3, parseFloat(v) || 1)); });
+                }
+            } else if (prop === 'blur') {
+                if (Array.isArray(val)) {
+                    clean[prop] = val.slice(0, 4).map(function (v) { return Math.max(0, Math.min(50, parseFloat(v) || 0)); });
+                }
+            } else if (prop === 'x' || prop === 'y') {
+                if (Array.isArray(val)) {
+                    clean[prop] = val.slice(0, 4).map(function (v) { return Math.max(-2000, Math.min(2000, parseFloat(v) || 0)); });
+                }
+            } else if (prop === 'rotation' || prop === 'rotateX' || prop === 'rotateY' || prop === 'skewX' || prop === 'skewY') {
+                if (Array.isArray(val)) {
+                    clean[prop] = val.slice(0, 4).map(function (v) { return Math.max(-360, Math.min(360, parseFloat(v) || 0)); });
+                }
+            }
+        });
+        return Object.keys(clean).length > 0 ? clean : null;
+    }
+
     var _AI_PROMPT = 'You are a web animation designer. Generate a single cinematic scroll-animation scene for a website.\n\nReturn ONLY valid JSON in this exact format (no markdown, no explanation):\n{\n  "name": "Scene Name",\n  "elements": [\n    {\n      "id": "unique-id",\n      "tag": "h1",\n      "text": "content",\n      "style": {\n        "fontSize": "5vw",\n        "fontWeight": "700",\n        "color": "#ffffff",\n        "position": "absolute",\n        "top": "30%",\n        "left": "50%",\n        "transform": "translate(-50%,-50%)",\n        "textAlign": "center"\n      },\n      "scroll": {\n        "opacity": [0, 1],\n        "y": [40, 0],\n        "blur": [10, 0],\n        "start": 0,\n        "end": 0.5\n      },\n      "splitText": false,\n      "parallax": 1\n    }\n  ]\n}\n\nAvailable tags: h1, h2, h3, p, span, div.\nAvailable scroll properties (all arrays of [from, to]):\n- opacity: 0-1\n- y: pixels (vertical)\n- x: pixels (horizontal)\n- scale: 0-2\n- rotation: degrees\n- blur: 0-30 pixels\n- clipPath: ["inset(100% 0 0 0)", "inset(0% 0 0 0)"] for reveal effects\n- start/end: 0-1 (when in scroll)\n\nDesign rules:\n- Dark theme with white text\n- Cinematic, high-end Framer-style animations\n- Mix blur reveals, clip-path wipes, parallax, scale\n- 3-8 elements including decorative (gradient orbs, glass panels, dividers)\n- Professional typography sizing\n\nUser description: ';
 
     function _showAIGenerateDialog() {
@@ -1129,7 +1280,7 @@ window.ArbelCinematicEditor = (function () {
         var provSelect = document.createElement('select');
         provSelect.className = 'gen-select';
         provSelect.innerHTML = '<option value="gemini">Google Gemini</option><option value="openai">OpenAI (GPT-4o-mini)</option>';
-        var savedProv = localStorage.getItem('arbel-ai-provider');
+        var savedProv = sessionStorage.getItem('arbel-ai-provider');
         if (savedProv) provSelect.value = savedProv;
         provRow.appendChild(provLabel);
         provRow.appendChild(provSelect);
@@ -1144,17 +1295,39 @@ window.ArbelCinematicEditor = (function () {
         keyInput.className = 'gen-input';
         keyInput.type = 'password';
         keyInput.placeholder = 'Paste your API key...';
-        var savedKey = localStorage.getItem('arbel-ai-key-' + provSelect.value);
+        keyInput.setAttribute('autocomplete', 'off');
+        // Load from sessionStorage (always), or localStorage (if user opted in)
+        var savedKey = sessionStorage.getItem('arbel-ai-key-' + provSelect.value)
+            || localStorage.getItem('arbel-ai-key-' + provSelect.value)
+            || '';
         if (savedKey) keyInput.value = savedKey;
         provSelect.addEventListener('change', function () {
-            var k = localStorage.getItem('arbel-ai-key-' + provSelect.value);
-            keyInput.value = k || '';
+            var k = sessionStorage.getItem('arbel-ai-key-' + provSelect.value)
+                || localStorage.getItem('arbel-ai-key-' + provSelect.value)
+                || '';
+            keyInput.value = k;
         });
+
+        // Remember key opt-in
+        var rememberRow = document.createElement('div');
+        rememberRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px';
+        var rememberCheck = document.createElement('input');
+        rememberCheck.type = 'checkbox';
+        rememberCheck.id = 'arbel-ai-remember';
+        rememberCheck.checked = !!localStorage.getItem('arbel-ai-remember');
+        var rememberLabel = document.createElement('label');
+        rememberLabel.setAttribute('for', 'arbel-ai-remember');
+        rememberLabel.style.cssText = 'font-size:0.75rem;color:rgba(255,255,255,0.5);cursor:pointer';
+        rememberLabel.textContent = 'Remember key across sessions';
+        rememberRow.appendChild(rememberCheck);
+        rememberRow.appendChild(rememberLabel);
+
         var keyHint = document.createElement('div');
         keyHint.className = 'cne-ai-hint';
-        keyHint.textContent = 'Your key is stored locally and never sent to our servers.';
+        keyHint.textContent = 'Your key is sent directly from your browser to the AI provider. It is stored only in this tab by default. If you check "Remember," it persists in browser storage and could be read by other scripts on this page.';
         keyRow.appendChild(keyLabel);
         keyRow.appendChild(keyInput);
+        keyRow.appendChild(rememberRow);
         keyRow.appendChild(keyHint);
 
         // Description
@@ -1197,8 +1370,17 @@ window.ArbelCinematicEditor = (function () {
             if (!apiKey) { status.textContent = 'Please enter an API key.'; status.style.display = ''; status.className = 'cne-ai-status error'; return; }
             if (!desc) { status.textContent = 'Please describe the scene you want.'; status.style.display = ''; status.className = 'cne-ai-status error'; return; }
 
-            localStorage.setItem('arbel-ai-provider', provSelect.value);
-            localStorage.setItem('arbel-ai-key-' + provSelect.value, apiKey);
+            // Always save to session; persist to localStorage only if opted in
+            sessionStorage.setItem('arbel-ai-provider', provSelect.value);
+            sessionStorage.setItem('arbel-ai-key-' + provSelect.value, apiKey);
+            if (rememberCheck.checked) {
+                localStorage.setItem('arbel-ai-remember', '1');
+                localStorage.setItem('arbel-ai-key-' + provSelect.value, apiKey);
+            } else {
+                localStorage.removeItem('arbel-ai-remember');
+                localStorage.removeItem('arbel-ai-key-gemini');
+                localStorage.removeItem('arbel-ai-key-openai');
+            }
 
             status.textContent = 'Generating scene...';
             status.style.display = '';
@@ -1257,27 +1439,61 @@ window.ArbelCinematicEditor = (function () {
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.setRequestHeader('Authorization', 'Bearer ' + apiKey);
         } else {
-            url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
+            url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
             body = JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
             });
             xhr.open('POST', url);
             xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('x-goog-api-key', apiKey);
         }
 
+        xhr.timeout = 30000;
         xhr.onload = function () {
             if (xhr.status !== 200) {
                 cb('API returned status ' + xhr.status + '. Check your API key.');
                 return;
             }
             try {
+                // Reject oversized responses (>100KB)
+                if (xhr.responseText.length > 102400) {
+                    cb('Response too large. Try a simpler description.');
+                    return;
+                }
                 var resp = JSON.parse(xhr.responseText);
                 var text;
                 if (provider === 'openai') {
+                    if (!resp.choices || !resp.choices[0] || !resp.choices[0].message) {
+                        cb('Unexpected OpenAI response format.');
+                        return;
+                    }
+                    // Check for safety refusal
+                    if (resp.choices[0].finish_reason === 'content_filter') {
+                        cb('The AI declined to generate this content.');
+                        return;
+                    }
                     text = resp.choices[0].message.content;
                 } else {
+                    if (!resp.candidates || !resp.candidates[0]) {
+                        // Gemini safety block
+                        if (resp.promptFeedback && resp.promptFeedback.blockReason) {
+                            cb('Content blocked by AI safety filter: ' + resp.promptFeedback.blockReason);
+                            return;
+                        }
+                        cb('Unexpected Gemini response format.');
+                        return;
+                    }
+                    if (!resp.candidates[0].content || !resp.candidates[0].content.parts || !resp.candidates[0].content.parts[0]) {
+                        cb('Gemini returned an empty response.');
+                        return;
+                    }
                     text = resp.candidates[0].content.parts[0].text;
+                }
+                // Extract first complete JSON object
+                if (typeof text !== 'string' || text.length > 50000) {
+                    cb('Response content too large or invalid.');
+                    return;
                 }
                 var jsonMatch = text.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
@@ -1290,35 +1506,49 @@ window.ArbelCinematicEditor = (function () {
                 cb('Parse error: ' + e.message);
             }
         };
+        xhr.ontimeout = function () { cb('Request timed out. Try again.'); };
         xhr.onerror = function () { cb('Network error. Check your connection.'); };
         xhr.send(body);
     }
 
+    var _MAX_ELEMENTS = 15;
+    var _MAX_TEXT_LENGTH = 300;
+    var _MAX_DURATION = 500;
+
     function _aiResponseToScene(data) {
+        if (!data || typeof data !== 'object') data = {};
         var sceneId = 'scene-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
         var elements = [];
-        (data.elements || []).forEach(function (el) {
-            var validTags = ['h1', 'h2', 'h3', 'p', 'span', 'div', 'img'];
+        var rawElements = Array.isArray(data.elements) ? data.elements.slice(0, _MAX_ELEMENTS) : [];
+        rawElements.forEach(function (el) {
+            if (!el || typeof el !== 'object') return;
+            var validTags = ['h1', 'h2', 'h3', 'p', 'span', 'div'];
             var tag = validTags.indexOf(el.tag) >= 0 ? el.tag : 'div';
+            var text = (typeof el.text === 'string') ? el.text.substring(0, _MAX_TEXT_LENGTH) : '';
+            // Sanitize id to alphanumeric + dashes only
+            var rawId = (typeof el.id === 'string') ? el.id.replace(/[^a-zA-Z0-9-_]/g, '') : '';
+            var elId = (rawId || tag + '-' + Math.random().toString(36).substr(2, 4)) + '-' + sceneId.substr(-4);
             elements.push({
-                id: (el.id || tag + '-' + Math.random().toString(36).substr(2, 4)) + '-' + sceneId.substr(-4),
+                id: elId,
                 tag: tag,
-                text: (typeof el.text === 'string') ? el.text : '',
-                style: (el.style && typeof el.style === 'object') ? el.style : { position: 'absolute', top: '50%', left: '50%', color: '#ffffff' },
-                scroll: (el.scroll && typeof el.scroll === 'object') ? el.scroll : null,
+                text: text,
+                style: _sanitizeStyle(el.style),
+                scroll: _sanitizeScroll(el.scroll),
                 splitText: !!el.splitText,
-                parallax: el.parallax || 1,
+                parallax: Math.max(0.5, Math.min(2, parseFloat(el.parallax) || 1)),
                 visible: true,
                 locked: false
             });
         });
+        var duration = parseInt(data.duration) || 100;
+        duration = Math.max(50, Math.min(_MAX_DURATION, duration));
         return {
             id: sceneId,
-            name: data.name || 'AI Scene',
+            name: (typeof data.name === 'string') ? data.name.substring(0, 60) : 'AI Scene',
             template: 'custom',
-            duration: data.duration || 100,
+            duration: duration,
             pin: data.pin !== false,
-            bgColor: data.bgColor || '',
+            bgColor: (typeof data.bgColor === 'string' && _isSafeCSSValue(data.bgColor)) ? data.bgColor : '',
             bgImage: '',
             elements: elements
         };
