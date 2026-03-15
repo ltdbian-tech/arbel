@@ -329,22 +329,47 @@ window.ArbelCinematicCompiler = (function () {
                 }
                 var scrollData = '';
                 if (el.scroll) {
-                    // Sanitize scroll JSON — only allow known keys with safe value types
+                    // Strict per-property scroll sanitization (mirrors editor's _sanitizeScroll)
                     var safeScroll = {};
+                    var scrollKeys = el.scroll;
                     var allowedScrollKeys = {opacity:1,x:1,y:1,scale:1,rotation:1,blur:1,clipPath:1,rotateX:1,rotateY:1,skewX:1,skewY:1,start:1,end:1};
-                    Object.keys(el.scroll).forEach(function (k) {
+                    Object.keys(scrollKeys).forEach(function (k) {
                         if (!allowedScrollKeys[k]) return;
-                        var v = el.scroll[k];
-                        if (typeof v === 'number') { safeScroll[k] = v; }
-                        else if (Array.isArray(v)) {
-                            safeScroll[k] = v.map(function (item) {
-                                if (typeof item === 'number') return item;
-                                if (typeof item === 'string' && item.length < 100 && !/[<>"'`]/.test(item)) return item;
-                                return 0;
-                            });
+                        var v = scrollKeys[k];
+                        if (k === 'start' || k === 'end') {
+                            var n = parseFloat(v);
+                            if (!isNaN(n)) safeScroll[k] = Math.max(0, Math.min(1, n));
+                        } else if (k === 'clipPath') {
+                            if (Array.isArray(v)) {
+                                var clipRe = /^(inset|circle|ellipse|polygon)\([^)]*\)$/;
+                                var safe = v.filter(function (cp) { return typeof cp === 'string' && clipRe.test(cp.trim()); }).slice(0, 4);
+                                if (safe.length >= 2) safeScroll[k] = safe;
+                            }
+                        } else if (k === 'opacity') {
+                            if (Array.isArray(v)) {
+                                safeScroll[k] = v.slice(0, 4).map(function (a) { return Math.max(0, Math.min(1, parseFloat(a) || 0)); });
+                            }
+                        } else if (k === 'scale') {
+                            if (Array.isArray(v)) {
+                                safeScroll[k] = v.slice(0, 4).map(function (a) { return Math.max(0, Math.min(3, parseFloat(a) || 1)); });
+                            }
+                        } else if (k === 'blur') {
+                            if (Array.isArray(v)) {
+                                safeScroll[k] = v.slice(0, 4).map(function (a) { return Math.max(0, Math.min(50, parseFloat(a) || 0)); });
+                            }
+                        } else if (k === 'x' || k === 'y') {
+                            if (Array.isArray(v)) {
+                                safeScroll[k] = v.slice(0, 4).map(function (a) { return Math.max(-2000, Math.min(2000, parseFloat(a) || 0)); });
+                            }
+                        } else if (k === 'rotation' || k === 'rotateX' || k === 'rotateY' || k === 'skewX' || k === 'skewY') {
+                            if (Array.isArray(v)) {
+                                safeScroll[k] = v.slice(0, 4).map(function (a) { return Math.max(-360, Math.min(360, parseFloat(a) || 0)); });
+                            }
                         }
                     });
-                    scrollData = " data-scroll='" + esc(JSON.stringify(safeScroll)) + "'";
+                    if (Object.keys(safeScroll).length > 0) {
+                        scrollData = " data-scroll='" + esc(JSON.stringify(safeScroll)) + "'";
+                    }
                 }
                 var splitAttr = el.splitText ? ' data-split-text="true"' : '';
                 var parallaxAttr = el.parallax && el.parallax !== 1 ? ' data-parallax="' + parseFloat(el.parallax) + '"' : '';

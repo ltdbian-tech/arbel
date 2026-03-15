@@ -1490,14 +1490,14 @@ window.ArbelCinematicEditor = (function () {
                     }
                     text = resp.candidates[0].content.parts[0].text;
                 }
-                // Extract first complete JSON object
+                // Extract first balanced JSON object (not greedy regex)
                 if (typeof text !== 'string' || text.length > 50000) {
                     cb('Response content too large or invalid.');
                     return;
                 }
-                var jsonMatch = text.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    var sceneData = JSON.parse(jsonMatch[0]);
+                var jsonStr = _extractBalancedJSON(text);
+                if (jsonStr) {
+                    var sceneData = JSON.parse(jsonStr);
                     cb(null, sceneData);
                 } else {
                     cb('Could not parse AI response as JSON.');
@@ -1509,6 +1509,31 @@ window.ArbelCinematicEditor = (function () {
         xhr.ontimeout = function () { cb('Request timed out. Try again.'); };
         xhr.onerror = function () { cb('Network error. Check your connection.'); };
         xhr.send(body);
+    }
+
+    /* Extract first balanced { } block from a string.
+       Walks the string tracking brace depth, respecting
+       double-quoted strings (with backslash escapes).
+       Returns the substring or null. */
+    function _extractBalancedJSON(text) {
+        var start = text.indexOf('{');
+        if (start === -1) return null;
+        var depth = 0;
+        var inStr = false;
+        var esc = false;
+        for (var i = start; i < text.length; i++) {
+            var ch = text[i];
+            if (esc) { esc = false; continue; }
+            if (ch === '\\' && inStr) { esc = true; continue; }
+            if (ch === '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
+            if (ch === '{') depth++;
+            else if (ch === '}') {
+                depth--;
+                if (depth === 0) return text.substring(start, i + 1);
+            }
+        }
+        return null; // unbalanced
     }
 
     var _MAX_ELEMENTS = 15;
