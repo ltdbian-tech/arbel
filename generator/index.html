@@ -1351,6 +1351,9 @@
                     </button>
                 </div>
                 <div class="cne-toolbar-right">
+                    <button class="cne-toolbar-btn cne-toolbar-btn--ai" id="cneAIBtn" title="AI Generate Scene">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </button>
                     <button class="cne-toolbar-btn--accent cne-toolbar-btn" id="cnePreviewBtn" title="Preview">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
                     </button>
@@ -1473,7 +1476,55 @@
                 <div class="cne-prop-panel" data-panel="scroll">
                     <div class="cne-el-header">Scroll Animation</div>
 
-                    <div class="cne-scroll-toggle">
+                    <div class="cne-section-label">ANIMATION PRESET</div>
+                    <select class="gen-select cne-preset-select" id="cneAnimPreset">
+                        <option value="">Custom...</option>
+                        <optgroup label="Fade">
+                            <option value="fadeInUp">Fade In Up</option>
+                            <option value="fadeInDown">Fade In Down</option>
+                            <option value="fadeInLeft">Fade In Left</option>
+                            <option value="fadeInRight">Fade In Right</option>
+                        </optgroup>
+                        <optgroup label="Scale">
+                            <option value="scaleIn">Scale In</option>
+                            <option value="scaleInUp">Scale In Up</option>
+                            <option value="zoomIn">Zoom In</option>
+                            <option value="zoomOut">Zoom Out</option>
+                        </optgroup>
+                        <optgroup label="Blur">
+                            <option value="blurIn">Blur In</option>
+                            <option value="blurInUp">Blur In Up</option>
+                            <option value="blurInScale">Blur In Scale</option>
+                        </optgroup>
+                        <optgroup label="Slide / Clip Reveal">
+                            <option value="slideInUp">Slide In Up</option>
+                            <option value="slideInDown">Slide In Down</option>
+                            <option value="slideInLeft">Slide In Left</option>
+                            <option value="slideInRight">Slide In Right</option>
+                            <option value="clipRevealUp">Clip Reveal Up</option>
+                            <option value="clipRevealDown">Clip Reveal Down</option>
+                            <option value="clipRevealLeft">Clip Reveal Left</option>
+                            <option value="clipRevealRight">Clip Reveal Right</option>
+                        </optgroup>
+                        <optgroup label="Rotate / Flip">
+                            <option value="rotateIn">Rotate In</option>
+                            <option value="rotateInLeft">Rotate In Left</option>
+                            <option value="flipInX">Flip In X</option>
+                            <option value="flipInY">Flip In Y</option>
+                        </optgroup>
+                        <optgroup label="Special">
+                            <option value="bounceIn">Bounce In</option>
+                        </optgroup>
+                        <optgroup label="Exit">
+                            <option value="fadeOut">Fade Out</option>
+                            <option value="fadeOutDown">Fade Out Down</option>
+                            <option value="scaleOut">Scale Out</option>
+                            <option value="blurOut">Blur Out</option>
+                        </optgroup>
+                        <option value="none">None (Remove)</option>
+                    </select>
+
+                    <div class="cne-scroll-toggle" style="margin-top:0.8rem">
                         <label>Enable scroll animation</label>
                         <input type="checkbox" class="cne-toggle" id="cneScrollEnable">
                     </div>
@@ -1516,6 +1567,11 @@
                             <span class="cne-scroll-prop-label">Rotate</span>
                             <input type="number" class="gen-input" id="cneScroll_rotation_from" placeholder="From">
                             <input type="number" class="gen-input" id="cneScroll_rotation_to" placeholder="To">
+                        </div>
+                        <div class="cne-scroll-prop-row">
+                            <span class="cne-scroll-prop-label">Blur</span>
+                            <input type="number" class="gen-input" id="cneScroll_blur_from" placeholder="From" min="0" max="50">
+                            <input type="number" class="gen-input" id="cneScroll_blur_to" placeholder="To" min="0" max="50">
                         </div>
 
                         <div class="cne-section-label" style="margin-top:1.2rem">EXTRAS</div>

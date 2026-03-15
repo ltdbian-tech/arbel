@@ -368,9 +368,14 @@ window.ArbelCinematicEditor = (function () {
         var types = [
             { tag: 'h1', label: 'Heading 1', text: 'Heading' },
             { tag: 'h2', label: 'Heading 2', text: 'Subheading' },
+            { tag: 'h3', label: 'Heading 3', text: 'Section Title' },
             { tag: 'p', label: 'Paragraph', text: 'Your text here' },
-            { tag: 'span', label: 'Label', text: 'Label' },
+            { tag: 'span', label: 'Label / Tag', text: 'LABEL' },
             { tag: 'div', label: 'Box / Container', text: '' },
+            { tag: 'div', label: 'Glass Card', text: '', variant: 'glass' },
+            { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb' },
+            { tag: 'div', label: 'Divider Line', text: '', variant: 'divider' },
+            { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button' },
             { tag: 'img', label: 'Image Placeholder', text: '' }
         ];
 
@@ -385,8 +390,8 @@ window.ArbelCinematicEditor = (function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (!scene) return;
 
-                var fontSize = t.tag === 'h1' ? '5vw' : t.tag === 'h2' ? '3vw' : t.tag === 'span' ? '0.85rem' : '1.1rem';
-                var fontWeight = (t.tag === 'h1' || t.tag === 'h2') ? '700' : '400';
+                var fontSize = t.tag === 'h1' ? '5vw' : t.tag === 'h2' ? '3vw' : t.tag === 'h3' ? '2vw' : t.tag === 'span' ? '0.75rem' : '1.1rem';
+                var fontWeight = (t.tag === 'h1' || t.tag === 'h2' || t.tag === 'h3') ? '700' : '400';
 
                 var newEl = {
                     id: t.tag + '-' + Date.now().toString(36),
@@ -408,7 +413,38 @@ window.ArbelCinematicEditor = (function () {
                     locked: false
                 };
 
-                if (t.tag === 'div') {
+                if (t.tag === 'span') {
+                    newEl.style.letterSpacing = '0.2em';
+                    newEl.style.textTransform = 'uppercase';
+                    newEl.style.color = 'rgba(255,255,255,0.4)';
+                }
+
+                if (t.tag === 'div' && t.variant === 'glass') {
+                    newEl.style = {
+                        position: 'absolute', top: '20%', left: '20%', width: '300px', height: '200px',
+                        borderRadius: '16px', background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)'
+                    };
+                } else if (t.tag === 'div' && t.variant === 'orb') {
+                    newEl.style = {
+                        position: 'absolute', top: '25%', left: '30%', width: '300px', height: '300px',
+                        borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.4), transparent 70%)',
+                        filter: 'blur(60px)'
+                    };
+                } else if (t.tag === 'div' && t.variant === 'divider') {
+                    newEl.style = {
+                        position: 'absolute', top: '50%', left: '50%', transform: 'translateX(-50%)',
+                        width: '80px', height: '2px', background: 'rgba(255,255,255,0.2)'
+                    };
+                } else if (t.tag === 'div' && t.variant === 'button') {
+                    newEl.style = {
+                        position: 'absolute', top: '60%', left: '50%', transform: 'translateX(-50%)',
+                        padding: '14px 36px', borderRadius: '50px',
+                        background: 'linear-gradient(135deg, #6C5CE7, #a855f7)',
+                        fontSize: '1rem', fontWeight: '600', color: '#ffffff',
+                        cursor: 'pointer', textAlign: 'center'
+                    };
+                } else if (t.tag === 'div') {
                     newEl.style = {
                         position: 'absolute',
                         top: '20%',
@@ -553,6 +589,26 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _setupScrollInputs() {
+        // Animation preset dropdown
+        var presetSelect = _qs('#cneAnimPreset');
+        if (presetSelect) {
+            presetSelect.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (!el) return;
+                var presetId = presetSelect.value;
+                if (presetId === 'none' || presetId === '') {
+                    el.scroll = null;
+                } else {
+                    var preset = ArbelCinematicCompiler.getPreset(presetId);
+                    if (preset) {
+                        el.scroll = preset;
+                    }
+                }
+                _updateScrollPanel();
+                _notifyUpdate(true);
+            });
+        }
+
         // Scroll animation enable toggle
         var scrollToggle = _qs('#cneScrollEnable');
         if (scrollToggle) {
@@ -583,8 +639,8 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
-        // Scroll property rows (opacity, y, x, scale, rotation)
-        ['opacity', 'y', 'x', 'scale', 'rotation'].forEach(function (prop) {
+        // Scroll property rows (opacity, y, x, scale, rotation, blur)
+        ['opacity', 'y', 'x', 'scale', 'rotation', 'blur'].forEach(function (prop) {
             var fromInput = _qs('#cneScroll_' + prop + '_from');
             var toInput = _qs('#cneScroll_' + prop + '_to');
             if (fromInput) {
@@ -915,6 +971,10 @@ window.ArbelCinematicEditor = (function () {
         if (scrollToggle) scrollToggle.checked = !!el.scroll;
         if (scrollOpts) scrollOpts.style.display = el.scroll ? '' : 'none';
 
+        // Reset preset dropdown to Custom
+        var presetSelect = _qs('#cneAnimPreset');
+        if (presetSelect) presetSelect.value = '';
+
         if (el.scroll) {
             var startInput = _qs('#cneScrollStart');
             var endInput = _qs('#cneScrollEnd');
@@ -922,7 +982,7 @@ window.ArbelCinematicEditor = (function () {
             if (endInput) endInput.value = Math.round((el.scroll.end || 1) * 100);
 
             // Populate from/to for each property
-            ['opacity', 'y', 'x', 'scale', 'rotation'].forEach(function (prop) {
+            ['opacity', 'y', 'x', 'scale', 'rotation', 'blur'].forEach(function (prop) {
                 var vals = el.scroll[prop];
                 var fromInput = _qs('#cneScroll_' + prop + '_from');
                 var toInput = _qs('#cneScroll_' + prop + '_to');
@@ -1046,6 +1106,224 @@ window.ArbelCinematicEditor = (function () {
         '})();';
     }
 
+    /* ─── AI Scene Generation ─── */
+    var _AI_PROMPT = 'You are a web animation designer. Generate a single cinematic scroll-animation scene for a website.\n\nReturn ONLY valid JSON in this exact format (no markdown, no explanation):\n{\n  "name": "Scene Name",\n  "elements": [\n    {\n      "id": "unique-id",\n      "tag": "h1",\n      "text": "content",\n      "style": {\n        "fontSize": "5vw",\n        "fontWeight": "700",\n        "color": "#ffffff",\n        "position": "absolute",\n        "top": "30%",\n        "left": "50%",\n        "transform": "translate(-50%,-50%)",\n        "textAlign": "center"\n      },\n      "scroll": {\n        "opacity": [0, 1],\n        "y": [40, 0],\n        "blur": [10, 0],\n        "start": 0,\n        "end": 0.5\n      },\n      "splitText": false,\n      "parallax": 1\n    }\n  ]\n}\n\nAvailable tags: h1, h2, h3, p, span, div.\nAvailable scroll properties (all arrays of [from, to]):\n- opacity: 0-1\n- y: pixels (vertical)\n- x: pixels (horizontal)\n- scale: 0-2\n- rotation: degrees\n- blur: 0-30 pixels\n- clipPath: ["inset(100% 0 0 0)", "inset(0% 0 0 0)"] for reveal effects\n- start/end: 0-1 (when in scroll)\n\nDesign rules:\n- Dark theme with white text\n- Cinematic, high-end Framer-style animations\n- Mix blur reveals, clip-path wipes, parallax, scale\n- 3-8 elements including decorative (gradient orbs, glass panels, dividers)\n- Professional typography sizing\n\nUser description: ';
+
+    function _showAIGenerateDialog() {
+        var overlay = document.createElement('div');
+        overlay.className = 'arbel-dialog-overlay';
+
+        var dialog = document.createElement('div');
+        dialog.className = 'arbel-dialog cne-ai-dialog';
+
+        var title = document.createElement('h3');
+        title.className = 'arbel-dialog-title';
+        title.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>AI Scene Generator';
+
+        // Provider selector
+        var provRow = document.createElement('div');
+        provRow.className = 'arbel-dialog-field';
+        var provLabel = document.createElement('label');
+        provLabel.className = 'arbel-dialog-label mono';
+        provLabel.textContent = 'AI PROVIDER';
+        var provSelect = document.createElement('select');
+        provSelect.className = 'gen-select';
+        provSelect.innerHTML = '<option value="gemini">Google Gemini</option><option value="openai">OpenAI (GPT-4o-mini)</option>';
+        var savedProv = localStorage.getItem('arbel-ai-provider');
+        if (savedProv) provSelect.value = savedProv;
+        provRow.appendChild(provLabel);
+        provRow.appendChild(provSelect);
+
+        // API Key
+        var keyRow = document.createElement('div');
+        keyRow.className = 'arbel-dialog-field';
+        var keyLabel = document.createElement('label');
+        keyLabel.className = 'arbel-dialog-label mono';
+        keyLabel.textContent = 'API KEY';
+        var keyInput = document.createElement('input');
+        keyInput.className = 'gen-input';
+        keyInput.type = 'password';
+        keyInput.placeholder = 'Paste your API key...';
+        var savedKey = localStorage.getItem('arbel-ai-key-' + provSelect.value);
+        if (savedKey) keyInput.value = savedKey;
+        provSelect.addEventListener('change', function () {
+            var k = localStorage.getItem('arbel-ai-key-' + provSelect.value);
+            keyInput.value = k || '';
+        });
+        var keyHint = document.createElement('div');
+        keyHint.className = 'cne-ai-hint';
+        keyHint.textContent = 'Your key is stored locally and never sent to our servers.';
+        keyRow.appendChild(keyLabel);
+        keyRow.appendChild(keyInput);
+        keyRow.appendChild(keyHint);
+
+        // Description
+        var descRow = document.createElement('div');
+        descRow.className = 'arbel-dialog-field';
+        var descLabel = document.createElement('label');
+        descLabel.className = 'arbel-dialog-label mono';
+        descLabel.textContent = 'DESCRIBE YOUR SCENE';
+        var descInput = document.createElement('textarea');
+        descInput.className = 'gen-input';
+        descInput.rows = 3;
+        descInput.placeholder = 'e.g. A hero section with a large blurry gradient background, a headline that reveals with clip-path, and a CTA button that scales in...';
+        descInput.style.resize = 'vertical';
+        descInput.style.width = '100%';
+        descRow.appendChild(descLabel);
+        descRow.appendChild(descInput);
+
+        // Status
+        var status = document.createElement('div');
+        status.className = 'cne-ai-status';
+        status.style.display = 'none';
+
+        // Buttons
+        var btns = document.createElement('div');
+        btns.className = 'arbel-dialog-btns';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.className = 'gen-btn';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', function () {
+            document.body.removeChild(overlay);
+        });
+
+        var genBtn = document.createElement('button');
+        genBtn.className = 'gen-btn gen-btn--primary';
+        genBtn.innerHTML = '\u2728 Generate Scene';
+        genBtn.addEventListener('click', function () {
+            var apiKey = keyInput.value.trim();
+            var desc = descInput.value.trim();
+            if (!apiKey) { status.textContent = 'Please enter an API key.'; status.style.display = ''; status.className = 'cne-ai-status error'; return; }
+            if (!desc) { status.textContent = 'Please describe the scene you want.'; status.style.display = ''; status.className = 'cne-ai-status error'; return; }
+
+            localStorage.setItem('arbel-ai-provider', provSelect.value);
+            localStorage.setItem('arbel-ai-key-' + provSelect.value, apiKey);
+
+            status.textContent = 'Generating scene...';
+            status.style.display = '';
+            status.className = 'cne-ai-status loading';
+            genBtn.disabled = true;
+
+            var prompt = _AI_PROMPT + desc;
+            _callAI(provSelect.value, apiKey, prompt, function (err, sceneData) {
+                genBtn.disabled = false;
+                if (err) {
+                    status.textContent = 'Error: ' + err;
+                    status.className = 'cne-ai-status error';
+                    return;
+                }
+                // Build a proper scene object from AI response
+                var scene = _aiResponseToScene(sceneData);
+                _scenes.push(scene);
+                _selectScene(_scenes.length - 1, true);
+                document.body.removeChild(overlay);
+            });
+        });
+
+        btns.appendChild(cancelBtn);
+        btns.appendChild(genBtn);
+
+        dialog.appendChild(title);
+        dialog.appendChild(provRow);
+        dialog.appendChild(keyRow);
+        dialog.appendChild(descRow);
+        dialog.appendChild(status);
+        dialog.appendChild(btns);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) document.body.removeChild(overlay);
+        });
+    }
+
+    function _callAI(provider, apiKey, prompt, cb) {
+        var xhr = new XMLHttpRequest();
+        var url, body;
+
+        if (provider === 'openai') {
+            url = 'https://api.openai.com/v1/chat/completions';
+            body = JSON.stringify({
+                model: 'gpt-4o-mini',
+                messages: [
+                    { role: 'system', content: 'You are a web animation designer. Return only valid JSON, no markdown code blocks.' },
+                    { role: 'user', content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 4096
+            });
+            xhr.open('POST', url);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('Authorization', 'Bearer ' + apiKey);
+        } else {
+            url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
+            body = JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
+            });
+            xhr.open('POST', url);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+        }
+
+        xhr.onload = function () {
+            if (xhr.status !== 200) {
+                cb('API returned status ' + xhr.status + '. Check your API key.');
+                return;
+            }
+            try {
+                var resp = JSON.parse(xhr.responseText);
+                var text;
+                if (provider === 'openai') {
+                    text = resp.choices[0].message.content;
+                } else {
+                    text = resp.candidates[0].content.parts[0].text;
+                }
+                var jsonMatch = text.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    var sceneData = JSON.parse(jsonMatch[0]);
+                    cb(null, sceneData);
+                } else {
+                    cb('Could not parse AI response as JSON.');
+                }
+            } catch (e) {
+                cb('Parse error: ' + e.message);
+            }
+        };
+        xhr.onerror = function () { cb('Network error. Check your connection.'); };
+        xhr.send(body);
+    }
+
+    function _aiResponseToScene(data) {
+        var sceneId = 'scene-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
+        var elements = [];
+        (data.elements || []).forEach(function (el) {
+            var validTags = ['h1', 'h2', 'h3', 'p', 'span', 'div', 'img'];
+            var tag = validTags.indexOf(el.tag) >= 0 ? el.tag : 'div';
+            elements.push({
+                id: (el.id || tag + '-' + Math.random().toString(36).substr(2, 4)) + '-' + sceneId.substr(-4),
+                tag: tag,
+                text: (typeof el.text === 'string') ? el.text : '',
+                style: (el.style && typeof el.style === 'object') ? el.style : { position: 'absolute', top: '50%', left: '50%', color: '#ffffff' },
+                scroll: (el.scroll && typeof el.scroll === 'object') ? el.scroll : null,
+                splitText: !!el.splitText,
+                parallax: el.parallax || 1,
+                visible: true,
+                locked: false
+            });
+        });
+        return {
+            id: sceneId,
+            name: data.name || 'AI Scene',
+            template: 'custom',
+            duration: data.duration || 100,
+            pin: data.pin !== false,
+            bgColor: data.bgColor || '',
+            bgImage: '',
+            elements: elements
+        };
+    }
+
     /* ─── Public API ─── */
     return {
         init: init,
@@ -1055,6 +1333,7 @@ window.ArbelCinematicEditor = (function () {
         setOverrides: function (o) { _overrides = o || {}; },
         getCurrentSceneIdx: function () { return _currentSceneIdx; },
         getOverlayScript: _getOverlayScript,
+        showAIDialog: _showAIGenerateDialog,
         destroy: function () {
             _active = false;
             _selectedElementId = null;

@@ -71,7 +71,128 @@ window.ArbelCinematicCompiler = (function () {
             label: 'Blank',
             desc: 'Empty scene — build from scratch',
             elements: []
+        },
+        marquee: {
+            label: 'Marquee',
+            desc: 'Scrolling text strip with overlay',
+            elements: [
+                { id: 'mrq-line1', tag: 'h1', text: 'DESIGN · DEVELOP · DEPLOY · ', style: { fontSize: '8vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '30%', left: '0', whiteSpace: 'nowrap', opacity: '0.12', width: '200%' }, scroll: { x: [0, -800], start: 0, end: 1 } },
+                { id: 'mrq-line2', tag: 'h1', text: 'CREATE · ITERATE · LAUNCH · ', style: { fontSize: '8vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '55%', left: '-400px', whiteSpace: 'nowrap', opacity: '0.12', width: '200%' }, scroll: { x: [-800, 0], start: 0, end: 1 } },
+                { id: 'mrq-center', tag: 'h2', text: 'We make things happen', style: { fontSize: '2.5vw', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '42%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', zIndex: '2' }, scroll: { opacity: [0, 1], blur: [15, 0], scale: [0.9, 1], start: 0.1, end: 0.5 } }
+            ]
+        },
+        featureGrid: {
+            label: 'Feature Grid',
+            desc: 'Glass cards with staggered reveal',
+            elements: [
+                { id: 'fg-title', tag: 'h2', text: 'What We Offer', style: { fontSize: '3vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [-30, 0], start: 0, end: 0.2 } },
+                { id: 'fg-card1', tag: 'div', text: '', style: { position: 'absolute', top: '25%', left: '5%', width: '28%', height: '55%', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }, scroll: { opacity: [0, 1], y: [60, 0], blur: [10, 0], start: 0.05, end: 0.35 } },
+                { id: 'fg-c1-title', tag: 'h3', text: 'Design', style: { fontSize: '1.4rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '32%', left: '8%', width: '22%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.1, end: 0.35 } },
+                { id: 'fg-c1-desc', tag: 'p', text: 'Pixel-perfect interfaces crafted with care', style: { fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '40%', left: '8%', width: '22%', lineHeight: '1.6' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.15, end: 0.4 } },
+                { id: 'fg-card2', tag: 'div', text: '', style: { position: 'absolute', top: '25%', left: '36%', width: '28%', height: '55%', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }, scroll: { opacity: [0, 1], y: [60, 0], blur: [10, 0], start: 0.12, end: 0.42 } },
+                { id: 'fg-c2-title', tag: 'h3', text: 'Develop', style: { fontSize: '1.4rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '32%', left: '39%', width: '22%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.17, end: 0.42 } },
+                { id: 'fg-c2-desc', tag: 'p', text: 'Robust, scalable code that performs', style: { fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '40%', left: '39%', width: '22%', lineHeight: '1.6' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.22, end: 0.47 } },
+                { id: 'fg-card3', tag: 'div', text: '', style: { position: 'absolute', top: '25%', left: '67%', width: '28%', height: '55%', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(10px)' }, scroll: { opacity: [0, 1], y: [60, 0], blur: [10, 0], start: 0.19, end: 0.49 } },
+                { id: 'fg-c3-title', tag: 'h3', text: 'Deploy', style: { fontSize: '1.4rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '32%', left: '70%', width: '22%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.24, end: 0.49 } },
+                { id: 'fg-c3-desc', tag: 'p', text: 'Ship to production with confidence', style: { fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '40%', left: '70%', width: '22%', lineHeight: '1.6' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.29, end: 0.54 } }
+            ]
+        },
+        imageReveal: {
+            label: 'Image Reveal',
+            desc: 'Full-width image with cinematic wipe',
+            elements: [
+                { id: 'imgr-tag', tag: 'span', text: 'FEATURED WORK', style: { fontSize: '0.75rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '5%', left: '8%' }, scroll: { opacity: [0, 1], x: [-30, 0], start: 0, end: 0.3 } },
+                { id: 'imgr-frame', tag: 'div', text: '', style: { position: 'absolute', top: '12%', left: '8%', width: '84%', height: '70%', borderRadius: '20px', background: 'linear-gradient(135deg, rgba(108,92,231,0.3), rgba(0,206,201,0.15))', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }, scroll: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0.05, end: 0.45 } },
+                { id: 'imgr-title', tag: 'h2', text: 'Project Name', style: { fontSize: '3.5vw', fontWeight: '700', color: '#ffffff', position: 'absolute', bottom: '10%', left: '8%' }, scroll: { opacity: [0, 1], y: [40, 0], blur: [8, 0], start: 0.35, end: 0.6 } },
+                { id: 'imgr-cat', tag: 'span', text: 'Branding — 2024', style: { fontSize: '0.8rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', position: 'absolute', bottom: '6%', left: '8%' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.4, end: 0.65 } }
+            ]
+        },
+        testimonial: {
+            label: 'Testimonial',
+            desc: 'Customer quote with cinematic entrance',
+            elements: [
+                { id: 'tst-bg', tag: 'div', text: '', style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.15), transparent 70%)', filter: 'blur(60px)' }, scroll: { opacity: [0, 0.6], scale: [0.6, 1.2], start: 0, end: 0.6 } },
+                { id: 'tst-quote', tag: 'h2', text: '"This product completely transformed our workflow and exceeded every expectation."', style: { fontSize: '2.8vw', fontWeight: '300', fontStyle: 'italic', color: '#ffffff', position: 'absolute', top: '25%', left: '15%', width: '70%', textAlign: 'center', lineHeight: '1.5' }, scroll: { opacity: [0, 1], blur: [20, 0], start: 0, end: 0.4 }, splitText: true },
+                { id: 'tst-divider', tag: 'div', text: '', style: { position: 'absolute', top: '62%', left: '50%', transform: 'translateX(-50%)', width: '60px', height: '2px', background: 'rgba(255,255,255,0.3)' }, scroll: { opacity: [0, 1], scale: [0, 1], start: 0.25, end: 0.5 } },
+                { id: 'tst-author', tag: 'p', text: 'Jane Smith', style: { fontSize: '1rem', fontWeight: '600', color: 'rgba(255,255,255,0.8)', position: 'absolute', top: '68%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.35, end: 0.55 } },
+                { id: 'tst-role', tag: 'span', text: 'CEO, Company Name', style: { fontSize: '0.8rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '74%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [15, 0], start: 0.4, end: 0.6 } }
+            ]
+        },
+        ctaSection: {
+            label: 'Call to Action',
+            desc: 'CTA with button and gradient glow',
+            elements: [
+                { id: 'cta-glow', tag: 'div', text: '', style: { position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.3), transparent 70%)', filter: 'blur(60px)' }, scroll: { opacity: [0, 0.8], scale: [0.5, 1.2], start: 0, end: 0.5 } },
+                { id: 'cta-heading', tag: 'h2', text: 'Ready to get started?', style: { fontSize: '4vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%' }, scroll: { opacity: [0, 1], y: [40, 0], blur: [10, 0], start: 0.05, end: 0.35 } },
+                { id: 'cta-sub', tag: 'p', text: 'Join thousands of creators building the future', style: { fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '48%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '60%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.15, end: 0.4 } },
+                { id: 'cta-btn', tag: 'div', text: 'Get Started \u2192', style: { fontSize: '1rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '60%', left: '50%', transform: 'translateX(-50%)', padding: '16px 40px', borderRadius: '50px', background: 'linear-gradient(135deg, #6C5CE7, #a855f7)', cursor: 'pointer', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [20, 0], scale: [0.9, 1], start: 0.25, end: 0.5 } }
+            ]
+        },
+        bigText: {
+            label: 'Big Text',
+            desc: 'Oversized cinematic typography',
+            elements: [
+                { id: 'bt-word1', tag: 'h1', text: 'THINK', style: { fontSize: '12vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '15%', left: '10%', opacity: '0.1', letterSpacing: '-0.04em' }, scroll: { opacity: [0, 0.15], x: [-200, 0], start: 0, end: 0.3 } },
+                { id: 'bt-word2', tag: 'h1', text: 'BUILD', style: { fontSize: '12vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '35%', right: '10%', opacity: '0.1', letterSpacing: '-0.04em', textAlign: 'right', width: '80%' }, scroll: { opacity: [0, 0.15], x: [200, 0], start: 0.1, end: 0.4 } },
+                { id: 'bt-word3', tag: 'h1', text: 'SHIP', style: { fontSize: '12vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '55%', left: '10%', opacity: '0.1', letterSpacing: '-0.04em' }, scroll: { opacity: [0, 0.15], x: [-200, 0], start: 0.2, end: 0.5 } },
+                { id: 'bt-overlay', tag: 'h2', text: 'We help you ship faster', style: { fontSize: '2.5vw', fontWeight: '500', color: '#ffffff', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', zIndex: '2' }, scroll: { opacity: [0, 1], blur: [20, 0], start: 0.3, end: 0.6 } }
+            ]
+        },
+        gradientHero: {
+            label: 'Gradient Hero',
+            desc: 'Hero with animated gradient orbs',
+            elements: [
+                { id: 'gh-grad1', tag: 'div', text: '', style: { position: 'absolute', top: '10%', left: '-10%', width: '50vw', height: '50vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.4), transparent 70%)', filter: 'blur(80px)' }, scroll: { x: [0, 200], y: [0, -100], start: 0, end: 1 } },
+                { id: 'gh-grad2', tag: 'div', text: '', style: { position: 'absolute', bottom: '0', right: '-10%', width: '40vw', height: '40vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,206,201,0.3), transparent 70%)', filter: 'blur(80px)' }, scroll: { x: [0, -150], y: [0, 100], start: 0, end: 1 } },
+                { id: 'gh-tag', tag: 'span', text: 'INTRODUCING', style: { fontSize: '0.75rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '28%', left: '50%', transform: 'translateX(-50%)' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0, end: 0.2 } },
+                { id: 'gh-title', tag: 'h1', text: 'The Next Generation', style: { fontSize: '6vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%,0)', textAlign: 'center', width: '80%', letterSpacing: '-0.03em' }, scroll: { opacity: [0, 1], y: [60, 0], clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], start: 0.05, end: 0.35 } },
+                { id: 'gh-sub', tag: 'p', text: 'Beautiful, fast, and built for the modern web', style: { fontSize: '1.3rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '55%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '50%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.15, end: 0.4 } }
+            ]
+        },
+        cardStack: {
+            label: 'Card Stack',
+            desc: 'Stacked cards with depth reveal',
+            elements: [
+                { id: 'cs-card3', tag: 'div', text: '', style: { position: 'absolute', top: '21%', left: '19%', width: '62%', height: '60%', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.03)', zIndex: '1' }, scroll: { y: [60, -16], opacity: [0, 0.4], scale: [0.9, 0.92], start: 0.2, end: 0.6 } },
+                { id: 'cs-card2', tag: 'div', text: '', style: { position: 'absolute', top: '18%', left: '22%', width: '56%', height: '60%', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)', zIndex: '2' }, scroll: { y: [80, -8], opacity: [0, 0.7], scale: [0.95, 0.96], start: 0.1, end: 0.5 } },
+                { id: 'cs-card1', tag: 'div', text: '', style: { position: 'absolute', top: '15%', left: '25%', width: '50%', height: '60%', borderRadius: '20px', background: 'linear-gradient(180deg, rgba(108,92,231,0.15), rgba(0,0,0,0.3))', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', zIndex: '3' }, scroll: { y: [100, 0], opacity: [0, 1], rotation: [-3, 0], start: 0, end: 0.4 } },
+                { id: 'cs-title', tag: 'h2', text: 'Our Work', style: { fontSize: '2rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '25%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: '4' }, scroll: { opacity: [0, 1], y: [30, 0], blur: [10, 0], start: 0.15, end: 0.45 } },
+                { id: 'cs-desc', tag: 'p', text: 'Scroll to explore our latest projects', style: { fontSize: '1rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '35%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: '4', width: '40%' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.2, end: 0.5 } }
+            ]
         }
+    };
+
+    /* ─── Animation Presets (Framer-style quick-apply) ─── */
+    var ANIMATION_PRESETS = {
+        none:           null,
+        fadeInUp:       { opacity: [0, 1], y: [60, 0], start: 0, end: 0.4 },
+        fadeInDown:     { opacity: [0, 1], y: [-60, 0], start: 0, end: 0.4 },
+        fadeInLeft:     { opacity: [0, 1], x: [-80, 0], start: 0, end: 0.4 },
+        fadeInRight:    { opacity: [0, 1], x: [80, 0], start: 0, end: 0.4 },
+        scaleIn:        { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 },
+        scaleInUp:      { opacity: [0, 1], scale: [0.8, 1], y: [40, 0], start: 0, end: 0.4 },
+        blurIn:         { opacity: [0, 1], blur: [20, 0], start: 0, end: 0.4 },
+        blurInUp:       { opacity: [0, 1], blur: [15, 0], y: [40, 0], start: 0, end: 0.4 },
+        blurInScale:    { opacity: [0, 1], blur: [12, 0], scale: [0.9, 1], start: 0, end: 0.45 },
+        slideInUp:      { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], y: [20, 0], start: 0, end: 0.45 },
+        slideInDown:    { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], y: [-20, 0], start: 0, end: 0.45 },
+        slideInLeft:    { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], x: [-20, 0], start: 0, end: 0.45 },
+        slideInRight:   { clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], x: [20, 0], start: 0, end: 0.45 },
+        clipRevealUp:   { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], start: 0, end: 0.5 },
+        clipRevealDown: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0, end: 0.5 },
+        clipRevealLeft: { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], start: 0, end: 0.5 },
+        clipRevealRight:{ clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], start: 0, end: 0.5 },
+        rotateIn:       { opacity: [0, 1], rotation: [15, 0], scale: [0.9, 1], start: 0, end: 0.4 },
+        rotateInLeft:   { opacity: [0, 1], rotation: [-15, 0], x: [-60, 0], start: 0, end: 0.45 },
+        flipInX:        { opacity: [0, 1], rotateX: [90, 0], start: 0, end: 0.5 },
+        flipInY:        { opacity: [0, 1], rotateY: [90, 0], start: 0, end: 0.5 },
+        zoomIn:         { scale: [0.5, 1], opacity: [0, 1], start: 0, end: 0.5 },
+        zoomOut:        { scale: [1.3, 1], opacity: [0, 1], start: 0, end: 0.5 },
+        bounceIn:       { opacity: [0, 1], scale: [0.3, 1.05, 0.95, 1], y: [60, -10, 5, 0], start: 0, end: 0.5 },
+        fadeOut:         { opacity: [1, 0], y: [0, -40], start: 0.6, end: 1 },
+        fadeOutDown:     { opacity: [1, 0], y: [0, 60], start: 0.6, end: 1 },
+        scaleOut:        { opacity: [1, 0], scale: [1, 0.8], start: 0.6, end: 1 },
+        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1 }
     };
 
     /* ─── Default Scene Factory ─── */
@@ -319,11 +440,29 @@ window.ArbelCinematicCompiler = (function () {
         css += '::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }\n';
         css += '::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }\n\n';
 
+        // Utility classes
+        css += '/* Utility classes */\n';
+        css += '.cne-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }\n';
+        css += '.cne-gradient-text { background: linear-gradient(135deg, ' + accent + ', #00CEC9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }\n';
+        css += '.cne-glow { box-shadow: 0 0 60px rgba(108,92,231,0.15), 0 0 120px rgba(108,92,231,0.05); }\n';
+        css += '.cne-noise::before { content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E"); }\n';
+        css += '.cne-element[data-arbel-edit] { transition: outline 0.15s; }\n';
+        css += '.cne-element[style*="backdrop-filter"] { -webkit-backdrop-filter: inherit; }\n\n';
+
+        // Button styles
+        css += '/* Button elements */\n';
+        css += '.cne-element[style*="cursor: pointer"]:hover { opacity: 0.9; transform: scale(0.98); transition: opacity 0.2s, transform 0.2s; }\n\n';
+
+        // Selection highlight
+        css += '/* Selection */\n';
+        css += '::selection { background: ' + accent + '; color: #fff; }\n\n';
+
         // Responsive
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
         css += '  .cne-nav-links { display: none; }\n';
         css += '  .cne-element { font-size: 0.85em; }\n';
+        css += '  .cne-scene { min-height: 80vh; }\n';
         css += '}\n';
 
         return css;
@@ -453,6 +592,34 @@ window.ArbelCinematicCompiler = (function () {
         js += '        for(var i = 0; i < vals.length - 1; i++){\n';
         js += '          var from = {}; from[prop] = vals[i];\n';
         js += '          var to = {}; to[prop] = vals[i+1];\n';
+        js += '          to.ease = "none";\n';
+        js += '          if(isSplit) to.stagger = 0.02;\n';
+        js += '          var pos = startPct + (segLen * i);\n';
+        js += '          tl.fromTo(target, from, to, pos);\n';
+        js += '        }\n';
+        js += '      });\n\n';
+
+        // String-interpolated & special properties (blur, clipPath, 3D)
+        js += '      /* Special properties (blur, clip-path, 3D) */\n';
+        js += '      var specialProps = ["blur","clipPath","rotateX","rotateY","skewX","skewY"];\n';
+        js += '      specialProps.forEach(function(prop){\n';
+        js += '        if(!sd[prop]) return;\n';
+        js += '        var vals = Array.isArray(sd[prop]) ? sd[prop] : [sd[prop]];\n';
+        js += '        if(vals.length < 2) return;\n\n';
+        js += '        var target = isSplit ? chars : el;\n';
+        js += '        var segLen = (endPct - startPct) / (vals.length - 1);\n\n';
+        js += '        for(var i = 0; i < vals.length - 1; i++){\n';
+        js += '          var from = {}, to = {};\n';
+        js += '          if(prop === "blur"){\n';
+        js += '            from.filter = "blur(" + vals[i] + "px)";\n';
+        js += '            to.filter = "blur(" + vals[i+1] + "px)";\n';
+        js += '          } else if(prop === "clipPath"){\n';
+        js += '            from.clipPath = vals[i];\n';
+        js += '            to.clipPath = vals[i+1];\n';
+        js += '          } else {\n';
+        js += '            from[prop] = vals[i];\n';
+        js += '            to[prop] = vals[i+1];\n';
+        js += '          }\n';
         js += '          to.ease = "none";\n';
         js += '          if(isSplit) to.stagger = 0.02;\n';
         js += '          var pos = startPct + (segLen * i);\n';
@@ -616,6 +783,16 @@ window.ArbelCinematicCompiler = (function () {
                 out.push({ id: k, label: SCENE_TEMPLATES[k].label, desc: SCENE_TEMPLATES[k].desc });
             });
             return out;
+        },
+        getAnimationPresets: function () {
+            var out = [];
+            Object.keys(ANIMATION_PRESETS).forEach(function (k) {
+                out.push({ id: k, preset: ANIMATION_PRESETS[k] });
+            });
+            return out;
+        },
+        getPreset: function (id) {
+            return ANIMATION_PRESETS[id] ? JSON.parse(JSON.stringify(ANIMATION_PRESETS[id])) : null;
         },
         createScene: createScene
     };

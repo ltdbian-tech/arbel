@@ -813,3 +813,103 @@
     background: rgba(255,255,255,0.08);
     border-radius: 2px;
 }
+
+/* ─── Animation Preset Dropdown ─── */
+.cne-preset-select {
+    width: 100%;
+    margin-bottom: 0.4rem;
+}
+
+/* ─── AI Button in Toolbar ─── */
+.cne-toolbar-btn--ai {
+    background: linear-gradient(135deg, rgba(108,92,231,0.2), rgba(168,85,247,0.2)) !important;
+    border-color: rgba(108,92,231,0.3) !important;
+    position: relative;
+}
+
+.cne-toolbar-btn--ai:hover {
+    background: linear-gradient(135deg, rgba(108,92,231,0.35), rgba(168,85,247,0.35)) !important;
+    border-color: rgba(108,92,231,0.5) !important;
+}
+
+.cne-toolbar-btn--ai::after {
+    content: '✨';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 8px;
+    line-height: 1;
+}
+
+/* ─── AI Dialog ─── */
+.cne-ai-dialog {
+    max-width: 520px;
+}
+
+.cne-ai-dialog .arbel-dialog-title svg {
+    color: var(--accent, #6C5CE7);
+}
+
+.cne-ai-hint {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.25);
+    margin-top: 4px;
+    font-style: italic;
+}
+
+.cne-ai-status {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    margin: 0.5rem 0;
+}
+
+.cne-ai-status.loading {
+    color: rgba(108,92,231,0.8);
+    background: rgba(108,92,231,0.08);
+    border: 1px solid rgba(108,92,231,0.15);
+    animation: cneAIPulse 1.5s ease-in-out infinite;
+}
+
+.cne-ai-status.error {
+    color: rgba(255,100,100,0.9);
+    background: rgba(255,100,100,0.08);
+    border: 1px solid rgba(255,100,100,0.15);
+}
+
+@keyframes cneAIPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ─── Template Grid (wider for more templates) ─── */
+.cne-add-scene-dialog {
+    max-width: 640px;
+}
+
+.cne-template-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+/* ─── Scroll Property Row (blur) ─── */
+.cne-scroll-prop-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.35rem;
+}
+
+.cne-scroll-prop-label {
+    width: 52px;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+}
+
+.cne-scroll-prop-row .gen-input {
+    flex: 1;
+    min-width: 0;
+}

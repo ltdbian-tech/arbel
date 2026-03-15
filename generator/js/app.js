@@ -1491,6 +1491,14 @@
         });
     }
 
+    /* Cinematic AI generate button */
+    var cneAIBtn = $('cneAIBtn');
+    if (cneAIBtn) {
+        cneAIBtn.addEventListener('click', function () {
+            ArbelCinematicEditor.showAIDialog();
+        });
+    }
+
     /* Cinematic preview button (full-page scroll preview) */
     var cnePreviewBtn = $('cnePreviewBtn');
     if (cnePreviewBtn) {
