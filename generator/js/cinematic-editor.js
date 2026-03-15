@@ -338,6 +338,7 @@ window.ArbelCinematicEditor = (function () {
                 _selectedElementId = el.id;
                 _renderElementList();
                 _updatePropertiesFromScene(el);
+                _updateTimeline();
                 _postIframe('arbel-select-by-id', { id: el.id });
             });
 
@@ -745,7 +746,7 @@ window.ArbelCinematicEditor = (function () {
         _notifyUpdate(true);
     }
 
-    /* ─── Timeline (Bottom, Collapsible) ─── */
+    /* ─── Timeline (Bottom, Collapsible + Interactive) ─── */
     function _setupTimeline() {
         var toggle = _qs('#cneTimelineToggle');
         var panel = _qs('#cneTimeline');
@@ -754,69 +755,201 @@ window.ArbelCinematicEditor = (function () {
                 _timelineOpen = !_timelineOpen;
                 panel.classList.toggle('open', _timelineOpen);
                 toggle.classList.toggle('active', _timelineOpen);
+                if (_timelineOpen) _updateTimeline();
             });
+        }
+        // Build ruler marks once
+        var ruler = _qs('#cneTlRuler');
+        if (ruler) {
+            ruler.innerHTML = '';
+            for (var p = 0; p <= 100; p += 10) {
+                var mark = document.createElement('span');
+                mark.className = 'cne-tl-ruler-mark';
+                mark.textContent = p + '%';
+                ruler.appendChild(mark);
+            }
         }
     }
 
     function _updateTimeline() {
-        var canvas = _qs('#cneTimelineCanvas');
-        if (!canvas || !_timelineOpen) return;
-
-        var ctx = canvas.getContext('2d');
-        var w = canvas.width = canvas.offsetWidth;
-        var h = canvas.height = canvas.offsetHeight;
-
-        ctx.clearRect(0, 0, w, h);
+        var tracks = _qs('#cneTlTracks');
+        if (!tracks || !_timelineOpen) return;
 
         var scene = _scenes[_currentSceneIdx];
-        if (!scene) return;
+        if (!scene || !scene.elements.length) {
+            tracks.innerHTML = '<div class="cne-tl-empty">No elements with scroll data</div>';
+            return;
+        }
 
-        // Draw timeline tracks
-        var trackH = 28;
-        var padding = 10;
         var elements = scene.elements.filter(function (e) { return e.scroll; });
-
-        // Background grid
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.lineWidth = 1;
-        for (var x = 0; x <= 10; x++) {
-            var px = padding + (x / 10) * (w - padding * 2);
-            ctx.beginPath();
-            ctx.moveTo(px, 0);
-            ctx.lineTo(px, h);
-            ctx.stroke();
+        if (!elements.length) {
+            tracks.innerHTML = '<div class="cne-tl-empty">No elements with scroll data</div>';
+            return;
         }
 
-        // Percentage labels
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.font = '10px "Space Mono", monospace';
-        ctx.textAlign = 'center';
-        for (var p = 0; p <= 100; p += 10) {
-            var labelX = padding + (p / 100) * (w - padding * 2);
-            ctx.fillText(p + '%', labelX, h - 4);
-        }
+        // Scroll properties that get colored dots
+        var scrollProps = ['opacity', 'x', 'y', 'scale', 'rotation', 'blur', 'clipPath', 'rotateX', 'rotateY'];
 
-        // Element tracks
-        elements.forEach(function (el, i) {
-            var y = padding + i * (trackH + 4);
-            var start = (el.scroll.start || 0);
-            var end = (el.scroll.end || 1);
-            var x1 = padding + start * (w - padding * 2);
-            var x2 = padding + end * (w - padding * 2);
+        tracks.innerHTML = '';
+        elements.forEach(function (el) {
+            var start = Math.max(0, Math.min(1, el.scroll.start || 0));
+            var end = Math.max(0, Math.min(1, el.scroll.end || 1));
+            if (end < start) end = start;
 
-            // Track bar
-            ctx.fillStyle = el.id === _selectedElementId ? 'rgba(108,92,231,0.6)' : 'rgba(255,255,255,0.1)';
-            ctx.beginPath();
-            ctx.roundRect(x1, y, x2 - x1, trackH, 4);
-            ctx.fill();
+            var track = document.createElement('div');
+            track.className = 'cne-tl-track' + (el.id === _selectedElementId ? ' selected' : '');
+            track.setAttribute('data-el-id', el.id);
 
             // Label
-            ctx.fillStyle = '#fff';
-            ctx.font = '11px "Inter", sans-serif';
-            ctx.textAlign = 'left';
-            var label = el.text ? el.text.substr(0, 20) : el.id;
-            ctx.fillText(label, x1 + 6, y + trackH / 2 + 4);
+            var label = document.createElement('div');
+            label.className = 'cne-tl-label';
+            label.textContent = el.text ? el.text.substr(0, 16) : el.id;
+            label.title = el.text || el.id;
+
+            // Bar area
+            var barArea = document.createElement('div');
+            barArea.className = 'cne-tl-bar-area';
+
+            // The bar itself
+            var bar = document.createElement('div');
+            bar.className = 'cne-tl-bar';
+            bar.style.left = (start * 100) + '%';
+            bar.style.width = ((end - start) * 100) + '%';
+
+            // Left handle
+            var handleL = document.createElement('div');
+            handleL.className = 'cne-tl-handle cne-tl-handle-l';
+
+            // Right handle
+            var handleR = document.createElement('div');
+            handleR.className = 'cne-tl-handle cne-tl-handle-r';
+
+            // Property dots
+            var propsDiv = document.createElement('div');
+            propsDiv.className = 'cne-tl-props';
+            scrollProps.forEach(function (prop) {
+                if (el.scroll[prop] !== undefined) {
+                    var dot = document.createElement('span');
+                    dot.className = 'cne-tl-prop-dot';
+                    dot.setAttribute('data-prop', prop);
+                    dot.title = prop;
+                    propsDiv.appendChild(dot);
+                }
+            });
+
+            bar.appendChild(handleL);
+            bar.appendChild(propsDiv);
+            bar.appendChild(handleR);
+            barArea.appendChild(bar);
+            track.appendChild(label);
+            track.appendChild(barArea);
+            tracks.appendChild(track);
+
+            // Click track to select element
+            track.addEventListener('click', function (e) {
+                if (e.target.classList.contains('cne-tl-handle')) return;
+                _selectedElementId = el.id;
+                _renderElementList();
+                _updatePropertiesFromScene(el);
+                _updateTimeline();
+                _postIframe('arbel-select-by-id', { id: el.id });
+            });
+
+            // Drag: left handle (adjust start)
+            _tlDrag(handleL, barArea, function (pct) {
+                var newStart = Math.max(0, Math.min(pct, (el.scroll.end || 1) - 0.01));
+                newStart = Math.round(newStart * 100) / 100;
+                el.scroll.start = newStart;
+                bar.style.left = (newStart * 100) + '%';
+                bar.style.width = (((el.scroll.end || 1) - newStart) * 100) + '%';
+            }, function () {
+                _syncScrollInputs(el);
+                _notifyUpdate(true);
+            });
+
+            // Drag: right handle (adjust end)
+            _tlDrag(handleR, barArea, function (pct) {
+                var newEnd = Math.max((el.scroll.start || 0) + 0.01, Math.min(1, pct));
+                newEnd = Math.round(newEnd * 100) / 100;
+                el.scroll.end = newEnd;
+                bar.style.left = ((el.scroll.start || 0) * 100) + '%';
+                bar.style.width = ((newEnd - (el.scroll.start || 0)) * 100) + '%';
+            }, function () {
+                _syncScrollInputs(el);
+                _notifyUpdate(true);
+            });
+
+            // Drag: bar body (move whole range)
+            _tlDragBar(bar, barArea, el, function () {
+                _syncScrollInputs(el);
+                _notifyUpdate(true);
+            });
         });
+    }
+
+    /* Timeline drag helper: individual handle */
+    function _tlDrag(handle, barArea, onMove, onEnd) {
+        handle.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var rect = barArea.getBoundingClientRect();
+            function move(ev) {
+                var pct = (ev.clientX - rect.left) / rect.width;
+                pct = Math.max(0, Math.min(1, pct));
+                onMove(pct);
+            }
+            function up() {
+                document.removeEventListener('mousemove', move);
+                document.removeEventListener('mouseup', up);
+                onEnd();
+            }
+            document.addEventListener('mousemove', move);
+            document.addEventListener('mouseup', up);
+        });
+    }
+
+    /* Timeline drag helper: whole bar */
+    function _tlDragBar(bar, barArea, el, onEnd) {
+        bar.addEventListener('mousedown', function (e) {
+            if (e.target.classList.contains('cne-tl-handle')) return;
+            e.preventDefault();
+            var rect = barArea.getBoundingClientRect();
+            var startPct = (e.clientX - rect.left) / rect.width;
+            var origStart = el.scroll.start || 0;
+            var origEnd = el.scroll.end || 1;
+            var range = origEnd - origStart;
+
+            function move(ev) {
+                var curPct = (ev.clientX - rect.left) / rect.width;
+                var delta = curPct - startPct;
+                var newStart = origStart + delta;
+                var newEnd = origEnd + delta;
+                // Clamp
+                if (newStart < 0) { newStart = 0; newEnd = range; }
+                if (newEnd > 1) { newEnd = 1; newStart = 1 - range; }
+                newStart = Math.round(newStart * 100) / 100;
+                newEnd = Math.round(newEnd * 100) / 100;
+                el.scroll.start = newStart;
+                el.scroll.end = newEnd;
+                bar.style.left = (newStart * 100) + '%';
+                bar.style.width = ((newEnd - newStart) * 100) + '%';
+            }
+            function up() {
+                document.removeEventListener('mousemove', move);
+                document.removeEventListener('mouseup', up);
+                onEnd();
+            }
+            document.addEventListener('mousemove', move);
+            document.addEventListener('mouseup', up);
+        });
+    }
+
+    /* Sync scroll start/end inputs in the properties panel after timeline drag */
+    function _syncScrollInputs(el) {
+        var startInput = _qs('#cneScrollStart');
+        var endInput = _qs('#cneScrollEnd');
+        if (startInput) startInput.value = el.scroll.start || 0;
+        if (endInput) endInput.value = el.scroll.end || 1;
     }
 
     /* ─── Toolbar ─── */
@@ -1065,6 +1198,7 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _notifyUpdate(rerender) {
+        _updateTimeline();
         if (_onUpdate) {
             _onUpdate({
                 scenes: _scenes,
@@ -1296,38 +1430,23 @@ window.ArbelCinematicEditor = (function () {
         keyInput.type = 'password';
         keyInput.placeholder = 'Paste your API key...';
         keyInput.setAttribute('autocomplete', 'off');
-        // Load from sessionStorage (always), or localStorage (if user opted in)
-        var savedKey = sessionStorage.getItem('arbel-ai-key-' + provSelect.value)
-            || localStorage.getItem('arbel-ai-key-' + provSelect.value)
-            || '';
+        // Load from sessionStorage only — keys never persist beyond this tab
+        var savedKey = sessionStorage.getItem('arbel-ai-key-' + provSelect.value) || '';
         if (savedKey) keyInput.value = savedKey;
         provSelect.addEventListener('change', function () {
-            var k = sessionStorage.getItem('arbel-ai-key-' + provSelect.value)
-                || localStorage.getItem('arbel-ai-key-' + provSelect.value)
-                || '';
-            keyInput.value = k;
+            keyInput.value = sessionStorage.getItem('arbel-ai-key-' + provSelect.value) || '';
         });
 
-        // Remember key opt-in
-        var rememberRow = document.createElement('div');
-        rememberRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:4px';
-        var rememberCheck = document.createElement('input');
-        rememberCheck.type = 'checkbox';
-        rememberCheck.id = 'arbel-ai-remember';
-        rememberCheck.checked = !!localStorage.getItem('arbel-ai-remember');
-        var rememberLabel = document.createElement('label');
-        rememberLabel.setAttribute('for', 'arbel-ai-remember');
-        rememberLabel.style.cssText = 'font-size:0.75rem;color:rgba(255,255,255,0.5);cursor:pointer';
-        rememberLabel.textContent = 'Remember key across sessions';
-        rememberRow.appendChild(rememberCheck);
-        rememberRow.appendChild(rememberLabel);
+        // Clear any legacy localStorage keys from older versions
+        localStorage.removeItem('arbel-ai-key-gemini');
+        localStorage.removeItem('arbel-ai-key-openai');
+        localStorage.removeItem('arbel-ai-remember');
 
         var keyHint = document.createElement('div');
         keyHint.className = 'cne-ai-hint';
-        keyHint.textContent = 'Your key is sent directly from your browser to the AI provider. It is stored only in this tab by default. If you check "Remember," it persists in browser storage and could be read by other scripts on this page.';
+        keyHint.textContent = 'Your key is sent directly from your browser to the AI provider. It is only stored in this tab and is automatically cleared when you close the tab.';
         keyRow.appendChild(keyLabel);
         keyRow.appendChild(keyInput);
-        keyRow.appendChild(rememberRow);
         keyRow.appendChild(keyHint);
 
         // Description
@@ -1370,17 +1489,9 @@ window.ArbelCinematicEditor = (function () {
             if (!apiKey) { status.textContent = 'Please enter an API key.'; status.style.display = ''; status.className = 'cne-ai-status error'; return; }
             if (!desc) { status.textContent = 'Please describe the scene you want.'; status.style.display = ''; status.className = 'cne-ai-status error'; return; }
 
-            // Always save to session; persist to localStorage only if opted in
+            // Save to sessionStorage only — cleared when tab closes
             sessionStorage.setItem('arbel-ai-provider', provSelect.value);
             sessionStorage.setItem('arbel-ai-key-' + provSelect.value, apiKey);
-            if (rememberCheck.checked) {
-                localStorage.setItem('arbel-ai-remember', '1');
-                localStorage.setItem('arbel-ai-key-' + provSelect.value, apiKey);
-            } else {
-                localStorage.removeItem('arbel-ai-remember');
-                localStorage.removeItem('arbel-ai-key-gemini');
-                localStorage.removeItem('arbel-ai-key-openai');
-            }
 
             status.textContent = 'Generating scene...';
             status.style.display = '';
