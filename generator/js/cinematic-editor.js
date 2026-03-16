@@ -28,6 +28,8 @@ window.ArbelCinematicEditor = (function () {
     var _redoStack = [];
     var _MAX_UNDO = 40;
     var _undoLocked = false;     // suppress snapshots during undo/redo apply
+    var _dragUndoPushed = false; // guard: snapshot only on first drag move
+    var _pendingUndoSnapshot = null; // pre-mutation snapshot for debounced edits
 
     /* ─── DOM Shorthand ─── */
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
@@ -67,6 +69,11 @@ window.ArbelCinematicEditor = (function () {
             _applyOverride(d.id, { text: d.text });
         }
         if (d.type === 'arbel-move' && d.id) {
+            // Snapshot BEFORE the first drag mutation
+            if (!_dragUndoPushed) {
+                _pushUndo();
+                _dragUndoPushed = true;
+            }
             // Element dragged on canvas — update model + position inputs
             var scene = _scenes[_currentSceneIdx];
             if (scene) {
@@ -85,7 +92,7 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate();
         }
         if (d.type === 'arbel-move-end') {
-            _pushUndo();
+            _dragUndoPushed = false;
         }
         if (d.type === 'arbel-deselect') {
             _selectedElementId = null;
@@ -654,26 +661,41 @@ window.ArbelCinematicEditor = (function () {
 
     function _setupStyleInputs() {
         // Text content
+        var _textUndoTimer = null;
         var textInput = _qs('#cneTextInput');
         if (textInput) {
             textInput.addEventListener('input', function () {
                 var el = _getSelectedElement();
                 if (el) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
                     el.text = textInput.value;
                     _applyOverride(el.id, { text: el.text });
                     _renderElementList();
                     _postIframe('arbel-update-text', { id: el.id, text: el.text });
+                    clearTimeout(_textUndoTimer);
+                    _textUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
                     _notifyUpdate();
                 }
             });
         }
 
         // Image src
+        var _imgSrcUndoTimer = null;
         var imgSrc = _qs('#cneImgSrc');
         if (imgSrc) {
             imgSrc.addEventListener('input', function () {
                 var el = _getSelectedElement();
-                if (el) { el.src = imgSrc.value; _notifyUpdate(true); }
+                if (el) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    el.src = imgSrc.value;
+                    clearTimeout(_imgSrcUndoTimer);
+                    _imgSrcUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
+                    _notifyUpdate(true);
+                }
             });
         }
 
@@ -685,6 +707,7 @@ window.ArbelCinematicEditor = (function () {
                 if (!el || !imgUpload.files || !imgUpload.files[0]) return;
                 var file = imgUpload.files[0];
                 if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+                _pushUndo();
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     el.src = e.target.result;
@@ -705,11 +728,20 @@ window.ArbelCinematicEditor = (function () {
         }
 
         // Video src
+        var _vidSrcUndoTimer = null;
         var videoSrc = _qs('#cneVideoSrc');
         if (videoSrc) {
             videoSrc.addEventListener('input', function () {
                 var el = _getSelectedElement();
-                if (el) { el.src = videoSrc.value; _notifyUpdate(true); }
+                if (el) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    el.src = videoSrc.value;
+                    clearTimeout(_vidSrcUndoTimer);
+                    _vidSrcUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
+                    _notifyUpdate(true);
+                }
             });
         }
 
@@ -719,17 +751,26 @@ window.ArbelCinematicEditor = (function () {
             if (cb) {
                 cb.addEventListener('change', function () {
                     var el = _getSelectedElement();
-                    if (el) { el['video' + opt] = cb.checked; _notifyUpdate(true); }
+                    if (el) { _pushUndo(); el['video' + opt] = cb.checked; _notifyUpdate(true); }
                 });
             }
         });
 
         // Link href
+        var _linkUndoTimer = null;
         var linkHref = _qs('#cneLinkHref');
         if (linkHref) {
             linkHref.addEventListener('input', function () {
                 var el = _getSelectedElement();
-                if (el) { el.href = linkHref.value; _notifyUpdate(true); }
+                if (el) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    el.href = linkHref.value;
+                    clearTimeout(_linkUndoTimer);
+                    _linkUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
+                    _notifyUpdate(true);
+                }
             });
         }
 
@@ -738,7 +779,7 @@ window.ArbelCinematicEditor = (function () {
         if (linkNewTab) {
             linkNewTab.addEventListener('change', function () {
                 var el = _getSelectedElement();
-                if (el) { el.linkNewTab = linkNewTab.checked; _notifyUpdate(true); }
+                if (el) { _pushUndo(); el.linkNewTab = linkNewTab.checked; _notifyUpdate(true); }
             });
         }
 
@@ -1347,22 +1388,39 @@ window.ArbelCinematicEditor = (function () {
         var durationInput = _qs('#cneSceneDuration');
         var bgColorInput = _qs('#cneSceneBg');
 
+        var _sceneUndoTimer = null;
         if (pinToggle) {
             pinToggle.addEventListener('change', function () {
                 var scene = _scenes[_currentSceneIdx];
-                if (scene) { scene.pin = pinToggle.checked; _notifyUpdate(true); }
+                if (scene) { _pushUndo(); scene.pin = pinToggle.checked; _notifyUpdate(true); }
             });
         }
         if (durationInput) {
             durationInput.addEventListener('input', function () {
                 var scene = _scenes[_currentSceneIdx];
-                if (scene) { scene.duration = parseInt(durationInput.value) || 100; _notifyUpdate(true); }
+                if (scene) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    scene.duration = parseInt(durationInput.value) || 100;
+                    clearTimeout(_sceneUndoTimer);
+                    _sceneUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
+                    _notifyUpdate(true);
+                }
             });
         }
         if (bgColorInput) {
             bgColorInput.addEventListener('input', function () {
                 var scene = _scenes[_currentSceneIdx];
-                if (scene) { scene.bgColor = bgColorInput.value; _notifyUpdate(true); }
+                if (scene) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    scene.bgColor = bgColorInput.value;
+                    clearTimeout(_sceneUndoTimer);
+                    _sceneUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
+                    _notifyUpdate(true);
+                }
             });
         }
 
@@ -1370,7 +1428,15 @@ window.ArbelCinematicEditor = (function () {
         if (bgImageInput) {
             bgImageInput.addEventListener('input', function () {
                 var scene = _scenes[_currentSceneIdx];
-                if (scene) { scene.bgImage = bgImageInput.value; _notifyUpdate(true); }
+                if (scene) {
+                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    scene.bgImage = bgImageInput.value;
+                    clearTimeout(_sceneUndoTimer);
+                    _sceneUndoTimer = setTimeout(function () {
+                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
+                    }, 600);
+                    _notifyUpdate(true);
+                }
             });
         }
     }
@@ -1391,15 +1457,24 @@ window.ArbelCinematicEditor = (function () {
         var el = _getSelectedElement();
         if (!el) return;
         if (!el.style) el.style = {};
+        // Snapshot BEFORE mutation — capture pre-change state once per edit burst
+        if (!_pendingUndoSnapshot) {
+            _pendingUndoSnapshot = _snapshotScenes();
+        }
         if (value === '' || value === undefined) {
             delete el.style[prop];
         } else {
             el.style[prop] = value;
         }
         _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
-        // Debounce undo snapshots for rapid style changes
+        // Debounce: commit the pre-change snapshot after edits settle
         clearTimeout(_styleUndoTimer);
-        _styleUndoTimer = setTimeout(function () { _pushUndo(); }, 600);
+        _styleUndoTimer = setTimeout(function () {
+            if (_pendingUndoSnapshot) {
+                _commitSnapshot(_pendingUndoSnapshot);
+                _pendingUndoSnapshot = null;
+            }
+        }, 600);
         _notifyUpdate();
     }
 
@@ -1658,13 +1733,20 @@ window.ArbelCinematicEditor = (function () {
         if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
         _redoStack = [];
     }
+    /* Push an already-captured snapshot (pre-change state) onto the undo stack */
+    function _commitSnapshot(snapshot) {
+        if (_undoLocked) return;
+        _undoStack.push(snapshot);
+        if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
+        _redoStack = [];
+    }
     function _undo() {
         if (_undoStack.length === 0) return;
         _redoStack.push(_snapshotScenes());
         _undoLocked = true;
         _scenes = _undoStack.pop();
         _renderSceneList();
-        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
+        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
         _undoLocked = false;
     }
     function _redo() {
@@ -1673,7 +1755,7 @@ window.ArbelCinematicEditor = (function () {
         _undoLocked = true;
         _scenes = _redoStack.pop();
         _renderSceneList();
-        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
+        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
         _undoLocked = false;
     }
 
