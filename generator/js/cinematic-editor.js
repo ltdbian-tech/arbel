@@ -148,6 +148,9 @@ window.ArbelCinematicEditor = (function () {
         if (d.type === 'arbel-tree') {
             // element tree from iframe overlay — not used in cinematic (we have scene-based tree)
         }
+        if (d.type === 'arbel-contextmenu') {
+            _showContextMenu(d.x, d.y, d);
+        }
     }
 
     /* ─── Setup the cinematic editor UI ─── */
@@ -1547,6 +1550,88 @@ window.ArbelCinematicEditor = (function () {
         _notifyUpdate(true);
     }
 
+    /* ─── Context Menu ─── */
+    var _ctxMenu = null;
+
+    function _hideContextMenu() {
+        if (_ctxMenu && _ctxMenu.parentNode) _ctxMenu.parentNode.removeChild(_ctxMenu);
+        _ctxMenu = null;
+    }
+
+    function _showContextMenu(x, y, data) {
+        _hideContextMenu();
+        var menu = document.createElement('div');
+        menu.className = 'arbel-ctx-menu';
+
+        function addItem(label, kbd, action, cls) {
+            var item = document.createElement('div');
+            item.className = 'arbel-ctx-item' + (cls ? ' ' + cls : '');
+            item.innerHTML = '<span>' + label + '</span>' + (kbd ? '<span class="arbel-ctx-kbd">' + kbd + '</span>' : '');
+            if (action) item.addEventListener('click', function () { _hideContextMenu(); action(); });
+            else item.setAttribute('data-disabled', '');
+            menu.appendChild(item);
+        }
+        function addSep() { var s = document.createElement('div'); s.className = 'arbel-ctx-sep'; menu.appendChild(s); }
+
+        addItem('Copy', 'Ctrl+C', _selectedElementId ? _copyElement : null);
+        addItem('Paste', 'Ctrl+V', _clipboard ? _pasteElement : null);
+        addItem('Duplicate', 'Ctrl+D', _selectedElementId ? _duplicateElement : null);
+        addSep();
+        if (data.editable) { addItem('Edit Text', 'Dbl-click', function () { _postIframe('arbel-edit-text', { id: data.id }); }); }
+        addItem('Move Up', '', function () { _moveElement(-1); });
+        addItem('Move Down', '', function () { _moveElement(1); });
+        addSep();
+        addItem('Delete', 'Del', _selectedElementId ? _deleteSelectedElement : null, 'arbel-ctx-item--danger');
+
+        // Position: keep on-screen
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        document.body.appendChild(menu);
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) menu.style.left = (window.innerWidth - rect.width - 8) + 'px';
+        if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
+        _ctxMenu = menu;
+
+        // Close on click elsewhere or Escape
+        setTimeout(function () {
+            document.addEventListener('mousedown', _ctxAutoClose);
+            document.addEventListener('keydown', _ctxEscClose);
+        }, 0);
+    }
+
+    function _ctxAutoClose(e) {
+        if (_ctxMenu && !_ctxMenu.contains(e.target)) {
+            _hideContextMenu();
+            document.removeEventListener('mousedown', _ctxAutoClose);
+            document.removeEventListener('keydown', _ctxEscClose);
+        }
+    }
+    function _ctxEscClose(e) {
+        if (e.key === 'Escape') {
+            _hideContextMenu();
+            document.removeEventListener('mousedown', _ctxAutoClose);
+            document.removeEventListener('keydown', _ctxEscClose);
+        }
+    }
+
+    function _moveElement(dir) {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene || !_selectedElementId) return;
+        for (var i = 0; i < scene.elements.length; i++) {
+            if (scene.elements[i].id === _selectedElementId) {
+                var ni = i + dir;
+                if (ni < 0 || ni >= scene.elements.length) return;
+                _pushUndo();
+                var tmp = scene.elements[i];
+                scene.elements[i] = scene.elements[ni];
+                scene.elements[ni] = tmp;
+                _renderElementList();
+                _notifyUpdate(true);
+                return;
+            }
+        }
+    }
+
     function _deleteSelectedElement() {
         if (!_selectedElementId) return;
         _pushUndo();
@@ -2080,6 +2165,19 @@ window.ArbelCinematicEditor = (function () {
         '});' +
         'document.addEventListener("mouseout",function(){lbl.classList.remove("vis")});' +
 
+        /* ── Right-click context menu ── */
+        'document.addEventListener("contextmenu",function(e){' +
+          'var el=e.target.closest("[data-arbel-id]");' +
+          'if(!el)return;e.preventDefault();' +
+          'if(selected!==el)sel(el);' +
+          'var fr=window.frameElement?window.frameElement.getBoundingClientRect():{top:0,left:0};' +
+          'window.parent.postMessage({type:"arbel-contextmenu",' +
+            'id:el.getAttribute("data-arbel-id"),' +
+            'tag:el.tagName.toLowerCase(),' +
+            'editable:el.hasAttribute("data-arbel-edit"),' +
+            'x:e.clientX+fr.left,y:e.clientY+fr.top},"*");' +
+        '});' +
+
         /* ── Selection helpers ── */
         'function sel(el){' +
           'desel();selected=el;el.classList.add("arbel-sel");posHandles(el);' +
@@ -2119,6 +2217,7 @@ window.ArbelCinematicEditor = (function () {
           'if(d.type==="arbel-select-by-id"){var el=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el){el.scrollIntoView({behavior:"smooth",block:"center"});sel(el)}}' +
           'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2){el2.style[d.prop]=d.value;if(selected===el2)posHandles(el2)}}' +
           'if(d.type==="arbel-update-text"){var el3=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el3)el3.textContent=d.text}' +
+          'if(d.type==="arbel-edit-text"){var el4=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el4&&el4.hasAttribute("data-arbel-edit"))startEdit(el4)}' +
         '});' +
         /* ── Reposition handles on scroll ── */
         'window.addEventListener("scroll",function(){if(selected&&!resize)posHandles(selected)},true);' +

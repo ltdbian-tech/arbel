@@ -690,6 +690,26 @@ em { font-family: var(--font-display); font-style: italic; }
 .bfs-btn--primary:hover { background: #5a4bd4; }
 .bfs-btn:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
 
+/* ─── Context Menu (shared) ─── */
+.arbel-ctx-menu {
+    position: fixed; z-index: 999999; min-width: 180px;
+    background: #1e1e2e; border: 1px solid rgba(100,108,255,.25);
+    border-radius: 8px; padding: 4px 0; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    font-family: 'Inter', system-ui, sans-serif; font-size: 13px;
+    animation: ctxFadeIn .12s ease;
+}
+@keyframes ctxFadeIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+.arbel-ctx-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 14px; color: #e0e0e0; cursor: pointer; transition: background .1s;
+}
+.arbel-ctx-item:hover { background: rgba(100,108,255,.15); }
+.arbel-ctx-item[data-disabled] { opacity: .35; pointer-events: none; }
+.arbel-ctx-kbd { font-size: 11px; color: rgba(255,255,255,.35); margin-left: 24px; font-family: monospace; }
+.arbel-ctx-sep { height: 1px; background: rgba(255,255,255,.08); margin: 4px 0; }
+.arbel-ctx-item--danger { color: #ff6b6b; }
+.arbel-ctx-item--danger:hover { background: rgba(255,107,107,.12); }
+
 .bfs-brand {
     font-size: 0.75rem; color: var(--fg); letter-spacing: 0.02em;
     max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

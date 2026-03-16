@@ -136,7 +136,7 @@ document.addEventListener("mouseover",function(e){
   var el=e.target.closest("[data-arbel-id]");
   if(el&&el!==selected){lbl.textContent=el.getAttribute("data-arbel-id");lbl.classList.add("vis")}
 });
-document.addEventListener("mouseout",function(){lbl.classList.remove("vis")});
+document.addEventListener("mouseout",function(){lbl.classList.remove("vis")});\n\n/* ── Right-click context menu ── */\ndocument.addEventListener("contextmenu",function(e){\n  var el=e.target.closest("[data-arbel-id]");\n  if(!el)return;e.preventDefault();\n  if(selected!==el)sel(el);\n  var fr=window.frameElement?window.frameElement.getBoundingClientRect():{top:0,left:0};\n  window.parent.postMessage({type:"arbel-contextmenu",\n    id:el.getAttribute("data-arbel-id"),\n    tag:el.tagName.toLowerCase(),\n    editable:el.hasAttribute("data-arbel-edit"),\n    x:e.clientX+fr.left,y:e.clientY+fr.top},"*");\n});
 
 function sel(el){
   desel();selected=el;el.classList.add("arbel-sel");posHandles(el);
@@ -490,6 +490,7 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-set-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.setAttribute("href",d.href);else{var a=el.closest("a");if(a)a.setAttribute("href",d.href)}}}
   if(d.type==="arbel-remove-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.removeAttribute("href");else{var a=el.closest("a");if(a)a.removeAttribute("href")}}}
   if(d.type==="arbel-set-filter"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.style.filter=d.value}
+  if(d.type==="arbel-edit-text"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el&&el.hasAttribute("data-arbel-edit"))startEdit(el)}
 });
 
 var tree=[];
@@ -569,6 +570,64 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _copyStyles();
     }
 
+    /* ─── Context Menu ─── */
+    var _ctxMenu = null;
+
+    function _hideContextMenu() {
+        if (_ctxMenu && _ctxMenu.parentNode) _ctxMenu.parentNode.removeChild(_ctxMenu);
+        _ctxMenu = null;
+    }
+
+    function _showContextMenu(x, y, data) {
+        _hideContextMenu();
+        var menu = document.createElement('div');
+        menu.className = 'arbel-ctx-menu';
+
+        function addItem(label, kbd, action, cls) {
+            var item = document.createElement('div');
+            item.className = 'arbel-ctx-item' + (cls ? ' ' + cls : '');
+            item.innerHTML = '<span>' + label + '</span>' + (kbd ? '<span class="arbel-ctx-kbd">' + kbd + '</span>' : '');
+            if (action) item.addEventListener('click', function () { _hideContextMenu(); action(); });
+            else item.setAttribute('data-disabled', '');
+            menu.appendChild(item);
+        }
+        function addSep() { var s = document.createElement('div'); s.className = 'arbel-ctx-sep'; menu.appendChild(s); }
+
+        addItem('Copy Styles', 'Ctrl+C', _selectedId ? _copyStyles : null);
+        addItem('Paste Styles', 'Ctrl+V', _clipboard ? _pasteStyles : null);
+        addSep();
+        if (data.editable) { addItem('Edit Text', 'Dbl-click', function () { _postIframe('arbel-edit-text', { id: data.id }); }); }
+
+        // Position on-screen
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        document.body.appendChild(menu);
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) menu.style.left = (window.innerWidth - rect.width - 8) + 'px';
+        if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
+        _ctxMenu = menu;
+
+        setTimeout(function () {
+            document.addEventListener('mousedown', _ctxAutoClose);
+            document.addEventListener('keydown', _ctxEscClose);
+        }, 0);
+    }
+
+    function _ctxAutoClose(e) {
+        if (_ctxMenu && !_ctxMenu.contains(e.target)) {
+            _hideContextMenu();
+            document.removeEventListener('mousedown', _ctxAutoClose);
+            document.removeEventListener('keydown', _ctxEscClose);
+        }
+    }
+    function _ctxEscClose(e) {
+        if (e.key === 'Escape') {
+            _hideContextMenu();
+            document.removeEventListener('mousedown', _ctxAutoClose);
+            document.removeEventListener('keydown', _ctxEscClose);
+        }
+    }
+
     /* ─── Undo/Redo toolbar + keyboard shortcuts ─── */
     function _setupUndoRedo() {
         _on('#editorUndo', 'click', function () { _undo(); });
@@ -628,6 +687,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         if (d.type === 'arbel-resize-end') {
             _resizeUndoPushed = false;
+        }
+        if (d.type === 'arbel-contextmenu') {
+            _showContextMenu(d.x, d.y, d);
         }
     }
 
