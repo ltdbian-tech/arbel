@@ -23,6 +23,12 @@ window.ArbelCinematicEditor = (function () {
     var _timelineOpen = false;
     var _uiBound = false;          // guard against duplicate listener binding
 
+    /* ─── Undo / Redo ─── */
+    var _undoStack = [];
+    var _redoStack = [];
+    var _MAX_UNDO = 40;
+    var _undoLocked = false;     // suppress snapshots during undo/redo apply
+
     /* ─── DOM Shorthand ─── */
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
     function _qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
@@ -59,6 +65,32 @@ window.ArbelCinematicEditor = (function () {
         }
         if (d.type === 'arbel-text-update' && d.id) {
             _applyOverride(d.id, { text: d.text });
+        }
+        if (d.type === 'arbel-move' && d.id) {
+            // Element dragged on canvas — update model + position inputs
+            var scene = _scenes[_currentSceneIdx];
+            if (scene) {
+                for (var i = 0; i < scene.elements.length; i++) {
+                    if (scene.elements[i].id === d.id) {
+                        scene.elements[i].style.top = d.top;
+                        scene.elements[i].style.left = d.left;
+                        break;
+                    }
+                }
+            }
+            var posTop = _qs('#cnePosTop');
+            var posLeft = _qs('#cnePosLeft');
+            if (posTop) posTop.value = d.top;
+            if (posLeft) posLeft.value = d.left;
+            _notifyUpdate();
+        }
+        if (d.type === 'arbel-move-end') {
+            _pushUndo();
+        }
+        if (d.type === 'arbel-deselect') {
+            _selectedElementId = null;
+            _clearProperties();
+            _renderElementList();
         }
         if (d.type === 'arbel-tree') {
             // element tree from iframe overlay — not used in cinematic (we have scene-based tree)
@@ -266,6 +298,7 @@ window.ArbelCinematicEditor = (function () {
         addBtn.className = 'gen-btn gen-btn--primary';
         addBtn.textContent = 'Add Scene';
         addBtn.addEventListener('click', function () {
+            _pushUndo();
             var scene = ArbelCinematicCompiler.createScene(selectedTpl, _scenes.length);
             if (nameInput.value.trim()) scene.name = nameInput.value.trim();
             _scenes.push(scene);
@@ -289,6 +322,7 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _duplicateScene(idx) {
+        _pushUndo();
         var src = _scenes[idx];
         var dupe = JSON.parse(JSON.stringify(src));
         dupe.id = 'scene-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
@@ -302,6 +336,7 @@ window.ArbelCinematicEditor = (function () {
 
     function _deleteScene(idx) {
         if (_scenes.length <= 1) return;
+        _pushUndo();
         _scenes.splice(idx, 1);
         if (_currentSceneIdx >= _scenes.length) _currentSceneIdx = _scenes.length - 1;
         _selectScene(_currentSceneIdx, true);
@@ -340,6 +375,7 @@ window.ArbelCinematicEditor = (function () {
                 upBtn.title = 'Move up';
                 upBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
+                    _pushUndo();
                     var tmp = scene.elements[i];
                     scene.elements[i] = scene.elements[i - 1];
                     scene.elements[i - 1] = tmp;
@@ -357,6 +393,7 @@ window.ArbelCinematicEditor = (function () {
                 downBtn.title = 'Move down';
                 downBtn.addEventListener('click', function (e) {
                     e.stopPropagation();
+                    _pushUndo();
                     var tmp = scene.elements[i];
                     scene.elements[i] = scene.elements[i + 1];
                     scene.elements[i + 1] = tmp;
@@ -373,6 +410,7 @@ window.ArbelCinematicEditor = (function () {
             dupBtn.title = 'Duplicate';
             dupBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
+                _pushUndo();
                 var clone = JSON.parse(JSON.stringify(el));
                 clone.id = el.tag + '-' + Date.now().toString(36);
                 scene.elements.splice(i + 1, 0, clone);
@@ -587,6 +625,7 @@ window.ArbelCinematicEditor = (function () {
             };
         }
 
+        _pushUndo();
         scene.elements.push(newEl);
         _selectedElementId = newEl.id;
         _renderElementList();
@@ -1229,6 +1268,32 @@ window.ArbelCinematicEditor = (function () {
                 _deleteSelectedElement();
             });
         }
+
+        // Undo / Redo buttons
+        var undoBtn = _qs('#cneUndo');
+        var redoBtn = _qs('#cneRedo');
+        if (undoBtn) undoBtn.addEventListener('click', function () { _undo(); });
+        if (redoBtn) redoBtn.addEventListener('click', function () { _redo(); });
+
+        // Export / Import buttons
+        var exportBtn = _qs('#cneExportJSON');
+        var importBtn = _qs('#cneImportJSON');
+        if (exportBtn) exportBtn.addEventListener('click', function () { _exportJSON(); });
+        if (importBtn) importBtn.addEventListener('click', function () { _importJSON(); });
+
+        // Keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z)
+        document.addEventListener('keydown', function (e) {
+            if (!_active) return;
+            if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+                if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
+                if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
+                if (e.key === 'y') { e.preventDefault(); _redo(); }
+            }
+            // Delete key deletes selected element (only when not editing text)
+            if (e.key === 'Delete' && _selectedElementId && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                _deleteSelectedElement();
+            }
+        });
     }
 
     /* ─── Device Toggle (desktop/tablet/mobile) ─── */
@@ -1321,6 +1386,7 @@ window.ArbelCinematicEditor = (function () {
         return null;
     }
 
+    var _styleUndoTimer = null;
     function _setElStyle(prop, value) {
         var el = _getSelectedElement();
         if (!el) return;
@@ -1331,11 +1397,15 @@ window.ArbelCinematicEditor = (function () {
             el.style[prop] = value;
         }
         _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
+        // Debounce undo snapshots for rapid style changes
+        clearTimeout(_styleUndoTimer);
+        _styleUndoTimer = setTimeout(function () { _pushUndo(); }, 600);
         _notifyUpdate();
     }
 
     function _deleteSelectedElement() {
         if (!_selectedElementId) return;
+        _pushUndo();
         var scene = _scenes[_currentSceneIdx];
         if (!scene) return;
         scene.elements = scene.elements.filter(function (e) { return e.id !== _selectedElementId; });
@@ -1578,6 +1648,77 @@ window.ArbelCinematicEditor = (function () {
         return '#' + ((1 << 24) + (parseInt(m[0]) << 16) + (parseInt(m[1]) << 8) + parseInt(m[2])).toString(16).slice(1);
     }
 
+    /* ─── Undo / Redo ─── */
+    function _snapshotScenes() {
+        return JSON.parse(JSON.stringify(_scenes));
+    }
+    function _pushUndo() {
+        if (_undoLocked) return;
+        _undoStack.push(_snapshotScenes());
+        if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
+        _redoStack = [];
+    }
+    function _undo() {
+        if (_undoStack.length === 0) return;
+        _redoStack.push(_snapshotScenes());
+        _undoLocked = true;
+        _scenes = _undoStack.pop();
+        _renderSceneList();
+        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
+        _undoLocked = false;
+    }
+    function _redo() {
+        if (_redoStack.length === 0) return;
+        _undoStack.push(_snapshotScenes());
+        _undoLocked = true;
+        _scenes = _redoStack.pop();
+        _renderSceneList();
+        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
+        _undoLocked = false;
+    }
+
+    /* ─── Export / Import Scene JSON ─── */
+    function _exportJSON() {
+        var data = JSON.stringify({ scenes: _scenes, overrides: _overrides }, null, 2);
+        var blob = new Blob([data], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'cinematic-scenes.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    function _importJSON() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.addEventListener('change', function () {
+            if (!input.files || !input.files[0]) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    var parsed = JSON.parse(e.target.result);
+                    if (!parsed || !Array.isArray(parsed.scenes)) {
+                        alert('Invalid scene JSON file.');
+                        return;
+                    }
+                    _pushUndo();
+                    _scenes = parsed.scenes;
+                    if (parsed.overrides) _overrides = parsed.overrides;
+                    _renderSceneList();
+                    _selectScene(0);
+                    _notifyUpdate(true);
+                } catch (ex) {
+                    alert('Failed to parse JSON: ' + ex.message);
+                }
+            };
+            reader.readAsText(input.files[0]);
+        });
+        input.click();
+    }
+
     /* ─── Send message to cinematic iframe ─── */
     function _postIframe(type, payload) {
         if (_iframe && _iframe.contentWindow) {
@@ -1589,33 +1730,86 @@ window.ArbelCinematicEditor = (function () {
     /* ─── Overlay script injected into cinematic iframe ─── */
     function _getOverlayScript() {
         return '(function(){' +
-        'var selected=null,editing=false;' +
+        'var selected=null,editing=false,drag=null;' +
         'var s=document.createElement("style");' +
         's.textContent="' +
           '[data-arbel-id]{cursor:pointer;transition:outline .15s,outline-offset .15s}' +
           '[data-arbel-id]:hover:not(.arbel-sel){outline:2px dashed rgba(100,108,255,.5);outline-offset:2px}' +
           '.arbel-sel{outline:2px solid #646cff!important;outline-offset:3px!important}' +
+          '.arbel-dragging{outline-color:#ff6b35!important;cursor:grabbing!important}' +
           '.arbel-editing{outline-color:#0bda51!important;min-height:1em}' +
           '.arbel-lbl{position:fixed;top:8px;left:8px;z-index:99999;background:#646cff;color:#fff;' +
           'font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;' +
           'opacity:0;transition:opacity .2s}.arbel-lbl.vis{opacity:1}' +
+          '.arbel-pos-lbl{position:fixed;bottom:8px;right:8px;z-index:99999;background:rgba(0,0,0,.75);color:#fff;' +
+          'font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;' +
+          'opacity:0;transition:opacity .15s}.arbel-pos-lbl.vis{opacity:1}' +
         '";document.head.appendChild(s);' +
         'var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);' +
+        'var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";document.body.appendChild(posLbl);' +
+
+        /* ── Click → select ── */
         'document.addEventListener("click",function(e){' +
-          'if(editing)return;' +
+          'if(editing||drag)return;' +
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(!el){desel();return}' +
           'e.preventDefault();e.stopPropagation();sel(el);' +
         '},true);' +
+
+        /* ── Double-click → inline text edit ── */
         'document.addEventListener("dblclick",function(e){' +
           'var el=e.target.closest("[data-arbel-edit=\\"text\\"]");' +
           'if(!el)return;e.preventDefault();startEdit(el);' +
         '},true);' +
+
+        /* ── Mousedown → start drag ── */
+        'document.addEventListener("mousedown",function(e){' +
+          'if(editing)return;' +
+          'var el=e.target.closest("[data-arbel-id]");' +
+          'if(!el||e.button!==0)return;' +
+          'var r=el.getBoundingClientRect();' +
+          'drag={el:el,startX:e.clientX,startY:e.clientY,' +
+            'origTop:el.offsetTop,origLeft:el.offsetLeft,moved:false};' +
+          'e.preventDefault();' +
+        '},true);' +
+
+        /* ── Mousemove → drag element ── */
+        'document.addEventListener("mousemove",function(e){' +
+          'if(!drag)return;' +
+          'var dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;' +
+          'if(!drag.moved&&Math.abs(dx)+Math.abs(dy)<4)return;' +
+          'drag.moved=true;' +
+          'drag.el.classList.add("arbel-dragging");' +
+          'var nt=drag.origTop+dy,nl=drag.origLeft+dx;' +
+          'drag.el.style.top=nt+"px";drag.el.style.left=nl+"px";' +
+          'posLbl.textContent="top: "+nt+"px  left: "+nl+"px";posLbl.classList.add("vis");' +
+          'window.parent.postMessage({type:"arbel-move",' +
+            'id:drag.el.getAttribute("data-arbel-id"),' +
+            'top:nt+"px",left:nl+"px"},"*");' +
+        '});' +
+
+        /* ── Mouseup → end drag ── */
+        'document.addEventListener("mouseup",function(e){' +
+          'if(!drag)return;' +
+          'var wasDrag=drag.moved;' +
+          'drag.el.classList.remove("arbel-dragging");' +
+          'posLbl.classList.remove("vis");' +
+          'if(wasDrag){' +
+            'if(!selected||selected!==drag.el)sel(drag.el);' +
+            'window.parent.postMessage({type:"arbel-move-end"},"*");' +
+          '}' +
+          'drag=null;' +
+          'if(wasDrag){e.preventDefault();e.stopPropagation()}' +
+        '});' +
+
+        /* ── Hover → show label ── */
         'document.addEventListener("mouseover",function(e){' +
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(el&&el!==selected){lbl.textContent=el.getAttribute("data-arbel-id");lbl.classList.add("vis")}' +
         '});' +
         'document.addEventListener("mouseout",function(){lbl.classList.remove("vis")});' +
+
+        /* ── Selection helpers ── */
         'function sel(el){' +
           'desel();selected=el;el.classList.add("arbel-sel");' +
           'window.parent.postMessage({type:"arbel-select",id:el.getAttribute("data-arbel-id"),' +
@@ -1628,6 +1822,8 @@ window.ArbelCinematicEditor = (function () {
           'if(selected){selected.classList.remove("arbel-sel");selected=null}' +
           'window.parent.postMessage({type:"arbel-deselect"},"*");' +
         '}' +
+
+        /* ── Inline text editing ── */
         'function startEdit(el){' +
           'if(editing)stopEdit();sel(el);editing=true;' +
           'el.classList.add("arbel-editing");el.contentEditable=true;el.focus();' +
@@ -1643,6 +1839,8 @@ window.ArbelCinematicEditor = (function () {
           'selected.classList.remove("arbel-editing");selected.contentEditable=false;' +
           'window.parent.postMessage({type:"arbel-text-update",id:selected.getAttribute("data-arbel-id"),text:selected.textContent},"*");' +
         '}' +
+
+        /* ── Listen for messages from editor ── */
         'window.addEventListener("message",function(e){' +
           'var d;try{d=typeof e.data==="string"?JSON.parse(e.data):e.data}catch(x){return}' +
           'if(!d||!d.type)return;' +
@@ -1869,6 +2067,7 @@ window.ArbelCinematicEditor = (function () {
                     return;
                 }
                 // Build a proper scene object from AI response
+                _pushUndo();
                 var scene = _aiResponseToScene(sceneData);
                 _scenes.push(scene);
                 _selectScene(_scenes.length - 1, true);
