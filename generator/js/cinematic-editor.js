@@ -598,6 +598,173 @@ window.ArbelCinematicEditor = (function () {
         list.appendChild(addRow);
     }
 
+    /* ─── Stock Photos Dialog ─── */
+    function _showStockPhotosDialog() {
+        var overlay = document.createElement('div');
+        overlay.className = 'arbel-dialog-overlay';
+
+        var dialog = document.createElement('div');
+        dialog.className = 'arbel-dialog';
+        dialog.style.maxWidth = '680px';
+        dialog.style.maxHeight = '80vh';
+
+        var title = document.createElement('h3');
+        title.className = 'arbel-dialog-title';
+        title.textContent = 'Stock Photos';
+
+        // Provider + API key row
+        var keyRow = document.createElement('div');
+        keyRow.className = 'arbel-dialog-field';
+        var keyLabel = document.createElement('label');
+        keyLabel.className = 'arbel-dialog-label mono';
+        keyLabel.textContent = 'UNSPLASH ACCESS KEY';
+        var keyInput = document.createElement('input');
+        keyInput.className = 'gen-input';
+        keyInput.type = 'password';
+        keyInput.placeholder = 'Paste your free Unsplash API key...';
+        keyInput.setAttribute('autocomplete', 'off');
+        keyInput.value = sessionStorage.getItem('arbel-unsplash-key') || '';
+        var keyHint = document.createElement('div');
+        keyHint.style.cssText = 'font-size:10px;color:rgba(255,255,255,.4);margin-top:4px';
+        keyHint.textContent = 'Free at unsplash.com/developers. Key stored in this tab only.';
+        keyRow.appendChild(keyLabel);
+        keyRow.appendChild(keyInput);
+        keyRow.appendChild(keyHint);
+
+        // Search row
+        var searchRow = document.createElement('div');
+        searchRow.className = 'arbel-dialog-field';
+        searchRow.style.display = 'flex';
+        searchRow.style.gap = '8px';
+        var searchInput = document.createElement('input');
+        searchInput.className = 'gen-input';
+        searchInput.placeholder = 'Search photos...';
+        searchInput.style.flex = '1';
+        var searchBtn = document.createElement('button');
+        searchBtn.className = 'gen-btn gen-btn--primary';
+        searchBtn.textContent = 'Search';
+        searchRow.appendChild(searchInput);
+        searchRow.appendChild(searchBtn);
+
+        // Results grid
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:400px;overflow-y:auto;margin-top:12px;padding:4px';
+
+        // Status
+        var status = document.createElement('div');
+        status.style.cssText = 'font-size:11px;color:rgba(255,255,255,.4);margin-top:8px;text-align:center';
+
+        // Close button
+        var closeRow = document.createElement('div');
+        closeRow.className = 'arbel-dialog-btns';
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'gen-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', function () { document.body.removeChild(overlay); });
+        closeRow.appendChild(closeBtn);
+
+        dialog.appendChild(title);
+        dialog.appendChild(keyRow);
+        dialog.appendChild(searchRow);
+        dialog.appendChild(grid);
+        dialog.appendChild(status);
+        dialog.appendChild(closeRow);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        function doSearch() {
+            var apiKey = keyInput.value.trim();
+            var query = searchInput.value.trim();
+            if (!apiKey) { status.textContent = 'Please enter an Unsplash API key.'; return; }
+            if (!query) { status.textContent = 'Please enter a search term.'; return; }
+            sessionStorage.setItem('arbel-unsplash-key', apiKey);
+            grid.innerHTML = '';
+            status.textContent = 'Searching...';
+            var url = 'https://api.unsplash.com/search/photos?query=' + encodeURIComponent(query) + '&per_page=24&orientation=landscape';
+            fetch(url, { headers: { Authorization: 'Client-ID ' + apiKey } })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('API error ' + r.status);
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (!data.results || data.results.length === 0) {
+                        status.textContent = 'No results found.';
+                        return;
+                    }
+                    status.textContent = data.total + ' results — click to use';
+                    data.results.forEach(function (photo) {
+                        var card = document.createElement('div');
+                        card.style.cssText = 'position:relative;border-radius:6px;overflow:hidden;cursor:pointer;aspect-ratio:4/3;background:#1a1a2e';
+                        var img = document.createElement('img');
+                        img.src = photo.urls.small;
+                        img.alt = photo.alt_description || '';
+                        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+                        img.loading = 'lazy';
+                        var credit = document.createElement('div');
+                        credit.style.cssText = 'position:absolute;bottom:0;left:0;right:0;padding:2px 6px;background:rgba(0,0,0,.6);font-size:9px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+                        credit.textContent = photo.user.name;
+                        card.appendChild(img);
+                        card.appendChild(credit);
+                        card.addEventListener('click', function () {
+                            var fullUrl = photo.urls.regular;
+                            _applyStockPhoto(fullUrl, photo.user.name, photo.links.html);
+                            document.body.removeChild(overlay);
+                        });
+                        grid.appendChild(card);
+                    });
+                })
+                .catch(function (err) {
+                    status.textContent = 'Error: ' + err.message;
+                });
+        }
+
+        searchBtn.addEventListener('click', doSearch);
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') doSearch();
+        });
+        searchInput.focus();
+    }
+
+    function _applyStockPhoto(url, photographer, photoLink) {
+        var el = _getSelectedElement();
+        if (el && el.tag === 'img') {
+            _pushUndo();
+            el.src = url;
+            var srcInput = _qs('#cneImgSrc');
+            if (srcInput) srcInput.value = url;
+            _notifyUpdate(true);
+        } else {
+            // No img element selected — create one
+            var scene = _scenes[_currentSceneIdx];
+            if (!scene) return;
+            _pushUndo();
+            var newEl = {
+                id: 'img-' + Date.now().toString(36),
+                tag: 'img',
+                src: url,
+                text: 'Photo by ' + photographer,
+                visible: true,
+                style: {
+                    position: 'absolute',
+                    top: '30%',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: '500px',
+                    height: '350px',
+                    objectFit: 'cover',
+                    borderRadius: '12px'
+                },
+                scroll: { opacity: [0, 1], y: [40, 0], start: 0, end: 0.5 }
+            };
+            scene.elements.push(newEl);
+            _selectedElementId = newEl.id;
+            _selectedElementIds = [newEl.id];
+            _renderElementList();
+            _updatePropertiesFromScene(newEl);
+            _notifyUpdate(true);
+        }
+    }
+
     function _showAddElementDialog() {
         var overlay = document.createElement('div');
         overlay.className = 'arbel-dialog-overlay';
@@ -878,6 +1045,20 @@ window.ArbelCinematicEditor = (function () {
                 });
             }
         });
+
+        // Stock Photos button
+        var stockBtn = _qs('#cneStockBtn');
+        if (stockBtn) {
+            stockBtn.addEventListener('click', function () {
+                _showStockPhotosDialog();
+            });
+        }
+        var stockToolbar = _qs('#cneStockToolbar');
+        if (stockToolbar) {
+            stockToolbar.addEventListener('click', function () {
+                _showStockPhotosDialog();
+            });
+        }
 
         // Link href
         var linkHref = _qs('#cneLinkHref');
