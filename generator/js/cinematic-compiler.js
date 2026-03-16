@@ -414,6 +414,7 @@ window.ArbelCinematicCompiler = (function () {
                 html += '    <' + tag + ' class="cne-element"';
                 html += ' data-arbel-id="' + esc(el.id) + '"';
                 html += ' data-arbel-edit="text"';
+                if (el.group) html += ' data-arbel-group="' + esc(el.group) + '"';
                 html += scrollData;
                 html += splitAttr;
                 html += parallaxAttr;

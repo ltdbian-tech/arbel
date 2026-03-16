@@ -73,6 +73,25 @@ window.ArbelCinematicEditor = (function () {
             _iframeTextUndoPushed = false; // reset on element switch
             _selectedElementId = d.id || null;
             _selectedElementIds = d.ids || (d.id ? [d.id] : []);
+            // Auto-expand: include group members
+            var scene = _scenes[_currentSceneIdx];
+            if (scene && _selectedElementIds.length > 0) {
+                var groups = {};
+                for (var i = 0; i < scene.elements.length; i++) {
+                    var se = scene.elements[i];
+                    if (se.group && _selectedElementIds.indexOf(se.id) >= 0) {
+                        groups[se.group] = true;
+                    }
+                }
+                if (Object.keys(groups).length > 0) {
+                    for (var j = 0; j < scene.elements.length; j++) {
+                        var je = scene.elements[j];
+                        if (je.group && groups[je.group] && _selectedElementIds.indexOf(je.id) < 0) {
+                            _selectedElementIds.push(je.id);
+                        }
+                    }
+                }
+            }
             _updatePropertiesPanel(d);
         }
         if (d.type === 'arbel-text-update' && d.id) {
@@ -450,7 +469,14 @@ window.ArbelCinematicEditor = (function () {
 
             var nameSpan = document.createElement('span');
             nameSpan.className = 'cne-el-name';
-            nameSpan.textContent = el.text ? el.text.substr(0, 30) : (el.tag === 'img' ? 'Image' : el.tag === 'video' ? 'Video' : el.id);
+            if (el.group) {
+                var grpHash = 0;
+                for (var g = 0; g < el.group.length; g++) grpHash = (grpHash * 31 + el.group.charCodeAt(g)) & 0xffffff;
+                var grpDot = document.createElement('span');
+                grpDot.style.cssText = 'display:inline-block;width:6px;height:6px;border-radius:50%;background:#' + ('000000' + grpHash.toString(16)).slice(-6) + ';margin-right:4px;vertical-align:middle';
+                nameSpan.appendChild(grpDot);
+            }
+            nameSpan.appendChild(document.createTextNode(el.text ? el.text.substr(0, 30) : (el.tag === 'img' ? 'Image' : el.tag === 'video' ? 'Video' : el.id)));
 
             var actions = document.createElement('span');
             actions.className = 'cne-el-actions';
@@ -540,6 +566,14 @@ window.ArbelCinematicEditor = (function () {
                 } else {
                     _selectedElementId = el.id;
                     _selectedElementIds = [el.id];
+                    // Expand to include group members
+                    if (el.group) {
+                        scene.elements.forEach(function (ge) {
+                            if (ge.group === el.group && _selectedElementIds.indexOf(ge.id) < 0) {
+                                _selectedElementIds.push(ge.id);
+                            }
+                        });
+                    }
                 }
                 _renderElementList();
                 if (_selectedElementIds.length === 1) {
@@ -1456,6 +1490,8 @@ window.ArbelCinematicEditor = (function () {
                 if (e.key === 'v' && !inInput && _clipboard) { e.preventDefault(); _pasteElement(); }
                 if (e.key === 'd' && _selectedElementIds.length > 0) { e.preventDefault(); _duplicateElement(); }
                 if (e.key === 'a' && !inInput) { e.preventDefault(); _selectAll(); }
+                if (e.key === 'g' && !e.shiftKey && _selectedElementIds.length > 1) { e.preventDefault(); _groupSelection(); }
+                if (e.key === 'g' && e.shiftKey && _selectedElementIds.length > 0) { e.preventDefault(); _ungroupSelection(); }
             }
             // Delete key deletes selected elements (only when not editing text)
             if ((e.key === 'Delete' || e.key === 'Backspace') && _selectedElementIds.length > 0 && !inInput) {
@@ -1690,6 +1726,21 @@ window.ArbelCinematicEditor = (function () {
             addItem('Move Down', '', function () { _moveElement(1); });
         }
         addSep();
+        if (multi) {
+            addItem('Group', 'Ctrl+G', function () { _groupSelection(); });
+        }
+        var hasGroup = _selectedElementIds.some(function (id) {
+            var scene = _scenes[_currentSceneIdx];
+            if (!scene) return false;
+            for (var i = 0; i < scene.elements.length; i++) {
+                if (scene.elements[i].id === id && scene.elements[i].group) return true;
+            }
+            return false;
+        });
+        if (hasGroup) {
+            addItem('Ungroup', 'Ctrl+Shift+G', function () { _ungroupSelection(); });
+        }
+        addSep();
         addItem(multi ? 'Delete ' + n : 'Delete', 'Del', _selectedElementIds.length > 0 ? _deleteSelectedElement : null, 'arbel-ctx-item--danger');
 
         // Position: keep on-screen
@@ -1757,6 +1808,35 @@ window.ArbelCinematicEditor = (function () {
 
     function _selectAll() {
         _postIframe('arbel-select-all', {});
+    }
+
+    function _groupSelection() {
+        if (_selectedElementIds.length < 2) return;
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) return;
+        _pushUndo();
+        var groupId = 'grp-' + Date.now().toString(36);
+        for (var i = 0; i < scene.elements.length; i++) {
+            if (_selectedElementIds.indexOf(scene.elements[i].id) >= 0) {
+                scene.elements[i].group = groupId;
+            }
+        }
+        _renderElementList();
+        _notifyUpdate(true);
+    }
+
+    function _ungroupSelection() {
+        if (_selectedElementIds.length === 0) return;
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) return;
+        _pushUndo();
+        for (var i = 0; i < scene.elements.length; i++) {
+            if (_selectedElementIds.indexOf(scene.elements[i].id) >= 0) {
+                delete scene.elements[i].group;
+            }
+        }
+        _renderElementList();
+        _notifyUpdate(true);
     }
 
     function _applyOverride(id, data) {
@@ -2394,6 +2474,10 @@ window.ArbelCinematicEditor = (function () {
           '}else{' +
             'for(var i=0;i<selected.length;i++)selected[i].classList.remove("arbel-sel");' +
             'selected=[el];el.classList.add("arbel-sel");primary=el;' +
+            'var grp=el.getAttribute("data-arbel-group");' +
+            'if(grp){document.querySelectorAll("[data-arbel-group=\\""+grp+"\\"]").forEach(function(g){' +
+              'if(selected.indexOf(g)<0){selected.push(g);g.classList.add("arbel-sel");}' +
+            '});}' +
           '}' +
           'posHandles(selected.length===1?primary:null);' +
           'if(selected.length===0){window.parent.postMessage({type:"arbel-deselect"},"*");return;}' +
