@@ -29,7 +29,12 @@ window.ArbelCinematicEditor = (function () {
     var _MAX_UNDO = 40;
     var _undoLocked = false;     // suppress snapshots during undo/redo apply
     var _dragUndoPushed = false; // guard: snapshot only on first drag move
-    var _pendingUndoSnapshot = null; // pre-mutation snapshot for debounced edits
+
+    /* Per-category pending snapshots for debounced edits.
+       Each category (e.g. 'text', 'style', 'imgSrc', 'scene') gets its own
+       pre-mutation snapshot + timer so mixed edits never cross-contaminate. */
+    var _burstSnapshots = {};    // { category: { snapshot, timer } }
+    var _iframeTextUndoPushed = false; // guard for inline iframe text edits
 
     /* ─── DOM Shorthand ─── */
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
@@ -62,10 +67,16 @@ window.ArbelCinematicEditor = (function () {
         if (!d || !d.type) return;
 
         if (d.type === 'arbel-select') {
+            _iframeTextUndoPushed = false; // reset on element switch
             _selectedElementId = d.id || null;
             _updatePropertiesPanel(d);
         }
         if (d.type === 'arbel-text-update' && d.id) {
+            // Snapshot BEFORE the first inline text mutation from iframe
+            if (!_iframeTextUndoPushed && !_undoLocked) {
+                _pushUndo();
+                _iframeTextUndoPushed = true;
+            }
             _applyOverride(d.id, { text: d.text });
         }
         if (d.type === 'arbel-move' && d.id) {
@@ -95,6 +106,7 @@ window.ArbelCinematicEditor = (function () {
             _dragUndoPushed = false;
         }
         if (d.type === 'arbel-deselect') {
+            _iframeTextUndoPushed = false; // reset on deselect
             _selectedElementId = null;
             _clearProperties();
             _renderElementList();
@@ -661,39 +673,31 @@ window.ArbelCinematicEditor = (function () {
 
     function _setupStyleInputs() {
         // Text content
-        var _textUndoTimer = null;
         var textInput = _qs('#cneTextInput');
         if (textInput) {
             textInput.addEventListener('input', function () {
                 var el = _getSelectedElement();
                 if (el) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('text');
                     el.text = textInput.value;
                     _applyOverride(el.id, { text: el.text });
                     _renderElementList();
                     _postIframe('arbel-update-text', { id: el.id, text: el.text });
-                    clearTimeout(_textUndoTimer);
-                    _textUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('text', 600);
                     _notifyUpdate();
                 }
             });
         }
 
         // Image src
-        var _imgSrcUndoTimer = null;
         var imgSrc = _qs('#cneImgSrc');
         if (imgSrc) {
             imgSrc.addEventListener('input', function () {
                 var el = _getSelectedElement();
                 if (el) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('imgSrc');
                     el.src = imgSrc.value;
-                    clearTimeout(_imgSrcUndoTimer);
-                    _imgSrcUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('imgSrc', 600);
                     _notifyUpdate(true);
                 }
             });
@@ -728,18 +732,14 @@ window.ArbelCinematicEditor = (function () {
         }
 
         // Video src
-        var _vidSrcUndoTimer = null;
         var videoSrc = _qs('#cneVideoSrc');
         if (videoSrc) {
             videoSrc.addEventListener('input', function () {
                 var el = _getSelectedElement();
                 if (el) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('videoSrc');
                     el.src = videoSrc.value;
-                    clearTimeout(_vidSrcUndoTimer);
-                    _vidSrcUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('videoSrc', 600);
                     _notifyUpdate(true);
                 }
             });
@@ -757,18 +757,14 @@ window.ArbelCinematicEditor = (function () {
         });
 
         // Link href
-        var _linkUndoTimer = null;
         var linkHref = _qs('#cneLinkHref');
         if (linkHref) {
             linkHref.addEventListener('input', function () {
                 var el = _getSelectedElement();
                 if (el) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('linkHref');
                     el.href = linkHref.value;
-                    clearTimeout(_linkUndoTimer);
-                    _linkUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('linkHref', 600);
                     _notifyUpdate(true);
                 }
             });
@@ -1335,6 +1331,9 @@ window.ArbelCinematicEditor = (function () {
                 _deleteSelectedElement();
             }
         });
+
+        // Set initial disabled state
+        _updateUndoButtons();
     }
 
     /* ─── Device Toggle (desktop/tablet/mobile) ─── */
@@ -1388,7 +1387,6 @@ window.ArbelCinematicEditor = (function () {
         var durationInput = _qs('#cneSceneDuration');
         var bgColorInput = _qs('#cneSceneBg');
 
-        var _sceneUndoTimer = null;
         if (pinToggle) {
             pinToggle.addEventListener('change', function () {
                 var scene = _scenes[_currentSceneIdx];
@@ -1399,12 +1397,9 @@ window.ArbelCinematicEditor = (function () {
             durationInput.addEventListener('input', function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (scene) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('scene');
                     scene.duration = parseInt(durationInput.value) || 100;
-                    clearTimeout(_sceneUndoTimer);
-                    _sceneUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('scene', 600);
                     _notifyUpdate(true);
                 }
             });
@@ -1413,12 +1408,9 @@ window.ArbelCinematicEditor = (function () {
             bgColorInput.addEventListener('input', function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (scene) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('scene');
                     scene.bgColor = bgColorInput.value;
-                    clearTimeout(_sceneUndoTimer);
-                    _sceneUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('scene', 600);
                     _notifyUpdate(true);
                 }
             });
@@ -1429,12 +1421,9 @@ window.ArbelCinematicEditor = (function () {
             bgImageInput.addEventListener('input', function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (scene) {
-                    if (!_pendingUndoSnapshot) _pendingUndoSnapshot = _snapshotScenes();
+                    _beginBurst('scene');
                     scene.bgImage = bgImageInput.value;
-                    clearTimeout(_sceneUndoTimer);
-                    _sceneUndoTimer = setTimeout(function () {
-                        if (_pendingUndoSnapshot) { _commitSnapshot(_pendingUndoSnapshot); _pendingUndoSnapshot = null; }
-                    }, 600);
+                    _commitBurst('scene', 600);
                     _notifyUpdate(true);
                 }
             });
@@ -1452,29 +1441,18 @@ window.ArbelCinematicEditor = (function () {
         return null;
     }
 
-    var _styleUndoTimer = null;
     function _setElStyle(prop, value) {
         var el = _getSelectedElement();
         if (!el) return;
         if (!el.style) el.style = {};
-        // Snapshot BEFORE mutation — capture pre-change state once per edit burst
-        if (!_pendingUndoSnapshot) {
-            _pendingUndoSnapshot = _snapshotScenes();
-        }
+        _beginBurst('style');
         if (value === '' || value === undefined) {
             delete el.style[prop];
         } else {
             el.style[prop] = value;
         }
         _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
-        // Debounce: commit the pre-change snapshot after edits settle
-        clearTimeout(_styleUndoTimer);
-        _styleUndoTimer = setTimeout(function () {
-            if (_pendingUndoSnapshot) {
-                _commitSnapshot(_pendingUndoSnapshot);
-                _pendingUndoSnapshot = null;
-            }
-        }, 600);
+        _commitBurst('style', 600);
         _notifyUpdate();
     }
 
@@ -1724,39 +1702,104 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /* ─── Undo / Redo ─── */
-    function _snapshotScenes() {
-        return JSON.parse(JSON.stringify(_scenes));
+    function _snapshotState() {
+        return {
+            scenes: JSON.parse(JSON.stringify(_scenes)),
+            overrides: JSON.parse(JSON.stringify(_overrides))
+        };
     }
+
+    /* Check if two state snapshots are identical (dirty-state guard) */
+    function _stateEqual(a, b) {
+        if (!a || !b) return false;
+        return JSON.stringify(a.scenes) === JSON.stringify(b.scenes) &&
+               JSON.stringify(a.overrides) === JSON.stringify(b.overrides);
+    }
+
     function _pushUndo() {
         if (_undoLocked) return;
-        _undoStack.push(_snapshotScenes());
+        var snap = _snapshotState();
+        // Dirty-state guard: skip if snapshot matches top of undo stack
+        if (_undoStack.length > 0 && _stateEqual(snap, _undoStack[_undoStack.length - 1])) return;
+        _undoStack.push(snap);
         if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
         _redoStack = [];
+        _updateUndoButtons();
     }
+
     /* Push an already-captured snapshot (pre-change state) onto the undo stack */
     function _commitSnapshot(snapshot) {
         if (_undoLocked) return;
+        // Dirty-state guard: skip if state hasn't changed since the snapshot
+        if (JSON.stringify(snapshot.scenes) === JSON.stringify(_scenes) &&
+            JSON.stringify(snapshot.overrides) === JSON.stringify(_overrides)) return;
         _undoStack.push(snapshot);
         if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
         _redoStack = [];
+        _updateUndoButtons();
     }
+
+    /* ─── Transaction helpers (per-category debounce) ─── */
+    function _beginBurst(category) {
+        if (_undoLocked) return;
+        if (!_burstSnapshots[category]) {
+            _burstSnapshots[category] = { snapshot: _snapshotState(), timer: null };
+        }
+    }
+    function _commitBurst(category, delay) {
+        if (_undoLocked) return;
+        var entry = _burstSnapshots[category];
+        if (!entry) return;
+        clearTimeout(entry.timer);
+        entry.timer = setTimeout(function () {
+            if (_burstSnapshots[category]) {
+                _commitSnapshot(_burstSnapshots[category].snapshot);
+                delete _burstSnapshots[category];
+            }
+        }, delay || 600);
+    }
+    /* Flush all pending bursts immediately (called before import, etc.) */
+    function _flushBursts() {
+        Object.keys(_burstSnapshots).forEach(function (cat) {
+            clearTimeout(_burstSnapshots[cat].timer);
+            _commitSnapshot(_burstSnapshots[cat].snapshot);
+        });
+        _burstSnapshots = {};
+    }
+
     function _undo() {
         if (_undoStack.length === 0) return;
-        _redoStack.push(_snapshotScenes());
+        _flushBursts();
+        _redoStack.push(_snapshotState());
         _undoLocked = true;
-        _scenes = _undoStack.pop();
+        var state = _undoStack.pop();
+        _scenes = state.scenes;
+        _overrides = state.overrides;
         _renderSceneList();
         _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
         _undoLocked = false;
+        _updateUndoButtons();
     }
     function _redo() {
         if (_redoStack.length === 0) return;
-        _undoStack.push(_snapshotScenes());
+        _flushBursts();
+        _undoStack.push(_snapshotState());
         _undoLocked = true;
-        _scenes = _redoStack.pop();
+        var state = _redoStack.pop();
+        _scenes = state.scenes;
+        _overrides = state.overrides;
         _renderSceneList();
         _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
         _undoLocked = false;
+        _updateUndoButtons();
+    }
+
+    /* ─── Toolbar undo/redo button states ─── */
+    function _updateUndoButtons() {
+        var undoBtn = _qs('#cneUndo');
+        var redoBtn = _qs('#cneRedo');
+        if (undoBtn) undoBtn.disabled = _undoStack.length === 0;
+        if (redoBtn) redoBtn.disabled = _redoStack.length === 0;
     }
 
     /* ─── Export / Import Scene JSON ─── */
@@ -1786,6 +1829,7 @@ window.ArbelCinematicEditor = (function () {
                         alert('Invalid scene JSON file.');
                         return;
                     }
+                    _flushBursts();
                     _pushUndo();
                     _scenes = parsed.scenes;
                     if (parsed.overrides) _overrides = parsed.overrides;

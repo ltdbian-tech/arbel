@@ -153,6 +153,12 @@
     color: #f0f0f0;
 }
 
+.cne-toolbar-btn:disabled {
+    opacity: 0.25;
+    cursor: default;
+    pointer-events: none;
+}
+
 .cne-toolbar-btn--accent {
     background: rgba(108,92,231,0.15);
     color: #6C5CE7;
