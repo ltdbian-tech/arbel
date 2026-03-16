@@ -688,6 +688,7 @@ em { font-family: var(--font-display); font-style: italic; }
     text-transform: uppercase; letter-spacing: 0.1em;
 }
 .bfs-btn--primary:hover { background: #5a4bd4; }
+.bfs-btn:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
 
 .bfs-brand {
     font-size: 0.75rem; color: var(--fg); letter-spacing: 0.02em;

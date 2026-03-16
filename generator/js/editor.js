@@ -21,6 +21,17 @@ window.ArbelEditor = (function () {
     var _zoom = 100;
     var _lastTree = [];
 
+    /* ─── Undo / Redo state ─── */
+    var _MAX_UNDO = 40;
+    var _undoStack = [];
+    var _redoStack = [];
+    var _undoLocked = false;
+    /* Per-category pending snapshots for debounced edits.
+       Each category gets its own pre-mutation snapshot + timer
+       so mixed edits never cross-contaminate. */
+    var _burstSnapshots = {};   // { category: { snapshot, timer } }
+    var _iframeTextUndoPushed = false; // guard for inline iframe text edits
+
     /* ─── Overlay script injected into iframe ─── */
     function _getOverlayScript() {
         return `(function(){
@@ -458,7 +469,23 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _setupAccordions();
         _setupTemplates();
         _setupLayerSearch();
+        _setupUndoRedo();
         window.addEventListener('message', _handleMessage);
+    }
+
+    /* ─── Undo/Redo toolbar + keyboard shortcuts ─── */
+    function _setupUndoRedo() {
+        _on('#editorUndo', 'click', function () { _undo(); });
+        _on('#editorRedo', 'click', function () { _redo(); });
+        document.addEventListener('keydown', function (e) {
+            if (!_active) return;
+            if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+                if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
+                if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
+                if (e.key === 'y') { e.preventDefault(); _redo(); }
+            }
+        });
+        _updateUndoButtons();
     }
 
     /* ─── Message handler ─── */
@@ -472,9 +499,14 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig });
             }
         }
-        if (d.type === 'arbel-select') { _selectedId = d.id; _showPanel(d); _updateStatus(d); }
-        if (d.type === 'arbel-deselect') { _selectedId = null; _hidePanel(); _updateStatus(null); }
+        if (d.type === 'arbel-select') { _selectedId = d.id; _iframeTextUndoPushed = false; _showPanel(d); _updateStatus(d); }
+        if (d.type === 'arbel-deselect') { _selectedId = null; _iframeTextUndoPushed = false; _hidePanel(); _updateStatus(null); }
         if (d.type === 'arbel-text-update') {
+            // Snapshot BEFORE the first inline text mutation from iframe
+            if (!_iframeTextUndoPushed && !_undoLocked) {
+                _pushUndo();
+                _iframeTextUndoPushed = true;
+            }
             if (!_overrides[d.id]) _overrides[d.id] = {};
             _overrides[d.id].text = d.text;
             if (_onUpdate) _onUpdate(_overrides);
@@ -537,7 +569,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _on('.editor-text-input', 'input', function () {
             if (!_selectedId) return;
             _postIframe('arbel-set-text', { id: _selectedId, text: this.value });
-            _setOv(_selectedId, 'text', this.value);
+            _setOvB(_selectedId, 'text', this.value, 'text');
         });
         _on('#editorFontSelect', 'change', function () {
             if (!_selectedId) return;
@@ -548,35 +580,35 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             } else {
                 _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontFamily', value: '' });
             }
-            _setOv(_selectedId, 'fontFamily', font ? '"' + font + '", sans-serif' : '');
+            _setOvB(_selectedId, 'fontFamily', font ? '"' + font + '", sans-serif' : '', 'style');
         });
-        _on('#editorFontSize', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontSize', value: this.value + 'px' }); _setOv(_selectedId, 'fontSize', this.value + 'px'); } });
-        _on('#editorFontWeight', 'change', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontWeight', value: this.value }); _setOv(_selectedId, 'fontWeight', this.value); } });
-        _on('#editorLineHeight', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'lineHeight', value: this.value }); _setOv(_selectedId, 'lineHeight', this.value); } });
-        _on('#editorLetterSpacing', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'letterSpacing', value: this.value + 'px' }); _setOv(_selectedId, 'letterSpacing', this.value + 'px'); } });
+        _on('#editorFontSize', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontSize', value: this.value + 'px' }); _setOvB(_selectedId, 'fontSize', this.value + 'px', 'style'); } });
+        _on('#editorFontWeight', 'change', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontWeight', value: this.value }); _setOvB(_selectedId, 'fontWeight', this.value, 'style'); } });
+        _on('#editorLineHeight', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'lineHeight', value: this.value }); _setOvB(_selectedId, 'lineHeight', this.value, 'style'); } });
+        _on('#editorLetterSpacing', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'letterSpacing', value: this.value + 'px' }); _setOvB(_selectedId, 'letterSpacing', this.value + 'px', 'style'); } });
         _container.querySelectorAll('.editor-align-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 if (!_selectedId) return;
                 _container.querySelectorAll('.editor-align-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
                 _postIframe('arbel-set-style', { id: _selectedId, prop: 'textAlign', value: btn.getAttribute('data-align') });
-                _setOv(_selectedId, 'textAlign', btn.getAttribute('data-align'));
+                _setOvB(_selectedId, 'textAlign', btn.getAttribute('data-align'), 'style');
             });
         });
-        _on('#editorTextColor', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'color', value: this.value }); _setOv(_selectedId, 'color', this.value); } });
-        _on('#editorBgColor', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'backgroundColor', value: this.value }); _setOv(_selectedId, 'backgroundColor', this.value); } });
+        _on('#editorTextColor', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'color', value: this.value }); _setOvB(_selectedId, 'color', this.value, 'style'); } });
+        _on('#editorBgColor', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'backgroundColor', value: this.value }); _setOvB(_selectedId, 'backgroundColor', this.value, 'style'); } });
         _container.querySelectorAll('.editor-spacing').forEach(function (inp) {
             inp.addEventListener('input', function () {
                 if (!_selectedId) return;
                 var prop = inp.getAttribute('data-prop');
                 _postIframe('arbel-set-style', { id: _selectedId, prop: prop, value: inp.value + 'px' });
-                _setOv(_selectedId, prop, inp.value + 'px');
+                _setOvB(_selectedId, prop, inp.value + 'px', 'style');
             });
         });
-        _on('#editorRadius', 'input', function () { if (_selectedId) { _qs('#editorRadiusVal').textContent = this.value + 'px'; _postIframe('arbel-set-style', { id: _selectedId, prop: 'borderRadius', value: this.value + 'px' }); _setOv(_selectedId, 'borderRadius', this.value + 'px'); } });
-        _on('#editorOpacity', 'input', function () { if (_selectedId) { _qs('#editorOpacityVal').textContent = this.value + '%'; _postIframe('arbel-set-style', { id: _selectedId, prop: 'opacity', value: (this.value / 100).toString() }); _setOv(_selectedId, 'opacity', (this.value / 100).toString()); } });
-        _on('#editorBackdrop', 'change', function () { if (_selectedId) { _postIframe('arbel-set-backdrop', { id: _selectedId, value: this.value }); _setOv(_selectedId, 'backdrop', this.value); } });
-        _on('#editorShadow', 'change', function () { if (_selectedId) { _postIframe('arbel-set-shadow', { id: _selectedId, value: this.value }); _setOv(_selectedId, 'shadow', this.value); } });
+        _on('#editorRadius', 'input', function () { if (_selectedId) { _qs('#editorRadiusVal').textContent = this.value + 'px'; _postIframe('arbel-set-style', { id: _selectedId, prop: 'borderRadius', value: this.value + 'px' }); _setOvB(_selectedId, 'borderRadius', this.value + 'px', 'style'); } });
+        _on('#editorOpacity', 'input', function () { if (_selectedId) { _qs('#editorOpacityVal').textContent = this.value + '%'; _postIframe('arbel-set-style', { id: _selectedId, prop: 'opacity', value: (this.value / 100).toString() }); _setOvB(_selectedId, 'opacity', (this.value / 100).toString(), 'style'); } });
+        _on('#editorBackdrop', 'change', function () { if (_selectedId) { _postIframe('arbel-set-backdrop', { id: _selectedId, value: this.value }); _setOvB(_selectedId, 'backdrop', this.value, 'style'); } });
+        _on('#editorShadow', 'change', function () { if (_selectedId) { _postIframe('arbel-set-shadow', { id: _selectedId, value: this.value }); _setOvB(_selectedId, 'shadow', this.value, 'style'); } });
     }
 
     /* ─── Layer ordering actions ─── */
@@ -591,18 +623,18 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             var cur = (_overrides[_selectedId] && _overrides[_selectedId].visibility) || 'visible';
             var next = cur === 'visible' ? 'hidden' : 'visible';
             _postIframe('arbel-set-visibility', { id: _selectedId, value: next });
-            _setOv(_selectedId, 'visibility', next);
+            _setOvB(_selectedId, 'visibility', next, 'layer');
         });
         _on('#layerToggleLock', 'click', function () {
             if (!_selectedId) return;
             var cur = (_overrides[_selectedId] && _overrides[_selectedId].locked);
-            _setOv(_selectedId, 'locked', !cur);
+            _setOvB(_selectedId, 'locked', !cur, 'layer');
             _postIframe('arbel-set-pointer-events', { id: _selectedId, value: !cur ? 'none' : '' });
         });
         _on('#editorZIndex', 'input', function () {
             if (!_selectedId) return;
             var val = parseInt(this.value);
-            if (!isNaN(val)) { _postIframe('arbel-set-zindex', { id: _selectedId, value: val }); _setOv(_selectedId, 'zIndex', val); }
+            if (!isNaN(val)) { _postIframe('arbel-set-zindex', { id: _selectedId, value: val }); _setOvB(_selectedId, 'zIndex', val, 'layer'); }
         });
         _on('#editorZFront', 'click', function () { _setZIndex(9999); });
         _on('#editorZBack', 'click', function () { _setZIndex(-1); });
@@ -610,7 +642,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _setZIndex(val) {
         if (!_selectedId) return;
         _postIframe('arbel-set-zindex', { id: _selectedId, value: val });
-        _setOv(_selectedId, 'zIndex', val);
+        _setOvB(_selectedId, 'zIndex', val, 'layer');
         var zi = _qs('#editorZIndex'); if (zi) zi.value = val;
     }
     function _adjustZIndex(delta) {
@@ -639,11 +671,11 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 var fmt = btn.getAttribute('data-format');
                 btn.classList.toggle('active');
                 var active = btn.classList.contains('active');
-                if (fmt === 'bold') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontWeight', value: active ? '700' : '' }); _setOv(_selectedId, 'fontWeight', active ? '700' : ''); }
-                if (fmt === 'italic') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontStyle', value: active ? 'italic' : '' }); _setOv(_selectedId, 'fontStyle', active ? 'italic' : ''); }
-                if (fmt === 'underline') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'textDecoration', value: active ? 'underline' : '' }); _setOv(_selectedId, 'textDecoration', active ? 'underline' : ''); }
-                if (fmt === 'strikethrough') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'textDecoration', value: active ? 'line-through' : '' }); _setOv(_selectedId, 'textDecoration', active ? 'line-through' : ''); }
-                if (fmt === 'uppercase') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'textTransform', value: active ? 'uppercase' : '' }); _setOv(_selectedId, 'textTransform', active ? 'uppercase' : ''); }
+                if (fmt === 'bold') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontWeight', value: active ? '700' : '' }); _setOvB(_selectedId, 'fontWeight', active ? '700' : '', 'format'); }
+                if (fmt === 'italic') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'fontStyle', value: active ? 'italic' : '' }); _setOvB(_selectedId, 'fontStyle', active ? 'italic' : '', 'format'); }
+                if (fmt === 'underline') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'textDecoration', value: active ? 'underline' : '' }); _setOvB(_selectedId, 'textDecoration', active ? 'underline' : '', 'format'); }
+                if (fmt === 'strikethrough') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'textDecoration', value: active ? 'line-through' : '' }); _setOvB(_selectedId, 'textDecoration', active ? 'line-through' : '', 'format'); }
+                if (fmt === 'uppercase') { _postIframe('arbel-set-style', { id: _selectedId, prop: 'textTransform', value: active ? 'uppercase' : '' }); _setOvB(_selectedId, 'textTransform', active ? 'uppercase' : '', 'format'); }
             });
         });
     }
@@ -656,7 +688,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             var w = _qs('#editorBorderWidth'), s = _qs('#editorBorderStyle'), c = _qs('#editorBorderColor');
             var val = (w ? w.value : '0') + 'px ' + (s ? s.value : 'none') + ' ' + (c ? c.value : '#646cff');
             _postIframe('arbel-set-style', { id: _selectedId, prop: 'border', value: val });
-            _setOv(_selectedId, 'border', val);
+            _setOvB(_selectedId, 'border', val, 'border');
         }
         _on('#editorBorderWidth', 'input', applyBorder);
         _on('#editorBorderStyle', 'change', applyBorder);
@@ -670,7 +702,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             if (!_selectedId) return;
             _qs('#editorRotateVal').textContent = this.value + '\u00B0';
             _postIframe('arbel-set-style', { id: _selectedId, prop: 'transform', value: 'rotate(' + this.value + 'deg)' });
-            _setOv(_selectedId, 'transform', 'rotate(' + this.value + 'deg)');
+            _setOvB(_selectedId, 'transform', 'rotate(' + this.value + 'deg)', 'transform');
         });
     }
 
@@ -681,12 +713,12 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             if (!_selectedId) return;
             var url = _qs('#editorLinkUrl'); if (!url || !url.value) return;
             _postIframe('arbel-set-link', { id: _selectedId, href: url.value });
-            _setOv(_selectedId, 'href', url.value);
+            _setOvB(_selectedId, 'href', url.value, 'link');
         });
         _on('#editorLinkRemove', 'click', function () {
             if (!_selectedId) return;
             _postIframe('arbel-remove-link', { id: _selectedId });
-            _setOv(_selectedId, 'href', '');
+            _setOvB(_selectedId, 'href', '', 'link');
             var url = _qs('#editorLinkUrl'); if (url) url.value = '';
         });
     }
@@ -704,7 +736,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             if (bl && bl.value !== '0') parts.push('blur(' + bl.value + 'px)');
             var val = parts.length ? parts.join(' ') : 'none';
             _postIframe('arbel-set-filter', { id: _selectedId, value: val });
-            _setOv(_selectedId, 'filter', val);
+            _setOvB(_selectedId, 'filter', val, 'filter');
         }
         _on('#editorFilterBrightness', 'input', function () { _qs('#editorFilterBrightnessVal').textContent = this.value + '%'; applyFilters(); });
         _on('#editorFilterContrast', 'input', function () { _qs('#editorFilterContrastVal').textContent = this.value + '%'; applyFilters(); });
@@ -713,17 +745,17 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _on('#editorObjectFit', 'change', function () {
             if (!_selectedId) return;
             _postIframe('arbel-set-style', { id: _selectedId, prop: 'objectFit', value: this.value });
-            _setOv(_selectedId, 'objectFit', this.value);
+            _setOvB(_selectedId, 'objectFit', this.value, 'style');
         });
     }
 
     /* ─── Animation listeners ─── */
     function _setupAnimationListeners() {
         if (!_container) return;
-        _on('.editor-anim-select', 'change', function () { if (_selectedId) { _postIframe('arbel-set-animation', { id: _selectedId, animation: this.value }); _setOv(_selectedId, 'animation', this.value); } });
+        _on('.editor-anim-select', 'change', function () { if (_selectedId) { _postIframe('arbel-set-animation', { id: _selectedId, animation: this.value }); _setOvB(_selectedId, 'animation', this.value, 'anim'); } });
         _on('.editor-preview-anim', 'click', function () { if (_selectedId) { var sel = _qs('.editor-anim-select'); _postIframe('arbel-preview-animation', { id: _selectedId, animation: sel ? sel.value : 'none' }); } });
-        _on('#editorContinuous', 'change', function () { if (_selectedId) { _postIframe('arbel-set-continuous', { id: _selectedId, animation: this.value }); _setOv(_selectedId, 'continuous', this.value); } });
-        _on('.editor-hover-select', 'change', function () { if (_selectedId) { _postIframe('arbel-set-hover', { id: _selectedId, hover: this.value }); _setOv(_selectedId, 'hover', this.value); } });
+        _on('#editorContinuous', 'change', function () { if (_selectedId) { _postIframe('arbel-set-continuous', { id: _selectedId, animation: this.value }); _setOvB(_selectedId, 'continuous', this.value, 'anim'); } });
+        _on('.editor-hover-select', 'change', function () { if (_selectedId) { _postIframe('arbel-set-hover', { id: _selectedId, hover: this.value }); _setOvB(_selectedId, 'hover', this.value, 'anim'); } });
     }
 
     /* ─── Effect listeners ─── */
@@ -754,7 +786,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             color1: c1 ? _hexToRgb(c1.value) : '100,108,255',
             color2: c2 ? _hexToRgb(c2.value) : '11,218,81'
         });
-        _setOv(targetId, 'effect', effect);
+        _setOvB(targetId, 'effect', effect, 'effect');
         _updateEffectPreview();
     }
 
@@ -1210,6 +1242,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             if (!_selectedId || !_iframe) return;
             var cfg = getCfg();
             _postIframe('arbel-set-effect', { id: _selectedId, effect: cfg.type, intensity: cfg.count, color1: _hexToRgb(cfg.color1), color2: _hexToRgb(cfg.color2), color3: _hexToRgb(cfg.color3), size: cfg.size, speed: cfg.speed, glow: cfg.glow, connect: cfg.connect, interact: cfg.interact });
+            _pushUndo();
             _setOv(_selectedId, 'effect', cfg.type); _setOv(_selectedId, 'effectConfig', cfg);
         });
         _on('#pbuilderGlobal', 'click', function () {
@@ -1219,6 +1252,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 var firstId = tree.children[0].getAttribute('data-tree-id');
                 if (firstId) {
                     _postIframe('arbel-set-effect', { id: firstId, effect: cfg.type, intensity: cfg.count, color1: _hexToRgb(cfg.color1), color2: _hexToRgb(cfg.color2), color3: _hexToRgb(cfg.color3), size: cfg.size, speed: cfg.speed, glow: cfg.glow, connect: cfg.connect, interact: cfg.interact });
+                    _pushUndo();
                     _setOv(firstId, 'effect', cfg.type); _setOv(firstId, 'effectConfig', cfg);
                 }
             }
@@ -1301,6 +1335,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             var pg = { id: id, name: name, path: path, isHome: false, showInNav: showNav };
             if (seoTitle) pg.seoTitle = seoTitle;
             if (seoDesc) pg.seoDesc = seoDesc;
+            _pushUndo();
             _pages.push(pg);
             _currentPage = id;
             _updatePageSelect();
@@ -1317,6 +1352,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         for (var i = 0; i < _pages.length; i++) { if (_pages[i].id === sel.value) { page = _pages[i]; break; } }
         if (!page || page.isHome) { alert('Cannot delete the home page.'); return; }
         if (!confirm('Delete "' + page.name + '"?')) return;
+        _pushUndo();
         _pages = _pages.filter(function (p) { return p.id !== page.id; });
         _currentPage = 'home';
         _updatePageSelect();
@@ -1365,6 +1401,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 pathIn.reportValidity();
                 return;
             }
+            _pushUndo();
             page.name = newName;
             page.path = newPath;
             page._pathCustomized = true;
@@ -1424,6 +1461,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                     committed = true;
                     var v = input.value.trim();
                     if (v && v !== page.name) {
+                        _pushUndo();
                         page.name = v;
                         /* Update path only if user hasn't customised it via settings */
                         if (!page.isHome && !page._pathCustomized) {
@@ -1618,7 +1656,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 var cur = (_overrides[item.id] && _overrides[item.id].visibility) || 'visible';
                 var next = cur === 'visible' ? 'hidden' : 'visible';
                 _postIframe('arbel-set-visibility', { id: item.id, value: next });
-                _setOv(item.id, 'visibility', next);
+                _setOvB(item.id, 'visibility', next, 'layer');
                 this.innerHTML = next === 'visible' ? '&#128065;' : '&#128683;';
                 this.classList.toggle('is-hidden', next === 'hidden');
             });
@@ -1626,7 +1664,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             div.querySelector('.tree-lock-btn').addEventListener('click', function (e) {
                 e.stopPropagation();
                 var cur = (_overrides[item.id] && _overrides[item.id].locked);
-                _setOv(item.id, 'locked', !cur);
+                _setOvB(item.id, 'locked', !cur, 'layer');
                 _postIframe('arbel-set-pointer-events', { id: item.id, value: !cur ? 'none' : '' });
                 this.innerHTML = !cur ? '&#128274;' : '&#128275;';
                 this.classList.toggle('is-locked', !cur);
@@ -1665,6 +1703,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 var newTarget = targetIdx > dragIdx ? targetIdx - 1 : targetIdx;
                 arr.splice(newTarget, 0, dragged);
                 // Assign sequential z-index: top of list = highest
+                _pushUndo();
                 var total = arr.length;
                 arr.forEach(function (it, i) {
                     var newZ = total - i;
@@ -2201,6 +2240,108 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _on(sel, evt, fn) { var el = typeof sel === 'string' ? _qs(sel) : sel; if (el) el.addEventListener(evt, fn); }
     function _postIframe(type, data) { if (_iframe && _iframe.contentWindow) { data.type = type; _iframe.contentWindow.postMessage(data, '*'); } }
     function _setOv(id, k, v) { if (!_overrides[id]) _overrides[id] = {}; _overrides[id][k] = v; if (_onUpdate) _onUpdate(_overrides); }
+    /** _setOv + auto burst snapshot in one call. Category determines debounce grouping. */
+    function _setOvB(id, k, v, category) {
+        _beginBurst(category);
+        _setOv(id, k, v);
+        _commitBurst(category);
+    }
+
+    /* ─── Undo / Redo engine ─── */
+    function _snapshotState() {
+        return {
+            overrides: JSON.parse(JSON.stringify(_overrides)),
+            pages: JSON.parse(JSON.stringify(_pages)),
+            videoConfig: JSON.parse(JSON.stringify(_videoConfig))
+        };
+    }
+    function _stateEqual(a, b) {
+        if (!a || !b) return false;
+        return JSON.stringify(a.overrides) === JSON.stringify(b.overrides) &&
+               JSON.stringify(a.pages) === JSON.stringify(b.pages) &&
+               JSON.stringify(a.videoConfig) === JSON.stringify(b.videoConfig);
+    }
+    function _pushUndo() {
+        if (_undoLocked) return;
+        var snap = _snapshotState();
+        if (_undoStack.length > 0 && _stateEqual(snap, _undoStack[_undoStack.length - 1])) return;
+        _undoStack.push(snap);
+        if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
+        _redoStack = [];
+        _updateUndoButtons();
+    }
+    function _commitSnapshot(snapshot) {
+        if (_undoLocked) return;
+        if (JSON.stringify(snapshot.overrides) === JSON.stringify(_overrides) &&
+            JSON.stringify(snapshot.pages) === JSON.stringify(_pages) &&
+            JSON.stringify(snapshot.videoConfig) === JSON.stringify(_videoConfig)) return;
+        _undoStack.push(snapshot);
+        if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
+        _redoStack = [];
+        _updateUndoButtons();
+    }
+    function _beginBurst(category) {
+        if (_undoLocked) return;
+        if (!_burstSnapshots[category]) {
+            _burstSnapshots[category] = { snapshot: _snapshotState(), timer: null };
+        }
+    }
+    function _commitBurst(category, delay) {
+        if (_undoLocked) return;
+        var entry = _burstSnapshots[category];
+        if (!entry) return;
+        clearTimeout(entry.timer);
+        entry.timer = setTimeout(function () {
+            if (_burstSnapshots[category]) {
+                _commitSnapshot(_burstSnapshots[category].snapshot);
+                delete _burstSnapshots[category];
+            }
+        }, delay || 600);
+    }
+    function _flushBursts() {
+        Object.keys(_burstSnapshots).forEach(function (cat) {
+            clearTimeout(_burstSnapshots[cat].timer);
+            _commitSnapshot(_burstSnapshots[cat].snapshot);
+        });
+        _burstSnapshots = {};
+    }
+    function _undo() {
+        if (_undoStack.length === 0) return;
+        _flushBursts();
+        _redoStack.push(_snapshotState());
+        _undoLocked = true;
+        var state = _undoStack.pop();
+        _overrides = state.overrides;
+        _pages = state.pages;
+        _videoConfig = state.videoConfig;
+        _undoLocked = false;
+        // Notify parent to recompile
+        if (_onUpdate) _onUpdate(_overrides);
+        _updatePageSelect();
+        _renderPageList();
+        _updateUndoButtons();
+    }
+    function _redo() {
+        if (_redoStack.length === 0) return;
+        _flushBursts();
+        _undoStack.push(_snapshotState());
+        _undoLocked = true;
+        var state = _redoStack.pop();
+        _overrides = state.overrides;
+        _pages = state.pages;
+        _videoConfig = state.videoConfig;
+        _undoLocked = false;
+        if (_onUpdate) _onUpdate(_overrides);
+        _updatePageSelect();
+        _renderPageList();
+        _updateUndoButtons();
+    }
+    function _updateUndoButtons() {
+        var undoBtn = _qs('#editorUndo');
+        var redoBtn = _qs('#editorRedo');
+        if (undoBtn) undoBtn.disabled = _undoStack.length === 0;
+        if (redoBtn) redoBtn.disabled = _redoStack.length === 0;
+    }
     function _hexToRgb(hex) { return parseInt(hex.slice(1, 3), 16) + ',' + parseInt(hex.slice(3, 5), 16) + ',' + parseInt(hex.slice(5, 7), 16); }
     function _rgbToHex(rgb) {
         if (!rgb || rgb.charAt(0) === '#') return rgb || '#000000';
