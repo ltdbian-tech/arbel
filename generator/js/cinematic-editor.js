@@ -29,6 +29,7 @@ window.ArbelCinematicEditor = (function () {
     var _MAX_UNDO = 40;
     var _undoLocked = false;     // suppress snapshots during undo/redo apply
     var _dragUndoPushed = false; // guard: snapshot only on first drag move
+    var _resizeUndoPushed = false; // guard: snapshot only on first resize move
 
     /* Per-category pending snapshots for debounced edits.
        Each category (e.g. 'text', 'style', 'imgSrc', 'scene') gets its own
@@ -104,6 +105,38 @@ window.ArbelCinematicEditor = (function () {
         }
         if (d.type === 'arbel-move-end') {
             _dragUndoPushed = false;
+        }
+        if (d.type === 'arbel-resize-start') {
+            if (!_resizeUndoPushed) {
+                _pushUndo();
+                _resizeUndoPushed = true;
+            }
+        }
+        if (d.type === 'arbel-resize' && d.id) {
+            var scene = _scenes[_currentSceneIdx];
+            if (scene) {
+                for (var i = 0; i < scene.elements.length; i++) {
+                    if (scene.elements[i].id === d.id) {
+                        scene.elements[i].style.width = d.width;
+                        scene.elements[i].style.height = d.height;
+                        scene.elements[i].style.top = d.top;
+                        scene.elements[i].style.left = d.left;
+                        break;
+                    }
+                }
+            }
+            var posW = _qs('#cnePosWidth');
+            var posH = _qs('#cnePosHeight');
+            var posT = _qs('#cnePosTop');
+            var posL = _qs('#cnePosLeft');
+            if (posW) posW.value = d.width;
+            if (posH) posH.value = d.height;
+            if (posT) posT.value = d.top;
+            if (posL) posL.value = d.left;
+            _notifyUpdate();
+        }
+        if (d.type === 'arbel-resize-end') {
+            _resizeUndoPushed = false;
         }
         if (d.type === 'arbel-deselect') {
             _iframeTextUndoPushed = false; // reset on deselect
@@ -1856,7 +1889,7 @@ window.ArbelCinematicEditor = (function () {
     /* ─── Overlay script injected into cinematic iframe ─── */
     function _getOverlayScript() {
         return '(function(){' +
-        'var selected=null,editing=false,drag=null;' +
+        'var selected=null,editing=false,drag=null,resize=null;' +
         'var s=document.createElement("style");' +
         's.textContent="' +
           '[data-arbel-id]{cursor:pointer;transition:outline .15s,outline-offset .15s}' +
@@ -1870,9 +1903,41 @@ window.ArbelCinematicEditor = (function () {
           '.arbel-pos-lbl{position:fixed;bottom:8px;right:8px;z-index:99999;background:rgba(0,0,0,.75);color:#fff;' +
           'font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;' +
           'opacity:0;transition:opacity .15s}.arbel-pos-lbl.vis{opacity:1}' +
+          '.arbel-rh{position:fixed;width:8px;height:8px;background:#646cff;border:1px solid #fff;' +
+          'border-radius:1px;z-index:100000;display:none;box-sizing:border-box}' +
+          '.arbel-rh-nw{cursor:nw-resize}.arbel-rh-n{cursor:n-resize}.arbel-rh-ne{cursor:ne-resize}' +
+          '.arbel-rh-w{cursor:w-resize}.arbel-rh-e{cursor:e-resize}' +
+          '.arbel-rh-sw{cursor:sw-resize}.arbel-rh-s{cursor:s-resize}.arbel-rh-se{cursor:se-resize}' +
         '";document.head.appendChild(s);' +
         'var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);' +
         'var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";document.body.appendChild(posLbl);' +
+
+        /* ── Resize handles ── */
+        'var rHandles=[];' +
+        '["nw","n","ne","w","e","sw","s","se"].forEach(function(p){' +
+          'var h=document.createElement("div");h.className="arbel-rh arbel-rh-"+p;' +
+          'h.setAttribute("data-rh",p);document.body.appendChild(h);rHandles.push(h);' +
+        '});' +
+        'function posHandles(el){' +
+          'if(!el){rHandles.forEach(function(h){h.style.display="none"});return}' +
+          'var r=el.getBoundingClientRect(),hs=4;' +
+          'rHandles.forEach(function(h){' +
+            'var p=h.getAttribute("data-rh"),t,l;' +
+            'if(p.indexOf("n")>=0)t=r.top-hs;else if(p.indexOf("s")>=0)t=r.bottom-hs;else t=r.top+r.height/2-hs;' +
+            'if(p.indexOf("w")>=0)l=r.left-hs;else if(p.indexOf("e")>=0)l=r.right-hs;else l=r.left+r.width/2-hs;' +
+            'h.style.top=t+"px";h.style.left=l+"px";h.style.display="";' +
+          '});' +
+        '}' +
+        'rHandles.forEach(function(h){' +
+          'h.addEventListener("mousedown",function(e){' +
+            'if(!selected||editing)return;e.stopPropagation();e.preventDefault();' +
+            'resize={el:selected,handle:h.getAttribute("data-rh"),' +
+              'startX:e.clientX,startY:e.clientY,' +
+              'origW:selected.offsetWidth,origH:selected.offsetHeight,' +
+              'origT:selected.offsetTop,origL:selected.offsetLeft};' +
+            'window.parent.postMessage({type:"arbel-resize-start"},"*");' +
+          '});' +
+        '});' +
 
         /* ── Click → select ── */
         'document.addEventListener("click",function(e){' +
@@ -1890,7 +1955,7 @@ window.ArbelCinematicEditor = (function () {
 
         /* ── Mousedown → start drag ── */
         'document.addEventListener("mousedown",function(e){' +
-          'if(editing)return;' +
+          'if(editing||resize)return;' +
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(!el||e.button!==0)return;' +
           'var r=el.getBoundingClientRect();' +
@@ -1899,13 +1964,29 @@ window.ArbelCinematicEditor = (function () {
           'e.preventDefault();' +
         '},true);' +
 
-        /* ── Mousemove → drag element ── */
+        /* ── Mousemove → drag element or resize ── */
         'document.addEventListener("mousemove",function(e){' +
+          'if(resize){' +
+            'var dx=e.clientX-resize.startX,dy=e.clientY-resize.startY;' +
+            'var h=resize.handle,nw=resize.origW,nh=resize.origH,nt=resize.origT,nl=resize.origL;' +
+            'if(h.indexOf("e")>=0)nw=Math.max(20,resize.origW+dx);' +
+            'if(h.indexOf("w")>=0){nw=Math.max(20,resize.origW-dx);nl=resize.origL+dx;}' +
+            'if(h.indexOf("s")>=0)nh=Math.max(20,resize.origH+dy);' +
+            'if(h.indexOf("n")>=0){nh=Math.max(20,resize.origH-dy);nt=resize.origT+dy;}' +
+            'resize.el.style.width=nw+"px";resize.el.style.height=nh+"px";' +
+            'resize.el.style.top=nt+"px";resize.el.style.left=nl+"px";' +
+            'posHandles(resize.el);' +
+            'posLbl.textContent=nw+" \u00D7 "+nh;posLbl.classList.add("vis");' +
+            'window.parent.postMessage({type:"arbel-resize",' +
+              'id:resize.el.getAttribute("data-arbel-id"),' +
+              'width:nw+"px",height:nh+"px",top:nt+"px",left:nl+"px"},"*");' +
+            'return;' +
+          '}' +
           'if(!drag)return;' +
           'var dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;' +
           'if(!drag.moved&&Math.abs(dx)+Math.abs(dy)<4)return;' +
           'drag.moved=true;' +
-          'drag.el.classList.add("arbel-dragging");' +
+          'drag.el.classList.add("arbel-dragging");posHandles(null);' +
           'var nt=drag.origTop+dy,nl=drag.origLeft+dx;' +
           'drag.el.style.top=nt+"px";drag.el.style.left=nl+"px";' +
           'posLbl.textContent="top: "+nt+"px  left: "+nl+"px";posLbl.classList.add("vis");' +
@@ -1914,14 +1995,20 @@ window.ArbelCinematicEditor = (function () {
             'top:nt+"px",left:nl+"px"},"*");' +
         '});' +
 
-        /* ── Mouseup → end drag ── */
+        /* ── Mouseup → end drag or resize ── */
         'document.addEventListener("mouseup",function(e){' +
+          'if(resize){' +
+            'posLbl.classList.remove("vis");' +
+            'window.parent.postMessage({type:"arbel-resize-end",id:resize.el.getAttribute("data-arbel-id")},"*");' +
+            'resize=null;return;' +
+          '}' +
           'if(!drag)return;' +
           'var wasDrag=drag.moved;' +
           'drag.el.classList.remove("arbel-dragging");' +
           'posLbl.classList.remove("vis");' +
           'if(wasDrag){' +
             'if(!selected||selected!==drag.el)sel(drag.el);' +
+            'posHandles(drag.el);' +
             'window.parent.postMessage({type:"arbel-move-end"},"*");' +
           '}' +
           'drag=null;' +
@@ -1937,7 +2024,7 @@ window.ArbelCinematicEditor = (function () {
 
         /* ── Selection helpers ── */
         'function sel(el){' +
-          'desel();selected=el;el.classList.add("arbel-sel");' +
+          'desel();selected=el;el.classList.add("arbel-sel");posHandles(el);' +
           'window.parent.postMessage({type:"arbel-select",id:el.getAttribute("data-arbel-id"),' +
             'tag:el.tagName.toLowerCase(),' +
             'text:el.getAttribute("data-arbel-edit")==="text"?el.textContent:null,' +
@@ -1946,6 +2033,7 @@ window.ArbelCinematicEditor = (function () {
         'function desel(){' +
           'if(editing)stopEdit();' +
           'if(selected){selected.classList.remove("arbel-sel");selected=null}' +
+          'posHandles(null);' +
           'window.parent.postMessage({type:"arbel-deselect"},"*");' +
         '}' +
 
@@ -1971,9 +2059,12 @@ window.ArbelCinematicEditor = (function () {
           'var d;try{d=typeof e.data==="string"?JSON.parse(e.data):e.data}catch(x){return}' +
           'if(!d||!d.type)return;' +
           'if(d.type==="arbel-select-by-id"){var el=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el){el.scrollIntoView({behavior:"smooth",block:"center"});sel(el)}}' +
-          'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2)el2.style[d.prop]=d.value}' +
+          'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2){el2.style[d.prop]=d.value;if(selected===el2)posHandles(el2)}}' +
           'if(d.type==="arbel-update-text"){var el3=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el3)el3.textContent=d.text}' +
         '});' +
+        /* ── Reposition handles on scroll ── */
+        'window.addEventListener("scroll",function(){if(selected&&!resize)posHandles(selected)},true);' +
+        'window.addEventListener("resize",function(){if(selected)posHandles(selected)});' +
         '})();';
     }
 
