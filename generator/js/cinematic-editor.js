@@ -22,6 +22,7 @@ window.ArbelCinematicEditor = (function () {
     var _dragState = null;
     var _timelineOpen = false;
     var _uiBound = false;          // guard against duplicate listener binding
+    var _clipboard = null;           // copy/paste: deep-cloned element object
 
     /* ─── Undo / Redo ─── */
     var _undoStack = [];
@@ -1351,16 +1352,22 @@ window.ArbelCinematicEditor = (function () {
         if (exportBtn) exportBtn.addEventListener('click', function () { _exportJSON(); });
         if (importBtn) importBtn.addEventListener('click', function () { _importJSON(); });
 
-        // Keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z)
+        // Keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z / Ctrl+C / Ctrl+V / Ctrl+D)
         document.addEventListener('keydown', function (e) {
             if (!_active) return;
+            var tag = document.activeElement.tagName;
+            var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
             if ((e.ctrlKey || e.metaKey) && !e.altKey) {
                 if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
                 if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
                 if (e.key === 'y') { e.preventDefault(); _redo(); }
+                if (e.key === 'c' && !inInput && _selectedElementId) { e.preventDefault(); _copyElement(); }
+                if (e.key === 'v' && !inInput && _clipboard) { e.preventDefault(); _pasteElement(); }
+                if (e.key === 'd' && _selectedElementId) { e.preventDefault(); _duplicateElement(); }
             }
             // Delete key deletes selected element (only when not editing text)
-            if (e.key === 'Delete' && _selectedElementId && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && _selectedElementId && !inInput) {
+                e.preventDefault();
                 _deleteSelectedElement();
             }
         });
@@ -1487,6 +1494,57 @@ window.ArbelCinematicEditor = (function () {
         _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
         _commitBurst('style', 600);
         _notifyUpdate();
+    }
+
+    /* ─── Copy / Paste / Duplicate ─── */
+    function _copyElement() {
+        var el = _getSelectedElement();
+        if (!el) return;
+        _clipboard = JSON.parse(JSON.stringify(el));
+    }
+
+    function _pasteElement() {
+        if (!_clipboard) return;
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) return;
+        _pushUndo();
+        var clone = JSON.parse(JSON.stringify(_clipboard));
+        clone.id = clone.tag + '-' + Date.now().toString(36);
+        // Offset position so pasted element is visually distinct
+        if (clone.style) {
+            var t = parseInt(clone.style.top) || 0;
+            var l = parseInt(clone.style.left) || 0;
+            clone.style.top = (t + 20) + (clone.style.top && clone.style.top.indexOf('%') >= 0 ? '%' : 'px');
+            clone.style.left = (l + 20) + (clone.style.left && clone.style.left.indexOf('%') >= 0 ? '%' : 'px');
+        }
+        scene.elements.push(clone);
+        _selectedElementId = clone.id;
+        _renderElementList();
+        _updatePropertiesFromScene(clone);
+        _notifyUpdate(true);
+    }
+
+    function _duplicateElement() {
+        var el = _getSelectedElement();
+        if (!el) return;
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) return;
+        _pushUndo();
+        var clone = JSON.parse(JSON.stringify(el));
+        clone.id = el.tag + '-' + Date.now().toString(36);
+        if (clone.style) {
+            var t = parseInt(clone.style.top) || 0;
+            var l = parseInt(clone.style.left) || 0;
+            clone.style.top = (t + 20) + (clone.style.top && clone.style.top.indexOf('%') >= 0 ? '%' : 'px');
+            clone.style.left = (l + 20) + (clone.style.left && clone.style.left.indexOf('%') >= 0 ? '%' : 'px');
+        }
+        var idx = scene.elements.indexOf(el);
+        if (idx >= 0) scene.elements.splice(idx + 1, 0, clone);
+        else scene.elements.push(clone);
+        _selectedElementId = clone.id;
+        _renderElementList();
+        _updatePropertiesFromScene(clone);
+        _notifyUpdate(true);
     }
 
     function _deleteSelectedElement() {

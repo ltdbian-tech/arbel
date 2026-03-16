@@ -32,6 +32,7 @@ window.ArbelEditor = (function () {
     var _burstSnapshots = {};   // { category: { snapshot, timer } }
     var _iframeTextUndoPushed = false; // guard for inline iframe text edits
     var _resizeUndoPushed = false; // guard for iframe resize
+    var _clipboard = null;           // copy/paste styles: { overrides, tag }
 
     /* ─── Overlay script injected into iframe ─── */
     function _getOverlayScript() {
@@ -533,16 +534,56 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         window.addEventListener('message', _handleMessage);
     }
 
+    /* ─── Copy / Paste Styles ─── */
+    function _copyStyles() {
+        if (!_selectedId || !_overrides[_selectedId]) return;
+        _clipboard = {
+            overrides: JSON.parse(JSON.stringify(_overrides[_selectedId])),
+            sourceId: _selectedId
+        };
+    }
+
+    function _pasteStyles() {
+        if (!_clipboard || !_selectedId) return;
+        _pushUndo();
+        if (!_overrides[_selectedId]) _overrides[_selectedId] = {};
+        var src = _clipboard.overrides;
+        // Copy style properties, skip text (user can paste text separately)
+        var styleKeys = ['fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','textAlign',
+            'color','backgroundColor','borderRadius','borderWidth','borderStyle','borderColor',
+            'opacity','shadow','backdrop','filter','fontStyle','textDecoration',
+            'animation','continuous','hover','width','height'];
+        for (var i = 0; i < styleKeys.length; i++) {
+            var k = styleKeys[i];
+            if (src[k] !== undefined) {
+                _overrides[_selectedId][k] = src[k];
+                // Also push to iframe live
+                _postIframe('arbel-set-style', { id: _selectedId, prop: k, value: src[k] });
+            }
+        }
+        if (_onUpdate) _onUpdate(_overrides);
+    }
+
+    function _duplicateStyles() {
+        // Duplicate = copy current + immediately available for paste
+        _copyStyles();
+    }
+
     /* ─── Undo/Redo toolbar + keyboard shortcuts ─── */
     function _setupUndoRedo() {
         _on('#editorUndo', 'click', function () { _undo(); });
         _on('#editorRedo', 'click', function () { _redo(); });
         document.addEventListener('keydown', function (e) {
             if (!_active) return;
+            var tag = document.activeElement.tagName;
+            var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
             if ((e.ctrlKey || e.metaKey) && !e.altKey) {
                 if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
                 if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
                 if (e.key === 'y') { e.preventDefault(); _redo(); }
+                if (e.key === 'c' && !inInput && _selectedId) { e.preventDefault(); _copyStyles(); }
+                if (e.key === 'v' && !inInput && _clipboard) { e.preventDefault(); _pasteStyles(); }
+                if (e.key === 'd' && _selectedId) { e.preventDefault(); _duplicateStyles(); }
             }
         });
         _updateUndoButtons();
