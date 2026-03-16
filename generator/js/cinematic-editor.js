@@ -2086,6 +2086,8 @@ window.ArbelCinematicEditor = (function () {
           '.arbel-rh-nw{cursor:nw-resize}.arbel-rh-n{cursor:n-resize}.arbel-rh-ne{cursor:ne-resize}' +
           '.arbel-rh-w{cursor:w-resize}.arbel-rh-e{cursor:e-resize}' +
           '.arbel-rh-sw{cursor:sw-resize}.arbel-rh-s{cursor:s-resize}.arbel-rh-se{cursor:se-resize}' +
+          '.arbel-snap{position:fixed;background:#ff6b35;z-index:99998;pointer-events:none;display:none}' +
+          '.arbel-snap-h{height:1px;left:0;right:0}.arbel-snap-v{width:1px;top:0;bottom:0}' +
         '";document.head.appendChild(s);' +
         'var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);' +
         'var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";document.body.appendChild(posLbl);' +
@@ -2131,6 +2133,40 @@ window.ArbelCinematicEditor = (function () {
           'if(!el)return;e.preventDefault();startEdit(el);' +
         '},true);' +
 
+        /* ── Snap guides ── */
+        'var snapH=document.createElement("div");snapH.className="arbel-snap arbel-snap-h";document.body.appendChild(snapH);' +
+        'var snapV=document.createElement("div");snapV.className="arbel-snap arbel-snap-v";document.body.appendChild(snapV);' +
+        'var SNAP_DIST=6;' +
+        'function computeSnap(el,newT,newL){' +
+          'var w=el.offsetWidth,h=el.offsetHeight;' +
+          'var pr=el.offsetParent?el.offsetParent.getBoundingClientRect():{top:0,left:0};' +
+          'var vt=newT+pr.top,vl=newL+pr.left;' +
+          'var edges={top:vt,mid:vt+h/2,bot:vt+h,left:vl,ctr:vl+w/2,right:vl+w};' +
+          'var targets=[];' +
+          'document.querySelectorAll("[data-arbel-id]").forEach(function(o){' +
+            'if(o===el)return;var r=o.getBoundingClientRect();' +
+            'targets.push({t:r.top,m:r.top+r.height/2,b:r.top+r.height,l:r.left,c:r.left+r.width/2,r:r.left+r.width});' +
+          '});' +
+          'var vw=window.innerWidth,vh=window.innerHeight;' +
+          'targets.push({t:vh/2,m:vh/2,b:vh/2,l:vw/2,c:vw/2,r:vw/2});' +
+          'var sh=null,sv=null,sny=newT,snx=newL;' +
+          'var bestDy=SNAP_DIST+1,bestDx=SNAP_DIST+1;' +
+          'for(var i=0;i<targets.length;i++){var o=targets[i];' +
+            'var pairs=[[edges.top,o.t],[edges.top,o.m],[edges.top,o.b],[edges.mid,o.t],[edges.mid,o.m],[edges.mid,o.b],[edges.bot,o.t],[edges.bot,o.m],[edges.bot,o.b]];' +
+            'for(var j=0;j<pairs.length;j++){var dy=Math.abs(pairs[j][0]-pairs[j][1]);' +
+              'if(dy<bestDy){bestDy=dy;sh=pairs[j][1];sny=newT+(pairs[j][1]-pairs[j][0]);}' +
+            '}' +
+            'var pairsX=[[edges.left,o.l],[edges.left,o.c],[edges.left,o.r],[edges.ctr,o.l],[edges.ctr,o.c],[edges.ctr,o.r],[edges.right,o.l],[edges.right,o.c],[edges.right,o.r]];' +
+            'for(var k=0;k<pairsX.length;k++){var dx=Math.abs(pairsX[k][0]-pairsX[k][1]);' +
+              'if(dx<bestDx){bestDx=dx;sv=pairsX[k][1];snx=newL+(pairsX[k][1]-pairsX[k][0]);}' +
+            '}' +
+          '}' +
+          'if(bestDy<=SNAP_DIST){snapH.style.top=sh+"px";snapH.style.display="";}else{snapH.style.display="none";}' +
+          'if(bestDx<=SNAP_DIST){snapV.style.left=sv+"px";snapV.style.display="";}else{snapV.style.display="none";}' +
+          'return{top:bestDy<=SNAP_DIST?sny:newT,left:bestDx<=SNAP_DIST?snx:newL};' +
+        '}' +
+        'function hideSnap(){snapH.style.display="none";snapV.style.display="none";}' +
+
         /* ── Mousedown → start drag ── */
         'document.addEventListener("mousedown",function(e){' +
           'if(editing||resize)return;' +
@@ -2166,6 +2202,7 @@ window.ArbelCinematicEditor = (function () {
           'drag.moved=true;' +
           'drag.el.classList.add("arbel-dragging");posHandles(null);' +
           'var nt=drag.origTop+dy,nl=drag.origLeft+dx;' +
+          'var sn=computeSnap(drag.el,nt,nl);nt=sn.top;nl=sn.left;' +
           'drag.el.style.top=nt+"px";drag.el.style.left=nl+"px";' +
           'posLbl.textContent="top: "+nt+"px  left: "+nl+"px";posLbl.classList.add("vis");' +
           'window.parent.postMessage({type:"arbel-move",' +
@@ -2176,14 +2213,14 @@ window.ArbelCinematicEditor = (function () {
         /* ── Mouseup → end drag or resize ── */
         'document.addEventListener("mouseup",function(e){' +
           'if(resize){' +
-            'posLbl.classList.remove("vis");' +
+            'posLbl.classList.remove("vis");hideSnap();' +
             'window.parent.postMessage({type:"arbel-resize-end",id:resize.el.getAttribute("data-arbel-id")},"*");' +
             'resize=null;return;' +
           '}' +
           'if(!drag)return;' +
           'var wasDrag=drag.moved;' +
           'drag.el.classList.remove("arbel-dragging");' +
-          'posLbl.classList.remove("vis");' +
+          'posLbl.classList.remove("vis");hideSnap();' +
           'if(wasDrag){' +
             'if(!selected||selected!==drag.el)sel(drag.el);' +
             'posHandles(drag.el);' +
