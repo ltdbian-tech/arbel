@@ -884,6 +884,41 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // Gradient toggle + picker
+        var _cneGradActive = false;
+        var gradToggle = _qs('#cneGradToggle');
+        if (gradToggle) {
+            gradToggle.addEventListener('click', function () {
+                _cneGradActive = !_cneGradActive;
+                var panel = _qs('#cneGradPanel');
+                if (panel) panel.style.display = _cneGradActive ? '' : 'none';
+                gradToggle.classList.toggle('active', _cneGradActive);
+                if (_cneGradActive) _applyCneGradient();
+            });
+        }
+        function _applyCneGradient() {
+            if (!_cneGradActive) return;
+            var c1 = (_qs('#cneGradC1') || {}).value || '#646cff';
+            var c2 = (_qs('#cneGradC2') || {}).value || '#000000';
+            var type = (_qs('#cneGradType') || {}).value || 'linear';
+            var angle = (_qs('#cneGradAngle') || {}).value || '135';
+            var val = type === 'radial' ? 'radial-gradient(circle, ' + c1 + ', ' + c2 + ')'
+                : 'linear-gradient(' + angle + 'deg, ' + c1 + ', ' + c2 + ')';
+            _setElStyle('background', val);
+        }
+        var gradC1 = _qs('#cneGradC1');
+        var gradC2 = _qs('#cneGradC2');
+        var gradType = _qs('#cneGradType');
+        var gradAngle = _qs('#cneGradAngle');
+        if (gradC1) gradC1.addEventListener('input', _applyCneGradient);
+        if (gradC2) gradC2.addEventListener('input', _applyCneGradient);
+        if (gradType) gradType.addEventListener('change', _applyCneGradient);
+        if (gradAngle) gradAngle.addEventListener('input', function () {
+            var lbl = _qs('#cneGradAngleVal');
+            if (lbl) lbl.textContent = gradAngle.value + '°';
+            _applyCneGradient();
+        });
+
         // Opacity
         var opacity = _qs('#cneOpacity');
         if (opacity) {

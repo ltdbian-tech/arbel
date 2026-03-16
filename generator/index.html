@@ -891,6 +891,34 @@
                                 <div class="editor-col">
                                     <span class="editor-hint mono">Background</span>
                                     <input type="color" class="editor-color" id="editorBgColor" value="#0a0a0f">
+                                    <button class="editor-grad-toggle" id="editorGradToggle" title="Gradient mode">&#9698;</button>
+                                </div>
+                            </div>
+                            <!-- Gradient picker (hidden by default) -->
+                            <div class="editor-grad-panel" id="editorGradPanel" style="display:none">
+                                <div class="editor-row">
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Color 1</span>
+                                        <input type="color" class="editor-color" id="editorGradC1" value="#646cff">
+                                    </div>
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Color 2</span>
+                                        <input type="color" class="editor-color" id="editorGradC2" value="#0a0a0f">
+                                    </div>
+                                </div>
+                                <div class="editor-row">
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Type</span>
+                                        <select class="gen-select" id="editorGradType">
+                                            <option value="linear">Linear</option>
+                                            <option value="radial">Radial</option>
+                                        </select>
+                                    </div>
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Angle</span>
+                                        <input type="range" class="gen-range" id="editorGradAngle" min="0" max="360" value="135">
+                                        <span class="editor-hint" id="editorGradAngleVal">135°</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -1586,6 +1614,34 @@
                         <div class="cne-col">
                             <span class="cne-hint mono">Background</span>
                             <input type="color" class="cne-color-input" id="cneBgColor" value="#000000">
+                            <button class="cne-grad-toggle" id="cneGradToggle" title="Gradient mode">&#9698;</button>
+                        </div>
+                    </div>
+                    <!-- Gradient picker (hidden by default) -->
+                    <div class="cne-grad-panel" id="cneGradPanel" style="display:none">
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Color 1</span>
+                                <input type="color" class="cne-color-input" id="cneGradC1" value="#646cff">
+                            </div>
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Color 2</span>
+                                <input type="color" class="cne-color-input" id="cneGradC2" value="#000000">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Type</span>
+                                <select class="cne-select" id="cneGradType">
+                                    <option value="linear">Linear</option>
+                                    <option value="radial">Radial</option>
+                                </select>
+                            </div>
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Angle</span>
+                                <input type="range" class="gen-range" id="cneGradAngle" min="0" max="360" value="135">
+                                <span class="cne-hint" id="cneGradAngleVal">135°</span>
+                            </div>
                         </div>
                     </div>
 

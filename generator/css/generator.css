@@ -710,6 +710,20 @@ em { font-family: var(--font-display); font-style: italic; }
 .arbel-ctx-item--danger { color: #ff6b6b; }
 .arbel-ctx-item--danger:hover { background: rgba(255,107,107,.12); }
 
+/* ─── Gradient Picker ─── */
+.editor-grad-toggle {
+    width: 22px; height: 22px; border: 1px solid var(--border); border-radius: 4px;
+    background: linear-gradient(135deg, #646cff, #0a0a0f); color: #fff;
+    cursor: pointer; font-size: 10px; line-height: 20px; text-align: center;
+    margin-left: 4px; vertical-align: middle; transition: border-color .2s;
+}
+.editor-grad-toggle:hover { border-color: #646cff; }
+.editor-grad-toggle.active { border-color: #646cff; box-shadow: 0 0 6px rgba(100,108,255,.4); }
+.editor-grad-panel {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+    padding: 8px; margin-top: 6px;
+}
+
 .bfs-brand {
     font-size: 0.75rem; color: var(--fg); letter-spacing: 0.02em;
     max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;

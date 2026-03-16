@@ -1039,6 +1039,21 @@
 }
 
 /* ─── Scene Settings Section ─── */
+
+/* ─── Gradient Picker ─── */
+.cne-grad-toggle {
+    width: 22px; height: 22px; border: 1px solid rgba(255,255,255,.1); border-radius: 4px;
+    background: linear-gradient(135deg, #646cff, #000); color: #fff;
+    cursor: pointer; font-size: 10px; line-height: 20px; text-align: center;
+    margin-left: 4px; vertical-align: middle; transition: border-color .2s;
+}
+.cne-grad-toggle:hover { border-color: rgba(100,108,255,.6); }
+.cne-grad-toggle.active { border-color: #646cff; box-shadow: 0 0 6px rgba(100,108,255,.4); }
+.cne-grad-panel {
+    background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 6px; padding: 8px; margin-top: 6px;
+}
+
 .cne-scene-settings {
 
     padding: 0.8rem;

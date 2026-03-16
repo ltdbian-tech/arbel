@@ -775,6 +775,36 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         });
         _on('#editorTextColor', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'color', value: this.value }); _setOvB(_selectedId, 'color', this.value, 'style'); } });
         _on('#editorBgColor', 'input', function () { if (_selectedId) { _postIframe('arbel-set-style', { id: _selectedId, prop: 'backgroundColor', value: this.value }); _setOvB(_selectedId, 'backgroundColor', this.value, 'style'); } });
+
+        /* ── Gradient toggle + picker ── */
+        var _gradActive = false;
+        _on('#editorGradToggle', 'click', function () {
+            _gradActive = !_gradActive;
+            var panel = _qs('#editorGradPanel');
+            var btn = _qs('#editorGradToggle');
+            if (panel) panel.style.display = _gradActive ? '' : 'none';
+            if (btn) btn.classList.toggle('active', _gradActive);
+            if (_gradActive) _applyGradient();
+        });
+        function _applyGradient() {
+            if (!_selectedId || !_gradActive) return;
+            var c1 = (_qs('#editorGradC1') || {}).value || '#646cff';
+            var c2 = (_qs('#editorGradC2') || {}).value || '#0a0a0f';
+            var type = (_qs('#editorGradType') || {}).value || 'linear';
+            var angle = (_qs('#editorGradAngle') || {}).value || '135';
+            var val = type === 'radial' ? 'radial-gradient(circle, ' + c1 + ', ' + c2 + ')'
+                : 'linear-gradient(' + angle + 'deg, ' + c1 + ', ' + c2 + ')';
+            _postIframe('arbel-set-style', { id: _selectedId, prop: 'background', value: val });
+            _setOvB(_selectedId, 'background', val, 'style');
+        }
+        _on('#editorGradC1', 'input', _applyGradient);
+        _on('#editorGradC2', 'input', _applyGradient);
+        _on('#editorGradType', 'change', _applyGradient);
+        _on('#editorGradAngle', 'input', function () {
+            var lbl = _qs('#editorGradAngleVal');
+            if (lbl) lbl.textContent = this.value + '°';
+            _applyGradient();
+        });
         _container.querySelectorAll('.editor-spacing').forEach(function (inp) {
             inp.addEventListener('input', function () {
                 if (!_selectedId) return;
