@@ -1237,6 +1237,8 @@ window.ArbelCinematicEditor = (function () {
 
         // Style tab inputs
         _setupStyleInputs();
+        // Hover state inputs
+        _setupHoverInputs();
         // Scroll tab inputs
         _setupScrollInputs();
     }
@@ -1920,6 +1922,82 @@ window.ArbelCinematicEditor = (function () {
         var endInput = _qs('#cneScrollEnd');
         if (startInput) startInput.value = el.scroll.start || 0;
         if (endInput) endInput.value = el.scroll.end || 1;
+    }
+
+    /* ─── Hover State Inputs ─── */
+    function _setupHoverInputs() {
+        function _setHover(prop, value) {
+            var el = _getSelectedElement();
+            if (!el) return;
+            if (!el.hoverStyle) el.hoverStyle = {};
+            _beginBurst('hover');
+            if (value === '' || value === undefined || value === null) {
+                delete el.hoverStyle[prop];
+            } else {
+                el.hoverStyle[prop] = value;
+            }
+            _commitBurst('hover', 600);
+            _notifyUpdate();
+        }
+
+        var hOpacity = _qs('#cneHoverOpacity');
+        if (hOpacity) hOpacity.addEventListener('input', function () { _setHover('opacity', hOpacity.value); });
+
+        var hScale = _qs('#cneHoverScale');
+        if (hScale) hScale.addEventListener('input', function () { _setHover('scale', hScale.value); });
+
+        var hColorEn = _qs('#cneHoverColorEnable');
+        var hColor = _qs('#cneHoverColor');
+        if (hColor && hColorEn) {
+            hColor.addEventListener('input', function () { if (hColorEn.checked) _setHover('color', hColor.value); });
+            hColorEn.addEventListener('change', function () { _setHover('color', hColorEn.checked ? hColor.value : ''); });
+        }
+
+        var hBgEn = _qs('#cneHoverBgEnable');
+        var hBg = _qs('#cneHoverBg');
+        if (hBg && hBgEn) {
+            hBg.addEventListener('input', function () { if (hBgEn.checked) _setHover('background', hBg.value); });
+            hBgEn.addEventListener('change', function () { _setHover('background', hBgEn.checked ? hBg.value : ''); });
+        }
+
+        var hY = _qs('#cneHoverY');
+        if (hY) hY.addEventListener('input', function () { _setHover('translateY', hY.value); });
+
+        var hRotate = _qs('#cneHoverRotate');
+        if (hRotate) hRotate.addEventListener('input', function () { _setHover('rotate', hRotate.value); });
+
+        var hShadow = _qs('#cneHoverShadow');
+        if (hShadow) hShadow.addEventListener('change', function () { _setHover('boxShadow', hShadow.value); });
+
+        var hDuration = _qs('#cneHoverDuration');
+        if (hDuration) hDuration.addEventListener('input', function () { _setHover('_duration', hDuration.value); });
+
+        var hClear = _qs('#cneHoverClear');
+        if (hClear) {
+            hClear.addEventListener('click', function () {
+                var el = _getSelectedElement();
+                if (!el) return;
+                _pushUndo();
+                el.hoverStyle = {};
+                _updateHoverPanel(el);
+                _notifyUpdate();
+            });
+        }
+    }
+
+    function _updateHoverPanel(el) {
+        if (!el) return;
+        var hs = el.hoverStyle || {};
+        var hOpacity = _qs('#cneHoverOpacity'); if (hOpacity) hOpacity.value = hs.opacity !== undefined ? hs.opacity : '';
+        var hScale = _qs('#cneHoverScale'); if (hScale) hScale.value = hs.scale !== undefined ? hs.scale : '';
+        var hColorEn = _qs('#cneHoverColorEnable'); if (hColorEn) hColorEn.checked = !!hs.color;
+        var hColor = _qs('#cneHoverColor'); if (hColor) hColor.value = hs.color || '#ffffff';
+        var hBgEn = _qs('#cneHoverBgEnable'); if (hBgEn) hBgEn.checked = !!hs.background;
+        var hBg = _qs('#cneHoverBg'); if (hBg) hBg.value = hs.background || '#6C5CE7';
+        var hY = _qs('#cneHoverY'); if (hY) hY.value = hs.translateY !== undefined ? hs.translateY : '';
+        var hRotate = _qs('#cneHoverRotate'); if (hRotate) hRotate.value = hs.rotate !== undefined ? hs.rotate : '';
+        var hShadow = _qs('#cneHoverShadow'); if (hShadow) hShadow.value = hs.boxShadow || '';
+        var hDuration = _qs('#cneHoverDuration'); if (hDuration) hDuration.value = hs._duration || '0.3';
     }
 
     /* ─── Design Tokens Panel ─── */
@@ -2614,6 +2692,9 @@ window.ArbelCinematicEditor = (function () {
 
         // Scroll tab
         _updateScrollPanel();
+
+        // Hover state
+        _updateHoverPanel(el);
 
         // Show properties panel
         var propsContainer = _qs('#cnePropsContainer');

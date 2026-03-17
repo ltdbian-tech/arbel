@@ -636,6 +636,33 @@ window.ArbelCinematicCompiler = (function () {
         if (tabletCSS) css += '@media (max-width: 768px) {\n' + tabletCSS + '}\n\n';
         if (mobileCSS) css += '@media (max-width: 480px) {\n' + mobileCSS + '}\n';
 
+        // Per-element hover styles
+        var hoverCSS = '';
+        (cfg.scenes || []).forEach(function (scene) {
+            (scene.elements || []).forEach(function (el) {
+                if (!el.hoverStyle || !Object.keys(el.hoverStyle).length) return;
+                var hs = el.hoverStyle;
+                var rule = '';
+                var duration = hs._duration || '0.3';
+                if (hs.opacity !== undefined && hs.opacity !== '') rule += ' opacity: ' + (parseFloat(hs.opacity) / 100) + ';';
+                if (hs.color) rule += ' color: ' + hs.color + ';';
+                if (hs.background) rule += ' background: ' + hs.background + ';';
+                if (hs.boxShadow) rule += ' box-shadow: ' + hs.boxShadow + ';';
+                // Build transform
+                var transforms = [];
+                if (hs.scale !== undefined && hs.scale !== '') transforms.push('scale(' + hs.scale + ')');
+                if (hs.translateY !== undefined && hs.translateY !== '') transforms.push('translateY(' + hs.translateY + 'px)');
+                if (hs.rotate !== undefined && hs.rotate !== '') transforms.push('rotate(' + hs.rotate + 'deg)');
+                if (transforms.length) rule += ' transform: ' + transforms.join(' ') + ';';
+                if (rule) {
+                    // Add transition to the base element
+                    hoverCSS += '[data-arbel-id="' + esc(el.id) + '"] { transition: all ' + duration + 's ease; }\n';
+                    hoverCSS += '[data-arbel-id="' + esc(el.id) + '"]:hover {' + rule + ' }\n';
+                }
+            });
+        });
+        if (hoverCSS) css += '\n/* Hover States */\n' + hoverCSS;
+
         return css;
     }
 
