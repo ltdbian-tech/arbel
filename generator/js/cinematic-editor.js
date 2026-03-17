@@ -1794,9 +1794,11 @@ window.ArbelCinematicEditor = (function () {
     function _updateEasingPanel(el) {
         var easeSelect = _qs('#cneScrollEase');
         var customPanel = _qs('#cneEaseCustom');
+        var approxLabel = _qs('#cneEaseApprox');
         if (!easeSelect) return;
 
         var ease = (el.scroll && el.scroll.ease) ? el.scroll.ease : 'none';
+        var isApprox = /^(back|elastic|bounce)/.test(ease);
 
         if (ease.indexOf('cubic-bezier') === 0) {
             easeSelect.value = 'custom';
@@ -1812,11 +1814,13 @@ window.ArbelCinematicEditor = (function () {
             inp = _qs('#cneEaseX2'); if (inp) inp.value = x2;
             inp = _qs('#cneEaseY2'); if (inp) inp.value = y2;
             _drawEaseCurve([x1, y1, x2, y2]);
+            isApprox = false;
         } else {
             easeSelect.value = ease;
             if (customPanel) customPanel.style.display = 'none';
             _drawEaseCurve(_EASE_BEZIER_MAP[ease] || [0, 0, 1, 1]);
         }
+        if (approxLabel) approxLabel.style.display = isApprox ? '' : 'none';
     }
 
     function _setScrollValues(prop, fromInput, toInput) {
@@ -2134,6 +2138,21 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /* ─── Design Tokens Panel ─── */
+    function _syncTokenUI() {
+        var map = {
+            '#cneTokenHeadingFont': 'headingFont', '#cneTokenBodyFont': 'bodyFont',
+            '#cneTokenBaseSize': 'baseSize', '#cneTokenScale': 'scale',
+            '#cneTokenPrimary': 'primary', '#cneTokenSecondary': 'secondary',
+            '#cneTokenText': 'text', '#cneTokenTextMuted': 'textMuted',
+            '#cneTokenBg': 'bg', '#cneTokenSurface': 'surface',
+            '#cneTokenSpaceUnit': 'spaceUnit', '#cneTokenRadius': 'radius'
+        };
+        Object.keys(map).forEach(function (sel) {
+            var el = _qs(sel);
+            if (el) el.value = _designTokens[map[sel]];
+        });
+    }
+
     function _setupTokensPanel() {
         var fields = {
             headingFont: _qs('#cneTokenHeadingFont'),
@@ -2172,10 +2191,12 @@ window.ArbelCinematicEditor = (function () {
             var el = fields[key];
             if (!el) return;
             el.addEventListener('input', function () {
+                _beginBurst('tokens');
                 var v = el.value;
                 if (key === 'baseSize' || key === 'spaceUnit' || key === 'radius') v = parseInt(v, 10) || _designTokens[key];
                 if (key === 'scale') v = parseFloat(v) || _designTokens[key];
                 _designTokens[key] = v;
+                _commitBurst('tokens', 600);
                 _notifyUpdate(true);
             });
         });
@@ -2231,9 +2252,12 @@ window.ArbelCinematicEditor = (function () {
                 if (el.style.borderRadius && el.style.borderRadius !== '0px' && el.style.borderRadius !== '0') {
                     el.style.borderRadius = _designTokens.radius + 'px';
                 }
+                // Apply base font size
+                if (el.style.fontSize) {
+                    el.style.fontSize = _designTokens.baseSize + 'px';
+                }
             });
         });
-        _refreshPreview();
         _notifyUpdate(true);
     }
 
@@ -2447,9 +2471,11 @@ window.ArbelCinematicEditor = (function () {
             }
         }
 
-        _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
+        if (_activeDevice === 'desktop') {
+            _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
+        }
         _commitBurst('style', 600);
-        _notifyUpdate();
+        _notifyUpdate(_activeDevice !== 'desktop');
     }
 
     /* ─── Copy / Paste / Duplicate ─── */
@@ -2922,7 +2948,8 @@ window.ArbelCinematicEditor = (function () {
     function _snapshotState() {
         return {
             scenes: JSON.parse(JSON.stringify(_scenes)),
-            overrides: JSON.parse(JSON.stringify(_overrides))
+            overrides: JSON.parse(JSON.stringify(_overrides)),
+            designTokens: JSON.parse(JSON.stringify(_designTokens))
         };
     }
 
@@ -2930,7 +2957,8 @@ window.ArbelCinematicEditor = (function () {
     function _stateEqual(a, b) {
         if (!a || !b) return false;
         return JSON.stringify(a.scenes) === JSON.stringify(b.scenes) &&
-               JSON.stringify(a.overrides) === JSON.stringify(b.overrides);
+               JSON.stringify(a.overrides) === JSON.stringify(b.overrides) &&
+               JSON.stringify(a.designTokens) === JSON.stringify(b.designTokens);
     }
 
     function _pushUndo() {
@@ -2948,8 +2976,7 @@ window.ArbelCinematicEditor = (function () {
     function _commitSnapshot(snapshot) {
         if (_undoLocked) return;
         // Dirty-state guard: skip if state hasn't changed since the snapshot
-        if (JSON.stringify(snapshot.scenes) === JSON.stringify(_scenes) &&
-            JSON.stringify(snapshot.overrides) === JSON.stringify(_overrides)) return;
+        if (_stateEqual(snapshot, _snapshotState())) return;
         _undoStack.push(snapshot);
         if (_undoStack.length > _MAX_UNDO) _undoStack.shift();
         _redoStack = [];
@@ -2992,6 +3019,10 @@ window.ArbelCinematicEditor = (function () {
         var state = _undoStack.pop();
         _scenes = state.scenes;
         _overrides = state.overrides;
+        if (state.designTokens) {
+            _designTokens = state.designTokens;
+            _syncTokenUI();
+        }
         _renderSceneList();
         _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
         _undoLocked = false;
@@ -3005,6 +3036,10 @@ window.ArbelCinematicEditor = (function () {
         var state = _redoStack.pop();
         _scenes = state.scenes;
         _overrides = state.overrides;
+        if (state.designTokens) {
+            _designTokens = state.designTokens;
+            _syncTokenUI();
+        }
         _renderSceneList();
         _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
         _undoLocked = false;

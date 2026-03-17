@@ -1448,6 +1448,7 @@
         if (cneBrand) cneBrand.textContent = els.brandName.value.trim() || 'My Site';
 
         // Init cinematic editor
+        var savedTokens = ArbelCinematicEditor.getDesignTokens ? ArbelCinematicEditor.getDesignTokens() : null;
         ArbelCinematicEditor.destroy();
         ArbelCinematicEditor.init(cneIframe, cinematicEditor, function (data) {
             state.cinematicScenes = data.scenes;
@@ -1462,6 +1463,7 @@
                 }, 500);
             }
         });
+        if (savedTokens) ArbelCinematicEditor.setDesignTokens(savedTokens);
     }
 
     function buildCinematicConfig() {

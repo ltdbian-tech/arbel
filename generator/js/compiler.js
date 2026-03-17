@@ -1069,19 +1069,13 @@ window.ArbelCompiler = (function () {
             '  --font-display: ' + (dt.headingFont || '"Instrument Serif", Georgia, serif') + ';\n' +
             '  --font-mono: "Space Mono", monospace;\n' +
             '  --ease: cubic-bezier(0.16, 1, 0.3, 1);\n' +
-            '  --token-primary: ' + (dt.primary || accent) + ';\n' +
-            '  --token-secondary: ' + (dt.secondary || '#00cec9') + ';\n' +
-            '  --token-text: ' + (dt.text || colors.fg) + ';\n' +
-            '  --token-text-muted: ' + (dt.textMuted || colors.fg2) + ';\n' +
-            '  --token-bg: ' + (dt.bg || bg) + ';\n' +
-            '  --token-surface: ' + (dt.surface || colors.surface) + ';\n' +
             '  --token-base-size: ' + (dt.baseSize || 16) + 'px;\n' +
             '  --token-scale: ' + (dt.scale || 1.25) + ';\n' +
             '  --token-space: ' + (dt.spaceUnit || 8) + 'px;\n' +
             '  --token-radius: ' + (dt.radius || 8) + 'px;\n' +
             '}\n\n' +
             '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n' +
-            'html { font-size: 16px; -webkit-font-smoothing: antialiased; }\n' +
+            'html { font-size: var(--token-base-size); -webkit-font-smoothing: antialiased; }\n' +
             'html.lenis, html.lenis body { height: auto; }\n' +
             '.lenis.lenis-smooth { scroll-behavior: auto; }\n' +
             'body { font-family: var(--font-body); background: var(--bg); color: var(--fg); overflow-x: hidden; }\n' +

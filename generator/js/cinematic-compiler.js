@@ -165,34 +165,34 @@ window.ArbelCinematicCompiler = (function () {
     /* ─── Animation Presets (Framer-style quick-apply) ─── */
     var ANIMATION_PRESETS = {
         none:           null,
-        fadeInUp:       { opacity: [0, 1], y: [60, 0], start: 0, end: 0.4 },
-        fadeInDown:     { opacity: [0, 1], y: [-60, 0], start: 0, end: 0.4 },
-        fadeInLeft:     { opacity: [0, 1], x: [-80, 0], start: 0, end: 0.4 },
-        fadeInRight:    { opacity: [0, 1], x: [80, 0], start: 0, end: 0.4 },
-        scaleIn:        { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 },
-        scaleInUp:      { opacity: [0, 1], scale: [0.8, 1], y: [40, 0], start: 0, end: 0.4 },
-        blurIn:         { opacity: [0, 1], blur: [20, 0], start: 0, end: 0.4 },
-        blurInUp:       { opacity: [0, 1], blur: [15, 0], y: [40, 0], start: 0, end: 0.4 },
-        blurInScale:    { opacity: [0, 1], blur: [12, 0], scale: [0.9, 1], start: 0, end: 0.45 },
-        slideInUp:      { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], y: [20, 0], start: 0, end: 0.45 },
-        slideInDown:    { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], y: [-20, 0], start: 0, end: 0.45 },
-        slideInLeft:    { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], x: [-20, 0], start: 0, end: 0.45 },
-        slideInRight:   { clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], x: [20, 0], start: 0, end: 0.45 },
-        clipRevealUp:   { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], start: 0, end: 0.5 },
-        clipRevealDown: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0, end: 0.5 },
-        clipRevealLeft: { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], start: 0, end: 0.5 },
-        clipRevealRight:{ clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], start: 0, end: 0.5 },
-        rotateIn:       { opacity: [0, 1], rotation: [15, 0], scale: [0.9, 1], start: 0, end: 0.4 },
-        rotateInLeft:   { opacity: [0, 1], rotation: [-15, 0], x: [-60, 0], start: 0, end: 0.45 },
-        flipInX:        { opacity: [0, 1], rotateX: [90, 0], start: 0, end: 0.5 },
-        flipInY:        { opacity: [0, 1], rotateY: [90, 0], start: 0, end: 0.5 },
-        zoomIn:         { scale: [0.5, 1], opacity: [0, 1], start: 0, end: 0.5 },
-        zoomOut:        { scale: [1.3, 1], opacity: [0, 1], start: 0, end: 0.5 },
-        bounceIn:       { opacity: [0, 1], scale: [0.3, 1.05, 0.95, 1], y: [60, -10, 5, 0], start: 0, end: 0.5 },
-        fadeOut:         { opacity: [1, 0], y: [0, -40], start: 0.6, end: 1 },
-        fadeOutDown:     { opacity: [1, 0], y: [0, 60], start: 0.6, end: 1 },
-        scaleOut:        { opacity: [1, 0], scale: [1, 0.8], start: 0.6, end: 1 },
-        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1 }
+        fadeInUp:       { opacity: [0, 1], y: [60, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        fadeInDown:     { opacity: [0, 1], y: [-60, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        fadeInLeft:     { opacity: [0, 1], x: [-80, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        fadeInRight:    { opacity: [0, 1], x: [80, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        scaleIn:        { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4, ease: 'power3.out' },
+        scaleInUp:      { opacity: [0, 1], scale: [0.8, 1], y: [40, 0], start: 0, end: 0.4, ease: 'power3.out' },
+        blurIn:         { opacity: [0, 1], blur: [20, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        blurInUp:       { opacity: [0, 1], blur: [15, 0], y: [40, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        blurInScale:    { opacity: [0, 1], blur: [12, 0], scale: [0.9, 1], start: 0, end: 0.45, ease: 'power2.out' },
+        slideInUp:      { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], y: [20, 0], start: 0, end: 0.45, ease: 'power3.out' },
+        slideInDown:    { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], y: [-20, 0], start: 0, end: 0.45, ease: 'power3.out' },
+        slideInLeft:    { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], x: [-20, 0], start: 0, end: 0.45, ease: 'power3.out' },
+        slideInRight:   { clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], x: [20, 0], start: 0, end: 0.45, ease: 'power3.out' },
+        clipRevealUp:   { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], start: 0, end: 0.5, ease: 'power3.out' },
+        clipRevealDown: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0, end: 0.5, ease: 'power3.out' },
+        clipRevealLeft: { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], start: 0, end: 0.5, ease: 'power3.out' },
+        clipRevealRight:{ clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], start: 0, end: 0.5, ease: 'power3.out' },
+        rotateIn:       { opacity: [0, 1], rotation: [15, 0], scale: [0.9, 1], start: 0, end: 0.4, ease: 'power2.out' },
+        rotateInLeft:   { opacity: [0, 1], rotation: [-15, 0], x: [-60, 0], start: 0, end: 0.45, ease: 'power2.out' },
+        flipInX:        { opacity: [0, 1], rotateX: [90, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        flipInY:        { opacity: [0, 1], rotateY: [90, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        zoomIn:         { scale: [0.5, 1], opacity: [0, 1], start: 0, end: 0.5, ease: 'power2.out' },
+        zoomOut:        { scale: [1.3, 1], opacity: [0, 1], start: 0, end: 0.5, ease: 'power2.out' },
+        bounceIn:       { opacity: [0, 1], scale: [0.3, 1.05, 0.95, 1], y: [60, -10, 5, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
+        fadeOut:         { opacity: [1, 0], y: [0, -40], start: 0.6, end: 1, ease: 'power1.in' },
+        fadeOutDown:     { opacity: [1, 0], y: [0, 60], start: 0.6, end: 1, ease: 'power1.in' },
+        scaleOut:        { opacity: [1, 0], scale: [1, 0.8], start: 0.6, end: 1, ease: 'power2.in' },
+        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1, ease: 'power1.in' }
     };
 
     /* ─── Default Scene Factory ─── */
@@ -526,13 +526,6 @@ window.ArbelCinematicCompiler = (function () {
         css += '  --border: ' + border + ';\n';
         css += '  --font-body: ' + (dt.bodyFont || '"Inter", system-ui, -apple-system, sans-serif') + ';\n';
         css += '  --font-display: ' + (dt.headingFont || '"Instrument Serif", Georgia, serif') + ';\n';
-        // Design token extras
-        css += '  --token-primary: ' + (dt.primary || accent) + ';\n';
-        css += '  --token-secondary: ' + (dt.secondary || '#00cec9') + ';\n';
-        css += '  --token-text: ' + (dt.text || fg) + ';\n';
-        css += '  --token-text-muted: ' + (dt.textMuted || fg2) + ';\n';
-        css += '  --token-bg: ' + (dt.bg || bg) + ';\n';
-        css += '  --token-surface: ' + (dt.surface || surface) + ';\n';
         css += '  --token-base-size: ' + (dt.baseSize || 16) + 'px;\n';
         css += '  --token-scale: ' + (dt.scale || 1.25) + ';\n';
         css += '  --token-space: ' + (dt.spaceUnit || 8) + 'px;\n';
@@ -541,7 +534,7 @@ window.ArbelCinematicCompiler = (function () {
 
         css += '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n';
         css += 'html { scroll-behavior: auto; }\n';
-        css += 'body { font-family: var(--font-body); background: var(--bg); color: var(--fg); overflow-x: hidden; -webkit-font-smoothing: antialiased; }\n';
+        css += 'body { font-family: var(--font-body); font-size: var(--token-base-size); background: var(--bg); color: var(--fg); overflow-x: hidden; -webkit-font-smoothing: antialiased; }\n';
         css += '.mono { font-family: "Space Mono", "SF Mono", monospace; }\n\n';
 
         // Preloader
@@ -646,20 +639,22 @@ window.ArbelCinematicCompiler = (function () {
                 if (!el.hoverStyle || !Object.keys(el.hoverStyle).length) return;
                 var hs = el.hoverStyle;
                 var rule = '';
+                var transProps = [];
                 var duration = hs._duration || '0.3';
-                if (hs.opacity !== undefined && hs.opacity !== '') rule += ' opacity: ' + (parseFloat(hs.opacity) / 100) + ';';
-                if (hs.color) rule += ' color: ' + hs.color + ';';
-                if (hs.background) rule += ' background: ' + hs.background + ';';
-                if (hs.boxShadow) rule += ' box-shadow: ' + hs.boxShadow + ';';
+                if (hs.opacity !== undefined && hs.opacity !== '') { rule += ' opacity: ' + (parseFloat(hs.opacity) / 100) + ';'; transProps.push('opacity'); }
+                if (hs.color) { rule += ' color: ' + hs.color + ';'; transProps.push('color'); }
+                if (hs.background) { rule += ' background: ' + hs.background + ';'; transProps.push('background'); }
+                if (hs.boxShadow) { rule += ' box-shadow: ' + hs.boxShadow + ';'; transProps.push('box-shadow'); }
                 // Build transform
                 var transforms = [];
                 if (hs.scale !== undefined && hs.scale !== '') transforms.push('scale(' + hs.scale + ')');
                 if (hs.translateY !== undefined && hs.translateY !== '') transforms.push('translateY(' + hs.translateY + 'px)');
                 if (hs.rotate !== undefined && hs.rotate !== '') transforms.push('rotate(' + hs.rotate + 'deg)');
-                if (transforms.length) rule += ' transform: ' + transforms.join(' ') + ';';
+                if (transforms.length) { rule += ' transform: ' + transforms.join(' ') + ';'; transProps.push('transform'); }
                 if (rule) {
-                    // Add transition to the base element
-                    hoverCSS += '[data-arbel-id="' + esc(el.id) + '"] { transition: all ' + duration + 's ease; }\n';
+                    // Add property-specific transitions to avoid conflicting with GSAP scroll transforms
+                    var transStr = transProps.map(function (p) { return p + ' ' + duration + 's ease'; }).join(', ');
+                    hoverCSS += '[data-arbel-id="' + esc(el.id) + '"] { transition: ' + transStr + '; }\n';
                     hoverCSS += '[data-arbel-id="' + esc(el.id) + '"]:hover {' + rule + ' }\n';
                 }
             });
