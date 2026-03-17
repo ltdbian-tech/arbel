@@ -17,6 +17,15 @@ window.ArbelCinematicCompiler = (function () {
         return div.innerHTML;
     }
 
+    /** Sanitise a URL for use in href/src attributes. */
+    function escHref(url) {
+        if (!url) return '';
+        var s = url.replace(/[\x00-\x1f]+/g, '').trim();
+        if (/^\s*(javascript|vbscript)\s*:/i.test(s)) return '';
+        if (/^data:/i.test(s) && !/^data:image\//i.test(s)) return '';
+        return esc(s);
+    }
+
     function uid() {
         return 'cne-' + Math.random().toString(36).substr(2, 8);
     }
@@ -230,6 +239,16 @@ window.ArbelCinematicCompiler = (function () {
         var files = {};
         var c = _defaults(cfg);
 
+        // L8: Validate scenes — ensure each has elements array and reasonable duration
+        (c.scenes || []).forEach(function (scene) {
+            if (!Array.isArray(scene.elements)) scene.elements = [];
+            scene.duration = Math.max(20, Math.min(500, parseInt(scene.duration) || 100));
+            scene.elements.forEach(function (el) {
+                if (!el.id) el.id = uid();
+                if (!el.tag) el.tag = 'div';
+            });
+        });
+
         files['index.html'] = _buildHTML(c);
         files['css/style.css'] = _buildCSS(c);
         files['js/cinema.js'] = _buildCinemaJS(c);
@@ -242,6 +261,15 @@ window.ArbelCinematicCompiler = (function () {
         }
 
         files['README.md'] = _buildReadme(c);
+        // M4: Export arbel.config.json (public metadata only — no sensitive data)
+        files['arbel.config.json'] = _buildCineConfig(c);
+
+        // P1: Build background animation JS for non-shader styles (reuses classic compiler)
+        if (cat !== 'shader') {
+            var animFile = ArbelCompiler.getAnimJsFile ? ArbelCompiler.getAnimJsFile(c.style) : 'particles.js';
+            var animJS = ArbelCompiler.buildAnimJS ? ArbelCompiler.buildAnimJS(c.style, c.particles, c.bgColor) : null;
+            if (animJS) files['js/' + animFile] = animJS;
+        }
 
         return files;
     }
@@ -256,6 +284,40 @@ window.ArbelCinematicCompiler = (function () {
             scenes: [createScene('hero', 0)],
             nav: { logo: '', links: [] }
         }, cfg);
+    }
+
+    /* ─── Config Builder (M4) ─── */
+    function _buildCineConfig(cfg) {
+        // M4/P4: Public metadata config — mirrors classic arbel.config.json structure for cinematic mode.
+        // contactEmail intentionally excluded (public file on GitHub Pages).
+        return JSON.stringify({
+            version: '1.0',
+            generator: 'arbel-cinematic',
+            mode: 'cinematic',
+            brandName: cfg.brandName,
+            tagline: cfg.tagline,
+            style: cfg.style,
+            accent: cfg.accent,
+            bgColor: cfg.bgColor,
+            industry: cfg.industry || '',
+            nav: cfg.nav,
+            seo: cfg.seo,
+            designTokens: cfg.designTokens,
+            scenes: (cfg.scenes || []).map(function (s) {
+                return {
+                    id: s.id,
+                    name: s.name,
+                    template: s.template,
+                    duration: s.duration,
+                    pin: s.pin,
+                    bgColor: s.bgColor,
+                    bgImage: s.bgImage,
+                    elements: (s.elements || []).map(function (el) {
+                        return { id: el.id, tag: el.tag, text: el.text, style: el.style, scroll: el.scroll, splitText: el.splitText, parallax: el.parallax, visible: el.visible };
+                    })
+                };
+            })
+        }, null, 2);
     }
 
     /* ─── HTML Builder ─── */
@@ -276,19 +338,19 @@ window.ArbelCinematicCompiler = (function () {
         if (!seo.index && seo.index !== undefined) {
             html += '<meta name="robots" content="noindex, nofollow">\n';
         }
-        if (seo.canonical) html += '<link rel="canonical" href="' + esc(seo.canonical) + '">\n';
-        if (seo.favicon) html += '<link rel="icon" href="' + esc(seo.favicon) + '">\n';
+        if (seo.canonical) html += '<link rel="canonical" href="' + escHref(seo.canonical) + '">\n';
+        if (seo.favicon) html += '<link rel="icon" href="' + escHref(seo.favicon) + '">\n';
         // Open Graph
         html += '<meta property="og:type" content="website">\n';
         html += '<meta property="og:title" content="' + esc(seoTitle) + '">\n';
         html += '<meta property="og:description" content="' + esc(seoDesc) + '">\n';
-        if (seo.canonical) html += '<meta property="og:url" content="' + esc(seo.canonical) + '">\n';
-        if (seo.ogImage) html += '<meta property="og:image" content="' + esc(seo.ogImage) + '">\n';
+        if (seo.canonical) html += '<meta property="og:url" content="' + escHref(seo.canonical) + '">\n';
+        if (seo.ogImage) html += '<meta property="og:image" content="' + escHref(seo.ogImage) + '">\n';
         // Twitter Card
         html += '<meta name="twitter:card" content="' + (seo.ogImage ? 'summary_large_image' : 'summary') + '">\n';
         html += '<meta name="twitter:title" content="' + esc(seoTitle) + '">\n';
         html += '<meta name="twitter:description" content="' + esc(seoDesc) + '">\n';
-        if (seo.ogImage) html += '<meta name="twitter:image" content="' + esc(seo.ogImage) + '">\n';
+        if (seo.ogImage) html += '<meta name="twitter:image" content="' + escHref(seo.ogImage) + '">\n';
         html += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
         html += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
 
@@ -345,22 +407,31 @@ window.ArbelCinematicCompiler = (function () {
         html += '  <div class="cne-nav-links">\n';
         if (cfg.nav && cfg.nav.links) {
             cfg.nav.links.forEach(function (link) {
-                html += '    <a href="' + esc(link.href) + '" class="cne-nav-link" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
+                html += '    <a href="' + escHref(link.href) + '" class="cne-nav-link" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
             });
         }
         html += '  </div>\n';
         html += '  <div class="cne-scroll-progress"><div class="cne-scroll-progress-fill" id="scrollProgress"></div></div>\n';
         html += '</nav>\n\n';
 
-        // Background canvas
-        html += '<canvas id="bgCanvas" class="cne-bg-canvas"></canvas>\n\n';
+        // P1: Shader styles use a WebGL canvas; non-shader styles use a plain div targeted by classic animation JS
+        if (ArbelCompiler.getAnimCategory(cfg.style) === 'shader') {
+            html += '<canvas id="bgCanvas" class="cne-bg-canvas"></canvas>\n\n';
+        } else {
+            html += '<div class="anim-bg cne-bg-canvas" aria-hidden="true"></div>\n\n';
+        }
 
         // Scenes
         html += '<main class="cne-scenes">\n';
         scenes.forEach(function (scene, i) {
             var sceneBg = '';
             if (scene.bgColor) sceneBg += 'background-color:' + esc(scene.bgColor) + ';';
-            if (scene.bgImage) sceneBg += 'background-image:url(' + esc(scene.bgImage) + ');background-size:cover;background-position:center;';
+            if (scene.bgImage) {
+                var safeBgUrl = scene.bgImage.replace(/[\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '').replace(/expression\s*\(/gi, '');
+                if (/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/|data:image\/)/i.test(safeBgUrl)) {
+                    sceneBg += 'background-image:url(' + esc(safeBgUrl) + ');background-size:cover;background-position:center;';
+                }
+            }
 
             html += '  <section class="cne-scene"';
             html += ' data-scene-id="' + esc(scene.id) + '"';
@@ -444,11 +515,11 @@ window.ArbelCinematicCompiler = (function () {
                 if (style) html += ' style="' + style + '"';
 
                 if (tag === 'img') {
-                    var imgSrc = el.src ? esc(el.src) : '';
+                    var imgSrc = el.src ? escHref(el.src) : '';
                     html += ' src="' + imgSrc + '" alt="' + esc(el.text || '') + '" loading="lazy"';
                     html += '>\n';
                 } else if (tag === 'video') {
-                    var vidSrc = el.src ? esc(el.src) : '';
+                    var vidSrc = el.src ? escHref(el.src) : '';
                     html += (el.videoAutoplay !== false ? ' autoplay' : '');
                     html += (el.videoLoop !== false ? ' loop' : '');
                     html += (el.videoMuted !== false ? ' muted' : '');
@@ -456,14 +527,24 @@ window.ArbelCinematicCompiler = (function () {
                     if (vidSrc) html += ' src="' + vidSrc + '"';
                     html += '></video>\n';
                 } else if (tag === 'a') {
-                    var href = el.href ? esc(el.href) : '#';
+                    var href = el.href ? escHref(el.href) : '#';
                     html += ' href="' + href + '"';
                     if (el.linkNewTab) html += ' target="_blank" rel="noopener noreferrer"';
                     html += '>' + esc(el.text) + '</a>\n';
                 } else {
-                    // For button divs with href, wrap in anchor
+                    // For non-anchor elements with href, wrap in anchor
                     if (el.href && el.href !== '#' && el.href !== '') {
+                        var anchorHref = escHref(el.href);
+                        var anchorAttrs = ' href="' + anchorHref + '"';
+                        if (el.linkNewTab) anchorAttrs += ' target="_blank" rel="noopener noreferrer"';
+                        anchorAttrs += ' style="text-decoration:none;color:inherit;display:contents"';
                         html += '>' + esc(el.text) + '</' + tag + '>\n';
+                        // Wrap: inject opening <a> before the element, closing </a> after
+                        var elOpen = '    <' + tag + ' class="cne-element"';
+                        var lastIdx = html.lastIndexOf(elOpen);
+                        if (lastIdx >= 0) {
+                            html = html.substring(0, lastIdx) + '    <a' + anchorAttrs + '>\n    ' + html.substring(lastIdx) + '    </a>\n';
+                        }
                     } else {
                         html += '>' + esc(el.text) + '</' + tag + '>\n';
                     }
@@ -488,6 +569,9 @@ window.ArbelCinematicCompiler = (function () {
         if (cat === 'shader') {
             html += '<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n';
             html += '<script src="js/shader.js"><\/script>\n';
+        } else {
+            var animF = ArbelCompiler.getAnimJsFile ? ArbelCompiler.getAnimJsFile(cfg.style) : 'particles.js';
+            html += '<script src="js/' + animF + '"><\/script>\n';
         }
 
         html += '<script src="js/cinema.js"><\/script>\n';
@@ -519,6 +603,8 @@ window.ArbelCinematicCompiler = (function () {
         // Reset + Variables
         css += ':root {\n';
         css += '  --accent: ' + accent + ';\n';
+        css += '  --primary: ' + (dt.primary || accent) + ';\n';
+        css += '  --secondary: ' + (dt.secondary || '#00CEC9') + ';\n';
         css += '  --bg: ' + (dt.bg || bg) + ';\n';
         css += '  --surface: ' + (dt.surface || surface) + ';\n';
         css += '  --fg: ' + (dt.text || fg) + ';\n';
@@ -527,6 +613,9 @@ window.ArbelCinematicCompiler = (function () {
         css += '  --font-body: ' + (dt.bodyFont || '"Inter", system-ui, -apple-system, sans-serif') + ';\n';
         css += '  --font-display: ' + (dt.headingFont || '"Instrument Serif", Georgia, serif') + ';\n';
         css += '  --token-base-size: ' + (dt.baseSize || 16) + 'px;\n';
+        css += '  --token-scale: ' + (dt.scale || 1.25) + ';\n';
+        css += '  --token-space-unit: ' + (dt.spaceUnit || 8) + 'px;\n';
+        css += '  --token-radius: ' + (dt.radius || 8) + 'px;\n';
         css += '}\n\n';
 
         css += '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n';
@@ -539,14 +628,14 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-preloader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }\n';
         css += '.cne-preloader-inner { text-align: center; }\n';
         css += '.cne-preloader-text { font-size: 1.4rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg2); display: block; margin-bottom: 1.5rem; }\n';
-        css += '.cne-preloader-bar { width: 200px; height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }\n';
+        css += '.cne-preloader-bar { width: 200px; height: 2px; background: var(--border); border-radius: var(--token-radius); overflow: hidden; }\n';
         css += '.cne-preloader-fill { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; }\n\n';
 
         // Navigation
-        css += '.cne-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 1.2rem 2.5rem; display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(10,10,15,0.5); border-bottom: 1px solid var(--border); transition: transform 0.4s; }\n';
+        css += '.cne-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: calc(var(--token-space-unit) * 1.5) calc(var(--token-space-unit) * 3); display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(10,10,15,0.5); border-bottom: 1px solid var(--border); transition: transform 0.4s; }\n';
         css += '.cne-nav.hidden { transform: translateY(-100%); }\n';
         css += '.cne-nav-logo { font-size: 1.1rem; font-weight: 700; color: var(--fg); text-decoration: none; letter-spacing: -0.02em; }\n';
-        css += '.cne-nav-links { display: flex; gap: 2rem; }\n';
+        css += '.cne-nav-links { display: flex; gap: calc(var(--token-space-unit) * 3); }\n';
         css += '.cne-nav-link { font-size: 0.8rem; color: var(--fg2); text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.3s; }\n';
         css += '.cne-nav-link:hover { color: var(--fg); }\n';
         css += '.cne-scroll-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: transparent; }\n';
@@ -566,7 +655,7 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-char { white-space: pre; }\n\n';
 
         // Footer
-        css += '.cne-footer { padding: 3rem 2.5rem; text-align: center; color: var(--fg2); font-size: 0.8rem; letter-spacing: 0.1em; border-top: 1px solid var(--border); }\n\n';
+        css += '.cne-footer { padding: calc(var(--token-space-unit) * 4) calc(var(--token-space-unit) * 3); text-align: center; color: var(--fg2); font-size: 0.8rem; letter-spacing: 0.1em; border-top: 1px solid var(--border); }\n\n';
 
         // Scrollbar
         css += '::-webkit-scrollbar { width: 6px; }\n';
@@ -576,9 +665,9 @@ window.ArbelCinematicCompiler = (function () {
 
         // Utility classes
         css += '/* Utility classes */\n';
-        css += '.cne-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }\n';
-        css += '.cne-gradient-text { background: linear-gradient(135deg, ' + accent + ', #00CEC9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }\n';
-        css += '.cne-glow { box-shadow: 0 0 60px rgba(108,92,231,0.15), 0 0 120px rgba(108,92,231,0.05); }\n';
+        css += '.cne-glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--token-radius); }\n';
+        css += '.cne-gradient-text { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }\n';
+        css += '.cne-glow { box-shadow: 0 0 60px color-mix(in srgb, var(--primary) 15%, transparent), 0 0 120px color-mix(in srgb, var(--primary) 5%, transparent); }\n';
         css += '.cne-noise::before { content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E"); }\n';
         css += '.cne-element[data-arbel-edit] { transition: outline 0.15s; }\n';
         css += '.cne-element[style*="backdrop-filter"] { -webkit-backdrop-filter: inherit; }\n\n';
@@ -633,17 +722,16 @@ window.ArbelCinematicCompiler = (function () {
                 var hs = el.hoverStyle;
                 var rule = '';
                 var transProps = [];
-                var duration = hs._duration || '0.3';
+                var rawDur = parseFloat(hs._duration);
+                var duration = (!isNaN(rawDur) && rawDur >= 0 && rawDur <= 5) ? rawDur : 0.3;
                 if (hs.opacity !== undefined && hs.opacity !== '') { var ho = Math.max(0, Math.min(100, parseFloat(hs.opacity) || 0)); rule += ' opacity: ' + (ho / 100) + ';'; transProps.push('opacity'); }
                 if (hs.color) { rule += ' color: ' + hs.color + ';'; transProps.push('color'); }
                 if (hs.background) { rule += ' background: ' + hs.background + ';'; transProps.push('background'); }
                 if (hs.boxShadow) { rule += ' box-shadow: ' + hs.boxShadow + ';'; transProps.push('box-shadow'); }
-                // Build transform
-                var transforms = [];
-                if (hs.scale !== undefined && hs.scale !== '') transforms.push('scale(' + hs.scale + ')');
-                if (hs.translateY !== undefined && hs.translateY !== '') transforms.push('translateY(' + hs.translateY + 'px)');
-                if (hs.rotate !== undefined && hs.rotate !== '') transforms.push('rotate(' + hs.rotate + 'deg)');
-                if (transforms.length) { rule += ' transform: ' + transforms.join(' ') + ';'; transProps.push('transform'); }
+                // Individual CSS transform properties — compose with GSAP's inline transform
+                if (hs.scale !== undefined && hs.scale !== '') { rule += ' scale: ' + hs.scale + ';'; transProps.push('scale'); }
+                if (hs.translateY !== undefined && hs.translateY !== '') { rule += ' translate: 0 ' + hs.translateY + 'px;'; transProps.push('translate'); }
+                if (hs.rotate !== undefined && hs.rotate !== '') { rule += ' rotate: ' + hs.rotate + 'deg;'; transProps.push('rotate'); }
                 if (rule) {
                     // Add property-specific transitions to avoid conflicting with GSAP scroll transforms
                     var transStr = transProps.map(function (p) { return p + ' ' + duration + 's ease'; }).join(', ');
@@ -916,8 +1004,8 @@ window.ArbelCinematicCompiler = (function () {
         js += 'var uniforms = { uTime: {value:0}, uMouse: {value: new THREE.Vector2(0.5,0.5)}, uRes: {value: new THREE.Vector2(window.innerWidth, window.innerHeight)} };\n\n';
 
         js += 'var snoise = `' + (frag.snoise || '') + '`;\n';
-        js += 'var vertShader = "void main(){gl_Position = vec4(position,1.0);}";\n';
-        js += 'var fragShader = "precision mediump float; uniform float uTime; uniform vec2 uMouse; uniform vec2 uRes;\\n" + snoise + "\\n' + (frag.core || '').replace(/\n/g, '\\n').replace(/"/g, '\\"') + '";\n\n';
+        js += 'var vertShader = "varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}";\n';
+        js += 'var fragShader = "precision mediump float;\\nuniform float uTime;\\nuniform vec2 uMouse;\\nuniform vec2 uRes;\\nvarying vec2 vUv;\\n" + snoise + "\\nvoid main(){\\n' + (frag.core || '').replace(/\n/g, '\\n').replace(/"/g, '\\"') + '\\n}";\n\n';
 
         js += 'var geo = new THREE.PlaneGeometry(2,2);\n';
         js += 'var mat = new THREE.ShaderMaterial({ uniforms: uniforms, vertexShader: vertShader, fragmentShader: fragShader });\n';

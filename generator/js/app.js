@@ -8,6 +8,10 @@
 (function () {
     'use strict';
 
+    // Set copyright year
+    var yearEl = document.getElementById('copyrightYear');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+
     /* ─── State ─── */
     var state = {
         step: 0,
@@ -17,6 +21,7 @@
         authenticated: false,
         compiledFiles: null,
         editorOverrides: null,
+        cinematicEditorOverrides: null,
         templateContent: null,
         cinematicScenes: null
     };
@@ -411,7 +416,7 @@
 
                     // Use the style's fragment to approximate colors
                     var r, g, b;
-                    var styleId = canvas.dataset.shader;
+                    var styleId = canvas.dataset.animId || canvas.dataset.shader;
                     switch (styleId) {
                         case 'aurora':
                             r = v * 20; g = v * 200; b = v * 170; break;
@@ -693,7 +698,7 @@
 
         // Show/hide particle config panel (works for all canvas-based animations)
         var cat = ArbelCompiler.getAnimCategory(state.style);
-        els.particleConfig.style.display = (cat !== 'shader') ? '' : 'none';
+        els.particleConfig.style.display = (cat === 'particle') ? '' : 'none';
     });
 
     /* ─── Template Apply (from editor sidebar) ─── */
@@ -742,10 +747,10 @@
 
         // 6. Show/hide particle config
         var animCat = ArbelCompiler.getAnimCategory(state.style);
-        els.particleConfig.style.display = (animCat !== 'shader') ? '' : 'none';
+        els.particleConfig.style.display = (animCat === 'particle') ? '' : 'none';
 
-        // 7. Re-generate preview
-        generatePreview();
+        // 7. Re-generate preview (only if already on/past preview step)
+        if (state.step >= 3) generatePreview();
     });
 
     /* ─── Mode Toggle: Presets / Builder ─── */
@@ -1103,6 +1108,10 @@
                 });
                 els.aiStatus.textContent = 'Content generated! Review and edit above.';
                 els.aiStatus.className = 'ai-status ai-status--success';
+                // P6: Push AI copy into cinematic scene elements if in cinematic mode
+                if (state.mode === 'cinematic' && typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.updateContentFromCopy) {
+                    ArbelCinematicEditor.updateContentFromCopy(copy);
+                }
             })
             .catch(function (err) {
                 els.aiStatus.textContent = 'Error: ' + err.message;
@@ -1125,8 +1134,11 @@
 
     function _isValidUrl(str) {
         if (!str) return true; // empty is fine (optional field)
-        // Reject obvious non-URLs: bare spaces, JS pseudo-protocol, data with script
         if (/^\s*javascript\s*:/i.test(str)) return false;
+        // Reject values with unencoded spaces or HTML-unsafe characters
+        if (/[\s<>"{}|\\^`]/.test(str)) return false;
+        // Block any scheme other than http(s) and data (e.g. mailto:, ftp:, foo:)
+        if (/^[a-z][a-z0-9+.-]*:/i.test(str) && !/^(https?:|data:image\/)/i.test(str)) return false;
         // Accept http(s), protocol-relative, root-relative, and standard relative paths
         return /^(https?:\/\/|\/\/|\/|\.\/|\.\.\/)/.test(str) || /^[\w]/.test(str);
     }
@@ -1178,6 +1190,11 @@
             var catStyles = { particle: 'constellation', blob: 'morphBlob', gradient: 'meshGrad', wave: 'sineWaves' };
             cfg.style = catStyles[builderState.cat] || 'constellation';
             state.style = cfg.style;
+            // Apply builder color pickers
+            if (builderState.colors && builderState.colors.length >= 3) {
+                cfg.accent = builderState.colors[0];
+                cfg.bgColor = builderState.colors[2];
+            }
         }
 
         // Include animation settings for non-shader styles
@@ -1235,6 +1252,9 @@
         var editorScript = ArbelEditor.getOverlayScript();
         ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
 
+        // Destroy cinematic editor if active (L1: prevent both editors running)
+        ArbelCinematicEditor.destroy();
+
         // Initialize editor in the full-screen builder container
         ArbelEditor.destroy();
         ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
@@ -1247,7 +1267,8 @@
 
     /* ─── DEPLOY ─── */
     function sanitizeRepoName(name) {
-        return name.toLowerCase().replace(/[^a-z0-9\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        var sanitized = name.toLowerCase().replace(/[^a-z0-9\-_.]/g, '-').replace(/-+/g, '-').replace(/^[-.]|[-.]$/g, '');
+        return sanitized.slice(0, 100) || 'my-site';
     }
 
     function updateDeployUrl() {
@@ -1390,13 +1411,14 @@
     var existingToken = ArbelAuth.getToken();
     if (existingToken) {
         ArbelAuth.validateToken(existingToken)
-            .then(function (user) {
+            .then(function (result) {
+                if (!result.valid || !result.user) return;
                 state.authenticated = true;
                 els.genUser.style.display = 'flex';
-                els.genUserAvatar.src = user.avatar_url;
-                els.genUserName.textContent = user.login;
-                els.deployUsername.textContent = user.login;
-                showAuthStatus('Connected as ' + user.login, 'success');
+                els.genUserAvatar.src = result.user.avatar;
+                els.genUserName.textContent = result.user.login;
+                els.deployUsername.textContent = result.user.login;
+                showAuthStatus('Connected as ' + result.user.login, 'success');
             })
             .catch(function () {
                 ArbelAuth.logout();
@@ -1458,12 +1480,13 @@
         var cneBrand = $('cneBrand');
         if (cneBrand) cneBrand.textContent = els.brandName.value.trim() || 'My Site';
 
-        // Init cinematic editor
+        // Init cinematic editor (destroy classic editor first — L1)
+        ArbelEditor.destroy();
         var savedTokens = ArbelCinematicEditor.getDesignTokens ? ArbelCinematicEditor.getDesignTokens() : null;
         ArbelCinematicEditor.destroy();
         ArbelCinematicEditor.init(cneIframe, cinematicEditor, function (data) {
             state.cinematicScenes = data.scenes;
-            state.editorOverrides = data.overrides;
+            state.cinematicEditorOverrides = data.overrides;
             if (data.rerender) {
                 clearTimeout(state._cneRerenderTimer);
                 state._cneRerenderTimer = setTimeout(function () {
@@ -1478,20 +1501,46 @@
     }
 
     function buildCinematicConfig() {
+        // P2: Assemble content the same way buildConfig() does
+        var content = {};
+        if (state.templateContent) {
+            Object.keys(state.templateContent).forEach(function (k) {
+                content[k] = state.templateContent[k];
+            });
+        }
+        document.querySelectorAll('.content-input').forEach(function (el) {
+            var key = el.dataset.key;
+            if (key && el.value.trim()) content[key] = el.value.trim();
+        });
+
         var cfg = {
             brandName: els.brandName.value.trim() || 'My Site',
             tagline: els.tagline.value.trim(),
             style: state.style,
             accent: els.accentColor.value,
             bgColor: els.bgColor.value,
+            industry: els.industry.value,
             contactEmail: els.contactEmail.value.trim(),
+            content: content,
             scenes: state.cinematicScenes || undefined,
             nav: { logo: els.brandName.value.trim() || 'My Site', links: [] },
             seo: _collectSeo()
         };
 
-        if (state.editorOverrides) {
-            cfg.editorOverrides = state.editorOverrides;
+        // P1: Include particle config for non-shader styles
+        var _animCat = typeof ArbelCompiler !== 'undefined' ? ArbelCompiler.getAnimCategory(cfg.style) : 'particle';
+        if (_animCat !== 'shader') {
+            cfg.particles = {
+                count: parseInt(els.particleCount.value, 10) || 80,
+                speed: parseFloat(els.particleSpeed.value) || 1,
+                glow: parseFloat(els.particleGlow.value) || 0.6,
+                interact: els.particleInteract ? els.particleInteract.checked : true,
+                connect: els.particleConnect ? els.particleConnect.checked : true
+            };
+        }
+
+        if (state.cinematicEditorOverrides) {
+            cfg.editorOverrides = state.cinematicEditorOverrides;
         }
 
         // Include design tokens from cinematic editor

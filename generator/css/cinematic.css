@@ -56,7 +56,7 @@
 
 .mode-card-desc {
     font-size: 0.82rem;
-    color: rgba(255,255,255,0.45);
+    color: rgba(255,255,255,0.6);
     line-height: 1.5;
 }
 
@@ -151,6 +151,11 @@
 .cne-toolbar-btn:hover {
     background: rgba(255,255,255,0.06);
     color: #f0f0f0;
+}
+
+.cne-toolbar-btn:focus-visible {
+    outline: 2px solid #6C5CE7;
+    outline-offset: 2px;
 }
 
 .cne-toolbar-btn:disabled {
@@ -313,6 +318,11 @@
 .cne-scene-action-btn:hover {
     background: rgba(255,255,255,0.08);
     color: #f0f0f0;
+}
+
+.cne-scene-action-btn:focus-visible {
+    outline: 2px solid rgba(108, 92, 231, 0.6);
+    outline-offset: 1px;
 }
 
 .cne-scene-action-del:hover {
@@ -485,7 +495,7 @@
     padding: 0.65rem 0;
     border: none;
     background: transparent;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255,255,255,0.4);
     font-size: 0.68rem;
     font-weight: 600;
     letter-spacing: 0.06em;
@@ -497,7 +507,12 @@
 }
 
 .cne-prop-tab:hover {
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.6);
+}
+
+.cne-prop-tab:focus-visible {
+    outline: 2px solid #6C5CE7;
+    outline-offset: -3px;
 }
 
 .cne-prop-tab.active {
@@ -1215,3 +1230,35 @@
     background: rgba(0,0,0,0.25);
 }
 .cne-ease-custom .cne-row { margin-bottom: 0.3rem; }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 1024px) {
+    .cne-editor.active {
+        grid-template-columns: 200px 1fr;
+        grid-template-areas:
+            "toolbar toolbar"
+            "scenes  canvas"
+            "timeline timeline";
+    }
+    .cne-props-panel { display: none; }
+}
+
+@media (max-width: 768px) {
+    .cne-editor.active {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "toolbar"
+            "canvas"
+            "timeline";
+    }
+    .cne-scenes-panel { display: none; }
+    .cne-canvas-area { padding: 1rem; }
+    .cne-preview-frame { max-width: 100%; }
+    .cne-template-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+    .cne-toolbar { flex-wrap: wrap; padding: 0.5rem; }
+    .cne-toolbar-center { position: static; transform: none; width: 100%; }
+    .cne-template-grid { grid-template-columns: 1fr; }
+}

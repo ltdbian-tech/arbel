@@ -115,6 +115,9 @@ window.ArbelAI = (function () {
         }
 
         var data = await resp.json();
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+            throw new Error('Gemini returned an unexpected response format.');
+        }
         var text = data.candidates[0].content.parts[0].text;
         return JSON.parse(text);
     }

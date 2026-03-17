@@ -36,7 +36,7 @@ window.ArbelPreview = (function () {
         );
 
         // Replace external JS script tags with inline <script>
-        var jsFiles = ['js/shader.js', 'js/particles.js', 'js/blobs.js', 'js/gradient.js', 'js/waves.js', 'js/animations.js', 'js/cinema.js', 'js/main.js'];
+        var jsFiles = ['js/shader.js', 'js/video-layer.js', 'js/particles.js', 'js/blobs.js', 'js/gradient.js', 'js/waves.js', 'js/animations.js', 'js/cinema.js', 'js/main.js'];
         jsFiles.forEach(function (path) {
             var content = files[path];
             if (content) {

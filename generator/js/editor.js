@@ -20,6 +20,7 @@ window.ArbelEditor = (function () {
     var _currentPage = 'home';
     var _zoom = 100;
     var _lastTree = [];
+    var _keydownHandler = null;
 
     /* ─── Undo / Redo state ─── */
     var _MAX_UNDO = 40;
@@ -632,7 +633,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _setupUndoRedo() {
         _on('#editorUndo', 'click', function () { _undo(); });
         _on('#editorRedo', 'click', function () { _redo(); });
-        document.addEventListener('keydown', function (e) {
+        _keydownHandler = function (e) {
             if (!_active) return;
             var tag = document.activeElement.tagName;
             var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
@@ -644,12 +645,14 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 if (e.key === 'v' && !inInput && _clipboard) { e.preventDefault(); _pasteStyles(); }
                 if (e.key === 'd' && _selectedId) { e.preventDefault(); _duplicateStyles(); }
             }
-        });
+        };
+        document.addEventListener('keydown', _keydownHandler);
         _updateUndoButtons();
     }
 
     /* ─── Message handler ─── */
     function _handleMessage(e) {
+        if (_iframe && e.source !== _iframe.contentWindow) return;
         var d = e.data;
         if (!d || !d.type || !_active) return;
         if (d.type === 'arbel-tree') {
@@ -1132,6 +1135,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (progressEl) progressEl.style.display = '';
         if (textEl) textEl.textContent = 'Loading video...';
         video.addEventListener('error', function () {
+            if (video.src) URL.revokeObjectURL(video.src);
             if (progressEl) progressEl.style.display = 'none';
             alert('Could not load video. Try a different MP4 or WebM file.');
         });
@@ -1275,7 +1279,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 var spy = h / 2 + Math.sin(angle) * dist * 0.6;
                 var spBright = 0.2 + Math.sin(spi * 0.5 + t * 4) * 0.15;
                 ctx.fillStyle = 'rgba(' + (180 + spi % 70) + ',' + (140 + spi % 80) + ',255,' + spBright + ')';
-                ctx.beginPath(); ctx.arc(spx, spy, 1 + Math.random(), 0, 6.28); ctx.fill(); }
+                ctx.beginPath(); ctx.arc(spx, spy, 1 + ((spi * 7 + idx * 13) % 17) / 17, 0, 6.28); ctx.fill(); }
             }
             frames.push(canvas.toDataURL('image/jpeg', 0.7)); idx++;
             if (fillEl) fillEl.style.width = Math.round((idx / total) * 100) + '%';
@@ -1816,13 +1820,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
     function _renderElementTree(tree) {
         _currentTree = tree;
-        _lastTree = tree.slice();
+        _lastTree = tree.map(function (item) { return JSON.parse(JSON.stringify(item)); });
         var treeEl = _qs('#editorTree'); if (!treeEl) return;
         var searchEl = _qs('#layerSearch');
         var filter = searchEl ? searchEl.value.toLowerCase() : '';
         treeEl.innerHTML = '';
-        // Apply overrides and sort by z-index descending (highest = top of list)
-        tree.forEach(function (item) {
+        // Apply overrides to deep copies, sort by z-index descending (highest = top of list)
+        _lastTree.forEach(function (item) {
             var ov = _overrides[item.id];
             if (ov) {
                 if (ov.visibility !== undefined) item.visible = ov.visibility !== 'hidden';
@@ -1830,7 +1834,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 if (ov.zIndex !== undefined) item.zIndex = ov.zIndex;
             }
         });
-        var sorted = tree.slice().sort(function (a, b) { return _getItemZ(b) - _getItemZ(a); });
+        var sorted = _lastTree.slice().sort(function (a, b) { return _getItemZ(b) - _getItemZ(a); });
         sorted.forEach(function (item) {
             var displayName = _getLayerName(item);
             var detail = item.id;
@@ -2566,6 +2570,6 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         setOverrides: function (o) { _overrides = o || {}; },
         getVideoConfig: function () { return { frames: _videoFrames, config: _videoConfig }; },
         getPages: function () { return _pages; },
-        destroy: function () { _active = false; _selectedId = null; window.removeEventListener('message', _handleMessage); }
+        destroy: function () { _active = false; _selectedId = null; window.removeEventListener('message', _handleMessage); if (_keydownHandler) { document.removeEventListener('keydown', _keydownHandler); _keydownHandler = null; } }
     };
 })();

@@ -140,6 +140,7 @@ window.ArbelAuth = (function () {
         try {
             sessionStorage.removeItem(TOKEN_KEY);
             _cachedUser = null;
+            ArbelKeyManager.removeKey();
         } catch (e) {
             // silent
         }

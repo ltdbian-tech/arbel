@@ -95,16 +95,22 @@ window.ArbelDeploy = (function () {
                 });
             })
             .then(function () {
-                // Wait briefly for GitHub to initialize the repo
-                return new Promise(function (resolve) { setTimeout(resolve, 2000); });
-            })
-            .then(function () {
-                progress(3, totalSteps, 'Uploading files...');
-
-                // 3. Get the initial commit on main branch
-                return _gh('GET', '/repos/' + owner + '/' + repoName + '/git/ref/heads/main', token);
+                // Poll for repo readiness instead of fixed timeout (B15)
+                var attempts = 0;
+                function waitForRepo() {
+                    return _gh('GET', '/repos/' + owner + '/' + repoName + '/git/ref/heads/main', token)
+                        .catch(function (err) {
+                            if (attempts++ < 10) {
+                                return new Promise(function (resolve) { setTimeout(resolve, 1000); }).then(waitForRepo);
+                            }
+                            throw err;
+                        });
+                }
+                return waitForRepo();
             })
             .then(function (ref) {
+                progress(3, totalSteps, 'Uploading files...');
+
                 var parentSha = ref.object.sha;
 
                 // 4. Create blobs for each file
