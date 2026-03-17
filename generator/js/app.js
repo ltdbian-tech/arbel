@@ -185,6 +185,8 @@
             var s = parseInt(dot.dataset.step);
             dot.classList.toggle('active', s === n);
             dot.classList.toggle('done', s < n);
+            if (s === n) dot.setAttribute('aria-current', 'step');
+            else dot.removeAttribute('aria-current');
         });
 
         // Scroll to top
@@ -265,9 +267,11 @@
         if (body.style.display === 'none') {
             body.style.display = 'block';
             arrow.style.transform = 'rotate(180deg)';
+            els.patToggle.setAttribute('aria-expanded', 'true');
         } else {
             body.style.display = 'none';
             arrow.style.transform = '';
+            els.patToggle.setAttribute('aria-expanded', 'false');
         }
     });
 

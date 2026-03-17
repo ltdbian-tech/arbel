@@ -11,11 +11,14 @@
     gap: 1.5rem;
     justify-content: center;
     margin: 2rem 0;
+    flex-wrap: wrap;
 }
 
 .mode-card {
     position: relative;
-    width: 320px;
+    width: 100%;
+    max-width: 320px;
+    flex: 1 1 260px;
     padding: 2rem;
     background: var(--surface, #16161e);
     border: 2px solid var(--border, rgba(255,255,255,0.08));
@@ -28,6 +31,11 @@
 .mode-card:hover {
     transform: translateY(-3px);
     border-color: rgba(255,255,255,0.15);
+}
+
+.mode-card:focus-visible {
+    outline: 2px solid var(--accent, #6C5CE7);
+    outline-offset: 2px;
 }
 
 .mode-card.selected {
@@ -93,7 +101,7 @@
 .cne-editor.active {
     display: grid;
     grid-template-rows: 48px 1fr auto;
-    grid-template-columns: 240px 1fr 280px;
+    grid-template-columns: minmax(180px, 240px) 1fr minmax(220px, 280px);
     grid-template-areas:
         "toolbar toolbar toolbar"
         "scenes  canvas  props"
@@ -110,7 +118,12 @@
     background: #111118;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     z-index: 10;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    gap: 0.5rem;
 }
+.cne-toolbar::-webkit-scrollbar { display: none; }
 
 .cne-toolbar-left,
 .cne-toolbar-center,
@@ -118,6 +131,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    flex-shrink: 0;
 }
 
 .cne-toolbar-brand {
@@ -209,6 +223,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 0;
 }
 
 .cne-panel-head {
@@ -225,7 +240,10 @@
 .cne-scene-list {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
 
 .cne-scene-item {
@@ -483,6 +501,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 0;
 }
 
 .cne-prop-tabs {
@@ -525,7 +544,10 @@
     display: none;
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 0.8rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
 
 .cne-prop-panel.active {
@@ -735,6 +757,10 @@
 .cne-icon-btn:hover {
     background: rgba(255,255,255,0.06);
     color: rgba(255,255,255,0.6);
+}
+.cne-icon-btn:focus-visible {
+    outline: 2px solid #6C5CE7;
+    outline-offset: 2px;
 }
 .cne-icon-btn.active {
     background: rgba(108,92,231,0.3);
@@ -1232,6 +1258,15 @@
 .cne-ease-custom .cne-row { margin-bottom: 0.3rem; }
 
 /* ═══ RESPONSIVE ═══ */
+
+/* Small laptop */
+@media (max-width: 1100px) {
+    .cne-editor.active {
+        grid-template-columns: 180px 1fr 240px;
+    }
+}
+
+/* Tablet — hide props, show scenes + canvas */
 @media (max-width: 1024px) {
     .cne-editor.active {
         grid-template-columns: 200px 1fr;
@@ -1240,9 +1275,12 @@
             "scenes  canvas"
             "timeline timeline";
     }
-    .cne-props-panel { display: none; }
+    .cne-props-panel {
+        display: none;
+    }
 }
 
+/* Small tablet — single column */
 @media (max-width: 768px) {
     .cne-editor.active {
         grid-template-columns: 1fr;
@@ -1255,10 +1293,15 @@
     .cne-canvas-area { padding: 1rem; }
     .cne-preview-frame { max-width: 100%; }
     .cne-template-grid { grid-template-columns: repeat(2, 1fr); }
+    .mode-selector { gap: 1rem; }
 }
 
+/* Mobile */
 @media (max-width: 480px) {
     .cne-toolbar { flex-wrap: wrap; padding: 0.5rem; }
-    .cne-toolbar-center { position: static; transform: none; width: 100%; }
+    .cne-toolbar-center { position: static; transform: none; width: 100%; justify-content: center; }
+    .cne-toolbar-left { width: 100%; justify-content: space-between; }
+    .cne-toolbar-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
     .cne-template-grid { grid-template-columns: 1fr; }
+    .mode-card { flex: 1 1 100%; max-width: 100%; padding: 1.5rem; }
 }
