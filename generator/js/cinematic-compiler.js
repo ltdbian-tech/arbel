@@ -312,6 +312,11 @@ window.ArbelCinematicCompiler = (function () {
                     pin: s.pin,
                     bgColor: s.bgColor,
                     bgImage: s.bgImage,
+                    bg3dType: s.bg3dType || '',
+                    bg3dColor1: s.bg3dColor1 || '',
+                    bg3dColor2: s.bg3dColor2 || '',
+                    bg3dIntensity: s.bg3dIntensity || '',
+                    bg3dSpeed: s.bg3dSpeed || '',
                     elements: (s.elements || []).map(function (el) {
                         return { id: el.id, tag: el.tag, text: el.text, style: el.style, scroll: el.scroll, splitText: el.splitText, parallax: el.parallax, visible: el.visible };
                     })
@@ -440,6 +445,18 @@ window.ArbelCinematicCompiler = (function () {
             html += ' data-duration="' + (scene.duration || 100) + '"';
             if (sceneBg) html += ' style="' + sceneBg + '"';
             html += '>\n';
+
+            // 3D background effect
+            if (scene.bg3dType) {
+                var bg3dC1 = esc(scene.bg3dColor1 || '#6c5ce7');
+                var bg3dC2 = esc(scene.bg3dColor2 || '#00cec9');
+                var bg3dIntensity = parseInt(scene.bg3dIntensity) || 5;
+                var bg3dSpeed = esc(scene.bg3dSpeed || 'medium');
+                html += '    <div class="cne-bg3d" data-bg3d="' + esc(scene.bg3dType) + '"';
+                html += ' data-color1="' + bg3dC1 + '" data-color2="' + bg3dC2 + '"';
+                html += ' data-intensity="' + bg3dIntensity + '" data-speed="' + bg3dSpeed + '"';
+                html += ' aria-hidden="true"></div>\n';
+            }
 
             (scene.elements || []).forEach(function (el) {
                 if (!el.visible) return;
@@ -675,6 +692,22 @@ window.ArbelCinematicCompiler = (function () {
         // Selection highlight
         css += '/* Selection */\n';
         css += '::selection { background: ' + accent + '; color: #fff; }\n\n';
+
+        // 3D background effect containers
+        css += '/* 3D Background Effects */\n';
+        css += '.cne-bg3d { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }\n';
+        css += '.cne-bg3d canvas { width: 100%; height: 100%; display: block; }\n';
+        css += '.cne-bg3d-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; animation: cne-orb-float var(--orb-speed, 12s) ease-in-out infinite alternate; }\n';
+        css += '@keyframes cne-orb-float { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -40px) scale(1.15); } 100% { transform: translate(-20px, 30px) scale(0.95); } }\n';
+        css += '.cne-bg3d-particle { position: absolute; border-radius: 50%; animation: cne-particle-drift var(--p-speed, 20s) linear infinite; }\n';
+        css += '@keyframes cne-particle-drift { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-10vh) scale(1); opacity: 0; } }\n';
+        css += '.cne-bg3d-aurora { position: absolute; inset: 0; opacity: 0.4; background: linear-gradient(180deg, transparent 30%, var(--aurora-c1, #6c5ce7) 50%, var(--aurora-c2, #00cec9) 70%, transparent 90%); filter: blur(60px); animation: cne-aurora-shift var(--aurora-speed, 8s) ease-in-out infinite alternate; }\n';
+        css += '@keyframes cne-aurora-shift { 0% { transform: translateX(-20%) skewY(-2deg); opacity: 0.3; } 100% { transform: translateX(20%) skewY(2deg); opacity: 0.6; } }\n';
+        css += '.cne-bg3d-mesh { position: absolute; inset: -50%; width: 200%; height: 200%; animation: cne-mesh-rotate var(--mesh-speed, 20s) linear infinite; }\n';
+        css += '@keyframes cne-mesh-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }\n';
+        css += '.cne-bg3d-star { position: absolute; border-radius: 50%; background: #fff; animation: cne-star-twinkle var(--star-speed, 3s) ease-in-out infinite alternate; }\n';
+        css += '@keyframes cne-star-twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }\n';
+        css += '.cne-bg3d-grid-line { position: absolute; background: currentColor; opacity: 0.1; }\n\n';
 
         // Responsive — generic layout
         css += '@media (max-width: 768px) {\n';
@@ -933,6 +966,131 @@ window.ArbelCinematicCompiler = (function () {
         js += '        scrollTrigger: { trigger: scene, start: "top bottom", end: "bottom top", scrub: true }\n';
         js += '      });\n';
         js += '    });\n';
+        js += '  });\n\n';
+
+        // 3D Background effects
+        js += '  /* 3D Background Effects */\n';
+        js += '  document.querySelectorAll(".cne-bg3d").forEach(function(container){\n';
+        js += '    var type = container.dataset.bg3d;\n';
+        js += '    var c1 = container.dataset.color1 || "#6c5ce7";\n';
+        js += '    var c2 = container.dataset.color2 || "#00cec9";\n';
+        js += '    var intensity = parseInt(container.dataset.intensity) || 5;\n';
+        js += '    var speed = container.dataset.speed || "medium";\n';
+        js += '    var speedMs = speed === "slow" ? 20 : speed === "fast" ? 6 : 12;\n\n';
+
+        js += '    if(type === "gradient-orbs"){\n';
+        js += '      for(var i = 0; i < Math.min(intensity, 8); i++){\n';
+        js += '        var orb = document.createElement("div");\n';
+        js += '        orb.className = "cne-bg3d-orb";\n';
+        js += '        var size = 200 + Math.random() * 300;\n';
+        js += '        orb.style.width = size + "px"; orb.style.height = size + "px";\n';
+        js += '        orb.style.background = i % 2 === 0 ? c1 : c2;\n';
+        js += '        orb.style.top = Math.random() * 80 + "%";\n';
+        js += '        orb.style.left = Math.random() * 80 + "%";\n';
+        js += '        orb.style.setProperty("--orb-speed", (speedMs + Math.random() * 8) + "s");\n';
+        js += '        orb.style.animationDelay = -(Math.random() * speedMs) + "s";\n';
+        js += '        container.appendChild(orb);\n';
+        js += '      }\n';
+        js += '    }\n\n';
+
+        js += '    if(type === "particle-field"){\n';
+        js += '      var count = intensity * 8;\n';
+        js += '      for(var j = 0; j < Math.min(count, 60); j++){\n';
+        js += '        var p = document.createElement("div");\n';
+        js += '        p.className = "cne-bg3d-particle";\n';
+        js += '        var pSize = 2 + Math.random() * 4;\n';
+        js += '        p.style.width = pSize + "px"; p.style.height = pSize + "px";\n';
+        js += '        p.style.background = Math.random() > 0.5 ? c1 : c2;\n';
+        js += '        p.style.left = Math.random() * 100 + "%";\n';
+        js += '        p.style.opacity = 0.3 + Math.random() * 0.5;\n';
+        js += '        p.style.setProperty("--p-speed", (speedMs + Math.random() * 15) + "s");\n';
+        js += '        p.style.animationDelay = -(Math.random() * 30) + "s";\n';
+        js += '        container.appendChild(p);\n';
+        js += '      }\n';
+        js += '    }\n\n';
+
+        js += '    if(type === "aurora"){\n';
+        js += '      for(var a = 0; a < Math.min(intensity, 5); a++){\n';
+        js += '        var au = document.createElement("div");\n';
+        js += '        au.className = "cne-bg3d-aurora";\n';
+        js += '        au.style.setProperty("--aurora-c1", c1);\n';
+        js += '        au.style.setProperty("--aurora-c2", c2);\n';
+        js += '        au.style.setProperty("--aurora-speed", (speedMs + a * 3) + "s");\n';
+        js += '        au.style.animationDelay = -(a * 2) + "s";\n';
+        js += '        au.style.opacity = 0.2 + (a * 0.1);\n';
+        js += '        container.appendChild(au);\n';
+        js += '      }\n';
+        js += '    }\n\n';
+
+        js += '    if(type === "mesh-gradient"){\n';
+        js += '      var mesh = document.createElement("div");\n';
+        js += '      mesh.className = "cne-bg3d-mesh";\n';
+        js += '      var stops = "radial-gradient(circle at 20% 30%, " + c1 + " 0%, transparent 50%),radial-gradient(circle at 80% 70%, " + c2 + " 0%, transparent 50%),radial-gradient(circle at 50% 50%, " + c1 + " 0%, transparent 70%)";\n';
+        js += '      mesh.style.background = stops;\n';
+        js += '      mesh.style.opacity = Math.min(intensity * 0.08, 0.6);\n';
+        js += '      mesh.style.setProperty("--mesh-speed", speedMs * 3 + "s");\n';
+        js += '      container.appendChild(mesh);\n';
+        js += '    }\n\n';
+
+        js += '    if(type === "noise-fog"){\n';
+        js += '      for(var f = 0; f < Math.min(intensity, 6); f++){\n';
+        js += '        var fog = document.createElement("div");\n';
+        js += '        fog.className = "cne-bg3d-orb";\n';
+        js += '        var fSize = 300 + Math.random() * 500;\n';
+        js += '        fog.style.width = fSize + "px"; fog.style.height = fSize + "px";\n';
+        js += '        fog.style.background = f % 2 === 0 ? c1 : c2;\n';
+        js += '        fog.style.filter = "blur(" + (100 + Math.random() * 80) + "px)";\n';
+        js += '        fog.style.opacity = 0.15 + Math.random() * 0.15;\n';
+        js += '        fog.style.top = Math.random() * 100 + "%";\n';
+        js += '        fog.style.left = Math.random() * 100 + "%";\n';
+        js += '        fog.style.setProperty("--orb-speed", (speedMs * 2 + Math.random() * 10) + "s");\n';
+        js += '        fog.style.animationDelay = -(Math.random() * 20) + "s";\n';
+        js += '        container.appendChild(fog);\n';
+        js += '      }\n';
+        js += '    }\n\n';
+
+        js += '    if(type === "starfield"){\n';
+        js += '      var starCount = intensity * 15;\n';
+        js += '      for(var s = 0; s < Math.min(starCount, 100); s++){\n';
+        js += '        var star = document.createElement("div");\n';
+        js += '        star.className = "cne-bg3d-star";\n';
+        js += '        var sSize = 1 + Math.random() * 3;\n';
+        js += '        star.style.width = sSize + "px"; star.style.height = sSize + "px";\n';
+        js += '        star.style.top = Math.random() * 100 + "%";\n';
+        js += '        star.style.left = Math.random() * 100 + "%";\n';
+        js += '        star.style.setProperty("--star-speed", (speedMs * 0.3 + Math.random() * 3) + "s");\n';
+        js += '        star.style.animationDelay = -(Math.random() * 5) + "s";\n';
+        js += '        container.appendChild(star);\n';
+        js += '      }\n';
+        js += '    }\n\n';
+
+        js += '    if(type === "wave-grid"){\n';
+        js += '      var cols = 20; var rows = 12;\n';
+        js += '      for(var gy = 0; gy < rows; gy++){\n';
+        js += '        var line = document.createElement("div");\n';
+        js += '        line.className = "cne-bg3d-grid-line";\n';
+        js += '        line.style.width = "100%"; line.style.height = "1px";\n';
+        js += '        line.style.top = (gy / rows * 100) + "%";\n';
+        js += '        line.style.left = "0";\n';
+        js += '        line.style.color = c1;\n';
+        js += '        container.appendChild(line);\n';
+        js += '      }\n';
+        js += '      for(var gx = 0; gx < cols; gx++){\n';
+        js += '        var vline = document.createElement("div");\n';
+        js += '        vline.className = "cne-bg3d-grid-line";\n';
+        js += '        vline.style.width = "1px"; vline.style.height = "100%";\n';
+        js += '        vline.style.top = "0";\n';
+        js += '        vline.style.left = (gx / cols * 100) + "%";\n';
+        js += '        vline.style.color = c2;\n';
+        js += '        container.appendChild(vline);\n';
+        js += '      }\n';
+        js += '      gsap.to(container.querySelectorAll(".cne-bg3d-grid-line"), {\n';
+        js += '        opacity: 0.3,\n';
+        js += '        duration: speedMs * 0.5,\n';
+        js += '        stagger: { each: 0.05, repeat: -1, yoyo: true },\n';
+        js += '        ease: "sine.inOut"\n';
+        js += '      });\n';
+        js += '    }\n';
         js += '  });\n\n';
 
         // Nav hide/show

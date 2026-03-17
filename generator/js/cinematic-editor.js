@@ -407,6 +407,19 @@ window.ArbelCinematicEditor = (function () {
             var dur = _qs('#cneSceneDuration'); if (dur) dur.value = scene.duration || 100;
             var bg = _qs('#cneSceneBg'); if (bg) bg.value = scene.bgColor || '#0a0a0f';
             var bgImg = _qs('#cneSceneBgImage'); if (bgImg) bgImg.value = scene.bgImage || '';
+            // 3D background fields
+            var bg3d = _qs('#cneSceneBg3d'); if (bg3d) bg3d.value = scene.bg3dType || '';
+            var bg3dc1 = _qs('#cneBg3dColor1'); if (bg3dc1) bg3dc1.value = scene.bg3dColor1 || '#6c5ce7';
+            var bg3dc2 = _qs('#cneBg3dColor2'); if (bg3dc2) bg3dc2.value = scene.bg3dColor2 || '#00cec9';
+            var bg3dInt = _qs('#cneBg3dIntensity'); if (bg3dInt) bg3dInt.value = scene.bg3dIntensity || '5';
+            var bg3dSpd = _qs('#cneBg3dSpeed'); if (bg3dSpd) bg3dSpd.value = scene.bg3dSpeed || 'medium';
+            var bg3dColRow = _qs('#cneBg3dColorRow');
+            var bg3dIntRow = _qs('#cneBg3dIntensityRow');
+            var bg3dSpdRow = _qs('#cneBg3dSpeedRow');
+            var show3d = !!(scene.bg3dType);
+            if (bg3dColRow) bg3dColRow.style.display = show3d ? '' : 'none';
+            if (bg3dIntRow) bg3dIntRow.style.display = show3d ? '' : 'none';
+            if (bg3dSpdRow) bg3dSpdRow.style.display = show3d ? '' : 'none';
         }
         _notifyUpdate(!!rerender);
     }
@@ -1547,6 +1560,18 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // Element background-image URL
+        var elBgImage = _qs('#cneElBgImage');
+        if (elBgImage) {
+            elBgImage.addEventListener('input', function () {
+                var raw = elBgImage.value.replace(/[\\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
+                if (raw && !/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/)./.test(raw)) { return; }
+                _setElStyle('backgroundImage', raw ? 'url(' + raw + ')' : '');
+                _setElStyle('backgroundSize', raw ? 'cover' : '');
+                _setElStyle('backgroundPosition', raw ? 'center' : '');
+            });
+        }
+
         // Gradient toggle + picker
         var _cneGradActive = false;
         var gradToggle = _qs('#cneGradToggle');
@@ -1981,7 +2006,11 @@ window.ArbelCinematicEditor = (function () {
             for (var p = 0; p <= 100; p += 10) {
                 var mark = document.createElement('span');
                 mark.className = 'cne-tl-ruler-mark';
-                mark.textContent = p + '%';
+                mark.style.left = p + '%';
+                var lbl = document.createElement('span');
+                lbl.className = 'cne-tl-ruler-label';
+                lbl.textContent = p + '%';
+                mark.appendChild(lbl);
                 ruler.appendChild(mark);
             }
         }
@@ -2018,13 +2047,13 @@ window.ArbelCinematicEditor = (function () {
 
             // Label
             var label = document.createElement('div');
-            label.className = 'cne-tl-label';
+            label.className = 'cne-tl-track-label';
             label.textContent = el.text ? el.text.substr(0, 16) : el.id;
             label.title = el.text || el.id;
 
             // Bar area
             var barArea = document.createElement('div');
-            barArea.className = 'cne-tl-bar-area';
+            barArea.className = 'cne-tl-bar-container';
 
             // The bar itself
             var bar = document.createElement('div');
@@ -2034,19 +2063,19 @@ window.ArbelCinematicEditor = (function () {
 
             // Left handle
             var handleL = document.createElement('div');
-            handleL.className = 'cne-tl-handle cne-tl-handle-l';
+            handleL.className = 'cne-tl-handle cne-tl-handle--left';
 
             // Right handle
             var handleR = document.createElement('div');
-            handleR.className = 'cne-tl-handle cne-tl-handle-r';
+            handleR.className = 'cne-tl-handle cne-tl-handle--right';
 
             // Property dots
             var propsDiv = document.createElement('div');
-            propsDiv.className = 'cne-tl-props';
+            propsDiv.className = 'cne-tl-dot-container';
             scrollProps.forEach(function (prop) {
                 if (el.scroll[prop] !== undefined) {
                     var dot = document.createElement('span');
-                    dot.className = 'cne-tl-prop-dot';
+                    dot.className = 'cne-tl-dot cne-tl-dot--' + prop;
                     dot.setAttribute('data-prop', prop);
                     dot.title = prop;
                     propsDiv.appendChild(dot);
@@ -2460,6 +2489,8 @@ window.ArbelCinematicEditor = (function () {
                 // Refresh properties panel for new device
                 var el = _getSelectedElement();
                 if (el) _updatePropertiesFromScene(el);
+                // Re-render preview to apply responsive overrides
+                _notifyUpdate(true);
             });
         });
     }
@@ -2589,6 +2620,39 @@ window.ArbelCinematicEditor = (function () {
                 }
             });
         }
+
+        // 3D background effect
+        var bg3dSelect = _qs('#cneSceneBg3d');
+        var bg3dColorRow = _qs('#cneBg3dColorRow');
+        var bg3dIntRow = _qs('#cneBg3dIntensityRow');
+        var bg3dSpeedRow = _qs('#cneBg3dSpeedRow');
+
+        function _toggle3dRows() {
+            var show = bg3dSelect && bg3dSelect.value !== '';
+            if (bg3dColorRow) bg3dColorRow.style.display = show ? '' : 'none';
+            if (bg3dIntRow) bg3dIntRow.style.display = show ? '' : 'none';
+            if (bg3dSpeedRow) bg3dSpeedRow.style.display = show ? '' : 'none';
+        }
+
+        function _apply3dBg() {
+            var scene = _scenes[_currentSceneIdx];
+            if (!scene) return;
+            _beginBurst('scene');
+            scene.bg3dType = bg3dSelect ? bg3dSelect.value : '';
+            scene.bg3dColor1 = (_qs('#cneBg3dColor1') || {}).value || '#6c5ce7';
+            scene.bg3dColor2 = (_qs('#cneBg3dColor2') || {}).value || '#00cec9';
+            scene.bg3dIntensity = (_qs('#cneBg3dIntensity') || {}).value || '5';
+            scene.bg3dSpeed = (_qs('#cneBg3dSpeed') || {}).value || 'medium';
+            _commitBurst('scene', 600);
+            _toggle3dRows();
+            _notifyUpdate(true);
+        }
+
+        if (bg3dSelect) bg3dSelect.addEventListener('change', _apply3dBg);
+        var bg3dc1 = _qs('#cneBg3dColor1'); if (bg3dc1) bg3dc1.addEventListener('input', _apply3dBg);
+        var bg3dc2 = _qs('#cneBg3dColor2'); if (bg3dc2) bg3dc2.addEventListener('input', _apply3dBg);
+        var bg3dInt = _qs('#cneBg3dIntensity'); if (bg3dInt) bg3dInt.addEventListener('input', _apply3dBg);
+        var bg3dSpd = _qs('#cneBg3dSpeed'); if (bg3dSpd) bg3dSpd.addEventListener('change', _apply3dBg);
     }
 
     /* ─── Helpers ─── */
@@ -2972,6 +3036,12 @@ window.ArbelCinematicEditor = (function () {
 
         var bgColor = _qs('#cneBgColor');
         if (bgColor) bgColor.value = _toHex(_getElStyleValue(el, 'background')) || '#000000';
+
+        var elBgImage = _qs('#cneElBgImage');
+        if (elBgImage) {
+            var bgImgVal = _getElStyleValue(el, 'backgroundImage') || '';
+            elBgImage.value = bgImgVal.replace(/^url\((['"]?)(.*)\1\)$/i, '$2');
+        }
 
         var opacity = _qs('#cneOpacity');
         if (opacity) {

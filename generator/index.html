@@ -1682,6 +1682,12 @@
                             <button class="cne-grad-toggle" id="cneGradToggle" title="Gradient mode">&#9698;</button>
                         </div>
                     </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Background Image URL</span>
+                            <input type="text" class="gen-input" id="cneElBgImage" placeholder="https://...">
+                        </div>
+                    </div>
                     <!-- Gradient picker (hidden by default) -->
                     <div class="cne-grad-panel" id="cneGradPanel" style="display:none">
                         <div class="cne-row">
@@ -2068,6 +2074,49 @@
                         <div class="cne-col" style="flex:1">
                             <span class="cne-hint mono">Background Image URL</span>
                             <input type="text" class="gen-input" id="cneSceneBgImage" placeholder="https://...">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">3D BACKGROUND EFFECT</div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Effect Type</span>
+                            <select class="gen-select" id="cneSceneBg3d">
+                                <option value="">None</option>
+                                <option value="gradient-orbs">Gradient Orbs</option>
+                                <option value="particle-field">Particle Field</option>
+                                <option value="aurora">Aurora Waves</option>
+                                <option value="mesh-gradient">Mesh Gradient</option>
+                                <option value="noise-fog">Noise Fog</option>
+                                <option value="starfield">Starfield</option>
+                                <option value="wave-grid">Wave Grid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dColorRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Effect Color 1</span>
+                            <input type="color" class="cne-color-input" id="cneBg3dColor1" value="#6c5ce7">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Effect Color 2</span>
+                            <input type="color" class="cne-color-input" id="cneBg3dColor2" value="#00cec9">
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dIntensityRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Intensity</span>
+                            <input type="range" class="gen-range" id="cneBg3dIntensity" min="1" max="10" value="5">
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dSpeedRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Speed</span>
+                            <select class="gen-select" id="cneBg3dSpeed">
+                                <option value="slow">Slow</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="fast">Fast</option>
+                            </select>
                         </div>
                     </div>
                 </div>
