@@ -1481,6 +1481,11 @@
             cfg.editorOverrides = state.editorOverrides;
         }
 
+        // Include design tokens from cinematic editor
+        if (typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.getDesignTokens) {
+            cfg.designTokens = ArbelCinematicEditor.getDesignTokens();
+        }
+
         return cfg;
     }
 

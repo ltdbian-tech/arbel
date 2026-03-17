@@ -39,6 +39,22 @@ window.ArbelCinematicEditor = (function () {
     var _burstSnapshots = {};    // { category: { snapshot, timer } }
     var _iframeTextUndoPushed = false; // guard for inline iframe text edits
 
+    /* ─── Design Tokens ─── */
+    var _designTokens = {
+        headingFont: "'Instrument Serif', Georgia, serif",
+        bodyFont: "'Inter', system-ui, sans-serif",
+        baseSize: 16,
+        scale: 1.25,
+        primary: '#6C5CE7',
+        secondary: '#00cec9',
+        text: '#f0f0f0',
+        textMuted: '#888888',
+        bg: '#0a0a0f',
+        surface: '#1a1a2e',
+        spaceUnit: 8,
+        radius: 8
+    };
+
     /* ─── DOM Shorthand ─── */
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
     function _qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
@@ -223,6 +239,9 @@ window.ArbelCinematicEditor = (function () {
 
         // Toolbar actions
         _setupToolbar();
+
+        // Design tokens
+        _setupTokensPanel();
 
         // Device toggle
         _setupDeviceToggle();
@@ -1902,6 +1921,110 @@ window.ArbelCinematicEditor = (function () {
         if (endInput) endInput.value = el.scroll.end || 1;
     }
 
+    /* ─── Design Tokens Panel ─── */
+    function _setupTokensPanel() {
+        var fields = {
+            headingFont: _qs('#cneTokenHeadingFont'),
+            bodyFont: _qs('#cneTokenBodyFont'),
+            baseSize: _qs('#cneTokenBaseSize'),
+            scale: _qs('#cneTokenScale'),
+            primary: _qs('#cneTokenPrimary'),
+            secondary: _qs('#cneTokenSecondary'),
+            text: _qs('#cneTokenText'),
+            textMuted: _qs('#cneTokenTextMuted'),
+            bg: _qs('#cneTokenBg'),
+            surface: _qs('#cneTokenSurface'),
+            spaceUnit: _qs('#cneTokenSpaceUnit'),
+            radius: _qs('#cneTokenRadius')
+        };
+
+        // Populate from current state
+        function _syncUI() {
+            if (fields.headingFont) fields.headingFont.value = _designTokens.headingFont;
+            if (fields.bodyFont) fields.bodyFont.value = _designTokens.bodyFont;
+            if (fields.baseSize) fields.baseSize.value = _designTokens.baseSize;
+            if (fields.scale) fields.scale.value = _designTokens.scale;
+            if (fields.primary) fields.primary.value = _designTokens.primary;
+            if (fields.secondary) fields.secondary.value = _designTokens.secondary;
+            if (fields.text) fields.text.value = _designTokens.text;
+            if (fields.textMuted) fields.textMuted.value = _designTokens.textMuted;
+            if (fields.bg) fields.bg.value = _designTokens.bg;
+            if (fields.surface) fields.surface.value = _designTokens.surface;
+            if (fields.spaceUnit) fields.spaceUnit.value = _designTokens.spaceUnit;
+            if (fields.radius) fields.radius.value = _designTokens.radius;
+        }
+        _syncUI();
+
+        // Wire up change listeners
+        Object.keys(fields).forEach(function (key) {
+            var el = fields[key];
+            if (!el) return;
+            el.addEventListener('input', function () {
+                var v = el.value;
+                if (key === 'baseSize' || key === 'spaceUnit' || key === 'radius') v = parseInt(v, 10) || _designTokens[key];
+                if (key === 'scale') v = parseFloat(v) || _designTokens[key];
+                _designTokens[key] = v;
+                _notifyUpdate(true);
+            });
+        });
+
+        // Apply tokens to all elements button
+        var applyBtn = _qs('#cneTokenApply');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', function () {
+                _applyTokensToAll();
+            });
+        }
+
+        // Tokens toolbar shortcut — switch to tokens tab
+        var tokensToolbar = _qs('#cneTokensToolbar');
+        if (tokensToolbar) {
+            tokensToolbar.addEventListener('click', function () {
+                var tabs = _qsa('.cne-prop-tab');
+                var panels = _qsa('.cne-prop-panel');
+                tabs.forEach(function (t) { t.classList.remove('active'); });
+                panels.forEach(function (p) { p.classList.remove('active'); });
+                var tokTab = _qs('.cne-prop-tab[data-tab="tokens"]');
+                var tokPanel = _qs('.cne-prop-panel[data-panel="tokens"]');
+                if (tokTab) tokTab.classList.add('active');
+                if (tokPanel) tokPanel.classList.add('active');
+            });
+        }
+    }
+
+    function _applyTokensToAll() {
+        _pushUndo();
+        _scenes.forEach(function (scene) {
+            // Apply scene bg from token
+            scene.bgColor = _designTokens.bg;
+            (scene.elements || []).forEach(function (el) {
+                if (!el.style) return;
+                var tag = el.tag || '';
+                // Apply heading font to heading tags
+                if (/^h[1-6]$/.test(tag)) {
+                    el.style.fontFamily = _designTokens.headingFont;
+                }
+                // Apply body font to p, span, li, div-with-text
+                if (/^(p|span|li|a|label)$/.test(tag) || (tag === 'div' && el.text)) {
+                    el.style.fontFamily = _designTokens.bodyFont;
+                }
+                // Apply text color if currently a light/white color
+                if (el.style.color) {
+                    var c = el.style.color.toLowerCase();
+                    if (c === '#ffffff' || c === '#fff' || c === '#f0f0f0' || c === 'white' || c === 'rgb(255,255,255)') {
+                        el.style.color = _designTokens.text;
+                    }
+                }
+                // Apply border radius from token
+                if (el.style.borderRadius && el.style.borderRadius !== '0px' && el.style.borderRadius !== '0') {
+                    el.style.borderRadius = _designTokens.radius + 'px';
+                }
+            });
+        });
+        _refreshPreview();
+        _notifyUpdate(true);
+    }
+
     /* ─── Toolbar ─── */
     function _setupToolbar() {
         // Delete element
@@ -3385,6 +3508,8 @@ window.ArbelCinematicEditor = (function () {
         setScenes: function (s) { if (Array.isArray(s)) { _scenes = s; _renderSceneList(); _selectScene(0); } },
         getOverrides: function () { return _overrides; },
         setOverrides: function (o) { _overrides = o || {}; },
+        getDesignTokens: function () { return _designTokens; },
+        setDesignTokens: function (t) { if (t && typeof t === 'object') { Object.keys(t).forEach(function (k) { if (_designTokens.hasOwnProperty(k)) _designTokens[k] = t[k]; }); } },
         getCurrentSceneIdx: function () { return _currentSceneIdx; },
         getOverlayScript: _getOverlayScript,
         showAIDialog: _showAIGenerateDialog,

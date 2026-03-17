@@ -1435,6 +1435,9 @@
                     <button class="cne-toolbar-btn" id="cneIconToolbar" title="SVG Icons">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" style="display:none"/><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                     </button>
+                    <button class="cne-toolbar-btn" id="cneTokensToolbar" title="Design Tokens">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    </button>
                     <button class="cne-toolbar-btn cne-toolbar-btn--ai" id="cneAIBtn" title="AI Generate Scene">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                     </button>
@@ -1475,6 +1478,7 @@
                     <button class="cne-prop-tab active" data-tab="style">STYLE</button>
                     <button class="cne-prop-tab" data-tab="scroll">SCROLL</button>
                     <button class="cne-prop-tab" data-tab="scene">SCENE</button>
+                    <button class="cne-prop-tab" data-tab="tokens">TOKENS</button>
                 </div>
 
                 <!-- Style Panel -->
@@ -1942,6 +1946,125 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+                <!-- Tokens Panel -->
+                <div class="cne-prop-panel" data-panel="tokens">
+                    <div class="cne-el-header">Design Tokens</div>
+                    <p class="cne-hint" style="margin-bottom:12px">Global styles applied across all scenes via CSS custom properties.</p>
+
+                    <div class="cne-section-label">TYPOGRAPHY</div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Heading Font</span>
+                            <select class="gen-select" id="cneTokenHeadingFont">
+                                <option value="'Instrument Serif', Georgia, serif">Instrument Serif</option>
+                                <option value="'Inter', sans-serif">Inter</option>
+                                <option value="'Playfair Display', serif">Playfair Display</option>
+                                <option value="'DM Serif Display', serif">DM Serif Display</option>
+                                <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                                <option value="'Sora', sans-serif">Sora</option>
+                                <option value="'Outfit', sans-serif">Outfit</option>
+                                <option value="'Poppins', sans-serif">Poppins</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+                                <option value="'Archivo Black', sans-serif">Archivo Black</option>
+                                <option value="'Oswald', sans-serif">Oswald</option>
+                                <option value="'Lora', serif">Lora</option>
+                                <option value="'Merriweather', serif">Merriweather</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Body Font</span>
+                            <select class="gen-select" id="cneTokenBodyFont">
+                                <option value="'Inter', system-ui, sans-serif">Inter</option>
+                                <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                                <option value="'DM Sans', sans-serif">DM Sans</option>
+                                <option value="'Sora', sans-serif">Sora</option>
+                                <option value="'Outfit', sans-serif">Outfit</option>
+                                <option value="'Poppins', sans-serif">Poppins</option>
+                                <option value="'Montserrat', sans-serif">Montserrat</option>
+                                <option value="'Raleway', sans-serif">Raleway</option>
+                                <option value="'Roboto', sans-serif">Roboto</option>
+                                <option value="'Open Sans', sans-serif">Open Sans</option>
+                                <option value="'Lora', serif">Lora</option>
+                                <option value="'Crimson Text', serif">Crimson Text</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Base Size</span>
+                            <input type="number" class="gen-input" id="cneTokenBaseSize" min="12" max="24" value="16" placeholder="16">
+                            <span class="cne-hint">px</span>
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Scale Ratio</span>
+                            <select class="gen-select" id="cneTokenScale">
+                                <option value="1.125">Minor Second (1.125)</option>
+                                <option value="1.2">Minor Third (1.2)</option>
+                                <option value="1.25" selected>Major Third (1.25)</option>
+                                <option value="1.333">Perfect Fourth (1.333)</option>
+                                <option value="1.414">Aug Fourth (1.414)</option>
+                                <option value="1.5">Perfect Fifth (1.5)</option>
+                                <option value="1.618">Golden Ratio (1.618)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">COLORS</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Primary</span>
+                            <input type="color" class="cne-color-input" id="cneTokenPrimary" value="#6C5CE7">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Secondary</span>
+                            <input type="color" class="cne-color-input" id="cneTokenSecondary" value="#00cec9">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Text</span>
+                            <input type="color" class="cne-color-input" id="cneTokenText" value="#f0f0f0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Text Muted</span>
+                            <input type="color" class="cne-color-input" id="cneTokenTextMuted" value="#888888">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Background</span>
+                            <input type="color" class="cne-color-input" id="cneTokenBg" value="#0a0a0f">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Surface</span>
+                            <input type="color" class="cne-color-input" id="cneTokenSurface" value="#1a1a2e">
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">SPACING &amp; SHAPE</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Space Unit</span>
+                            <input type="number" class="gen-input" id="cneTokenSpaceUnit" min="2" max="16" value="8" placeholder="8">
+                            <span class="cne-hint">px</span>
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Radius</span>
+                            <input type="number" class="gen-input" id="cneTokenRadius" min="0" max="32" value="8" placeholder="8">
+                            <span class="cne-hint">px</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:16px">
+                        <button class="cne-toolbar-btn--accent cne-toolbar-btn" id="cneTokenApply" style="width:100%;justify-content:center;padding:8px 0">Apply Tokens to All Elements</button>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Timeline (Bottom, collapsed by default) -->
