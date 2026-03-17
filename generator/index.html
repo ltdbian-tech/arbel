@@ -20,7 +20,7 @@
         <div class="consent-modal">
             <div class="consent-header">
                 <div class="consent-logo" id="consentTitle">arbel<span class="dot">.</span></div>
-                <p class="consent-tagline mono">BEFORE YOU BEGIN</p>
+                <p class="consent-tagline mono">QUICK HEADS-UP</p>
             </div>
             <div class="consent-body">
                 <p>By using Arbel, you agree to our Terms&nbsp;of&nbsp;Service and acknowledge our Privacy&nbsp;Policy. Key points:</p>
@@ -69,15 +69,15 @@
 
     <!-- Step Indicators -->
     <nav class="gen-steps-nav" id="stepsNav" aria-label="Generator steps">
-        <button class="step-dot active" data-step="0" aria-current="step"><span class="mono">AUTH</span></button>
+        <button class="step-dot active" data-step="0" aria-current="step"><span class="mono">1. CONNECT</span></button>
         <div class="step-line"></div>
-        <button class="step-dot" data-step="1"><span class="mono">STYLE</span></button>
+        <button class="step-dot" data-step="1"><span class="mono">2. STYLE</span></button>
         <div class="step-line"></div>
-        <button class="step-dot" data-step="2"><span class="mono">CONFIGURE</span></button>
+        <button class="step-dot" data-step="2"><span class="mono">3. CONTENT</span></button>
         <div class="step-line"></div>
-        <button class="step-dot" data-step="3"><span class="mono">PREVIEW</span></button>
+        <button class="step-dot" data-step="3"><span class="mono">4. EDIT</span></button>
         <div class="step-line"></div>
-        <button class="step-dot" data-step="4"><span class="mono">DEPLOY</span></button>
+        <button class="step-dot" data-step="4"><span class="mono">5. PUBLISH</span></button>
     </nav>
 
     <!-- Wizard Container -->
@@ -86,9 +86,9 @@
         <!-- Step 0: Auth -->
         <section class="gen-step active" data-step="0" id="stepAuth">
             <div class="step-content step-content--centered">
-                <div class="step-label mono">01 / AUTHENTICATE</div>
+                <div class="step-label mono">STEP 1 OF 5</div>
                 <h1 class="step-heading">Connect your <em>GitHub.</em></h1>
-                <p class="step-sub">Your generated site will live in your own GitHub repository. You own the code forever.</p>
+                <p class="step-sub">Sign in with GitHub so we can create a repository for your site. You'll own the code forever — no lock&#8209;in.</p>
 
                 <div class="auth-box">
                     <!-- Primary: GitHub OAuth -->
@@ -141,9 +141,9 @@
         <!-- Step 1: Choose Style -->
         <section class="gen-step" data-step="1" id="stepStyle">
             <div class="step-content step-content--wide">
-                <div class="step-label mono">02 / CHOOSE STYLE</div>
+                <div class="step-label mono">STEP 2 OF 5</div>
                 <h2 class="step-heading">Pick your <em>Aesthetic.</em></h2>
-                <p class="step-sub">Choose a preset animation or build your own custom effect.</p>
+                <p class="step-sub">Choose a ready-made animation preset, or build your own custom background effect from scratch.</p>
 
                 <!-- Mode Toggle -->
                 <div class="style-mode-toggle" id="styleModeToggle">
@@ -210,8 +210,8 @@
                 </div>
 
                 <div class="step-actions">
-                    <button class="gen-btn" id="backToAuth">BACK</button>
-                    <button class="gen-btn gen-btn--primary" id="toConfig">CONTINUE</button>
+                    <button class="gen-btn" id="backToAuth">← BACK</button>
+                    <button class="gen-btn gen-btn--primary" id="toConfig">NEXT: ADD CONTENT →</button>
                 </div>
 
                 <!-- Mode Selector -->
@@ -235,14 +235,15 @@
         <!-- Step 2: Configure -->
         <section class="gen-step" data-step="2" id="stepConfig">
             <div class="step-content">
-                <div class="step-label mono">03 / CONFIGURE</div>
-                <h2 class="step-heading">Build your <em>Site.</em></h2>
+                <div class="step-label mono">STEP 3 OF 5</div>
+                <h2 class="step-heading">Add your <em>Content.</em></h2>
 
                 <div class="config-layout">
                     <div class="config-main">
                         <!-- Brand Info -->
                         <div class="config-group">
-                            <h3 class="config-group-title mono">BRAND</h3>
+                            <h3 class="config-group-title mono">BRAND INFO</h3>
+                            <p class="config-hint">Tell us about your business. This info appears across your site.</p>
                             <div class="field">
                                 <label class="field-label mono">BRAND NAME</label>
                                 <input type="text" id="brandName" class="gen-input" placeholder="Acme Studio" maxlength="40">
@@ -282,7 +283,8 @@
 
                         <!-- Color Override -->
                         <div class="config-group">
-                            <h3 class="config-group-title mono">COLORS</h3>
+                            <h3 class="config-group-title mono">THEME COLORS</h3>
+                            <p class="config-hint">Pick your brand colors. These tint buttons, headings, and accents.</p>
                             <div class="color-row">
                                 <div class="field field--sm">
                                     <label class="field-label mono">ACCENT</label>
@@ -303,8 +305,8 @@
 
                         <!-- SEO / Meta Tags -->
                         <div class="config-group">
-                            <h3 class="config-group-title mono">SEO &amp; META</h3>
-                            <p class="config-hint">Boost search visibility. Leave blank to use defaults from Brand / Tagline.</p>
+                            <h3 class="config-group-title mono">SEO &amp; META TAGS</h3>
+                            <p class="config-hint">Boost search visibility. Leave these blank to auto-fill from your brand name and tagline.</p>
                             <div class="field">
                                 <label class="field-label mono">SEO TITLE</label>
                                 <input type="text" id="seoTitle" class="gen-input" placeholder="Custom page title (defaults to Brand — Tagline)" maxlength="70">
@@ -354,8 +356,8 @@
 
                         <!-- Sections Toggle -->
                         <div class="config-group">
-                            <h3 class="config-group-title mono">SECTIONS</h3>
-                            <p class="config-hint">Toggle sections on/off. Hero and Contact are always included.</p>
+                            <h3 class="config-group-title mono">PAGE SECTIONS</h3>
+                            <p class="config-hint">Choose which sections to include. Hero and Contact are always on.</p>
                             <div class="section-toggles" id="sectionToggles">
                                 <label class="toggle-item locked"><input type="checkbox" checked disabled data-section="hero"><span class="toggle-label">Hero</span><span class="toggle-badge mono">REQUIRED</span></label>
                                 <label class="toggle-item"><input type="checkbox" checked data-section="services"><span class="toggle-label">Services</span></label>
@@ -622,13 +624,13 @@
                                 </p>
                             </div>
                         </div>
-                        <button class="gen-btn gen-btn--primary" id="sidebarPreview" style="width:100%;margin-top:16px">PREVIEW &amp; BUILD</button>
+                        <button class="gen-btn gen-btn--primary" id="sidebarPreview" style="width:100%;margin-top:16px">NEXT: PREVIEW &amp; EDIT →</button>
                     </aside>
                 </div>
 
                 <div class="step-actions">
-                    <button class="gen-btn" id="backToStyle">BACK</button>
-                    <button class="gen-btn gen-btn--primary" id="toPreview">PREVIEW SITE</button>
+                    <button class="gen-btn" id="backToStyle">← BACK</button>
+                    <button class="gen-btn gen-btn--primary" id="toPreview">NEXT: PREVIEW &amp; EDIT →</button>
                 </div>
             </div>
         </section>
@@ -2197,8 +2199,8 @@
         <!-- Step 4: Deploy -->
         <section class="gen-step" data-step="4" id="stepDeploy">
             <div class="step-content step-content--centered">
-                <div class="step-label mono">05 / DEPLOY</div>
-                <h2 class="step-heading">Launch <em>Now.</em></h2>
+                <div class="step-label mono">STEP 5 OF 5</div>
+                <h2 class="step-heading">Publish your <em>Site.</em></h2>
 
                 <div class="deploy-box" id="deployBox">
                     <div class="field">
@@ -2206,20 +2208,23 @@
                         <div class="repo-preview mono">
                             <span id="deployUsername">username</span> / <input type="text" id="repoName" class="gen-input gen-input--inline" placeholder="my-portfolio" maxlength="60" pattern="[a-z0-9\-]+">
                         </div>
-                        <p class="field-hint mono">Lowercase, hyphens only. This becomes your site URL.</p>
+                        <p class="field-hint mono">Lowercase letters and hyphens only. This becomes your site URL.</p>
                     </div>
 
                     <div class="deploy-url-preview mono" id="deployUrlPreview">
-                        Your site will be live at: <strong id="deployUrl">username.github.io/my-portfolio</strong>
+                        🌐 Your site will be live at: <strong id="deployUrl">username.github.io/my-portfolio</strong>
                     </div>
 
-                    <button class="gen-btn gen-btn--primary gen-btn--lg" id="deployBtn">DEPLOY NOW</button>
+                    <button class="gen-btn gen-btn--primary gen-btn--lg" id="deployBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/><path d="M12 12v9M8 17l4 4 4-4"/></svg>
+                        PUBLISH MY SITE
+                    </button>
 
                     <div class="deploy-progress" id="deployProgress" style="display:none;">
-                        <div class="deploy-step" id="ds1"><span class="deploy-icon">&#9675;</span> Creating repository...</div>
-                        <div class="deploy-step" id="ds2"><span class="deploy-icon">&#9675;</span> Pushing files...</div>
-                        <div class="deploy-step" id="ds3"><span class="deploy-icon">&#9675;</span> Enabling GitHub Pages...</div>
-                        <div class="deploy-step" id="ds4"><span class="deploy-icon">&#9675;</span> Site is live!</div>
+                        <div class="deploy-step" id="ds1"><span class="deploy-icon">&#9675;</span> Creating your repository…</div>
+                        <div class="deploy-step" id="ds2"><span class="deploy-icon">&#9675;</span> Uploading site files…</div>
+                        <div class="deploy-step" id="ds3"><span class="deploy-icon">&#9675;</span> Enabling GitHub Pages…</div>
+                        <div class="deploy-step" id="ds4"><span class="deploy-icon">&#9675;</span> 🎉 Your site is live!</div>
                     </div>
 
                     <div class="deploy-success" id="deploySuccess" style="display:none;">
