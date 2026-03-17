@@ -124,8 +124,8 @@ window.ArbelAI = (function () {
 
     /** Generate copy using the configured provider */
     async function generateCopy(description, industry, brandName, sections) {
-        var provider = ArbelKeyManager.getProvider();
-        var apiKey = ArbelKeyManager.getKey();
+        var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
+        var apiKey = ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey();
 
         if (!apiKey) throw new Error('No API key configured. Add your key in the AI panel.');
         if (!description || !description.trim()) throw new Error('Please describe your business first.');

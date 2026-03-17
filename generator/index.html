@@ -1428,6 +1428,33 @@
                     <button class="cne-toolbar-btn" id="cneDeleteEl" title="Delete Element">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
                     </button>
+                    <div class="cne-toolbar-divider"></div>
+                    <div class="cne-align-group" id="cneAlignGroup" style="display:none">
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="left" title="Align Left">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v18"/><rect x="8" y="5" width="12" height="4" rx="1"/><rect x="8" y="13" width="8" height="4" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="center-h" title="Align Center Horizontal">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><rect x="5" y="5" width="14" height="4" rx="1"/><rect x="7" y="13" width="10" height="4" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="right" title="Align Right">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 3v18"/><rect x="4" y="5" width="12" height="4" rx="1"/><rect x="8" y="13" width="8" height="4" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="top" title="Align Top">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h18"/><rect x="5" y="8" width="4" height="12" rx="1"/><rect x="13" y="8" width="4" height="8" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="center-v" title="Align Center Vertical">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18"/><rect x="5" y="5" width="4" height="14" rx="1"/><rect x="13" y="7" width="4" height="10" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="bottom" title="Align Bottom">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="4" width="4" height="12" rx="1"/><rect x="13" y="8" width="4" height="8" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="dist-h" title="Distribute Horizontally">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="4" height="12" rx="1"/><rect x="10" y="8" width="4" height="8" rx="1"/><rect x="18" y="6" width="4" height="12" rx="1"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn cne-align-btn" data-align="dist-v" title="Distribute Vertically">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="4" rx="1"/><rect x="8" y="10" width="8" height="4" rx="1"/><rect x="6" y="18" width="12" height="4" rx="1"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="cne-toolbar-right">
                     <button class="cne-toolbar-btn cne-panel-toggle-btn" id="cneToggleProps" title="Toggle Properties Panel">
@@ -1767,6 +1794,54 @@
                                 <option value="blur(12px) brightness(0.8)">Blur + Darken</option>
                                 <option value="grayscale(100%)">Grayscale</option>
                                 <option value="sepia(100%)">Sepia</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">3D TRANSFORM</div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Rotate X</span>
+                            <input type="number" class="gen-input" id="cne3dRotateX" min="-180" max="180" placeholder="0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Rotate Y</span>
+                            <input type="number" class="gen-input" id="cne3dRotateY" min="-180" max="180" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Rotate Z</span>
+                            <input type="number" class="gen-input" id="cne3dRotateZ" min="-180" max="180" placeholder="0">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Translate Z</span>
+                            <input type="number" class="gen-input" id="cne3dTranslateZ" min="-500" max="500" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Perspective</span>
+                            <input type="number" class="gen-input" id="cne3dPerspective" min="0" max="2000" placeholder="800">
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Backface</span>
+                            <select class="gen-select" id="cne3dBackface">
+                                <option value="">Visible</option>
+                                <option value="hidden">Hidden</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">3D Preset</span>
+                            <select class="gen-select" id="cne3dPreset">
+                                <option value="">None</option>
+                                <option value="card-flip">Card Flip</option>
+                                <option value="tilt-hover">Tilt Hover</option>
+                                <option value="float-3d">Float 3D</option>
+                                <option value="cube-face">Cube Face</option>
+                                <option value="barrel-roll">Barrel Roll</option>
                             </select>
                         </div>
                     </div>
@@ -2119,6 +2194,19 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="cne-section-label">SPLINE 3D EMBED</div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Spline Scene URL</span>
+                            <input type="text" class="gen-input" id="cneSceneSpline" placeholder="https://prod.spline.design/...">
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneSplineInfo" style="display:none">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint" style="color:#10b981">✓ Spline scene will be embedded as background</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Tokens Panel -->
@@ -2386,6 +2474,174 @@
         </section>
     </main>
 
+    <!-- Context Menu (positioned absolutely) -->
+    <div class="cne-context-menu" id="cneContextMenu" style="display:none">
+        <button class="cne-ctx-item" data-action="duplicate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg> Duplicate</button>
+        <button class="cne-ctx-item" data-action="copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy</button>
+        <button class="cne-ctx-item" data-action="paste"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> Paste</button>
+        <div class="cne-ctx-sep"></div>
+        <button class="cne-ctx-item" data-action="front"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="12" height="12" rx="2" opacity="0.3"/><rect x="10" y="2" width="12" height="12" rx="2"/></svg> Bring to Front</button>
+        <button class="cne-ctx-item" data-action="back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="10" y="6" width="12" height="12" rx="2" opacity="0.3"/><rect x="2" y="2" width="12" height="12" rx="2"/></svg> Send to Back</button>
+        <div class="cne-ctx-sep"></div>
+        <button class="cne-ctx-item" data-action="lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> <span id="cneCtxLockLabel">Lock</span></button>
+        <button class="cne-ctx-item" data-action="group"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> Group</button>
+        <div class="cne-ctx-sep"></div>
+        <button class="cne-ctx-item cne-ctx-danger" data-action="delete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg> Delete</button>
+    </div>
+
+    <!-- AI Studio Dialog -->
+    <div class="cne-dialog-overlay" id="cneAIStudio" style="display:none">
+        <div class="cne-dialog cne-dialog--lg">
+            <div class="cne-dialog-header">
+                <span class="cne-dialog-title">AI Studio</span>
+                <button class="cne-dialog-close" id="cneAIStudioClose">&times;</button>
+            </div>
+            <div class="cne-dialog-tabs">
+                <button class="cne-dialog-tab active" data-aitab="video">Video</button>
+                <button class="cne-dialog-tab" data-aitab="image">Image</button>
+                <button class="cne-dialog-tab" data-aitab="animate">Photo → Anim</button>
+            </div>
+            <div class="cne-dialog-body">
+                <!-- Video Tab -->
+                <div class="cne-ai-panel active" data-aipanel="video">
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Provider</span>
+                            <select class="gen-select" id="cneAIVideoProvider"></select>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneAIVideoKeyRow">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">API Key</span>
+                            <div style="display:flex;gap:6px">
+                                <input type="password" class="gen-input" id="cneAIVideoKey" placeholder="Paste API key..." style="flex:1">
+                                <button class="cne-toolbar-btn" id="cneAIVideoKeySave" title="Save Key" style="font-size:0.6rem;padding:4px 8px">SAVE</button>
+                            </div>
+                            <span class="cne-hint mono" id="cneAIVideoKeyStatus" style="color:#10b981"></span>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Prompt</span>
+                            <textarea class="gen-input" id="cneAIVideoPrompt" rows="3" placeholder="Describe the video you want to generate..."></textarea>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Resolution</span>
+                            <select class="gen-select" id="cneAIVideoRes">
+                                <option value="landscape">Landscape (16:9)</option>
+                                <option value="portrait">Portrait (9:16)</option>
+                                <option value="square">Square (1:1)</option>
+                            </select>
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Duration</span>
+                            <select class="gen-select" id="cneAIVideoDuration">
+                                <option value="3">3s</option>
+                                <option value="5" selected>5s</option>
+                                <option value="10">10s</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Source Image (optional, for Img→Video)</span>
+                            <input type="text" class="gen-input" id="cneAIVideoImage" placeholder="https://...">
+                        </div>
+                    </div>
+                    <button class="gen-btn" id="cneAIVideoGenerate" style="width:100%;margin-top:8px">Generate Video</button>
+                    <div class="cne-ai-status" id="cneAIVideoStatus" style="display:none">
+                        <div class="cne-ai-spinner"></div>
+                        <span id="cneAIVideoStatusMsg">Generating...</span>
+                    </div>
+                    <div class="cne-ai-output" id="cneAIVideoOutput" style="display:none">
+                        <video id="cneAIVideoResult" controls style="width:100%;border-radius:8px"></video>
+                        <button class="gen-btn" id="cneAIVideoInsert" style="width:100%;margin-top:8px">Insert into Scene</button>
+                    </div>
+                </div>
+
+                <!-- Image Tab -->
+                <div class="cne-ai-panel" data-aipanel="image">
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Provider</span>
+                            <select class="gen-select" id="cneAIImageProvider"></select>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneAIImageKeyRow">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">API Key</span>
+                            <div style="display:flex;gap:6px">
+                                <input type="password" class="gen-input" id="cneAIImageKey" placeholder="Paste API key..." style="flex:1">
+                                <button class="cne-toolbar-btn" id="cneAIImageKeySave" title="Save Key" style="font-size:0.6rem;padding:4px 8px">SAVE</button>
+                            </div>
+                            <span class="cne-hint mono" id="cneAIImageKeyStatus" style="color:#10b981"></span>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Prompt</span>
+                            <textarea class="gen-input" id="cneAIImagePrompt" rows="3" placeholder="Describe the image you want to generate..."></textarea>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Resolution</span>
+                            <select class="gen-select" id="cneAIImageRes">
+                                <option value="landscape">Landscape (16:9)</option>
+                                <option value="portrait">Portrait (9:16)</option>
+                                <option value="square">Square (1:1)</option>
+                            </select>
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Model</span>
+                            <select class="gen-select" id="cneAIImageModel">
+                                <option value="flux">Flux Schnell</option>
+                                <option value="sdxl">SDXL</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="gen-btn" id="cneAIImageGenerate" style="width:100%;margin-top:8px">Generate Image</button>
+                    <div class="cne-ai-status" id="cneAIImageStatus" style="display:none">
+                        <div class="cne-ai-spinner"></div>
+                        <span id="cneAIImageStatusMsg">Generating...</span>
+                    </div>
+                    <div class="cne-ai-output" id="cneAIImageOutput" style="display:none">
+                        <img id="cneAIImageResult" style="width:100%;border-radius:8px">
+                        <button class="gen-btn" id="cneAIImageInsert" style="width:100%;margin-top:8px">Insert into Scene</button>
+                    </div>
+                </div>
+
+                <!-- Photo → Animation Tab -->
+                <div class="cne-ai-panel" data-aipanel="animate">
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Image URL</span>
+                            <input type="text" class="gen-input" id="cneAIAnimImage" placeholder="https://... or select an element">
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Animation Effect</span>
+                            <select class="gen-select" id="cneAIAnimEffect">
+                                <option value="ken-burns">Ken Burns (Pan + Zoom)</option>
+                                <option value="parallax-zoom">Parallax Zoom</option>
+                                <option value="float">Float</option>
+                                <option value="pulse">Pulse</option>
+                                <option value="rotate-slow">Slow Rotate</option>
+                                <option value="blur-reveal">Blur Reveal</option>
+                                <option value="clip-reveal">Clip Reveal</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="cne-ai-anim-preview" id="cneAIAnimPreview" style="width:100%;height:200px;background:#111;border-radius:8px;overflow:hidden;margin:8px 0"></div>
+                    <button class="gen-btn" id="cneAIAnimApply" style="width:100%;margin-top:8px">Apply Animation to Element</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="gen-footer mono">
         <span>Built with arbel.live</span>
@@ -2400,6 +2656,7 @@
     <script src="js/key-manager.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/ai.js"></script>
+    <script src="js/ai-media.js"></script>
     <script src="js/compiler.js"></script>
     <script src="js/cinematic-compiler.js"></script>
     <script src="js/preview.js"></script>

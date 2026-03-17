@@ -420,6 +420,9 @@ window.ArbelCinematicEditor = (function () {
             if (bg3dColRow) bg3dColRow.style.display = show3d ? '' : 'none';
             if (bg3dIntRow) bg3dIntRow.style.display = show3d ? '' : 'none';
             if (bg3dSpdRow) bg3dSpdRow.style.display = show3d ? '' : 'none';
+            // Spline 3D embed
+            var spline = _qs('#cneSceneSpline'); if (spline) spline.value = scene.splineUrl || '';
+            var splineInfo = _qs('#cneSplineInfo'); if (splineInfo) splineInfo.style.display = scene.splineUrl ? '' : 'none';
         }
         _notifyUpdate(!!rerender);
     }
@@ -1651,6 +1654,52 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // 3D Transform inputs
+        ['RotateX', 'RotateY', 'RotateZ', 'TranslateZ'].forEach(function (prop) {
+            var input = _qs('#cne3d' + prop);
+            if (input) {
+                input.addEventListener('input', function () {
+                    _apply3DTransform();
+                });
+            }
+        });
+        var perspInput = _qs('#cne3dPerspective');
+        if (perspInput) {
+            perspInput.addEventListener('input', function () {
+                var val = perspInput.value;
+                _setElStyle('perspective', val ? val + 'px' : '');
+            });
+        }
+        var backfaceSelect = _qs('#cne3dBackface');
+        if (backfaceSelect) {
+            backfaceSelect.addEventListener('change', function () {
+                _setElStyle('backfaceVisibility', backfaceSelect.value || '');
+            });
+        }
+        var preset3d = _qs('#cne3dPreset');
+        if (preset3d) {
+            preset3d.addEventListener('change', function () {
+                var val = preset3d.value;
+                if (!val) return;
+                var presets = {
+                    'card-flip':  { rotateY: 180, perspective: 800 },
+                    'tilt-hover': { rotateX: 15, rotateY: -15, perspective: 1000 },
+                    'float-3d':   { rotateX: 10, rotateY: 10, translateZ: 40, perspective: 800 },
+                    'cube-face':  { rotateY: 45, translateZ: 100, perspective: 600 },
+                    'barrel-roll':{ rotateX: 30, rotateZ: 5, perspective: 1000 }
+                };
+                var p = presets[val];
+                if (!p) return;
+                var rx = _qs('#cne3dRotateX'); if (rx) rx.value = p.rotateX || 0;
+                var ry = _qs('#cne3dRotateY'); if (ry) ry.value = p.rotateY || 0;
+                var rz = _qs('#cne3dRotateZ'); if (rz) rz.value = p.rotateZ || 0;
+                var tz = _qs('#cne3dTranslateZ'); if (tz) tz.value = p.translateZ || 0;
+                var pe = _qs('#cne3dPerspective'); if (pe) pe.value = p.perspective || 800;
+                _setElStyle('perspective', (p.perspective || 800) + 'px');
+                _apply3DTransform();
+            });
+        }
+
         // Border
         var borderWidth = _qs('#cneBorderWidth');
         var borderColor = _qs('#cneBorderColor');
@@ -2438,6 +2487,23 @@ window.ArbelCinematicEditor = (function () {
         if (exportBtn) exportBtn.addEventListener('click', function () { _exportJSON(); });
         if (importBtn) importBtn.addEventListener('click', function () { _importJSON(); });
 
+        // Alignment buttons
+        var alignBtns = _qsa('.cne-align-btn');
+        alignBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var mode = btn.getAttribute('data-align');
+                if (mode) _alignElements(mode);
+            });
+        });
+
+        // AI Studio open button (reuse existing AI button)
+        var aiBtn = _qs('#cneAIBtn');
+        if (aiBtn) {
+            aiBtn.addEventListener('click', function () {
+                _showAIStudio();
+            });
+        }
+
         // Keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z / Ctrl+C / Ctrl+V / Ctrl+D / Ctrl+A)
         _keydownHandler = function (e) {
             if (!_active) return;
@@ -2561,6 +2627,71 @@ window.ArbelCinematicEditor = (function () {
                 if (zoomVal) zoomVal.textContent = _zoom + '%';
             });
         }
+
+        // Ctrl + mouse wheel zoom on canvas
+        var canvasArea = _container ? _container.querySelector('.cne-canvas-area') : null;
+        if (canvasArea) {
+            canvasArea.addEventListener('wheel', function (e) {
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    var delta = e.deltaY > 0 ? -5 : 5;
+                    _zoom = Math.max(30, Math.min(200, _zoom + delta));
+                    _applyZoom();
+                    if (zoomVal) zoomVal.textContent = _zoom + '%';
+                }
+            }, { passive: false });
+
+            // Space + drag to pan
+            var _panning = false;
+            var _panStart = { x: 0, y: 0 };
+            var _panOffset = { x: 0, y: 0 };
+
+            document.addEventListener('keydown', function (e) {
+                if (e.code === 'Space' && !_panning && _active) {
+                    var tag = document.activeElement.tagName;
+                    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                    e.preventDefault();
+                    canvasArea.style.cursor = 'grab';
+                }
+            });
+            document.addEventListener('keyup', function (e) {
+                if (e.code === 'Space') {
+                    canvasArea.style.cursor = '';
+                    _panning = false;
+                }
+            });
+            canvasArea.addEventListener('mousedown', function (e) {
+                if (e.button === 1 || (canvasArea.style.cursor === 'grab' && e.button === 0)) {
+                    _panning = true;
+                    _panStart = { x: e.clientX - _panOffset.x, y: e.clientY - _panOffset.y };
+                    canvasArea.style.cursor = 'grabbing';
+                    e.preventDefault();
+                }
+            });
+            document.addEventListener('mousemove', function (e) {
+                if (_panning) {
+                    _panOffset.x = e.clientX - _panStart.x;
+                    _panOffset.y = e.clientY - _panStart.y;
+                    _applyZoom();
+                }
+            });
+            document.addEventListener('mouseup', function () {
+                if (_panning) {
+                    _panning = false;
+                    canvasArea.style.cursor = '';
+                }
+            });
+
+            // Expose panOffset to _applyZoom via closure
+            var _origApplyZoom = _applyZoom;
+            _applyZoom = function () {
+                var frame = _qs('#cnePreviewFrame');
+                if (frame) {
+                    frame.style.transform = 'scale(' + (_zoom / 100) + ') translate(' + _panOffset.x + 'px, ' + _panOffset.y + 'px)';
+                    frame.style.transformOrigin = 'top center';
+                }
+            };
+        }
     }
 
     function _applyZoom() {
@@ -2653,6 +2784,26 @@ window.ArbelCinematicEditor = (function () {
         var bg3dc2 = _qs('#cneBg3dColor2'); if (bg3dc2) bg3dc2.addEventListener('input', _apply3dBg);
         var bg3dInt = _qs('#cneBg3dIntensity'); if (bg3dInt) bg3dInt.addEventListener('input', _apply3dBg);
         var bg3dSpd = _qs('#cneBg3dSpeed'); if (bg3dSpd) bg3dSpd.addEventListener('change', _apply3dBg);
+
+        // Spline 3D embed
+        var splineInput = _qs('#cneSceneSpline');
+        var splineInfo = _qs('#cneSplineInfo');
+        if (splineInput) {
+            splineInput.addEventListener('input', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                _beginBurst('scene');
+                var raw = splineInput.value.trim();
+                // Allow only Spline URLs
+                if (raw && !/^https:\/\/(prod\.spline\.design|my\.spline\.design|viewer\.spline\.design)\//.test(raw)) {
+                    raw = '';
+                }
+                scene.splineUrl = raw;
+                if (splineInfo) splineInfo.style.display = raw ? '' : 'none';
+                _commitBurst('scene', 600);
+                _notifyUpdate(true);
+            });
+        }
     }
 
     /* ─── Helpers ─── */
@@ -2699,6 +2850,141 @@ window.ArbelCinematicEditor = (function () {
         }
         _commitBurst('style', 600);
         _notifyUpdate(_activeDevice !== 'desktop');
+    }
+
+    /** Build combined CSS transform from 3D inputs and apply */
+    function _apply3DTransform() {
+        var rx = parseInt((_qs('#cne3dRotateX') || {}).value) || 0;
+        var ry = parseInt((_qs('#cne3dRotateY') || {}).value) || 0;
+        var rz = parseInt((_qs('#cne3dRotateZ') || {}).value) || 0;
+        var tz = parseInt((_qs('#cne3dTranslateZ') || {}).value) || 0;
+        var parts = [];
+        if (rx) parts.push('rotateX(' + rx + 'deg)');
+        if (ry) parts.push('rotateY(' + ry + 'deg)');
+        if (rz) parts.push('rotateZ(' + rz + 'deg)');
+        if (tz) parts.push('translateZ(' + tz + 'px)');
+        _setElStyle('transform', parts.length > 0 ? parts.join(' ') : '');
+        _setElStyle('transformStyle', parts.length > 0 ? 'preserve-3d' : '');
+    }
+
+    /** Alignment — aligns selected elements */
+    function _alignElements(mode) {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene || _selectedElementIds.length < 2) return;
+        _pushUndo();
+        var els = scene.elements.filter(function (e) { return _selectedElementIds.indexOf(e.id) >= 0; });
+        if (els.length < 2) return;
+
+        var rects = els.map(function (el) {
+            var bucket = _getStyleBucket(el);
+            return {
+                el: el,
+                top: parseInt(bucket.top) || 0,
+                left: parseInt(bucket.left) || 0,
+                width: parseInt(bucket.width) || 100,
+                height: parseInt(bucket.height) || 50
+            };
+        });
+
+        switch (mode) {
+            case 'left':
+                var minL = Math.min.apply(null, rects.map(function (r) { return r.left; }));
+                rects.forEach(function (r) { _getStyleBucket(r.el).left = minL + 'px'; });
+                break;
+            case 'center-h':
+                var centers = rects.map(function (r) { return r.left + r.width / 2; });
+                var avgC = centers.reduce(function (a, b) { return a + b; }, 0) / centers.length;
+                rects.forEach(function (r) { _getStyleBucket(r.el).left = Math.round(avgC - r.width / 2) + 'px'; });
+                break;
+            case 'right':
+                var maxR = Math.max.apply(null, rects.map(function (r) { return r.left + r.width; }));
+                rects.forEach(function (r) { _getStyleBucket(r.el).left = (maxR - r.width) + 'px'; });
+                break;
+            case 'top':
+                var minT = Math.min.apply(null, rects.map(function (r) { return r.top; }));
+                rects.forEach(function (r) { _getStyleBucket(r.el).top = minT + 'px'; });
+                break;
+            case 'center-v':
+                var middles = rects.map(function (r) { return r.top + r.height / 2; });
+                var avgM = middles.reduce(function (a, b) { return a + b; }, 0) / middles.length;
+                rects.forEach(function (r) { _getStyleBucket(r.el).top = Math.round(avgM - r.height / 2) + 'px'; });
+                break;
+            case 'bottom':
+                var maxB = Math.max.apply(null, rects.map(function (r) { return r.top + r.height; }));
+                rects.forEach(function (r) { _getStyleBucket(r.el).top = (maxB - r.height) + 'px'; });
+                break;
+            case 'dist-h':
+                if (rects.length < 3) break;
+                rects.sort(function (a, b) { return a.left - b.left; });
+                var totalW = rects[rects.length - 1].left + rects[rects.length - 1].width - rects[0].left;
+                var sumW = rects.reduce(function (a, r) { return a + r.width; }, 0);
+                var gap = (totalW - sumW) / (rects.length - 1);
+                var x = rects[0].left;
+                rects.forEach(function (r, i) {
+                    if (i > 0) { x += gap; }
+                    _getStyleBucket(r.el).left = Math.round(x) + 'px';
+                    x += r.width;
+                });
+                break;
+            case 'dist-v':
+                if (rects.length < 3) break;
+                rects.sort(function (a, b) { return a.top - b.top; });
+                var totalH = rects[rects.length - 1].top + rects[rects.length - 1].height - rects[0].top;
+                var sumH = rects.reduce(function (a, r) { return a + r.height; }, 0);
+                var gapV = (totalH - sumH) / (rects.length - 1);
+                var y = rects[0].top;
+                rects.forEach(function (r, i) {
+                    if (i > 0) { y += gapV; }
+                    _getStyleBucket(r.el).top = Math.round(y) + 'px';
+                    y += r.height;
+                });
+                break;
+        }
+        _notifyUpdate(true);
+    }
+
+    /** Bring element to front (highest z-index in scene) */
+    function _bringToFront() {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene || !_selectedElementId) return;
+        _pushUndo();
+        var maxZ = 0;
+        scene.elements.forEach(function (e) { var z = parseInt(e.style && e.style.zIndex) || 0; if (z > maxZ) maxZ = z; });
+        var el = _getSelectedElement();
+        if (el) {
+            if (!el.style) el.style = {};
+            el.style.zIndex = String(maxZ + 1);
+            var zInput = _qs('#cneZIndex');
+            if (zInput) zInput.value = el.style.zIndex;
+            _notifyUpdate(true);
+        }
+    }
+
+    /** Send element to back (lowest z-index in scene) */
+    function _sendToBack() {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene || !_selectedElementId) return;
+        _pushUndo();
+        var minZ = 999;
+        scene.elements.forEach(function (e) { var z = parseInt(e.style && e.style.zIndex) || 0; if (z < minZ) minZ = z; });
+        var el = _getSelectedElement();
+        if (el) {
+            if (!el.style) el.style = {};
+            el.style.zIndex = String(Math.max(0, minZ - 1));
+            var zInput = _qs('#cneZIndex');
+            if (zInput) zInput.value = el.style.zIndex;
+            _notifyUpdate(true);
+        }
+    }
+
+    /** Toggle lock flag on selected element */
+    function _toggleLock() {
+        var el = _getSelectedElement();
+        if (!el) return;
+        _pushUndo();
+        el.locked = !el.locked;
+        _postIframe('arbel-lock', { id: el.id, locked: el.locked });
+        _renderElementList();
     }
 
     /* ─── Copy / Paste / Duplicate ─── */
@@ -2836,6 +3122,13 @@ window.ArbelCinematicEditor = (function () {
             addItem('Ungroup', 'Ctrl+Shift+G', function () { _ungroupSelection(); });
         }
         addSep();
+        if (!multi) {
+            addItem('Bring to Front', '', function () { _bringToFront(); });
+            addItem('Send to Back', '', function () { _sendToBack(); });
+            var el = _getSelectedElement();
+            addItem(el && el.locked ? 'Unlock' : 'Lock', '', function () { _toggleLock(); });
+            addSep();
+        }
         addItem(multi ? 'Delete ' + n : 'Delete', 'Del', _selectedElementIds.length > 0 ? _deleteSelectedElement : null, 'arbel-ctx-item--danger');
 
         // Position: keep on-screen
@@ -2943,6 +3236,11 @@ window.ArbelCinematicEditor = (function () {
     function _updatePropertiesPanel(data) {
         // from iframe selection event — update right panel + sync element list
         _renderElementList();
+
+        // Show/hide alignment toolbar based on multi-select
+        var alignGroup = _qs('#cneAlignGroup');
+        if (alignGroup) alignGroup.style.display = _selectedElementIds.length > 1 ? '' : 'none';
+
         if (_selectedElementIds.length > 1) {
             _updateMultiSelectPanel();
         } else {
@@ -3070,6 +3368,23 @@ window.ArbelCinematicEditor = (function () {
         // Backdrop Filter
         var backdrop = _qs('#cneBackdrop');
         if (backdrop) backdrop.value = _getElStyleValue(el, 'backdropFilter');
+
+        // 3D Transform — parse transform string to populate individual inputs
+        var transform = _getElStyleValue(el, 'transform') || '';
+        var rxMatch = transform.match(/rotateX\(([-\d.]+)deg\)/);
+        var ryMatch = transform.match(/rotateY\(([-\d.]+)deg\)/);
+        var rzMatch = transform.match(/rotateZ\(([-\d.]+)deg\)/);
+        var tzMatch = transform.match(/translateZ\(([-\d.]+)px\)/);
+        var rx3d = _qs('#cne3dRotateX');  if (rx3d) rx3d.value = rxMatch ? rxMatch[1] : '';
+        var ry3d = _qs('#cne3dRotateY');  if (ry3d) ry3d.value = ryMatch ? ryMatch[1] : '';
+        var rz3d = _qs('#cne3dRotateZ');  if (rz3d) rz3d.value = rzMatch ? rzMatch[1] : '';
+        var tz3d = _qs('#cne3dTranslateZ'); if (tz3d) tz3d.value = tzMatch ? tzMatch[1] : '';
+        var persp3d = _qs('#cne3dPerspective');
+        if (persp3d) persp3d.value = parseInt(_getElStyleValue(el, 'perspective')) || '';
+        var backface3d = _qs('#cne3dBackface');
+        if (backface3d) backface3d.value = _getElStyleValue(el, 'backfaceVisibility') || '';
+        var preset3d = _qs('#cne3dPreset');
+        if (preset3d) preset3d.value = '';
 
         // Border
         var borderWidth = _qs('#cneBorderWidth');
@@ -4064,6 +4379,268 @@ window.ArbelCinematicEditor = (function () {
             bgImage: '',
             elements: elements
         };
+    }
+
+    /* ─── AI Studio Dialog ─── */
+    function _showAIStudio() {
+        var dialog = _qs('#cneAIStudio');
+        if (!dialog) return;
+        dialog.style.display = '';
+        _setupAIStudioOnce();
+    }
+
+    var _aiStudioBound = false;
+    function _setupAIStudioOnce() {
+        if (_aiStudioBound) return;
+        _aiStudioBound = true;
+
+        // Close
+        var closeBtn = _qs('#cneAIStudioClose');
+        var overlay = _qs('#cneAIStudio');
+        if (closeBtn) closeBtn.addEventListener('click', function () { overlay.style.display = 'none'; });
+        if (overlay) overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.style.display = 'none'; });
+
+        // Tab switching
+        _qsa('.cne-dialog-tab').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                _qsa('.cne-dialog-tab').forEach(function (t) { t.classList.remove('active'); });
+                _qsa('.cne-ai-panel').forEach(function (p) { p.classList.remove('active'); });
+                tab.classList.add('active');
+                var panel = _qs('[data-aipanel="' + tab.getAttribute('data-aitab') + '"]');
+                if (panel) panel.classList.add('active');
+            });
+        });
+
+        // Populate provider dropdowns
+        _populateProviderSelect('#cneAIVideoProvider', 'video');
+        _populateProviderSelect('#cneAIImageProvider', 'image');
+
+        // Video key save
+        _setupKeySave('#cneAIVideoKeySave', '#cneAIVideoKey', '#cneAIVideoProvider', '#cneAIVideoKeyStatus', 'video');
+        // Image key save
+        _setupKeySave('#cneAIImageKeySave', '#cneAIImageKey', '#cneAIImageProvider', '#cneAIImageKeyStatus', 'image');
+
+        // Video generate
+        var videoGenBtn = _qs('#cneAIVideoGenerate');
+        if (videoGenBtn) {
+            videoGenBtn.addEventListener('click', async function () {
+                var statusEl = _qs('#cneAIVideoStatus');
+                var statusMsg = _qs('#cneAIVideoStatusMsg');
+                var outputEl = _qs('#cneAIVideoOutput');
+                var resultEl = _qs('#cneAIVideoResult');
+
+                if (!window.ArbelAIMedia) { alert('AI Media module not loaded'); return; }
+                if (!ArbelKeyManager.hasKey('video')) { alert('Please save a video API key first.'); return; }
+
+                var prompt = (_qs('#cneAIVideoPrompt') || {}).value || '';
+                if (!prompt.trim()) { alert('Please enter a prompt.'); return; }
+
+                if (statusEl) { statusEl.style.display = ''; }
+                if (statusMsg) statusMsg.textContent = 'Generating video...';
+                if (outputEl) outputEl.style.display = 'none';
+                videoGenBtn.disabled = true;
+
+                try {
+                    var result = await ArbelAIMedia.generateVideo({
+                        prompt: prompt,
+                        imageUrl: (_qs('#cneAIVideoImage') || {}).value || '',
+                        resolution: (_qs('#cneAIVideoRes') || {}).value || 'landscape',
+                        duration: parseInt((_qs('#cneAIVideoDuration') || {}).value) || 5
+                    });
+
+                    // If processing, poll
+                    if (result.status === 'processing' && result.pollUrl) {
+                        if (statusMsg) statusMsg.textContent = 'Processing... (polling)';
+                        var maxPolls = 60;
+                        for (var i = 0; i < maxPolls; i++) {
+                            await new Promise(function (r) { setTimeout(r, 5000); });
+                            result = await ArbelAIMedia.pollReplicate(result.pollUrl);
+                            if (result.status === 'succeeded') break;
+                            if (statusMsg) statusMsg.textContent = 'Processing... (' + (i + 1) + '/' + maxPolls + ')';
+                        }
+                    }
+
+                    if (result.status === 'succeeded' && result.output) {
+                        if (statusEl) statusEl.style.display = 'none';
+                        if (resultEl) resultEl.src = result.output;
+                        if (outputEl) outputEl.style.display = '';
+                    } else {
+                        if (statusMsg) statusMsg.textContent = 'Generation timed out. Try again.';
+                    }
+                } catch (err) {
+                    if (statusMsg) statusMsg.textContent = 'Error: ' + err.message;
+                }
+                videoGenBtn.disabled = false;
+            });
+        }
+
+        // Video insert
+        var videoInsertBtn = _qs('#cneAIVideoInsert');
+        if (videoInsertBtn) {
+            videoInsertBtn.addEventListener('click', function () {
+                var resultEl = _qs('#cneAIVideoResult');
+                if (!resultEl || !resultEl.src) return;
+                _pushUndo();
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                scene.elements.push({
+                    id: 'vid-' + Date.now().toString(36),
+                    tag: 'video',
+                    src: resultEl.src,
+                    videoAutoplay: true,
+                    videoLoop: true,
+                    videoMuted: true,
+                    style: { position: 'absolute', top: '10%', left: '10%', width: '80%', height: '60%', objectFit: 'cover', borderRadius: '12px' }
+                });
+                _renderElementList();
+                _notifyUpdate(true);
+                _qs('#cneAIStudio').style.display = 'none';
+            });
+        }
+
+        // Image generate
+        var imageGenBtn = _qs('#cneAIImageGenerate');
+        if (imageGenBtn) {
+            imageGenBtn.addEventListener('click', async function () {
+                var statusEl = _qs('#cneAIImageStatus');
+                var statusMsg = _qs('#cneAIImageStatusMsg');
+                var outputEl = _qs('#cneAIImageOutput');
+                var resultEl = _qs('#cneAIImageResult');
+
+                if (!window.ArbelAIMedia) { alert('AI Media module not loaded'); return; }
+                if (!ArbelKeyManager.hasKey('image')) { alert('Please save an image API key first.'); return; }
+
+                var prompt = (_qs('#cneAIImagePrompt') || {}).value || '';
+                if (!prompt.trim()) { alert('Please enter a prompt.'); return; }
+
+                if (statusEl) statusEl.style.display = '';
+                if (statusMsg) statusMsg.textContent = 'Generating image...';
+                if (outputEl) outputEl.style.display = 'none';
+                imageGenBtn.disabled = true;
+
+                try {
+                    var result = await ArbelAIMedia.generateImage({
+                        prompt: prompt,
+                        resolution: (_qs('#cneAIImageRes') || {}).value || 'landscape',
+                        model: (_qs('#cneAIImageModel') || {}).value || 'flux'
+                    });
+
+                    if (result.status === 'processing' && result.pollUrl) {
+                        if (statusMsg) statusMsg.textContent = 'Processing...';
+                        var maxPolls = 30;
+                        for (var i = 0; i < maxPolls; i++) {
+                            await new Promise(function (r) { setTimeout(r, 3000); });
+                            result = await ArbelAIMedia.pollReplicate(result.pollUrl);
+                            if (result.status === 'succeeded') break;
+                        }
+                    }
+
+                    if (result.status === 'succeeded' && result.output) {
+                        if (statusEl) statusEl.style.display = 'none';
+                        if (resultEl) resultEl.src = result.output;
+                        if (outputEl) outputEl.style.display = '';
+                    } else {
+                        if (statusMsg) statusMsg.textContent = 'Generation timed out.';
+                    }
+                } catch (err) {
+                    if (statusMsg) statusMsg.textContent = 'Error: ' + err.message;
+                }
+                imageGenBtn.disabled = false;
+            });
+        }
+
+        // Image insert
+        var imageInsertBtn = _qs('#cneAIImageInsert');
+        if (imageInsertBtn) {
+            imageInsertBtn.addEventListener('click', function () {
+                var resultEl = _qs('#cneAIImageResult');
+                if (!resultEl || !resultEl.src) return;
+                _pushUndo();
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                scene.elements.push({
+                    id: 'img-' + Date.now().toString(36),
+                    tag: 'img',
+                    src: resultEl.src,
+                    style: { position: 'absolute', top: '10%', left: '10%', width: '80%', height: 'auto', objectFit: 'cover', borderRadius: '12px' }
+                });
+                _renderElementList();
+                _notifyUpdate(true);
+                _qs('#cneAIStudio').style.display = 'none';
+            });
+        }
+
+        // Photo → Animation apply
+        var animApplyBtn = _qs('#cneAIAnimApply');
+        if (animApplyBtn) {
+            animApplyBtn.addEventListener('click', function () {
+                if (!window.ArbelAIMedia) return;
+                var imageUrl = (_qs('#cneAIAnimImage') || {}).value || '';
+                var effect = (_qs('#cneAIAnimEffect') || {}).value || 'ken-burns';
+                if (!imageUrl) { alert('Please enter an image URL.'); return; }
+
+                var config = ArbelAIMedia.photoToAnimation(imageUrl, effect);
+                _pushUndo();
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                var el = {
+                    id: 'anim-' + Date.now().toString(36),
+                    tag: 'div',
+                    text: '',
+                    style: Object.assign({ position: 'absolute', top: '0', left: '0', width: '100%', height: '100%' }, config.style)
+                };
+                if (config.scroll) el.scroll = config.scroll;
+                scene.elements.unshift(el);  // behind other elements
+                _renderElementList();
+                _notifyUpdate(true);
+                _qs('#cneAIStudio').style.display = 'none';
+            });
+        }
+    }
+
+    function _populateProviderSelect(selectSel, category) {
+        var select = _qs(selectSel);
+        if (!select) return;
+        select.innerHTML = '';
+        var providers = ArbelKeyManager.getProvidersByCategory(category);
+        providers.forEach(function (p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.label;
+            select.appendChild(opt);
+        });
+        // Pre-select saved provider
+        var saved = ArbelKeyManager.getProvider(category);
+        if (saved) select.value = saved;
+    }
+
+    function _setupKeySave(btnSel, inputSel, providerSel, statusSel, category) {
+        var btn = _qs(btnSel);
+        var input = _qs(inputSel);
+        var provSelect = _qs(providerSel);
+        var statusEl = _qs(statusSel);
+
+        // Show existing key status
+        if (statusEl && ArbelKeyManager.hasKey(category)) {
+            statusEl.textContent = 'Key saved: ' + ArbelKeyManager.getMaskedKey(category);
+        }
+
+        if (btn && input && provSelect) {
+            btn.addEventListener('click', function () {
+                var key = input.value.trim();
+                var provider = provSelect.value;
+                if (!key || key.length < 8) {
+                    if (statusEl) { statusEl.textContent = 'Key too short'; statusEl.style.color = '#ef4444'; }
+                    return;
+                }
+                if (ArbelKeyManager.saveKey(category, provider, key)) {
+                    if (statusEl) { statusEl.textContent = 'Saved: ' + ArbelKeyManager.getMaskedKey(category); statusEl.style.color = '#10b981'; }
+                    input.value = '';
+                } else {
+                    if (statusEl) { statusEl.textContent = 'Failed to save'; statusEl.style.color = '#ef4444'; }
+                }
+            });
+        }
     }
 
     /* ─── Public API ─── */

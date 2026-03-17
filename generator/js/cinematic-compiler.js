@@ -458,6 +458,13 @@ window.ArbelCinematicCompiler = (function () {
                 html += ' aria-hidden="true"></div>\n';
             }
 
+            // Spline 3D embed
+            if (scene.splineUrl && /^https:\/\/(prod|my|viewer)\.spline\.design\//.test(scene.splineUrl)) {
+                html += '    <iframe class="cne-spline-embed" src="' + escHref(scene.splineUrl) + '"';
+                html += ' style="position:absolute;inset:0;width:100%;height:100%;border:none;z-index:0;pointer-events:none"';
+                html += ' loading="lazy" title="3D Scene" aria-hidden="true"></iframe>\n';
+            }
+
             (scene.elements || []).forEach(function (el) {
                 if (!el.visible) return;
                 var validTags = ['h1','h2','h3','p','span','div','img','video','a','section','header','footer','nav','ul','li','ol'];
