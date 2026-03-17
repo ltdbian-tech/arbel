@@ -765,6 +765,266 @@ window.ArbelCinematicEditor = (function () {
         }
     }
 
+    /* ─── SVG / Icon Picker ─── */
+    var _ICONS = [
+        { name: 'arrow-right', cat: 'arrows', d: 'M5 12h14M12 5l7 7-7 7' },
+        { name: 'arrow-left', cat: 'arrows', d: 'M19 12H5M12 19l-7-7 7-7' },
+        { name: 'arrow-up', cat: 'arrows', d: 'M12 19V5M5 12l7-7 7 7' },
+        { name: 'arrow-down', cat: 'arrows', d: 'M12 5v14M19 12l-7 7-7-7' },
+        { name: 'chevron-right', cat: 'arrows', d: 'M9 18l6-6-6-6' },
+        { name: 'chevron-left', cat: 'arrows', d: 'M15 18l-6-6 6-6' },
+        { name: 'chevron-up', cat: 'arrows', d: 'M18 15l-6-6-6 6' },
+        { name: 'chevron-down', cat: 'arrows', d: 'M6 9l6 6 6-6' },
+        { name: 'home', cat: 'general', d: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z' },
+        { name: 'search', cat: 'general', d: 'M11 3a8 8 0 100 16 8 8 0 000-16zM21 21l-4.35-4.35' },
+        { name: 'settings', cat: 'general', d: 'M12 15a3 3 0 100-6 3 3 0 000 6zM19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001.08 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1.08z' },
+        { name: 'user', cat: 'general', d: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z' },
+        { name: 'users', cat: 'general', d: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 3a4 4 0 100 8 4 4 0 000-8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75' },
+        { name: 'mail', cat: 'general', d: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6' },
+        { name: 'phone', cat: 'general', d: 'M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z' },
+        { name: 'map-pin', cat: 'general', d: 'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0zM12 7a3 3 0 100 6 3 3 0 000-6z' },
+        { name: 'calendar', cat: 'general', d: 'M19 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zM16 2v4M8 2v4M3 10h18' },
+        { name: 'clock', cat: 'general', d: 'M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2' },
+        { name: 'heart', cat: 'general', d: 'M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z' },
+        { name: 'star', cat: 'general', d: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+        { name: 'check', cat: 'general', d: 'M20 6L9 17l-5-5' },
+        { name: 'x', cat: 'general', d: 'M18 6L6 18M6 6l12 12' },
+        { name: 'plus', cat: 'general', d: 'M12 5v14M5 12h14' },
+        { name: 'minus', cat: 'general', d: 'M5 12h14' },
+        { name: 'menu', cat: 'general', d: 'M3 12h18M3 6h18M3 18h18' },
+        { name: 'external-link', cat: 'general', d: 'M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3' },
+        { name: 'download', cat: 'general', d: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3' },
+        { name: 'upload', cat: 'general', d: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12' },
+        { name: 'eye', cat: 'general', d: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 100 6 3 3 0 000-6z' },
+        { name: 'lock', cat: 'general', d: 'M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM7 11V7a5 5 0 0110 0v4' },
+        { name: 'globe', cat: 'general', d: 'M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z' },
+        { name: 'play', cat: 'media', d: 'M5 3l14 9-14 9V3z' },
+        { name: 'pause', cat: 'media', d: 'M6 4h4v16H6zM14 4h4v16h-4z' },
+        { name: 'volume', cat: 'media', d: 'M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07' },
+        { name: 'camera', cat: 'media', d: 'M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2zM12 13a4 4 0 100-8 4 4 0 000 8z' },
+        { name: 'image', cat: 'media', d: 'M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM8.5 10a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM21 15l-5-5L5 21' },
+        { name: 'film', cat: 'media', d: 'M19.82 2H4.18C2.97 2 2 2.97 2 4.18v15.64C2 21.03 2.97 22 4.18 22h15.64c1.21 0 2.18-.97 2.18-2.18V4.18C22 2.97 21.03 2 19.82 2zM7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5' },
+        { name: 'mic', cat: 'media', d: 'M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8' },
+        { name: 'shopping-cart', cat: 'commerce', d: 'M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6M9 22a1 1 0 100-2 1 1 0 000 2zM20 22a1 1 0 100-2 1 1 0 000 2z' },
+        { name: 'credit-card', cat: 'commerce', d: 'M21 4H3a2 2 0 00-2 2v12a2 2 0 002 2h18a2 2 0 002-2V6a2 2 0 00-2-2zM1 10h22' },
+        { name: 'tag', cat: 'commerce', d: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01' },
+        { name: 'gift', cat: 'commerce', d: 'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z' },
+        { name: 'code', cat: 'dev', d: 'M16 18l6-6-6-6M8 6l-6 6 6 6' },
+        { name: 'terminal', cat: 'dev', d: 'M4 17l6-5-6-5M12 19h8' },
+        { name: 'database', cat: 'dev', d: 'M12 2C6.48 2 2 4.01 2 6.5V17.5C2 19.99 6.48 22 12 22c5.52 0 10-2.01 10-4.5V6.5C22 4.01 17.52 2 12 2zM2 6.5C2 8.99 6.48 11 12 11c5.52 0 10-2.01 10-4.5M2 12c0 2.49 4.48 4.5 10 4.5 5.52 0 10-2.01 10-4.5' },
+        { name: 'cpu', cat: 'dev', d: 'M18 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2zM9 9h6v6H9zM9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3' },
+        { name: 'wifi', cat: 'dev', d: 'M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01' },
+        { name: 'cloud', cat: 'dev', d: 'M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z' },
+        { name: 'zap', cat: 'shapes', d: 'M13 2L3 14h9l-1 8 10-12h-9l1-8z' },
+        { name: 'sun', cat: 'shapes', d: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42' },
+        { name: 'moon', cat: 'shapes', d: 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z' },
+        { name: 'circle', cat: 'shapes', d: 'M12 2a10 10 0 100 20 10 10 0 000-20z' },
+        { name: 'square', cat: 'shapes', d: 'M3 3h18v18H3z' },
+        { name: 'triangle', cat: 'shapes', d: 'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z' },
+        { name: 'hexagon', cat: 'shapes', d: 'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z' },
+        { name: 'award', cat: 'shapes', d: 'M12 15a7 7 0 100-14 7 7 0 000 14zM8.21 13.89L7 23l5-3 5 3-1.21-9.12' },
+        { name: 'shield', cat: 'shapes', d: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
+        { name: 'send', cat: 'general', d: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z' },
+        { name: 'share', cat: 'general', d: 'M18 8a3 3 0 100-6 3 3 0 000 6zM6 15a3 3 0 100-6 3 3 0 000 6zM18 22a3 3 0 100-6 3 3 0 000 6zM8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98' },
+        { name: 'bookmark', cat: 'general', d: 'M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2v16z' },
+        { name: 'flag', cat: 'general', d: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7' },
+        { name: 'bell', cat: 'general', d: 'M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0' },
+        { name: 'compass', cat: 'general', d: 'M12 2a10 10 0 100 20 10 10 0 000-20zM16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z' }
+    ];
+
+    function _showIconPickerDialog() {
+        var overlay = document.createElement('div');
+        overlay.className = 'arbel-dialog-overlay';
+
+        var dialog = document.createElement('div');
+        dialog.className = 'arbel-dialog';
+        dialog.style.maxWidth = '560px';
+        dialog.style.maxHeight = '80vh';
+
+        var title = document.createElement('h3');
+        title.className = 'arbel-dialog-title';
+        title.textContent = 'SVG Icons';
+
+        // Search
+        var searchRow = document.createElement('div');
+        searchRow.className = 'arbel-dialog-field';
+        var searchInput = document.createElement('input');
+        searchInput.className = 'gen-input';
+        searchInput.placeholder = 'Filter icons...';
+        searchRow.appendChild(searchInput);
+
+        // Size + color row
+        var optRow = document.createElement('div');
+        optRow.className = 'arbel-dialog-field';
+        optRow.style.display = 'flex';
+        optRow.style.gap = '12px';
+        optRow.style.alignItems = 'center';
+        var sizeLabel = document.createElement('span');
+        sizeLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,.5)';
+        sizeLabel.textContent = 'Size';
+        var sizeInput = document.createElement('input');
+        sizeInput.className = 'gen-input';
+        sizeInput.type = 'number';
+        sizeInput.value = '48';
+        sizeInput.min = '16';
+        sizeInput.max = '256';
+        sizeInput.style.width = '64px';
+        var colorLabel = document.createElement('span');
+        colorLabel.style.cssText = 'font-size:11px;color:rgba(255,255,255,.5)';
+        colorLabel.textContent = 'Color';
+        var colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.value = '#ffffff';
+        colorInput.style.width = '32px';
+        colorInput.style.height = '28px';
+        colorInput.style.border = 'none';
+        colorInput.style.background = 'transparent';
+        optRow.appendChild(sizeLabel);
+        optRow.appendChild(sizeInput);
+        optRow.appendChild(colorLabel);
+        optRow.appendChild(colorInput);
+
+        // Grid
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(8,1fr);gap:6px;max-height:320px;overflow-y:auto;margin-top:8px;padding:4px';
+
+        function renderIcons(filter) {
+            grid.innerHTML = '';
+            var f = (filter || '').toLowerCase();
+            _ICONS.forEach(function (ic) {
+                if (f && ic.name.indexOf(f) < 0 && ic.cat.indexOf(f) < 0) return;
+                var cell = document.createElement('div');
+                cell.style.cssText = 'display:flex;align-items:center;justify-content:center;aspect-ratio:1;border-radius:6px;background:rgba(255,255,255,.05);cursor:pointer;padding:8px;transition:background .15s';
+                cell.title = ic.name;
+                cell.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + ic.d + '"/></svg>';
+                cell.addEventListener('mouseenter', function () { cell.style.background = 'rgba(100,108,255,.25)'; });
+                cell.addEventListener('mouseleave', function () { cell.style.background = 'rgba(255,255,255,.05)'; });
+                cell.addEventListener('click', function () {
+                    var sz = parseInt(sizeInput.value) || 48;
+                    var clr = colorInput.value || '#ffffff';
+                    _insertIcon(ic.d, sz, clr, ic.name);
+                    document.body.removeChild(overlay);
+                });
+                grid.appendChild(cell);
+            });
+        }
+
+        searchInput.addEventListener('input', function () { renderIcons(searchInput.value); });
+
+        // Custom SVG section
+        var customRow = document.createElement('div');
+        customRow.className = 'arbel-dialog-field';
+        customRow.style.marginTop = '12px';
+        var customLabel = document.createElement('label');
+        customLabel.className = 'arbel-dialog-label mono';
+        customLabel.textContent = 'PASTE CUSTOM SVG';
+        var customInput = document.createElement('textarea');
+        customInput.className = 'gen-input';
+        customInput.rows = 3;
+        customInput.placeholder = '<svg viewBox="0 0 24 24">...</svg>';
+        customInput.style.cssText = 'resize:vertical;width:100%;font-family:monospace;font-size:11px';
+        var customBtn = document.createElement('button');
+        customBtn.className = 'gen-btn gen-btn--primary';
+        customBtn.textContent = 'Insert Custom SVG';
+        customBtn.style.marginTop = '6px';
+        customBtn.addEventListener('click', function () {
+            var raw = customInput.value.trim();
+            if (!raw) return;
+            _insertCustomSvg(raw);
+            document.body.removeChild(overlay);
+        });
+        customRow.appendChild(customLabel);
+        customRow.appendChild(customInput);
+        customRow.appendChild(customBtn);
+
+        // Buttons
+        var btns = document.createElement('div');
+        btns.className = 'arbel-dialog-btns';
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'gen-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', function () { document.body.removeChild(overlay); });
+        btns.appendChild(closeBtn);
+
+        dialog.appendChild(title);
+        dialog.appendChild(searchRow);
+        dialog.appendChild(optRow);
+        dialog.appendChild(grid);
+        dialog.appendChild(customRow);
+        dialog.appendChild(btns);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        renderIcons('');
+        searchInput.focus();
+    }
+
+    function _insertIcon(pathD, size, color, name) {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) return;
+        _pushUndo();
+        var svgHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + pathD + '"/></svg>';
+        var newEl = {
+            id: 'div-' + Date.now().toString(36),
+            tag: 'div',
+            text: svgHtml,
+            visible: true,
+            style: {
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%,-50%)',
+                width: size + 'px',
+                height: size + 'px',
+                lineHeight: '0'
+            },
+            scroll: { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 }
+        };
+        scene.elements.push(newEl);
+        _selectedElementId = newEl.id;
+        _selectedElementIds = [newEl.id];
+        _renderElementList();
+        _updatePropertiesFromScene(newEl);
+        _notifyUpdate(true);
+    }
+
+    function _insertCustomSvg(raw) {
+        // Sanitize: only allow SVG content, strip dangerous elements/attributes
+        if (raw.indexOf('<svg') < 0) return;
+        raw = raw.replace(/<script[\s\S]*?<\/script>/gi, '');
+        raw = raw.replace(/<iframe[\s\S]*?<\/iframe>/gi, '');
+        raw = raw.replace(/<object[\s\S]*?<\/object>/gi, '');
+        raw = raw.replace(/<embed[\s\S]*?<\/embed>/gi, '');
+        raw = raw.replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '');
+        raw = raw.replace(/on\w+\s*=/gi, 'data-removed=');
+        raw = raw.replace(/javascript\s*:/gi, '');
+        raw = raw.replace(/xlink:href\s*=\s*["']javascript/gi, 'xlink:href="');
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) return;
+        _pushUndo();
+        var newEl = {
+            id: 'div-' + Date.now().toString(36),
+            tag: 'div',
+            text: raw,
+            visible: true,
+            style: {
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%,-50%)',
+                width: '64px',
+                height: '64px',
+                lineHeight: '0'
+            },
+            scroll: { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 }
+        };
+        scene.elements.push(newEl);
+        _selectedElementId = newEl.id;
+        _selectedElementIds = [newEl.id];
+        _renderElementList();
+        _updatePropertiesFromScene(newEl);
+        _notifyUpdate(true);
+    }
+
     function _showAddElementDialog() {
         var overlay = document.createElement('div');
         overlay.className = 'arbel-dialog-overlay';
@@ -1057,6 +1317,12 @@ window.ArbelCinematicEditor = (function () {
         if (stockToolbar) {
             stockToolbar.addEventListener('click', function () {
                 _showStockPhotosDialog();
+            });
+        }
+        var iconToolbar = _qs('#cneIconToolbar');
+        if (iconToolbar) {
+            iconToolbar.addEventListener('click', function () {
+                _showIconPickerDialog();
             });
         }
 
