@@ -974,12 +974,39 @@ window.ArbelCompiler = (function () {
             });
         }
 
+        var seo = cfg.seo || {};
+        var seoTitle = seo.title || (cfg.brandName + (cfg.tagline ? ' — ' + cfg.tagline : ''));
+        var seoDesc = seo.description || cfg.tagline || cfg.brandName;
+
+        var metaBlock = '';
+        metaBlock += '  <title>' + esc(seoTitle) + '</title>\n';
+        metaBlock += '  <meta name="description" content="' + esc(seoDesc) + '">\n';
+        if (!seo.index && seo.index !== undefined) {
+            metaBlock += '  <meta name="robots" content="noindex, nofollow">\n';
+        }
+        if (seo.canonical) {
+            metaBlock += '  <link rel="canonical" href="' + esc(seo.canonical) + '">\n';
+        }
+        if (seo.favicon) {
+            metaBlock += '  <link rel="icon" href="' + esc(seo.favicon) + '">\n';
+        }
+        // Open Graph
+        metaBlock += '  <meta property="og:type" content="website">\n';
+        metaBlock += '  <meta property="og:title" content="' + esc(seoTitle) + '">\n';
+        metaBlock += '  <meta property="og:description" content="' + esc(seoDesc) + '">\n';
+        if (seo.canonical) metaBlock += '  <meta property="og:url" content="' + esc(seo.canonical) + '">\n';
+        if (seo.ogImage) metaBlock += '  <meta property="og:image" content="' + esc(seo.ogImage) + '">\n';
+        // Twitter Card
+        metaBlock += '  <meta name="twitter:card" content="' + (seo.ogImage ? 'summary_large_image' : 'summary') + '">\n';
+        metaBlock += '  <meta name="twitter:title" content="' + esc(seoTitle) + '">\n';
+        metaBlock += '  <meta name="twitter:description" content="' + esc(seoDesc) + '">\n';
+        if (seo.ogImage) metaBlock += '  <meta name="twitter:image" content="' + esc(seo.ogImage) + '">\n';
+
         return '<!DOCTYPE html>\n' +
             '<html lang="en">\n<head>\n' +
             '  <meta charset="UTF-8">\n' +
             '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-            '  <title>' + esc(cfg.brandName) + (cfg.tagline ? ' — ' + esc(cfg.tagline) : '') + '</title>\n' +
-            '  <meta name="description" content="' + esc(cfg.tagline || cfg.brandName) + '">\n' +
+            metaBlock +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
             '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +

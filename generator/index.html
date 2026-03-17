@@ -301,6 +301,35 @@
                             </div>
                         </div>
 
+                        <!-- SEO / Meta Tags -->
+                        <div class="config-group">
+                            <h3 class="config-group-title mono">SEO &amp; META</h3>
+                            <p class="config-hint">Boost search visibility. Leave blank to use defaults from Brand / Tagline.</p>
+                            <div class="field">
+                                <label class="field-label mono">SEO TITLE</label>
+                                <input type="text" id="seoTitle" class="gen-input" placeholder="Custom page title (defaults to Brand — Tagline)" maxlength="70">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">META DESCRIPTION</label>
+                                <textarea id="seoDescription" class="gen-textarea" placeholder="Brief description for search results (defaults to tagline)" maxlength="160" rows="2"></textarea>
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">CANONICAL URL</label>
+                                <input type="url" id="seoCanonical" class="gen-input" placeholder="https://yourdomain.com">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">OG IMAGE URL</label>
+                                <input type="url" id="seoOgImage" class="gen-input" placeholder="https://yourdomain.com/og-image.jpg">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">FAVICON URL</label>
+                                <input type="url" id="seoFavicon" class="gen-input" placeholder="https://yourdomain.com/favicon.ico">
+                            </div>
+                            <div class="toggle-row">
+                                <label class="toggle-item"><input type="checkbox" id="seoIndex" checked><span class="toggle-label">Allow search engines to index</span></label>
+                            </div>
+                        </div>
+
                         <!-- Particle Settings (shown only for particle styles) -->
                         <div class="config-group" id="particleConfig" style="display:none">
                             <h3 class="config-group-title mono">PARTICLE SETTINGS</h3>

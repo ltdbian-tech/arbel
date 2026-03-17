@@ -76,6 +76,13 @@
         particleGlowVal: $('particleGlowVal'),
         particleConnect: $('particleConnect'),
         particleInteract: $('particleInteract'),
+        // SEO
+        seoTitle: $('seoTitle'),
+        seoDescription: $('seoDescription'),
+        seoCanonical: $('seoCanonical'),
+        seoOgImage: $('seoOgImage'),
+        seoFavicon: $('seoFavicon'),
+        seoIndex: $('seoIndex'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -1116,6 +1123,17 @@
         return sections;
     }
 
+    function _collectSeo() {
+        return {
+            title: els.seoTitle ? els.seoTitle.value.trim() : '',
+            description: els.seoDescription ? els.seoDescription.value.trim() : '',
+            canonical: els.seoCanonical ? els.seoCanonical.value.trim() : '',
+            ogImage: els.seoOgImage ? els.seoOgImage.value.trim() : '',
+            favicon: els.seoFavicon ? els.seoFavicon.value.trim() : '',
+            index: els.seoIndex ? els.seoIndex.checked : true
+        };
+    }
+
     function buildConfig() {
         var content = {};
         // Merge template content first (labels, nav, non-input keys)
@@ -1139,7 +1157,8 @@
             contactEmail: els.contactEmail.value.trim(),
             industry: els.industry.value,
             sections: getActiveSections(),
-            content: content
+            content: content,
+            seo: _collectSeo()
         };
 
         // If builder mode was used, override style to use the builder's first category preset
@@ -1454,7 +1473,8 @@
             bgColor: els.bgColor.value,
             contactEmail: els.contactEmail.value.trim(),
             scenes: state.cinematicScenes || undefined,
-            nav: { logo: els.brandName.value.trim() || 'My Site', links: [] }
+            nav: { logo: els.brandName.value.trim() || 'My Site', links: [] },
+            seo: _collectSeo()
         };
 
         if (state.editorOverrides) {

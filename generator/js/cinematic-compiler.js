@@ -264,11 +264,31 @@ window.ArbelCinematicCompiler = (function () {
         var accent = esc(cfg.accent);
         var bg = esc(cfg.bgColor);
 
+        var seo = cfg.seo || {};
+        var seoTitle = seo.title || cfg.brandName;
+        var seoDesc = seo.description || cfg.tagline || cfg.brandName;
+
         var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
         html += '<meta charset="UTF-8">\n';
         html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
-        html += '<title>' + esc(cfg.brandName) + '</title>\n';
-        if (cfg.tagline) html += '<meta name="description" content="' + esc(cfg.tagline) + '">\n';
+        html += '<title>' + esc(seoTitle) + '</title>\n';
+        html += '<meta name="description" content="' + esc(seoDesc) + '">\n';
+        if (!seo.index && seo.index !== undefined) {
+            html += '<meta name="robots" content="noindex, nofollow">\n';
+        }
+        if (seo.canonical) html += '<link rel="canonical" href="' + esc(seo.canonical) + '">\n';
+        if (seo.favicon) html += '<link rel="icon" href="' + esc(seo.favicon) + '">\n';
+        // Open Graph
+        html += '<meta property="og:type" content="website">\n';
+        html += '<meta property="og:title" content="' + esc(seoTitle) + '">\n';
+        html += '<meta property="og:description" content="' + esc(seoDesc) + '">\n';
+        if (seo.canonical) html += '<meta property="og:url" content="' + esc(seo.canonical) + '">\n';
+        if (seo.ogImage) html += '<meta property="og:image" content="' + esc(seo.ogImage) + '">\n';
+        // Twitter Card
+        html += '<meta name="twitter:card" content="' + (seo.ogImage ? 'summary_large_image' : 'summary') + '">\n';
+        html += '<meta name="twitter:title" content="' + esc(seoTitle) + '">\n';
+        html += '<meta name="twitter:description" content="' + esc(seoDesc) + '">\n';
+        if (seo.ogImage) html += '<meta name="twitter:image" content="' + esc(seo.ogImage) + '">\n';
         html += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
         html += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
 
