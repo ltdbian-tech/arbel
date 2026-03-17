@@ -214,21 +214,6 @@
                     <button class="gen-btn gen-btn--primary" id="toConfig">NEXT: ADD CONTENT →</button>
                 </div>
 
-                <!-- Mode Selector -->
-                <div class="mode-selector" id="modeSelector">
-                    <div class="mode-card selected" data-mode="classic" id="modeClassic">
-                        <div class="mode-card-icon">&#9776;</div>
-                        <div class="mode-card-title">Classic</div>
-                        <div class="mode-card-desc">Section-based website with hero, services, portfolio, contact — great for businesses and portfolios.</div>
-                        <span class="mode-card-badge mode-card-badge--classic mono">STABLE</span>
-                    </div>
-                    <div class="mode-card" data-mode="cinematic" id="modeCinematic">
-                        <div class="mode-card-icon">&#127916;</div>
-                        <div class="mode-card-title">Cinematic</div>
-                        <div class="mode-card-desc">Scroll-driven scenes with pinned sections, parallax, split-text reveals — for product launches and showcases.</div>
-                        <span class="mode-card-badge mode-card-badge--cinematic mono">NEW</span>
-                    </div>
-                </div>
             </div>
         </section>
 
@@ -624,6 +609,24 @@
                                 </p>
                             </div>
                         </div>
+
+                        <!-- Mode Selector -->
+                        <div class="mode-selector" id="modeSelector" style="margin-top:16px">
+                            <h3 class="config-group-title mono" style="margin-bottom:10px">BUILD MODE</h3>
+                            <div class="mode-card selected" data-mode="classic" id="modeClassic">
+                                <div class="mode-card-icon">&#9776;</div>
+                                <div class="mode-card-title">Classic</div>
+                                <div class="mode-card-desc">Section-based website with hero, services, portfolio, contact.</div>
+                                <span class="mode-card-badge mode-card-badge--classic mono">STABLE</span>
+                            </div>
+                            <div class="mode-card" data-mode="cinematic" id="modeCinematic">
+                                <div class="mode-card-icon">&#127916;</div>
+                                <div class="mode-card-title">Cinematic</div>
+                                <div class="mode-card-desc">Scroll-driven scenes with parallax, split-text reveals.</div>
+                                <span class="mode-card-badge mode-card-badge--cinematic mono">NEW</span>
+                            </div>
+                        </div>
+
                         <button class="gen-btn gen-btn--primary" id="sidebarPreview" style="width:100%;margin-top:16px">NEXT: PREVIEW &amp; EDIT →</button>
                     </aside>
                 </div>
@@ -2062,7 +2065,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
                 <!-- Tokens Panel -->
                 <div class="cne-prop-panel" data-panel="tokens">
