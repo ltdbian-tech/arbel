@@ -389,13 +389,16 @@ window.ArbelCinematicCompiler = (function () {
                     // Strict per-property scroll sanitization (mirrors editor's _sanitizeScroll)
                     var safeScroll = {};
                     var scrollKeys = el.scroll;
-                    var allowedScrollKeys = {opacity:1,x:1,y:1,scale:1,rotation:1,blur:1,clipPath:1,rotateX:1,rotateY:1,skewX:1,skewY:1,start:1,end:1};
+                    var allowedScrollKeys = {opacity:1,x:1,y:1,scale:1,rotation:1,blur:1,clipPath:1,rotateX:1,rotateY:1,skewX:1,skewY:1,start:1,end:1,ease:1};
+                    var allowedEaseRe = /^(none|power[1-4]\.(in|out|inOut)|expo\.(in|out|inOut)|circ\.(in|out|inOut)|sine\.(in|out|inOut)|back\.(in|out|inOut)\([0-9.]+\)|elastic\.(in|out|inOut)\([0-9.,]+\)|bounce\.(in|out|inOut)|cubic-bezier\(-?[0-9.]+,-?[0-9.]+,-?[0-9.]+,-?[0-9.]+\))$/;
                     Object.keys(scrollKeys).forEach(function (k) {
                         if (!allowedScrollKeys[k]) return;
                         var v = scrollKeys[k];
                         if (k === 'start' || k === 'end') {
                             var n = parseFloat(v);
                             if (!isNaN(n)) safeScroll[k] = Math.max(0, Math.min(1, n));
+                        } else if (k === 'ease') {
+                            if (typeof v === 'string' && allowedEaseRe.test(v)) safeScroll[k] = v;
                         } else if (k === 'clipPath') {
                             if (Array.isArray(v)) {
                                 var clipRe = /^(inset|circle|ellipse|polygon)\([^)]*\)$/;
@@ -726,6 +729,22 @@ window.ArbelCinematicCompiler = (function () {
         js += '  });\n';
         js += '}\n\n';
 
+        // Cubic-bezier helper for GSAP
+        js += '/* Cubic-bezier to GSAP ease */\n';
+        js += 'function parseBezierEase(str){\n';
+        js += '  if(!str || str.indexOf("cubic-bezier") !== 0) return str;\n';
+        js += '  var m = str.match(/cubic-bezier\\(([^)]+)\\)/);\n';
+        js += '  if(!m) return "none";\n';
+        js += '  var p = m[1].split(",").map(Number);\n';
+        js += '  return function(t){\n';
+        js += '    var cx=3*p[0],bx=3*(p[2]-p[0])-cx,ax=1-cx-bx;\n';
+        js += '    var cy=3*p[1],by=3*(p[3]-p[1])-cy,ay=1-cy-by;\n';
+        js += '    var lo=0,hi=1,mid;\n';
+        js += '    for(var i=0;i<16;i++){mid=(lo+hi)/2;var x=((ax*mid+bx)*mid+cx)*mid;if(x<t)lo=mid;else hi=mid;}\n';
+        js += '    return((ay*mid+by)*mid+cy)*mid;\n';
+        js += '  };\n';
+        js += '}\n\n';
+
         // Main cinema init
         js += '/* Init cinema engine */\n';
         js += 'function initCinema(){\n';
@@ -775,7 +794,8 @@ window.ArbelCinematicCompiler = (function () {
 
         // Handle multi-keyframe scroll animations
         js += '      var startPct = sd.start || 0;\n';
-        js += '      var endPct = sd.end || 1;\n\n';
+        js += '      var endPct = sd.end || 1;\n';
+        js += '      var easeVal = parseBezierEase(sd.ease || "none");\n\n';
 
         js += '      /* Build from/to tweens for each property */\n';
         js += '      var props = ["opacity","x","y","scale","rotation"];\n';
@@ -790,7 +810,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '        for(var i = 0; i < vals.length - 1; i++){\n';
         js += '          var from = {}; from[prop] = vals[i];\n';
         js += '          var to = {}; to[prop] = vals[i+1];\n';
-        js += '          to.ease = "none";\n';
+        js += '          to.ease = easeVal;\n';
         js += '          if(isSplit) to.stagger = 0.02;\n';
         js += '          var pos = startPct + (segLen * i);\n';
         js += '          tl.fromTo(target, from, to, pos);\n';
@@ -818,7 +838,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '            from[prop] = vals[i];\n';
         js += '            to[prop] = vals[i+1];\n';
         js += '          }\n';
-        js += '          to.ease = "none";\n';
+        js += '          to.ease = easeVal;\n';
         js += '          if(isSplit) to.stagger = 0.02;\n';
         js += '          var pos = startPct + (segLen * i);\n';
         js += '          tl.fromTo(target, from, to, pos);\n';

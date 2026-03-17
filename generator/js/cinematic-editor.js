@@ -1684,6 +1684,139 @@ window.ArbelCinematicEditor = (function () {
                 }
             });
         }
+
+        // Easing curve
+        _setupEasingInputs();
+    }
+
+    /* ─── Easing Curve Controls ─── */
+    var _EASE_BEZIER_MAP = {
+        'none':             [0, 0, 1, 1],
+        'power1.out':       [0.25, 0.46, 0.45, 0.94],
+        'power2.out':       [0.22, 0.61, 0.36, 1],
+        'power3.out':       [0.16, 0.73, 0.3,  0.99],
+        'power4.out':       [0.08, 0.82, 0.17, 1],
+        'power1.in':        [0.55, 0.06, 0.68, 0.19],
+        'power2.in':        [0.55, 0.09, 0.68, 0.19],
+        'power3.in':        [0.64, 0,    0.78, 0],
+        'power4.in':        [0.76, 0,    0.86, 0],
+        'power1.inOut':     [0.42, 0,    0.58, 1],
+        'power2.inOut':     [0.42, 0,    0.58, 1],
+        'power3.inOut':     [0.65, 0,    0.35, 1],
+        'expo.out':         [0.16, 1,    0.3,  1],
+        'circ.out':         [0.08, 0.82, 0.17, 1],
+        'sine.out':         [0.39, 0.58, 0.57, 1],
+        'back.out(1.7)':    [0.18, 0.89, 0.32, 1.28],
+        'elastic.out(1,0.3)': [0.32, 1.28, 0.68, 1],
+        'bounce.out':       [0.28, 0.84, 0.42, 1]
+    };
+
+    function _drawEaseCurve(bezier) {
+        var canvas = _qs('#cneEaseCurve');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var w = canvas.width, h = canvas.height;
+        var pad = 6;
+        ctx.clearRect(0, 0, w, h);
+
+        // Grid line
+        ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pad, pad); ctx.lineTo(w - pad, h - pad);
+        ctx.stroke();
+
+        // Curve
+        ctx.strokeStyle = '#6c63ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        var steps = 60;
+        for (var i = 0; i <= steps; i++) {
+            var t = i / steps;
+            var u = 1 - t;
+            var x = 3 * u * u * t * bezier[0] + 3 * u * t * t * bezier[2] + t * t * t;
+            var y = 3 * u * u * t * bezier[1] + 3 * u * t * t * bezier[3] + t * t * t;
+            var px = pad + x * (w - 2 * pad);
+            var py = (h - pad) - y * (h - 2 * pad);
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Endpoints
+        ctx.fillStyle = '#6c63ff';
+        ctx.beginPath(); ctx.arc(pad, h - pad, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(w - pad, pad, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    function _setupEasingInputs() {
+        var easeSelect = _qs('#cneScrollEase');
+        var customPanel = _qs('#cneEaseCustom');
+
+        if (easeSelect) {
+            easeSelect.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (!el || !el.scroll) return;
+                var val = easeSelect.value;
+                if (customPanel) customPanel.style.display = val === 'custom' ? '' : 'none';
+                if (val === 'custom') {
+                    var x1 = parseFloat(_qs('#cneEaseX1').value) || 0.25;
+                    var y1 = parseFloat(_qs('#cneEaseY1').value) || 0.1;
+                    var x2 = parseFloat(_qs('#cneEaseX2').value) || 0.25;
+                    var y2 = parseFloat(_qs('#cneEaseY2').value) || 1;
+                    el.scroll.ease = 'cubic-bezier(' + x1 + ',' + y1 + ',' + x2 + ',' + y2 + ')';
+                    _drawEaseCurve([x1, y1, x2, y2]);
+                } else {
+                    el.scroll.ease = val;
+                    _drawEaseCurve(_EASE_BEZIER_MAP[val] || [0, 0, 1, 1]);
+                }
+                _notifyUpdate(true);
+            });
+        }
+
+        ['cneEaseX1', 'cneEaseY1', 'cneEaseX2', 'cneEaseY2'].forEach(function (id) {
+            var inp = _qs('#' + id);
+            if (inp) {
+                inp.addEventListener('input', function () {
+                    var el = _getSelectedElement();
+                    if (!el || !el.scroll) return;
+                    var x1 = parseFloat(_qs('#cneEaseX1').value) || 0;
+                    var y1 = parseFloat(_qs('#cneEaseY1').value) || 0;
+                    var x2 = parseFloat(_qs('#cneEaseX2').value) || 0;
+                    var y2 = parseFloat(_qs('#cneEaseY2').value) || 0;
+                    el.scroll.ease = 'cubic-bezier(' + x1 + ',' + y1 + ',' + x2 + ',' + y2 + ')';
+                    _drawEaseCurve([x1, y1, x2, y2]);
+                    _notifyUpdate(true);
+                });
+            }
+        });
+    }
+
+    function _updateEasingPanel(el) {
+        var easeSelect = _qs('#cneScrollEase');
+        var customPanel = _qs('#cneEaseCustom');
+        if (!easeSelect) return;
+
+        var ease = (el.scroll && el.scroll.ease) ? el.scroll.ease : 'none';
+
+        if (ease.indexOf('cubic-bezier') === 0) {
+            easeSelect.value = 'custom';
+            if (customPanel) customPanel.style.display = '';
+            var parts = ease.replace('cubic-bezier(', '').replace(')', '').split(',');
+            var x1 = parseFloat(parts[0]) || 0;
+            var y1 = parseFloat(parts[1]) || 0;
+            var x2 = parseFloat(parts[2]) || 0;
+            var y2 = parseFloat(parts[3]) || 0;
+            var inp;
+            inp = _qs('#cneEaseX1'); if (inp) inp.value = x1;
+            inp = _qs('#cneEaseY1'); if (inp) inp.value = y1;
+            inp = _qs('#cneEaseX2'); if (inp) inp.value = x2;
+            inp = _qs('#cneEaseY2'); if (inp) inp.value = y2;
+            _drawEaseCurve([x1, y1, x2, y2]);
+        } else {
+            easeSelect.value = ease;
+            if (customPanel) customPanel.style.display = 'none';
+            _drawEaseCurve(_EASE_BEZIER_MAP[ease] || [0, 0, 1, 1]);
+        }
     }
 
     function _setScrollValues(prop, fromInput, toInput) {
@@ -2740,6 +2873,9 @@ window.ArbelCinematicEditor = (function () {
             if (clipFrom) clipFrom.value = (Array.isArray(clipVals) && clipVals[0]) ? clipVals[0] : '';
             if (clipTo) clipTo.value = (Array.isArray(clipVals) && clipVals[1]) ? clipVals[1] : '';
         }
+
+        // Easing curve
+        _updateEasingPanel(el);
 
         // Split text
         var splitToggle = _qs('#cneSplitText');
