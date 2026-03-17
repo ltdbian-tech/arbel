@@ -3156,7 +3156,7 @@ window.ArbelCinematicEditor = (function () {
 
     /* ─── Export / Import Scene JSON ─── */
     function _exportJSON() {
-        var data = JSON.stringify({ scenes: _scenes, overrides: _overrides }, null, 2);
+        var data = JSON.stringify({ scenes: _scenes, overrides: _overrides, designTokens: _designTokens }, null, 2);
         var blob = new Blob([data], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
@@ -3185,6 +3185,12 @@ window.ArbelCinematicEditor = (function () {
                     _pushUndo();
                     _scenes = parsed.scenes;
                     if (parsed.overrides) _overrides = parsed.overrides;
+                    if (parsed.designTokens && typeof parsed.designTokens === 'object') {
+                        Object.keys(parsed.designTokens).forEach(function (k) {
+                            if (_designTokens.hasOwnProperty(k)) _designTokens[k] = parsed.designTokens[k];
+                        });
+                        _syncTokenUI();
+                    }
                     _renderSceneList();
                     _selectScene(0);
                     _notifyUpdate(true);

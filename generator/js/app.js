@@ -455,7 +455,8 @@
         if (!ctx) return;
 
         var cfg = pCfg.config;
-        var baseColor = cfg.baseColor;
+        var bc = cfg.baseColor;
+        var baseColor = Array.isArray(bc) ? 'rgb(' + bc[0] + ',' + bc[1] + ',' + bc[2] + ')' : (bc || '#646cff');
         var grad = cfg.bgGrad;
         var isMatrix = cfg.shape === 'char' || cfg.shape === 'text';
         var count = 40;
