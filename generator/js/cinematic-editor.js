@@ -2094,7 +2094,11 @@ window.ArbelCinematicEditor = (function () {
         }
 
         var hOpacity = _qs('#cneHoverOpacity');
-        if (hOpacity) hOpacity.addEventListener('input', function () { _setHover('opacity', hOpacity.value); });
+        if (hOpacity) hOpacity.addEventListener('input', function () {
+            var v = Math.max(0, Math.min(100, Math.round(parseFloat(hOpacity.value) || 100)));
+            hOpacity.value = v;
+            _setHover('opacity', String(v));
+        });
 
         var hScale = _qs('#cneHoverScale');
         if (hScale) hScale.addEventListener('input', function () { _setHover('scale', hScale.value); });
@@ -2507,6 +2511,16 @@ window.ArbelCinematicEditor = (function () {
         if (_clipboard.length === 0) _clipboard = null;
     }
 
+    function _offsetClonePosition(sty) {
+        if (!sty || (sty.top === undefined && sty.left === undefined)) return;
+        var t = parseInt(sty.top) || 0;
+        var l = parseInt(sty.left) || 0;
+        var tUnit = (sty.top && String(sty.top).indexOf('%') >= 0) ? '%' : 'px';
+        var lUnit = (sty.left && String(sty.left).indexOf('%') >= 0) ? '%' : 'px';
+        sty.top = (t + 20) + tUnit;
+        sty.left = (l + 20) + lUnit;
+    }
+
     function _pasteElement() {
         if (!_clipboard || _clipboard.length === 0) return;
         var scene = _scenes[_currentSceneIdx];
@@ -2516,12 +2530,9 @@ window.ArbelCinematicEditor = (function () {
         for (var c = 0; c < _clipboard.length; c++) {
             var clone = JSON.parse(JSON.stringify(_clipboard[c]));
             clone.id = clone.tag + '-' + Date.now().toString(36) + c;
-            if (clone.style) {
-                var t = parseInt(clone.style.top) || 0;
-                var l = parseInt(clone.style.left) || 0;
-                clone.style.top = (t + 20) + (clone.style.top && clone.style.top.indexOf('%') >= 0 ? '%' : 'px');
-                clone.style.left = (l + 20) + (clone.style.left && clone.style.left.indexOf('%') >= 0 ? '%' : 'px');
-            }
+            _offsetClonePosition(clone.style);
+            _offsetClonePosition(clone.tabletStyle);
+            _offsetClonePosition(clone.mobileStyle);
             scene.elements.push(clone);
             newIds.push(clone.id);
         }
@@ -2543,12 +2554,9 @@ window.ArbelCinematicEditor = (function () {
             if (_selectedElementIds.indexOf(scene.elements[i].id) >= 0) {
                 var clone = JSON.parse(JSON.stringify(scene.elements[i]));
                 clone.id = scene.elements[i].tag + '-' + Date.now().toString(36) + i;
-                if (clone.style) {
-                    var t = parseInt(clone.style.top) || 0;
-                    var l = parseInt(clone.style.left) || 0;
-                    clone.style.top = (t + 20) + (clone.style.top && clone.style.top.indexOf('%') >= 0 ? '%' : 'px');
-                    clone.style.left = (l + 20) + (clone.style.left && clone.style.left.indexOf('%') >= 0 ? '%' : 'px');
-                }
+                _offsetClonePosition(clone.style);
+                _offsetClonePosition(clone.tabletStyle);
+                _offsetClonePosition(clone.mobileStyle);
                 scene.elements.splice(i + 1, 0, clone);
                 newIds.push(clone.id);
             }

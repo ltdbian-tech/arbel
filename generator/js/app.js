@@ -1123,13 +1123,21 @@
         return sections;
     }
 
+    function _isValidUrl(str) {
+        if (!str) return true; // empty is fine (optional field)
+        return /^https?:\/\//i.test(str) || /^\/[^/]/.test(str); // absolute or root-relative
+    }
+
     function _collectSeo() {
+        var canonical = els.seoCanonical ? els.seoCanonical.value.trim() : '';
+        var ogImage   = els.seoOgImage   ? els.seoOgImage.value.trim()   : '';
+        var favicon   = els.seoFavicon   ? els.seoFavicon.value.trim()   : '';
         return {
             title: els.seoTitle ? els.seoTitle.value.trim() : '',
             description: els.seoDescription ? els.seoDescription.value.trim() : '',
-            canonical: els.seoCanonical ? els.seoCanonical.value.trim() : '',
-            ogImage: els.seoOgImage ? els.seoOgImage.value.trim() : '',
-            favicon: els.seoFavicon ? els.seoFavicon.value.trim() : '',
+            canonical: _isValidUrl(canonical) ? canonical : '',
+            ogImage:   _isValidUrl(ogImage)   ? ogImage   : '',
+            favicon:   _isValidUrl(favicon)   ? favicon   : '',
             index: els.seoIndex ? els.seoIndex.checked : true
         };
     }
