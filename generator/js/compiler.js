@@ -1070,9 +1070,6 @@ window.ArbelCompiler = (function () {
             '  --font-mono: "Space Mono", monospace;\n' +
             '  --ease: cubic-bezier(0.16, 1, 0.3, 1);\n' +
             '  --token-base-size: ' + (dt.baseSize || 16) + 'px;\n' +
-            '  --token-scale: ' + (dt.scale || 1.25) + ';\n' +
-            '  --token-space: ' + (dt.spaceUnit || 8) + 'px;\n' +
-            '  --token-radius: ' + (dt.radius || 8) + 'px;\n' +
             '}\n\n' +
             '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n' +
             'html { font-size: var(--token-base-size); -webkit-font-smoothing: antialiased; }\n' +

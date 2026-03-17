@@ -60,6 +60,19 @@ window.ArbelCinematicEditor = (function () {
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
     function _qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
 
+    /** Return the correct style bucket for the active breakpoint. */
+    function _getStyleBucket(el) {
+        if (_activeDevice === 'tablet') {
+            if (!el.tabletStyle) el.tabletStyle = {};
+            return el.tabletStyle;
+        }
+        if (_activeDevice === 'mobile') {
+            if (!el.mobileStyle) el.mobileStyle = {};
+            return el.mobileStyle;
+        }
+        return el.style;
+    }
+
     /* ─── Initialize ─── */
     function init(iframe, containerEl, onUpdateCb) {
         _iframe = iframe;
@@ -130,8 +143,9 @@ window.ArbelCinematicEditor = (function () {
             if (scene) {
                 for (var i = 0; i < scene.elements.length; i++) {
                     if (scene.elements[i].id === d.id) {
-                        scene.elements[i].style.top = d.top;
-                        scene.elements[i].style.left = d.left;
+                        var bucket = _getStyleBucket(scene.elements[i]);
+                        bucket.top = d.top;
+                        bucket.left = d.left;
                         break;
                     }
                 }
@@ -140,7 +154,7 @@ window.ArbelCinematicEditor = (function () {
             var posLeft = _qs('#cnePosLeft');
             if (posTop) posTop.value = d.top;
             if (posLeft) posLeft.value = d.left;
-            _notifyUpdate();
+            _notifyUpdate(_activeDevice !== 'desktop');
         }
         if (d.type === 'arbel-multi-move' && d.moves) {
             if (!_dragUndoPushed) {
@@ -153,8 +167,9 @@ window.ArbelCinematicEditor = (function () {
                     var mv = d.moves[m];
                     for (var i = 0; i < scene.elements.length; i++) {
                         if (scene.elements[i].id === mv.id) {
-                            scene.elements[i].style.top = mv.top;
-                            scene.elements[i].style.left = mv.left;
+                            var bucket = _getStyleBucket(scene.elements[i]);
+                            bucket.top = mv.top;
+                            bucket.left = mv.left;
                             break;
                         }
                     }
@@ -168,7 +183,7 @@ window.ArbelCinematicEditor = (function () {
                 if (posTop) posTop.value = pm.top;
                 if (posLeft) posLeft.value = pm.left;
             }
-            _notifyUpdate();
+            _notifyUpdate(_activeDevice !== 'desktop');
         }
         if (d.type === 'arbel-move-end') {
             _dragUndoPushed = false;
@@ -184,10 +199,11 @@ window.ArbelCinematicEditor = (function () {
             if (scene) {
                 for (var i = 0; i < scene.elements.length; i++) {
                     if (scene.elements[i].id === d.id) {
-                        scene.elements[i].style.width = d.width;
-                        scene.elements[i].style.height = d.height;
-                        scene.elements[i].style.top = d.top;
-                        scene.elements[i].style.left = d.left;
+                        var bucket = _getStyleBucket(scene.elements[i]);
+                        bucket.width = d.width;
+                        bucket.height = d.height;
+                        bucket.top = d.top;
+                        bucket.left = d.left;
                         break;
                     }
                 }
@@ -200,7 +216,7 @@ window.ArbelCinematicEditor = (function () {
             if (posH) posH.value = d.height;
             if (posT) posT.value = d.top;
             if (posL) posL.value = d.left;
-            _notifyUpdate();
+            _notifyUpdate(_activeDevice !== 'desktop');
         }
         if (d.type === 'arbel-resize-end') {
             _resizeUndoPushed = false;

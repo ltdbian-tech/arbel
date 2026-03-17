@@ -527,9 +527,6 @@ window.ArbelCinematicCompiler = (function () {
         css += '  --font-body: ' + (dt.bodyFont || '"Inter", system-ui, -apple-system, sans-serif') + ';\n';
         css += '  --font-display: ' + (dt.headingFont || '"Instrument Serif", Georgia, serif') + ';\n';
         css += '  --token-base-size: ' + (dt.baseSize || 16) + 'px;\n';
-        css += '  --token-scale: ' + (dt.scale || 1.25) + ';\n';
-        css += '  --token-space: ' + (dt.spaceUnit || 8) + 'px;\n';
-        css += '  --token-radius: ' + (dt.radius || 8) + 'px;\n';
         css += '}\n\n';
 
         css += '*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }\n';
@@ -588,7 +585,7 @@ window.ArbelCinematicCompiler = (function () {
 
         // Button styles
         css += '/* Button elements */\n';
-        css += '.cne-element[style*="cursor: pointer"]:hover { opacity: 0.9; transform: scale(0.98); transition: opacity 0.2s, transform 0.2s; }\n\n';
+        css += '.cne-element[style*="cursor: pointer"]:hover { opacity: 0.9; transition: opacity 0.2s; }\n\n';
 
         // Selection highlight
         css += '/* Selection */\n';
