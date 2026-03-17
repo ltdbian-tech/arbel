@@ -1448,7 +1448,6 @@ window.ArbelCompiler = (function () {
 
     /* ═══ Build sub-page HTML ═══ */
     function _buildPageHTML(cfg, page) {
-        var esc = _escHtml;
         // Merge site-level content with any page-specific content overrides
         var c = Object.assign({}, cfg.content || {}, page.content || {});
         var cat = _getAnimCategory(cfg.style);
