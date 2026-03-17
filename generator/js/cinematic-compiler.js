@@ -634,7 +634,7 @@ window.ArbelCinematicCompiler = (function () {
                 var rule = '';
                 var transProps = [];
                 var duration = hs._duration || '0.3';
-                if (hs.opacity !== undefined && hs.opacity !== '') { var ho = Math.max(0, Math.min(100, parseFloat(hs.opacity) || 100)); rule += ' opacity: ' + (ho / 100) + ';'; transProps.push('opacity'); }
+                if (hs.opacity !== undefined && hs.opacity !== '') { var ho = Math.max(0, Math.min(100, parseFloat(hs.opacity) || 0)); rule += ' opacity: ' + (ho / 100) + ';'; transProps.push('opacity'); }
                 if (hs.color) { rule += ' color: ' + hs.color + ';'; transProps.push('color'); }
                 if (hs.background) { rule += ' background: ' + hs.background + ';'; transProps.push('background'); }
                 if (hs.boxShadow) { rule += ' box-shadow: ' + hs.boxShadow + ';'; transProps.push('box-shadow'); }

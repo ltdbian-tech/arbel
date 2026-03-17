@@ -1125,7 +1125,10 @@
 
     function _isValidUrl(str) {
         if (!str) return true; // empty is fine (optional field)
-        return /^https?:\/\//i.test(str) || /^\/[^/]/.test(str); // absolute or root-relative
+        // Reject obvious non-URLs: bare spaces, JS pseudo-protocol, data with script
+        if (/^\s*javascript\s*:/i.test(str)) return false;
+        // Accept http(s), protocol-relative, root-relative, and standard relative paths
+        return /^(https?:\/\/|\/\/|\/|\.\/|\.\.\/)/.test(str) || /^[\w]/.test(str);
     }
 
     function _collectSeo() {

@@ -2095,7 +2095,9 @@ window.ArbelCinematicEditor = (function () {
 
         var hOpacity = _qs('#cneHoverOpacity');
         if (hOpacity) hOpacity.addEventListener('input', function () {
-            var v = Math.max(0, Math.min(100, Math.round(parseFloat(hOpacity.value) || 100)));
+            var raw = hOpacity.value.trim();
+            if (raw === '') { _setHover('opacity', ''); return; }
+            var v = Math.max(0, Math.min(100, Math.round(parseFloat(raw) || 0)));
             hOpacity.value = v;
             _setHover('opacity', String(v));
         });
@@ -2512,13 +2514,17 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _offsetClonePosition(sty) {
-        if (!sty || (sty.top === undefined && sty.left === undefined)) return;
-        var t = parseInt(sty.top) || 0;
-        var l = parseInt(sty.left) || 0;
-        var tUnit = (sty.top && String(sty.top).indexOf('%') >= 0) ? '%' : 'px';
-        var lUnit = (sty.left && String(sty.left).indexOf('%') >= 0) ? '%' : 'px';
-        sty.top = (t + 20) + tUnit;
-        sty.left = (l + 20) + lUnit;
+        if (!sty) return;
+        if (sty.top !== undefined) {
+            var t = parseInt(sty.top) || 0;
+            var tUnit = String(sty.top).indexOf('%') >= 0 ? '%' : 'px';
+            sty.top = (t + 20) + tUnit;
+        }
+        if (sty.left !== undefined) {
+            var l = parseInt(sty.left) || 0;
+            var lUnit = String(sty.left).indexOf('%') >= 0 ? '%' : 'px';
+            sty.left = (l + 20) + lUnit;
+        }
     }
 
     function _pasteElement() {
