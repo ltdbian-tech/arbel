@@ -940,7 +940,13 @@ a:hover { text-decoration: underline; }
 .config-sidebar {
     position: sticky;
     top: calc(var(--top-offset) + 16px);
+    max-height: calc(100vh - var(--top-offset) - 32px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
+.config-sidebar::-webkit-scrollbar { width: 4px; }
+.config-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 .ai-panel {
     background: var(--surface);
     border: 1px solid var(--border);

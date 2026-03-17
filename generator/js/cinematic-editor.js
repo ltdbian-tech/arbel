@@ -302,6 +302,9 @@ window.ArbelCinematicEditor = (function () {
         // Device toggle
         _setupDeviceToggle();
 
+        // Responsive panel toggles
+        _setupPanelToggles();
+
         // Zoom
         _setupZoom();
     }
@@ -1126,7 +1129,12 @@ window.ArbelCinematicEditor = (function () {
             { tag: 'div', label: 'Glass Card', text: '', variant: 'glass', cat: 'Layout' },
             { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb', cat: 'Decorative' },
             { tag: 'div', label: 'Divider Line', text: '', variant: 'divider', cat: 'Decorative' },
-            { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive' }
+            { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive' },
+            { tag: 'div', label: '3D Card Flip', text: '', variant: '3d-card', cat: '3D Effects' },
+            { tag: 'div', label: '3D Rotate Box', text: '', variant: '3d-rotate', cat: '3D Effects' },
+            { tag: 'div', label: '3D Float Layer', text: '', variant: '3d-float', cat: '3D Effects' },
+            { tag: 'div', label: '3D Tilt Plane', text: '', variant: '3d-tilt', cat: '3D Effects' },
+            { tag: 'canvas', label: 'WebGL Canvas', text: '', variant: 'webgl', cat: '3D Effects' }
         ];
 
         var list = document.createElement('div');
@@ -1257,6 +1265,49 @@ window.ArbelCinematicEditor = (function () {
                 fontSize: '1rem', fontWeight: '600', color: '#ffffff',
                 cursor: 'pointer', textAlign: 'center'
             };
+        } else if (t.tag === 'div' && t.variant === '3d-card') {
+            newEl.style = {
+                position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
+                width: '280px', height: '360px', borderRadius: '16px',
+                background: 'linear-gradient(145deg, rgba(108,92,231,0.15), rgba(0,0,0,0.3))',
+                border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)',
+                transformStyle: 'preserve-3d', perspective: '800px'
+            };
+            newEl.scroll = { rotateY: [0, 180], opacity: [1, 1], start: 0, end: 0.5 };
+        } else if (t.tag === 'div' && t.variant === '3d-rotate') {
+            newEl.style = {
+                position: 'absolute', top: '25%', left: '50%', transform: 'translateX(-50%)',
+                width: '200px', height: '200px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #6C5CE7, #a855f7)',
+                transformStyle: 'preserve-3d', perspective: '600px'
+            };
+            newEl.scroll = { rotateX: [0, 360], rotateY: [0, 360], scale: [0.8, 1], start: 0, end: 1 };
+        } else if (t.tag === 'div' && t.variant === '3d-float') {
+            newEl.style = {
+                position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
+                width: '320px', height: '220px', borderRadius: '20px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(16px)', transformStyle: 'preserve-3d', perspective: '1000px'
+            };
+            newEl.scroll = { y: [-40, 40], rotateX: [-5, 5], rotateY: [-5, 5], scale: [0.95, 1.05], start: 0, end: 1 };
+            newEl.parallax = 1.4;
+        } else if (t.tag === 'div' && t.variant === '3d-tilt') {
+            newEl.style = {
+                position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)',
+                width: '400px', height: '300px', borderRadius: '8px',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
+                border: '1px solid rgba(255,255,255,0.06)',
+                transformStyle: 'preserve-3d', perspective: '800px'
+            };
+            newEl.scroll = { rotateX: [15, -15], rotateY: [-10, 10], opacity: [0.6, 1], start: 0, end: 0.6 };
+        } else if (t.tag === 'canvas' && t.variant === 'webgl') {
+            newEl.style = {
+                position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)',
+                width: '600px', height: '400px', borderRadius: '12px',
+                background: '#0a0a0f'
+            };
+            newEl.webgl = true;
+            newEl.scroll = { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 };
         } else if (t.tag === 'div') {
             newEl.style = {
                 position: 'absolute',
@@ -2413,6 +2464,36 @@ window.ArbelCinematicEditor = (function () {
         });
     }
 
+    /* ─── Responsive Panel Toggles (for narrow viewports) ─── */
+    function _setupPanelToggles() {
+        if (!_container) return;
+        var scenesPanel = _container.querySelector('.cne-scenes-panel');
+        var propsPanel = _container.querySelector('.cne-props-panel');
+        var toggleScenes = _qs('#cneToggleScenes');
+        var toggleProps = _qs('#cneToggleProps');
+
+        if (toggleScenes && scenesPanel) {
+            toggleScenes.addEventListener('click', function () {
+                scenesPanel.classList.toggle('open');
+                if (propsPanel) propsPanel.classList.remove('open');
+            });
+        }
+        if (toggleProps && propsPanel) {
+            toggleProps.addEventListener('click', function () {
+                propsPanel.classList.toggle('open');
+                if (scenesPanel) scenesPanel.classList.remove('open');
+            });
+        }
+        // Close panels when clicking canvas area
+        var canvasArea = _container.querySelector('.cne-canvas-area');
+        if (canvasArea) {
+            canvasArea.addEventListener('click', function () {
+                if (scenesPanel) scenesPanel.classList.remove('open');
+                if (propsPanel) propsPanel.classList.remove('open');
+            });
+        }
+    }
+
     /**
      * Get a style value for the selected element with cascade fallback.
      * mobile -> tabletStyle -> style(desktop)
@@ -3022,6 +3103,10 @@ window.ArbelCinematicEditor = (function () {
 
         var elHeader = _qs('#cneElHeader');
         if (elHeader) elHeader.textContent = 'Select an element';
+
+        // Auto-switch to Scene tab so user can edit background
+        var sceneTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="scene"]') : null;
+        if (sceneTab) sceneTab.click();
     }
 
     function _notifyUpdate(rerender) {
