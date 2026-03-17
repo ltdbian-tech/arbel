@@ -526,6 +526,18 @@
     margin-bottom: 0.8rem;
 }
 
+.cne-device-badge {
+    display: inline-block;
+    font-size: 0.55rem;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(108,92,231,0.25);
+    color: #a78bfa;
+    margin-bottom: 0.6rem;
+}
+
 .cne-section-label {
     font-size: 0.65rem;
     font-weight: 600;

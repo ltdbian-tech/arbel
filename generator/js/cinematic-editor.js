@@ -21,6 +21,7 @@ window.ArbelCinematicEditor = (function () {
     var _overrides = {};
     var _zoom = 100;
     var _dragState = null;
+    var _activeDevice = 'desktop';  // 'desktop' | 'tablet' | 'mobile'
     var _timelineOpen = false;
     var _uiBound = false;          // guard against duplicate listener binding
     var _clipboard = null;           // copy/paste: deep-cloned element object
@@ -2081,13 +2082,41 @@ window.ArbelCinematicEditor = (function () {
             btn.addEventListener('click', function () {
                 _container.querySelectorAll('.device-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
+                var device = btn.getAttribute('data-device');
+                _activeDevice = device || 'desktop';
                 var frame = _qs('#cnePreviewFrame');
                 if (frame) {
                     frame.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
-                    frame.classList.add('preview-' + btn.getAttribute('data-device'));
+                    frame.classList.add('preview-' + _activeDevice);
                 }
+                // Show device badge on props panel
+                var badge = _qs('#cneDeviceBadge');
+                if (badge) {
+                    badge.textContent = _activeDevice === 'desktop' ? '' : _activeDevice.toUpperCase();
+                    badge.style.display = _activeDevice === 'desktop' ? 'none' : '';
+                }
+                // Refresh properties panel for new device
+                var el = _getSelectedElement();
+                if (el) _updatePropertiesFromScene(el);
             });
         });
+    }
+
+    /**
+     * Get a style value for the selected element with cascade fallback.
+     * mobile -> tabletStyle -> style(desktop)
+     * tablet -> tabletStyle -> style(desktop)
+     * desktop -> style(desktop)
+     */
+    function _getElStyleValue(el, prop) {
+        if (!el) return '';
+        if (_activeDevice === 'mobile') {
+            if (el.mobileStyle && el.mobileStyle[prop] !== undefined) return el.mobileStyle[prop];
+            if (el.tabletStyle && el.tabletStyle[prop] !== undefined) return el.tabletStyle[prop];
+        } else if (_activeDevice === 'tablet') {
+            if (el.tabletStyle && el.tabletStyle[prop] !== undefined) return el.tabletStyle[prop];
+        }
+        return (el.style && el.style[prop] !== undefined) ? el.style[prop] : '';
     }
 
     function _setupZoom() {
@@ -2182,13 +2211,31 @@ window.ArbelCinematicEditor = (function () {
     function _setElStyle(prop, value) {
         var el = _getSelectedElement();
         if (!el) return;
-        if (!el.style) el.style = {};
         _beginBurst('style');
-        if (value === '' || value === undefined) {
-            delete el.style[prop];
+
+        if (_activeDevice === 'tablet') {
+            if (!el.tabletStyle) el.tabletStyle = {};
+            if (value === '' || value === undefined) {
+                delete el.tabletStyle[prop];
+            } else {
+                el.tabletStyle[prop] = value;
+            }
+        } else if (_activeDevice === 'mobile') {
+            if (!el.mobileStyle) el.mobileStyle = {};
+            if (value === '' || value === undefined) {
+                delete el.mobileStyle[prop];
+            } else {
+                el.mobileStyle[prop] = value;
+            }
         } else {
-            el.style[prop] = value;
+            if (!el.style) el.style = {};
+            if (value === '' || value === undefined) {
+                delete el.style[prop];
+            } else {
+                el.style[prop] = value;
+            }
         }
+
         _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
         _commitBurst('style', 600);
         _notifyUpdate();
@@ -2461,7 +2508,7 @@ window.ArbelCinematicEditor = (function () {
             var imgSrc = _qs('#cneImgSrc');
             if (imgSrc) imgSrc.value = (el.src && el.src.indexOf('data:') === 0) ? '(uploaded)' : (el.src || '');
             var imgFit = _qs('#cneImgFit');
-            if (imgFit) imgFit.value = el.style.objectFit || 'cover';
+            if (imgFit) imgFit.value = _getElStyleValue(el, 'objectFit') || 'cover';
         } else if (el.tag === 'video') {
             var videoSrc = _qs('#cneVideoSrc');
             if (videoSrc) videoSrc.value = el.src || '';
@@ -2486,35 +2533,36 @@ window.ArbelCinematicEditor = (function () {
         if (textInput) textInput.value = el.text || '';
 
         var fontSize = _qs('#cneFontSize');
-        if (fontSize) fontSize.value = parseInt(el.style.fontSize) || '';
+        if (fontSize) fontSize.value = parseInt(_getElStyleValue(el, 'fontSize')) || '';
 
         var fontWeight = _qs('#cneFontWeight');
-        if (fontWeight) fontWeight.value = el.style.fontWeight || '';
+        if (fontWeight) fontWeight.value = _getElStyleValue(el, 'fontWeight');
 
         var fontFamily = _qs('#cneFontFamily');
-        if (fontFamily) fontFamily.value = el.style.fontFamily || '';
+        if (fontFamily) fontFamily.value = _getElStyleValue(el, 'fontFamily');
 
         var lineHeight = _qs('#cneLineHeight');
-        if (lineHeight) lineHeight.value = el.style.lineHeight || '';
+        if (lineHeight) lineHeight.value = _getElStyleValue(el, 'lineHeight');
 
         var letterSpacing = _qs('#cneLetterSpacing');
-        if (letterSpacing) letterSpacing.value = el.style.letterSpacing || '';
+        if (letterSpacing) letterSpacing.value = _getElStyleValue(el, 'letterSpacing');
 
         // Text alignment buttons
         var alignBtns = _qsa('#cneTextAlign .cne-icon-btn');
         alignBtns.forEach(function (btn) {
-            btn.classList.toggle('active', btn.getAttribute('data-val') === (el.style.textAlign || ''));
+            btn.classList.toggle('active', btn.getAttribute('data-val') === (_getElStyleValue(el, 'textAlign') || ''));
         });
 
         var color = _qs('#cneColor');
-        if (color) color.value = _toHex(el.style.color) || '#ffffff';
+        if (color) color.value = _toHex(_getElStyleValue(el, 'color')) || '#ffffff';
 
         var bgColor = _qs('#cneBgColor');
-        if (bgColor) bgColor.value = _toHex(el.style.background) || '#000000';
+        if (bgColor) bgColor.value = _toHex(_getElStyleValue(el, 'background')) || '#000000';
 
         var opacity = _qs('#cneOpacity');
         if (opacity) {
-            var opVal = el.style.opacity !== undefined ? Math.round(parseFloat(el.style.opacity) * 100) : 100;
+            var opRaw = _getElStyleValue(el, 'opacity');
+            var opVal = opRaw !== '' && opRaw !== undefined ? Math.round(parseFloat(opRaw) * 100) : 100;
             opacity.value = opVal;
             var opDisp = _qs('#cneOpacityVal');
             if (opDisp) opDisp.textContent = opVal + '%';
@@ -2522,47 +2570,47 @@ window.ArbelCinematicEditor = (function () {
 
         var radius = _qs('#cneRadius');
         if (radius) {
-            radius.value = parseInt(el.style.borderRadius) || 0;
+            radius.value = parseInt(_getElStyleValue(el, 'borderRadius')) || 0;
             var rVal = _qs('#cneRadiusVal');
-            if (rVal) rVal.textContent = (parseInt(el.style.borderRadius) || 0) + 'px';
+            if (rVal) rVal.textContent = (parseInt(_getElStyleValue(el, 'borderRadius')) || 0) + 'px';
         }
 
         // Z-Index
         var zIndex = _qs('#cneZIndex');
-        if (zIndex) zIndex.value = el.style.zIndex || '';
+        if (zIndex) zIndex.value = _getElStyleValue(el, 'zIndex');
 
         // Box Shadow
         var boxShadow = _qs('#cneBoxShadow');
-        if (boxShadow) boxShadow.value = el.style.boxShadow || '';
+        if (boxShadow) boxShadow.value = _getElStyleValue(el, 'boxShadow');
 
         // Backdrop Filter
         var backdrop = _qs('#cneBackdrop');
-        if (backdrop) backdrop.value = el.style.backdropFilter || '';
+        if (backdrop) backdrop.value = _getElStyleValue(el, 'backdropFilter');
 
         // Border
         var borderWidth = _qs('#cneBorderWidth');
         var borderColor = _qs('#cneBorderColor');
         if (borderWidth || borderColor) {
-            var borderParts = (el.style.border || '').match(/^(\d+)px\s+\S+\s+(.+)$/);
+            var borderParts = (_getElStyleValue(el, 'border') || '').match(/^(\d+)px\s+\S+\s+(.+)$/);
             if (borderWidth) borderWidth.value = borderParts ? borderParts[1] : '';
             if (borderColor) borderColor.value = (borderParts ? _toHex(borderParts[2]) : '') || '#ffffff';
         }
 
         // Padding
-        var padTop = _qs('#cnePadTop'); if (padTop) padTop.value = el.style.paddingTop || '';
-        var padRight = _qs('#cnePadRight'); if (padRight) padRight.value = el.style.paddingRight || '';
-        var padBottom = _qs('#cnePadBottom'); if (padBottom) padBottom.value = el.style.paddingBottom || '';
-        var padLeft = _qs('#cnePadLeft'); if (padLeft) padLeft.value = el.style.paddingLeft || '';
+        var padTop = _qs('#cnePadTop'); if (padTop) padTop.value = _getElStyleValue(el, 'paddingTop');
+        var padRight = _qs('#cnePadRight'); if (padRight) padRight.value = _getElStyleValue(el, 'paddingRight');
+        var padBottom = _qs('#cnePadBottom'); if (padBottom) padBottom.value = _getElStyleValue(el, 'paddingBottom');
+        var padLeft = _qs('#cnePadLeft'); if (padLeft) padLeft.value = _getElStyleValue(el, 'paddingLeft');
 
         // Position
         var posTop = _qs('#cnePosTop');
-        if (posTop) posTop.value = el.style.top || '';
+        if (posTop) posTop.value = _getElStyleValue(el, 'top');
         var posLeft = _qs('#cnePosLeft');
-        if (posLeft) posLeft.value = el.style.left || '';
+        if (posLeft) posLeft.value = _getElStyleValue(el, 'left');
         var posW = _qs('#cnePosWidth');
-        if (posW) posW.value = el.style.width || '';
+        if (posW) posW.value = _getElStyleValue(el, 'width');
         var posH = _qs('#cnePosHeight');
-        if (posH) posH.value = el.style.height || '';
+        if (posH) posH.value = _getElStyleValue(el, 'height');
 
         // Scroll tab
         _updateScrollPanel();

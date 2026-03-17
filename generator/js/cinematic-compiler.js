@@ -598,13 +598,43 @@ window.ArbelCinematicCompiler = (function () {
         css += '/* Selection */\n';
         css += '::selection { background: ' + accent + '; color: #fff; }\n\n';
 
-        // Responsive
+        // Responsive — generic layout
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
         css += '  .cne-nav-links { display: none; }\n';
         css += '  .cne-element { font-size: 0.85em; }\n';
         css += '  .cne-scene { min-height: 80vh; }\n';
-        css += '}\n';
+        css += '}\n\n';
+
+        // Per-element responsive overrides
+        var tabletCSS = '';
+        var mobileCSS = '';
+        (cfg.scenes || []).forEach(function (scene) {
+            (scene.elements || []).forEach(function (el) {
+                if (el.tabletStyle && Object.keys(el.tabletStyle).length) {
+                    tabletCSS += '  [data-arbel-id="' + esc(el.id) + '"] {';
+                    Object.keys(el.tabletStyle).forEach(function (prop) {
+                        var val = String(el.tabletStyle[prop]).replace(/[<>"'`]/g, '');
+                        if (!/javascript\s*:/i.test(val) && !/expression\s*\(/i.test(val)) {
+                            tabletCSS += ' ' + _camelToDash(prop) + ': ' + val + ' !important;';
+                        }
+                    });
+                    tabletCSS += ' }\n';
+                }
+                if (el.mobileStyle && Object.keys(el.mobileStyle).length) {
+                    mobileCSS += '  [data-arbel-id="' + esc(el.id) + '"] {';
+                    Object.keys(el.mobileStyle).forEach(function (prop) {
+                        var val = String(el.mobileStyle[prop]).replace(/[<>"'`]/g, '');
+                        if (!/javascript\s*:/i.test(val) && !/expression\s*\(/i.test(val)) {
+                            mobileCSS += ' ' + _camelToDash(prop) + ': ' + val + ' !important;';
+                        }
+                    });
+                    mobileCSS += ' }\n';
+                }
+            });
+        });
+        if (tabletCSS) css += '@media (max-width: 768px) {\n' + tabletCSS + '}\n\n';
+        if (mobileCSS) css += '@media (max-width: 480px) {\n' + mobileCSS + '}\n';
 
         return css;
     }
