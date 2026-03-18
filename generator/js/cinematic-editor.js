@@ -1789,7 +1789,7 @@ window.ArbelCinematicEditor = (function () {
         if (elBgImage) {
             elBgImage.addEventListener('input', function () {
                 var raw = elBgImage.value.replace(/[\\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
-                if (raw && !/^(https?:\/\/|\/\/|\/|\.\/|\.\.\\/|data:image\/)./.test(raw)) { return; }
+                if (raw && !/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/|data:image\/)./.test(raw)) { return; }
                 _setElStyle('backgroundImage', raw ? 'url(' + raw + ')' : '');
                 _setElStyle('backgroundSize', raw ? 'cover' : '');
                 _setElStyle('backgroundPosition', raw ? 'center' : '');
