@@ -377,7 +377,16 @@ window.ArbelCinematicCompiler = (function () {
             if (animJS) files['js/' + animFile] = animJS;
         }
 
-        // Extract inline data:video URLs to separate asset files
+        return files;
+    }
+
+    /**
+     * Extract inline data:video URLs from compiled files to separate asset files.
+     * Call this for final export/ZIP — NOT for live preview (blob iframes can't
+     * resolve relative asset paths).
+     */
+    function _extractAssets(files) {
+        if (!files || !files['index.html']) return files;
         var html = files['index.html'];
         var vidIdx = 0;
         html = html.replace(/src="(data:video\/([a-z0-9]+);base64,[A-Za-z0-9+\/=]+)"/g, function (match, dataUrl, ext) {
@@ -387,7 +396,6 @@ window.ArbelCinematicCompiler = (function () {
             return 'src="' + assetName + '"';
         });
         files['index.html'] = html;
-
         return files;
     }
 
@@ -1501,6 +1509,7 @@ window.ArbelCinematicCompiler = (function () {
     /* ─── Public API ─── */
     return {
         compile: compile,
+        extractAssets: _extractAssets,
         getSceneTemplates: function () {
             var out = [];
             Object.keys(SCENE_TEMPLATES).forEach(function (k) {

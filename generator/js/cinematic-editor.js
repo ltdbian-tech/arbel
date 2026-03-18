@@ -187,6 +187,27 @@ window.ArbelCinematicEditor = (function () {
                     }
                 }
 
+                // Reposition absolute elements with pixel left/top that would overflow
+                if (isMobile) {
+                    var leftStr = String(s.left || '');
+                    var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
+                    if (leftPx && parseFloat(leftPx[1]) > 200) {
+                        overrides.left = '5%';
+                    }
+                    var topStr = String(s.top || '');
+                    var topPx = topStr.match(/^([\d.]+)\s*px$/);
+                    if (topPx && parseFloat(topPx[1]) > 600) {
+                        overrides.top = Math.round(parseFloat(topPx[1]) * 0.5) + 'px';
+                    }
+                } else {
+                    // tablet: nudge in large left values
+                    var leftStr = String(s.left || '');
+                    var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
+                    if (leftPx && parseFloat(leftPx[1]) > 500) {
+                        overrides.left = Math.round(parseFloat(leftPx[1]) * 0.7) + 'px';
+                    }
+                }
+
                 if (Object.keys(overrides).length > 0) {
                     if (device === 'tablet') {
                         if (!el.tabletStyle) el.tabletStyle = {};
@@ -246,6 +267,12 @@ window.ArbelCinematicEditor = (function () {
 
         if (d.type === 'arbel-select') {
             _iframeTextUndoPushed = false; // reset on element switch
+            // Auto-switch scene if clicked element is in a different scene
+            if (typeof d.sceneIndex === 'number' && d.sceneIndex >= 0 && d.sceneIndex !== _currentSceneIdx && d.sceneIndex < _scenes.length) {
+                _currentSceneIdx = d.sceneIndex;
+                _renderSceneList();
+                _renderElementList();
+            }
             _selectedElementId = d.id || null;
             _selectedElementIds = d.ids || (d.id ? [d.id] : []);
             // Auto-expand: include group members
@@ -4963,8 +4990,11 @@ window.ArbelCinematicEditor = (function () {
         /* ── Selection helpers ── */
         'function sendSel(){' +
           'var ids=[];for(var i=0;i<selected.length;i++)ids.push(selected[i].getAttribute("data-arbel-id"));' +
+          'var sceneEl=primary?primary.closest("[data-scene-index]"):null;' +
+          'var sceneIdx=sceneEl?parseInt(sceneEl.getAttribute("data-scene-index"),10):-1;' +
           'window.parent.postMessage({type:"arbel-select",id:primary?primary.getAttribute("data-arbel-id"):null,' +
             'ids:ids,' +
+            'sceneIndex:sceneIdx,' +
             'tag:primary?primary.tagName.toLowerCase():null,' +
             'text:primary&&primary.getAttribute("data-arbel-edit")==="text"?primary.textContent:null,' +
             'editable:primary?primary.hasAttribute("data-arbel-edit"):false},"*");' +

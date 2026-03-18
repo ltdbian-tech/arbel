@@ -1303,6 +1303,7 @@
         if (!state.compiledFiles) {
             if (state.mode === 'cinematic') {
                 state.compiledFiles = ArbelCinematicCompiler.compile(buildCinematicConfig());
+                ArbelCinematicCompiler.extractAssets(state.compiledFiles);
             } else {
                 state.compiledFiles = ArbelCompiler.compile(buildConfig());
             }
@@ -1315,6 +1316,7 @@
             var cineOvr = ArbelCinematicEditor.getOverrides();
             if (cineOvr && Object.keys(cineOvr).length > 0) cineCfg.editorOverrides = cineOvr;
             state.compiledFiles = ArbelCinematicCompiler.compile(cineCfg);
+            ArbelCinematicCompiler.extractAssets(state.compiledFiles);
         } else {
             var deployConfig = buildConfig();
             var latestOverrides = ArbelEditor.getOverrides();
@@ -1576,6 +1578,7 @@
             var overrides = ArbelCinematicEditor.getOverrides();
             if (overrides && Object.keys(overrides).length > 0) cfg.editorOverrides = overrides;
             state.compiledFiles = ArbelCinematicCompiler.compile(cfg);
+            ArbelCinematicCompiler.extractAssets(state.compiledFiles);
 
             // Hide cinematic editor, show deploy step
             if (cinematicEditor) cinematicEditor.classList.remove('active');
