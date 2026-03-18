@@ -22,7 +22,7 @@ window.ArbelCinematicCompiler = (function () {
         if (!url) return '';
         var s = url.replace(/[\x00-\x1f]+/g, '').trim();
         if (/^\s*(javascript|vbscript)\s*:/i.test(s)) return '';
-        if (/^data:/i.test(s) && !/^data:image\//i.test(s)) return '';
+        if (/^data:/i.test(s) && !/^data:(image|video)\//i.test(s)) return '';
         return esc(s);
     }
 
