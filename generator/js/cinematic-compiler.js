@@ -432,6 +432,10 @@ window.ArbelCinematicCompiler = (function () {
         var fontFamilies = Object.keys(usedFonts).map(function (k) { return 'family=' + usedFonts[k]; }).join('&');
         html += '<link href="https://fonts.googleapis.com/css2?' + fontFamilies + '&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">\n';
         html += '<link rel="stylesheet" href="css/style.css">\n';
+        // Custom head injection (analytics, tracking pixels, etc.)
+        if (cfg.editorOverrides && cfg.editorOverrides.customHead) {
+            html += cfg.editorOverrides.customHead + '\n';
+        }
         html += '</head>\n<body>\n';
 
         // Preloader
@@ -502,7 +506,7 @@ window.ArbelCinematicCompiler = (function () {
 
             (scene.elements || []).forEach(function (el) {
                 if (!el.visible) return;
-                var validTags = ['h1','h2','h3','p','span','div','img','video','a','section','header','footer','nav','ul','li','ol'];
+                var validTags = ['h1','h2','h3','p','span','div','img','video','a','form','section','header','footer','nav','ul','li','ol'];
                 var tag = (validTags.indexOf(el.tag) >= 0) ? el.tag : 'div';
                 var style = '';
                 if (el.style) {
@@ -590,6 +594,30 @@ window.ArbelCinematicCompiler = (function () {
                     html += ' href="' + href + '"';
                     if (el.linkNewTab) html += ' target="_blank" rel="noopener noreferrer"';
                     html += '>' + esc(el.text) + '</a>\n';
+                } else if (tag === 'form') {
+                    var formAction = el.formAction ? escHref(el.formAction) : '';
+                    var formMethod = (el.formMethod === 'GET') ? 'GET' : 'POST';
+                    html += ' action="' + formAction + '" method="' + formMethod + '"';
+                    html += '>\n';
+                    var fields = el.formFields || [];
+                    fields.forEach(function (field) {
+                        var fName = esc(field.name || '');
+                        var fType = esc(field.type || 'text');
+                        var validTypes = ['text','email','tel','url','number','textarea','select'];
+                        if (validTypes.indexOf(fType) < 0) fType = 'text';
+                        var fLabel = fName.charAt(0).toUpperCase() + fName.slice(1);
+                        html += '      <div class="cne-form-group">\n';
+                        html += '        <label class="cne-form-label" for="field-' + fName + '">' + fLabel + '</label>\n';
+                        if (fType === 'textarea') {
+                            html += '        <textarea class="cne-form-input cne-form-textarea" id="field-' + fName + '" name="' + fName + '" placeholder="' + fLabel + '" rows="4"></textarea>\n';
+                        } else {
+                            html += '        <input class="cne-form-input" type="' + fType + '" id="field-' + fName + '" name="' + fName + '" placeholder="' + fLabel + '">\n';
+                        }
+                        html += '      </div>\n';
+                    });
+                    var submitText = esc(el.formSubmitText || 'Send Message');
+                    html += '      <button type="submit" class="cne-form-submit">' + submitText + '</button>\n';
+                    html += '    </form>\n';
                 } else {
                     // Lottie animation embed
                     if (el.lottieUrl && /^https?:\/\//.test(el.lottieUrl)) {
@@ -661,6 +689,11 @@ window.ArbelCinematicCompiler = (function () {
 
         html += '<script src="js/cinema.js"><\/script>\n';
         html += '<script src="js/main.js"><\/script>\n';
+
+        // Custom body-end injection (third-party scripts, chat widgets, etc.)
+        if (cfg.editorOverrides && cfg.editorOverrides.customBodyEnd) {
+            html += cfg.editorOverrides.customBodyEnd + '\n';
+        }
 
         html += '</body>\n</html>';
 
@@ -785,6 +818,15 @@ window.ArbelCinematicCompiler = (function () {
         css += '  .cne-scene { min-height: 80vh; }\n';
         css += '}\n\n';
 
+        // Form element styles
+        css += '.cne-form-group { margin-bottom: 1rem; }\n';
+        css += '.cne-form-label { display: block; font-size: 0.85rem; margin-bottom: 0.35rem; opacity: 0.7; }\n';
+        css += '.cne-form-input { width: 100%; padding: 0.75rem 1rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: inherit; font-family: inherit; font-size: 0.95rem; outline: none; transition: border-color 0.2s; box-sizing: border-box; }\n';
+        css += '.cne-form-input:focus { border-color: ' + accent + '; }\n';
+        css += '.cne-form-textarea { resize: vertical; min-height: 100px; }\n';
+        css += '.cne-form-submit { display: inline-block; padding: 0.85rem 2.4rem; background: ' + accent + '; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.2s; }\n';
+        css += '.cne-form-submit:hover { opacity: 0.88; transform: translateY(-1px); }\n\n';
+
         // Per-element responsive overrides
         var tabletCSS = '';
         var mobileCSS = '';
@@ -842,6 +884,11 @@ window.ArbelCinematicCompiler = (function () {
             });
         });
         if (hoverCSS) css += '\n/* Hover States */\n' + hoverCSS;
+
+        // Custom CSS injection
+        if (cfg.editorOverrides && cfg.editorOverrides.customCSS) {
+            css += '\n/* Custom CSS */\n' + cfg.editorOverrides.customCSS + '\n';
+        }
 
         return css;
     }

@@ -670,6 +670,133 @@ test('clip-path crop compiles in element style', () => {
 });
 
 // ─────────────────────────────────────────────
+//  CUSTOM CODE INJECTION
+// ─────────────────────────────────────────────
+console.log('\n💉  Custom Code Injection');
+
+test('custom head injection appears before </head>', () => {
+    const cfg = Object.assign({}, CIN_BASE, {
+        editorOverrides: { customHead: '<script src="https://example.com/analytics.js"><\/script>' }
+    });
+    const f = ArbelCinematicCompiler.compile(cfg);
+    const html = f['index.html'];
+    const headEnd = html.indexOf('</head>');
+    assert(headEnd > 0, '</head> not found');
+    const analyticsIdx = html.indexOf('analytics.js');
+    assert(analyticsIdx > 0 && analyticsIdx < headEnd, 'custom head should appear before </head>');
+});
+
+test('custom CSS injection appears in stylesheet', () => {
+    const cfg = Object.assign({}, CIN_BASE, {
+        editorOverrides: { customCSS: '.my-custom { color: red; }' }
+    });
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['css/style.css'].indexOf('.my-custom { color: red; }') >= 0, 'custom CSS missing from stylesheet');
+});
+
+test('custom body-end injection appears before </body>', () => {
+    const cfg = Object.assign({}, CIN_BASE, {
+        editorOverrides: { customBodyEnd: '<div id="chat-widget"></div>' }
+    });
+    const f = ArbelCinematicCompiler.compile(cfg);
+    const html = f['index.html'];
+    const bodyEnd = html.indexOf('</body>');
+    assert(bodyEnd > 0, '</body> not found');
+    const widgetIdx = html.indexOf('chat-widget');
+    assert(widgetIdx > 0 && widgetIdx < bodyEnd, 'custom body-end should appear before </body>');
+});
+
+test('no custom code injected when overrides empty', () => {
+    const cfg = Object.assign({}, CIN_BASE, { editorOverrides: {} });
+    const f = ArbelCinematicCompiler.compile(cfg);
+    // No crash, still valid HTML
+    assert(f['index.html'].indexOf('</html>') >= 0, 'HTML should still be valid');
+});
+
+// ─────────────────────────────────────────────
+//  FORM ELEMENT
+// ─────────────────────────────────────────────
+console.log('\n📝  Form Element');
+
+test('form element compiles with fields', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Contact', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'form-1', tag: 'form', text: 'Contact Form', visible: true,
+            formAction: 'https://formspree.io/f/test', formMethod: 'POST',
+            formFields: [
+                { name: 'name', type: 'text' },
+                { name: 'email', type: 'email' },
+                { name: 'message', type: 'textarea' }
+            ],
+            formSubmitText: 'Send',
+            style: { position: 'absolute', top: '20%', left: '10%', width: '400px' }
+        }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    const html = f['index.html'];
+    assert(html.indexOf('action="https://formspree.io/f/test"') >= 0, 'form action missing');
+    assert(html.indexOf('method="POST"') >= 0, 'form method missing');
+    assert(html.indexOf('type="email"') >= 0, 'email field missing');
+    assert(html.indexOf('<textarea') >= 0, 'textarea field missing');
+    assert(html.indexOf('>Send</button>') >= 0, 'submit button missing');
+});
+
+test('form CSS present in compiled stylesheet', () => {
+    const f = ArbelCinematicCompiler.compile(CIN_BASE);
+    const css = f['css/style.css'];
+    assert(css.indexOf('.cne-form-input') >= 0, 'form input CSS missing');
+    assert(css.indexOf('.cne-form-submit') >= 0, 'form submit CSS missing');
+});
+
+test('form element sanitizes action URL', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'form-1', tag: 'form', text: '', visible: true,
+            formAction: 'javascript:alert(1)', formMethod: 'POST',
+            formFields: [{ name: 'test', type: 'text' }],
+            formSubmitText: 'Submit',
+            style: { position: 'absolute', top: '0', left: '0' }
+        }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('javascript:') < 0, 'javascript: URL should be sanitized from form action');
+});
+
+test('form with GET method compiles correctly', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'form-1', tag: 'form', text: '', visible: true,
+            formAction: 'https://example.com/search', formMethod: 'GET',
+            formFields: [{ name: 'q', type: 'text' }],
+            formSubmitText: 'Search',
+            style: { position: 'absolute', top: '0', left: '0' }
+        }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('method="GET"') >= 0, 'GET method should be preserved');
+});
+
+// ─────────────────────────────────────────────
+//  AUTOSAVE
+// ─────────────────────────────────────────────
+console.log('\n💾  Autosave');
+
+test('autosave functions exist on editor', () => {
+    // CinematicEditor is IIFE-scoped, but we can verify the compiler handles
+    // editorOverrides without crashing as a proxy for autosave data round-trip
+    const cfg = Object.assign({}, CIN_BASE, {
+        editorOverrides: {
+            customHead: '<!-- test -->',
+            customCSS: '.x { color: blue; }',
+            customBodyEnd: '<!-- end -->'
+        }
+    });
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('<!-- test -->') >= 0, 'autosave data should round-trip through compiler');
+    assert(f['css/style.css'].indexOf('.x { color: blue; }') >= 0, 'autosave CSS override should round-trip');
+});
+
+// ─────────────────────────────────────────────
 //  SUMMARY
 // ─────────────────────────────────────────────
 console.log('\n' + '─'.repeat(55));

@@ -117,7 +117,21 @@ window.ArbelCinematicEditor = (function () {
         _onUpdate = onUpdateCb;
         _active = true;
 
-        // Start with one hero scene
+        // Try to restore autosaved state
+        if (_scenes.length === 0) {
+            var saved = _restoreAutosave();
+            if (saved) {
+                _scenes = saved.scenes;
+                if (saved.overrides) _overrides = saved.overrides;
+                if (saved.designTokens && typeof saved.designTokens === 'object') {
+                    Object.keys(saved.designTokens).forEach(function (k) {
+                        if (_designTokens.hasOwnProperty(k)) _designTokens[k] = saved.designTokens[k];
+                    });
+                }
+            }
+        }
+
+        // Start with one hero scene if nothing restored
         if (_scenes.length === 0) {
             _scenes.push(ArbelCinematicCompiler.createScene('hero', 0));
         }
@@ -423,6 +437,10 @@ window.ArbelCinematicEditor = (function () {
             // Spline 3D embed
             var spline = _qs('#cneSceneSpline'); if (spline) spline.value = scene.splineUrl || '';
             var splineInfo = _qs('#cneSplineInfo'); if (splineInfo) splineInfo.style.display = scene.splineUrl ? '' : 'none';
+            // Custom code fields (site-wide, stored in _overrides)
+            var customHead = _qs('#cneCustomHead'); if (customHead) customHead.value = _overrides.customHead || '';
+            var customCSS = _qs('#cneCustomCSS'); if (customCSS) customCSS.value = _overrides.customCSS || '';
+            var customBodyEnd = _qs('#cneCustomBodyEnd'); if (customBodyEnd) customBodyEnd.value = _overrides.customBodyEnd || '';
         }
         _notifyUpdate(!!rerender);
     }
@@ -1154,6 +1172,7 @@ window.ArbelCinematicEditor = (function () {
             { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb', cat: 'Decorative' },
             { tag: 'div', label: 'Divider Line', text: '', variant: 'divider', cat: 'Decorative' },
             { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive' },
+            { tag: 'form', label: 'Contact Form', text: '', variant: 'form', cat: 'Interactive' },
             { tag: 'div', label: '3D Card Flip', text: '', variant: '3d-card', cat: '3D Effects' },
             { tag: 'div', label: '3D Rotate Box', text: '', variant: '3d-rotate', cat: '3D Effects' },
             { tag: 'div', label: '3D Float Layer', text: '', variant: '3d-float', cat: '3D Effects' },
@@ -1355,6 +1374,23 @@ window.ArbelCinematicEditor = (function () {
                 width: '560px', height: '315px', borderRadius: '12px',
                 overflow: 'hidden'
             };
+        } else if (t.tag === 'form' && t.variant === 'form') {
+            newEl.tag = 'form';
+            newEl.formAction = '';
+            newEl.formMethod = 'POST';
+            newEl.formFields = [
+                { name: 'name', type: 'text', label: 'Name', placeholder: 'Your name', required: true },
+                { name: 'email', type: 'email', label: 'Email', placeholder: 'your@email.com', required: true },
+                { name: 'message', type: 'textarea', label: 'Message', placeholder: 'Your message...', required: false }
+            ];
+            newEl.formSubmitText = 'Send Message';
+            newEl.style = {
+                position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)',
+                width: '400px', padding: '32px', borderRadius: '16px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                backdropFilter: 'blur(20px)'
+            };
+            newEl.scroll = { opacity: [0, 1], y: [40, 0], start: 0, end: 0.4, ease: 'power2.out' };
         } else if (t.tag === 'div') {
             newEl.style = {
                 position: 'absolute',
@@ -2885,6 +2921,130 @@ window.ArbelCinematicEditor = (function () {
                 _notifyUpdate(true);
             });
         }
+
+        // Custom code injection fields (site-wide, stored in _overrides)
+        ['customHead', 'customCSS', 'customBodyEnd'].forEach(function (key) {
+            var el = _qs('#cne' + key.charAt(0).toUpperCase() + key.slice(1));
+            if (el) {
+                el.addEventListener('input', function () {
+                    _beginBurst('customCode');
+                    _overrides[key] = el.value;
+                    _commitBurst('customCode', 800);
+                });
+            }
+        });
+
+        // Form element settings
+        var formAction = _qs('#cneFormAction');
+        if (formAction) {
+            formAction.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el && el.tag === 'form') { _beginBurst('form'); el.formAction = formAction.value; _commitBurst('form', 600); _notifyUpdate(true); }
+            });
+        }
+        var formMethod = _qs('#cneFormMethod');
+        if (formMethod) {
+            formMethod.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (el && el.tag === 'form') { _pushUndo(); el.formMethod = formMethod.value; _notifyUpdate(true); }
+            });
+        }
+        var formSubmitText = _qs('#cneFormSubmitText');
+        if (formSubmitText) {
+            formSubmitText.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el && el.tag === 'form') { _beginBurst('form'); el.formSubmitText = formSubmitText.value; _commitBurst('form', 600); _notifyUpdate(true); }
+            });
+        }
+        var formAddField = _qs('#cneFormAddField');
+        if (formAddField) {
+            formAddField.addEventListener('click', function () {
+                var el = _getSelectedElement();
+                if (el && el.tag === 'form') {
+                    _pushUndo();
+                    if (!el.formFields) el.formFields = [];
+                    el.formFields.push({ name: 'field' + el.formFields.length, type: 'text', label: 'New Field', placeholder: '', required: false });
+                    _renderFormFieldsList(el);
+                    _notifyUpdate(true);
+                }
+            });
+        }
+    }
+
+    /* ─── Form Fields List Renderer ─── */
+    function _renderFormFieldsList(el) {
+        var container = _qs('#cneFormFieldsList');
+        if (!container || !el || !el.formFields) return;
+        container.innerHTML = '';
+        el.formFields.forEach(function (field, idx) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:4px;align-items:center;margin-bottom:4px;font-size:0.7rem';
+
+            var nameInput = document.createElement('input');
+            nameInput.className = 'gen-input';
+            nameInput.value = field.label || field.name;
+            nameInput.style.cssText = 'flex:1;font-size:0.7rem;padding:4px 6px';
+            nameInput.addEventListener('input', function () { _pushUndo(); field.label = nameInput.value; field.name = nameInput.value.toLowerCase().replace(/[^a-z0-9]/g, '_'); _notifyUpdate(true); });
+
+            var typeSelect = document.createElement('select');
+            typeSelect.className = 'gen-select';
+            typeSelect.style.cssText = 'width:80px;font-size:0.65rem;padding:4px';
+            ['text', 'email', 'tel', 'textarea', 'select', 'checkbox'].forEach(function (t) {
+                var opt = document.createElement('option');
+                opt.value = t; opt.textContent = t;
+                if (field.type === t) opt.selected = true;
+                typeSelect.appendChild(opt);
+            });
+            typeSelect.addEventListener('change', function () { _pushUndo(); field.type = typeSelect.value; _notifyUpdate(true); });
+
+            var delBtn = document.createElement('button');
+            delBtn.className = 'cne-toolbar-btn';
+            delBtn.style.cssText = 'padding:2px 6px;font-size:0.6rem;min-height:auto';
+            delBtn.textContent = '\u00d7';
+            delBtn.addEventListener('click', function () { _pushUndo(); el.formFields.splice(idx, 1); _renderFormFieldsList(el); _notifyUpdate(true); });
+
+            row.appendChild(nameInput);
+            row.appendChild(typeSelect);
+            row.appendChild(delBtn);
+            container.appendChild(row);
+        });
+    }
+
+    /* ─── Autosave System ─── */
+    var _autosaveTimer = null;
+    var _AUTOSAVE_KEY = 'arbel-cinematic-autosave';
+
+    function _autosave() {
+        try {
+            var data = {
+                scenes: _scenes,
+                overrides: _overrides,
+                designTokens: _designTokens,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(_AUTOSAVE_KEY, JSON.stringify(data));
+        } catch (ex) { /* quota exceeded — silently ignore */ }
+    }
+
+    function _scheduleAutosave() {
+        clearTimeout(_autosaveTimer);
+        _autosaveTimer = setTimeout(_autosave, 30000);
+    }
+
+    function _restoreAutosave() {
+        try {
+            var raw = localStorage.getItem(_AUTOSAVE_KEY);
+            if (!raw) return false;
+            var data = JSON.parse(raw);
+            if (!data || !Array.isArray(data.scenes) || data.scenes.length === 0) return false;
+            // Only restore if less than 7 days old
+            if (data.timestamp && Date.now() - data.timestamp > 7 * 24 * 60 * 60 * 1000) return false;
+            return data;
+        } catch (ex) { return false; }
+    }
+
+    function _clearAutosave() {
+        try { localStorage.removeItem(_AUTOSAVE_KEY); } catch (ex) { /* ignore */ }
     }
 
     /* ─── Helpers ─── */
@@ -3525,6 +3685,19 @@ window.ArbelCinematicEditor = (function () {
         // Hover state
         _updateHoverPanel(el);
 
+        // Form section
+        var formSection = _qs('#cneFormSection');
+        if (formSection) {
+            var isForm = el.tag === 'form';
+            formSection.style.display = isForm ? '' : 'none';
+            if (isForm) {
+                var fa = _qs('#cneFormAction'); if (fa) fa.value = el.formAction || '';
+                var fm = _qs('#cneFormMethod'); if (fm) fm.value = el.formMethod || 'POST';
+                var fs = _qs('#cneFormSubmitText'); if (fs) fs.value = el.formSubmitText || 'Send';
+                _renderFormFieldsList(el);
+            }
+        }
+
         // Show properties panel
         var propsContainer = _qs('#cnePropsContainer');
         if (propsContainer) propsContainer.style.display = '';
@@ -3600,6 +3773,7 @@ window.ArbelCinematicEditor = (function () {
 
     function _notifyUpdate(rerender) {
         _updateTimeline();
+        _scheduleAutosave();
         if (_onUpdate) {
             _onUpdate({
                 scenes: _scenes,
@@ -3827,6 +4001,7 @@ window.ArbelCinematicEditor = (function () {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            _clearAutosave();
         });
     }
 

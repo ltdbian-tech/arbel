@@ -1959,6 +1959,37 @@
                             <button class="cne-toolbar-btn" id="cneHoverClear" style="width:100%;justify-content:center;font-size:0.65rem;opacity:0.6" title="Remove all hover styles">CLEAR HOVER</button>
                         </div>
                     </div>
+
+                    <!-- Form Section (shown for form elements) -->
+                    <div id="cneFormSection" style="display:none">
+                        <div class="cne-section-label">FORM SETTINGS</div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Action URL</span>
+                                <input type="text" class="gen-input" id="cneFormAction" placeholder="https://formspree.io/f/...">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Method</span>
+                                <select class="gen-select" id="cneFormMethod">
+                                    <option value="POST">POST</option>
+                                    <option value="GET">GET</option>
+                                </select>
+                            </div>
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Submit Text</span>
+                                <input type="text" class="gen-input" id="cneFormSubmitText" placeholder="Send Message">
+                            </div>
+                        </div>
+                        <div class="cne-section-label">FORM FIELDS</div>
+                        <div id="cneFormFieldsList"></div>
+                        <div class="cne-row" style="margin-top:6px">
+                            <div class="cne-col" style="flex:1">
+                                <button class="cne-toolbar-btn" id="cneFormAddField" style="width:100%;justify-content:center;font-size:0.65rem">+ ADD FIELD</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Scroll Panel -->
@@ -2268,6 +2299,27 @@
                     <div class="cne-row" id="cneSplineInfo" style="display:none">
                         <div class="cne-col" style="flex:1">
                             <span class="cne-hint" style="color:#10b981">✓ Spline scene will be embedded as background</span>
+                        </div>
+                    </div>
+
+                    <div class="cne-section-label">CUSTOM CODE</div>
+                    <p class="cne-hint" style="margin-bottom:6px">Inject custom HTML, CSS, or tracking scripts into the compiled output.</p>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Head Injection (analytics, meta, scripts)</span>
+                            <textarea class="gen-input" id="cneCustomHead" rows="3" placeholder="<!-- Google Analytics, Meta Pixel, etc. -->" style="font-family:var(--font-mono);font-size:0.7rem;resize:vertical"></textarea>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Custom CSS</span>
+                            <textarea class="gen-input" id="cneCustomCSS" rows="3" placeholder=".my-class { color: red; }" style="font-family:var(--font-mono);font-size:0.7rem;resize:vertical"></textarea>
+                        </div>
+                    </div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Body End (scripts before &lt;/body&gt;)</span>
+                            <textarea class="gen-input" id="cneCustomBodyEnd" rows="3" placeholder="<script>...</script>" style="font-family:var(--font-mono);font-size:0.7rem;resize:vertical"></textarea>
                         </div>
                     </div>
                 </div>
