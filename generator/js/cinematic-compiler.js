@@ -201,7 +201,42 @@ window.ArbelCinematicCompiler = (function () {
         fadeOut:         { opacity: [1, 0], y: [0, -40], start: 0.6, end: 1, ease: 'power1.in' },
         fadeOutDown:     { opacity: [1, 0], y: [0, 60], start: 0.6, end: 1, ease: 'power1.in' },
         scaleOut:        { opacity: [1, 0], scale: [1, 0.8], start: 0.6, end: 1, ease: 'power2.in' },
-        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1, ease: 'power1.in' }
+        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1, ease: 'power1.in' },
+
+        // Cinematic entrance presets
+        cinematicFade:   { opacity: [0, 1], scale: [1.1, 1], blur: [8, 0], start: 0, end: 0.5, ease: 'power2.out' },
+        cinematicSlide:  { opacity: [0, 1], x: [-120, 0], skewX: [8, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        cinematicReveal: { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], opacity: [0.5, 1], scale: [0.95, 1], start: 0, end: 0.6, ease: 'expo.out' },
+        cinematicDrop:   { opacity: [0, 1], y: [-100, 0], rotateX: [45, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
+        cinematicRise:   { opacity: [0, 1], y: [100, 0], scale: [0.9, 1], blur: [12, 0], start: 0, end: 0.55, ease: 'power3.out' },
+
+        // Parallax presets
+        parallaxSlow:    { y: [80, -80], start: 0, end: 1, ease: 'none' },
+        parallaxFast:    { y: [200, -200], start: 0, end: 1, ease: 'none' },
+        parallaxZoom:    { scale: [0.8, 1.2], start: 0, end: 1, ease: 'none' },
+        parallaxRotate:  { rotation: [-5, 5], y: [60, -60], start: 0, end: 1, ease: 'none' },
+        parallaxTilt:    { rotateX: [10, -10], rotateY: [-5, 5], y: [40, -40], start: 0, end: 1, ease: 'none' },
+
+        // Stagger-friendly presets (individual element delay via start offset)
+        staggerFadeUp1:  { opacity: [0, 1], y: [40, 0], start: 0, end: 0.3, ease: 'power2.out' },
+        staggerFadeUp2:  { opacity: [0, 1], y: [40, 0], start: 0.05, end: 0.35, ease: 'power2.out' },
+        staggerFadeUp3:  { opacity: [0, 1], y: [40, 0], start: 0.1, end: 0.4, ease: 'power2.out' },
+        staggerFadeUp4:  { opacity: [0, 1], y: [40, 0], start: 0.15, end: 0.45, ease: 'power2.out' },
+        staggerFadeUp5:  { opacity: [0, 1], y: [40, 0], start: 0.2, end: 0.5, ease: 'power2.out' },
+        staggerScaleIn1: { opacity: [0, 1], scale: [0.7, 1], start: 0, end: 0.3, ease: 'back.out(1.7)' },
+        staggerScaleIn2: { opacity: [0, 1], scale: [0.7, 1], start: 0.06, end: 0.36, ease: 'back.out(1.7)' },
+        staggerScaleIn3: { opacity: [0, 1], scale: [0.7, 1], start: 0.12, end: 0.42, ease: 'back.out(1.7)' },
+        staggerScaleIn4: { opacity: [0, 1], scale: [0.7, 1], start: 0.18, end: 0.48, ease: 'back.out(1.7)' },
+
+        // Text-specific presets
+        typewriterFade:  { opacity: [0, 1], x: [20, 0], blur: [4, 0], start: 0, end: 0.3, ease: 'power1.out' },
+        headlineSlam:    { opacity: [0, 1], scale: [2, 1], blur: [20, 0], start: 0, end: 0.4, ease: 'expo.out' },
+        subtitleGlide:   { opacity: [0, 1], y: [30, 0], x: [-20, 0], start: 0.1, end: 0.4, ease: 'power2.out' },
+
+        // Continuous scroll-linked animations
+        floatLoop:       { y: [-20, 20], rotation: [-2, 2], start: 0, end: 1, ease: 'none' },
+        breatheLoop:     { scale: [0.95, 1.05], opacity: [0.7, 1], start: 0, end: 1, ease: 'sine.inOut' },
+        driftLoop:       { x: [-30, 30], y: [-15, 15], start: 0, end: 1, ease: 'none' }
     };
 
     /* ─── Default Scene Factory ─── */
@@ -556,8 +591,23 @@ window.ArbelCinematicCompiler = (function () {
                     if (el.linkNewTab) html += ' target="_blank" rel="noopener noreferrer"';
                     html += '>' + esc(el.text) + '</a>\n';
                 } else {
+                    // Lottie animation embed
+                    if (el.lottieUrl && /^https?:\/\//.test(el.lottieUrl)) {
+                        var safeLottie = escHref(el.lottieUrl);
+                        html += '><dotlottie-player src="' + safeLottie + '" background="transparent" speed="1" loop autoplay style="width:100%;height:100%"></dotlottie-player></' + tag + '>\n';
+                    // SVG illustration
+                    } else if (el.svgContent) {
+                        // Sanitize SVG: strip scripts and event handlers
+                        var safeSvg = el.svgContent
+                            .replace(/<script[\s\S]*?<\/script>/gi, '')
+                            .replace(/\bon\w+\s*=/gi, 'data-removed=');
+                        html += '>' + safeSvg + '</' + tag + '>\n';
+                    // iFrame embed (YouTube, Vimeo, etc.)
+                    } else if (el.embedUrl && /^https:\/\//.test(el.embedUrl)) {
+                        var safeEmbed = escHref(el.embedUrl);
+                        html += '><iframe src="' + safeEmbed + '" style="width:100%;height:100%;border:none" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></' + tag + '>\n';
                     // For non-anchor elements with href, wrap in anchor
-                    if (el.href && el.href !== '#' && el.href !== '') {
+                    } else if (el.href && el.href !== '#' && el.href !== '') {
                         var anchorHref = escHref(el.href);
                         var anchorAttrs = ' href="' + anchorHref + '"';
                         if (el.linkNewTab) anchorAttrs += ' target="_blank" rel="noopener noreferrer"';
@@ -585,6 +635,17 @@ window.ArbelCinematicCompiler = (function () {
         html += '</footer>\n\n';
 
         // Scripts
+        // Check if any Lottie elements exist
+        var hasLottie = false;
+        (cfg.scenes || []).forEach(function (scene) {
+            (scene.elements || []).forEach(function (el) {
+                if (el.lottieUrl) hasLottie = true;
+            });
+        });
+        if (hasLottie) {
+            html += '<script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"><\/script>\n';
+        }
+
         html += '<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>\n';
         html += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n';
         html += '<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"><\/script>\n';

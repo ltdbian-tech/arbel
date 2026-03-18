@@ -556,6 +556,120 @@ test('custom particle style is accepted', () => {
 });
 
 // ─────────────────────────────────────────────
+console.log('\n🎭  New Scroll Presets');
+
+test('cinematic presets exist', () => {
+    const presets = ArbelCinematicCompiler.getAnimationPresets();
+    const ids = presets.map(p => p.id);
+    assert(ids.indexOf('cinematicFade') >= 0, 'missing cinematicFade');
+    assert(ids.indexOf('cinematicSlide') >= 0, 'missing cinematicSlide');
+    assert(ids.indexOf('cinematicReveal') >= 0, 'missing cinematicReveal');
+});
+
+test('parallax presets exist', () => {
+    const p = ArbelCinematicCompiler.getPreset('parallaxSlow');
+    assert(p, 'parallaxSlow preset not found');
+    assert(Array.isArray(p.y), 'parallaxSlow should have y array');
+});
+
+test('stagger presets exist', () => {
+    const p1 = ArbelCinematicCompiler.getPreset('staggerFadeUp1');
+    const p3 = ArbelCinematicCompiler.getPreset('staggerFadeUp3');
+    assert(p1 && p3, 'stagger presets missing');
+    assert(p1.start < p3.start, 'stagger presets should have increasing start offsets');
+});
+
+test('continuous loop presets exist', () => {
+    const p = ArbelCinematicCompiler.getPreset('floatLoop');
+    assert(p, 'floatLoop not found');
+    assert(p.ease === 'none', 'loop preset should use linear ease');
+});
+
+test('text presets exist', () => {
+    const p = ArbelCinematicCompiler.getPreset('headlineSlam');
+    assert(p, 'headlineSlam not found');
+    assert(Array.isArray(p.scale), 'headlineSlam should have scale array');
+});
+
+// ─────────────────────────────────────────────
+console.log('\n📦  New Element Types');
+
+test('lottie element compiles', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'lottie-1', tag: 'div', text: '', lottieUrl: 'https://example.com/anim.json',
+            style: { position: 'absolute', top: '20%', left: '50%', width: '200px', height: '200px' },
+            visible: true }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('dotlottie-player') >= 0, 'Lottie player tag missing');
+    assert(f['index.html'].indexOf('dotlottie-player') >= 0, 'Lottie script missing');
+});
+
+test('svg element compiles', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'svg-1', tag: 'div', text: '', svgContent: '<svg><circle cx="50" cy="50" r="40"/></svg>',
+            style: { position: 'absolute', top: '20%', left: '50%', width: '200px', height: '200px' },
+            visible: true }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('<circle') >= 0, 'SVG content missing');
+});
+
+test('svg sanitizes script injection', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'svg-1', tag: 'div', text: '',
+            svgContent: '<svg><script>alert("xss")</script><circle cx="50" cy="50" r="40"/></svg>',
+            style: { position: 'absolute', top: '20%', left: '50%' },
+            visible: true }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('<script>') < 0, 'SVG script tag not stripped');
+});
+
+test('embed element compiles', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'embed-1', tag: 'div', text: '', embedUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            style: { position: 'absolute', top: '15%', left: '50%', width: '560px', height: '315px' },
+            visible: true }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('<iframe') >= 0, 'Embed iframe missing');
+    assert(f['index.html'].indexOf('youtube.com/embed') >= 0, 'Embed URL missing');
+});
+
+test('embed rejects non-https URLs', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'embed-1', tag: 'div', text: '', embedUrl: 'http://evil.com/page',
+            style: { position: 'absolute', top: '15%', left: '50%' },
+            visible: true }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('<iframe') < 0, 'Non-https embed should be rejected');
+});
+
+test('lottie script absent when no lottie elements', () => {
+    const f = ArbelCinematicCompiler.compile(CIN_BASE);
+    assert(f['index.html'].indexOf('dotlottie-player.mjs') < 0, 'Lottie script should not be included when unused');
+});
+
+test('clip-path crop compiles in element style', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'img-1', tag: 'img', text: '', src: 'https://example.com/photo.jpg',
+            style: { position: 'absolute', top: '20%', left: '50%', width: '300px', height: '200px',
+                objectFit: 'cover', clipPath: 'inset(10% 5% 10% 5%)' },
+            visible: true }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('clip-path:inset(10% 5% 10% 5%)') >= 0, 'clip-path crop missing in compiled output');
+});
+
+// ─────────────────────────────────────────────
 //  SUMMARY
 // ─────────────────────────────────────────────
 console.log('\n' + '─'.repeat(55));

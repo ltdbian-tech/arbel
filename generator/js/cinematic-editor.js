@@ -570,7 +570,15 @@ window.ArbelCinematicEditor = (function () {
                 grpDot.style.cssText = 'display:inline-block;width:6px;height:6px;border-radius:50%;background:#' + ('000000' + grpHash.toString(16)).slice(-6) + ';margin-right:4px;vertical-align:middle';
                 nameSpan.appendChild(grpDot);
             }
-            nameSpan.appendChild(document.createTextNode(el.text ? el.text.substr(0, 30) : (el.tag === 'img' ? 'Image' : el.tag === 'video' ? 'Video' : el.id)));
+            nameSpan.appendChild(document.createTextNode(
+                el.text ? el.text.substr(0, 30) :
+                el.tag === 'img' ? 'Image' :
+                el.tag === 'video' ? 'Video' :
+                el.lottieUrl !== undefined ? 'Lottie' :
+                el.svgContent !== undefined ? 'SVG' :
+                el.embedUrl !== undefined ? 'Embed' :
+                el.id
+            ));
 
             var actions = document.createElement('span');
             actions.className = 'cne-el-actions';
@@ -1150,7 +1158,10 @@ window.ArbelCinematicEditor = (function () {
             { tag: 'div', label: '3D Rotate Box', text: '', variant: '3d-rotate', cat: '3D Effects' },
             { tag: 'div', label: '3D Float Layer', text: '', variant: '3d-float', cat: '3D Effects' },
             { tag: 'div', label: '3D Tilt Plane', text: '', variant: '3d-tilt', cat: '3D Effects' },
-            { tag: 'canvas', label: 'WebGL Canvas', text: '', variant: 'webgl', cat: '3D Effects' }
+            { tag: 'canvas', label: 'WebGL Canvas', text: '', variant: 'webgl', cat: '3D Effects' },
+            { tag: 'div', label: 'Lottie Animation', text: '', variant: 'lottie', cat: 'Media' },
+            { tag: 'div', label: 'SVG Illustration', text: '', variant: 'svg', cat: 'Media' },
+            { tag: 'div', label: 'Embed / iFrame', text: '', variant: 'embed', cat: 'Media' }
         ];
 
         var list = document.createElement('div');
@@ -1324,6 +1335,26 @@ window.ArbelCinematicEditor = (function () {
             };
             newEl.webgl = true;
             newEl.scroll = { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 };
+        } else if (t.tag === 'div' && t.variant === 'lottie') {
+            newEl.lottieUrl = '';
+            newEl.style = {
+                position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
+                width: '300px', height: '300px'
+            };
+            newEl.scroll = { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 };
+        } else if (t.tag === 'div' && t.variant === 'svg') {
+            newEl.svgContent = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="#6C5CE7" stroke-width="3" fill="none"/></svg>';
+            newEl.style = {
+                position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
+                width: '200px', height: '200px'
+            };
+        } else if (t.tag === 'div' && t.variant === 'embed') {
+            newEl.embedUrl = '';
+            newEl.style = {
+                position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)',
+                width: '560px', height: '315px', borderRadius: '12px',
+                overflow: 'hidden'
+            };
         } else if (t.tag === 'div') {
             newEl.style = {
                 position: 'absolute',
@@ -1457,6 +1488,48 @@ window.ArbelCinematicEditor = (function () {
         if (stockBtn) {
             stockBtn.addEventListener('click', function () {
                 _showStockPhotosDialog();
+            });
+        }
+
+        // Lottie URL
+        var lottieUrl = _qs('#cneLottieUrl');
+        if (lottieUrl) {
+            lottieUrl.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el) {
+                    _beginBurst('lottie');
+                    el.lottieUrl = lottieUrl.value;
+                    _commitBurst('lottie', 600);
+                    _notifyUpdate(true);
+                }
+            });
+        }
+
+        // SVG content
+        var svgContent = _qs('#cneSvgContent');
+        if (svgContent) {
+            svgContent.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el) {
+                    _beginBurst('svg');
+                    el.svgContent = svgContent.value;
+                    _commitBurst('svg', 600);
+                    _notifyUpdate(true);
+                }
+            });
+        }
+
+        // Embed URL
+        var embedUrl = _qs('#cneEmbedUrl');
+        if (embedUrl) {
+            embedUrl.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el) {
+                    _beginBurst('embed');
+                    el.embedUrl = embedUrl.value;
+                    _commitBurst('embed', 600);
+                    _notifyUpdate(true);
+                }
             });
         }
         var stockToolbar = _qs('#cneStockToolbar');
@@ -2487,6 +2560,14 @@ window.ArbelCinematicEditor = (function () {
         if (exportBtn) exportBtn.addEventListener('click', function () { _exportJSON(); });
         if (importBtn) importBtn.addEventListener('click', function () { _importJSON(); });
 
+        // Export as ZIP
+        var exportZipBtn = _qs('#cneExportZIP');
+        if (exportZipBtn) exportZipBtn.addEventListener('click', function () { _exportZIP(); });
+
+        // Crop tool
+        var cropBtn = _qs('#cneCropBtn');
+        if (cropBtn) cropBtn.addEventListener('click', function () { _showCropTool(); });
+
         // Alignment buttons
         var alignBtns = _qsa('.cne-align-btn');
         alignBtns.forEach(function (btn) {
@@ -3271,12 +3352,23 @@ window.ArbelCinematicEditor = (function () {
         if (mediaSection) {
             var isImg = el.tag === 'img';
             var isVideo = el.tag === 'video';
-            mediaSection.style.display = (isImg || isVideo) ? '' : 'none';
+            var isLottie = el.lottieUrl !== undefined;
+            var isSvg = el.svgContent !== undefined;
+            var isEmbed = el.embedUrl !== undefined;
+            mediaSection.style.display = (isImg || isVideo || isLottie || isSvg || isEmbed) ? '' : 'none';
             if (imgRow) imgRow.style.display = isImg ? '' : 'none';
             if (imgUploadRow) imgUploadRow.style.display = isImg ? '' : 'none';
             if (imgFitRow) imgFitRow.style.display = isImg ? '' : 'none';
             if (videoRow) videoRow.style.display = isVideo ? '' : 'none';
             if (videoOptsRow) videoOptsRow.style.display = isVideo ? '' : 'none';
+            var cropBtn = _qs('#cneCropBtn');
+            if (cropBtn) cropBtn.style.display = isImg ? '' : 'none';
+            var lottieRow = _qs('#cneLottieRow');
+            if (lottieRow) lottieRow.style.display = isLottie ? '' : 'none';
+            var svgRow = _qs('#cneSvgRow');
+            if (svgRow) svgRow.style.display = isSvg ? '' : 'none';
+            var embedRow = _qs('#cneEmbedRow');
+            if (embedRow) embedRow.style.display = isEmbed ? '' : 'none';
         }
 
         // Populate media fields
@@ -3291,6 +3383,18 @@ window.ArbelCinematicEditor = (function () {
             var va = _qs('#cneVideoAutoplay'); if (va) va.checked = el.videoAutoplay !== false;
             var vl = _qs('#cneVideoLoop'); if (vl) vl.checked = el.videoLoop !== false;
             var vm = _qs('#cneVideoMuted'); if (vm) vm.checked = el.videoMuted !== false;
+        }
+        if (el.lottieUrl !== undefined) {
+            var lottieInput = _qs('#cneLottieUrl');
+            if (lottieInput) lottieInput.value = el.lottieUrl || '';
+        }
+        if (el.svgContent !== undefined) {
+            var svgInput = _qs('#cneSvgContent');
+            if (svgInput) svgInput.value = el.svgContent || '';
+        }
+        if (el.embedUrl !== undefined) {
+            var embedInput = _qs('#cneEmbedUrl');
+            if (embedInput) embedInput.value = el.embedUrl || '';
         }
 
         // Show/hide link section
@@ -3673,6 +3777,233 @@ window.ArbelCinematicEditor = (function () {
         input.click();
     }
 
+    /* ─── Export as ZIP (HTML/CSS/JS bundle) ─── */
+    function _exportZIP() {
+        if (typeof JSZip === 'undefined') {
+            alert('JSZip library not loaded. Please check your connection.');
+            return;
+        }
+
+        // Build the cinematic config from current editor state
+        var cfg = {
+            brandName: 'My Site',
+            tagline: '',
+            style: 'obsidian',
+            accent: '#6C5CE7',
+            bgColor: '#0a0a0f',
+            scenes: _scenes,
+            nav: { logo: 'My Site', links: [] },
+            designTokens: _designTokens,
+            editorOverrides: _overrides
+        };
+
+        // Try to read values from app state if available
+        var brandEl = document.querySelector('#brandName');
+        var tagEl = document.querySelector('#tagline');
+        var accentEl = document.querySelector('#accentColor');
+        var bgEl = document.querySelector('#bgColor');
+        if (brandEl && brandEl.value) { cfg.brandName = brandEl.value.trim(); cfg.nav.logo = cfg.brandName; }
+        if (tagEl && tagEl.value) cfg.tagline = tagEl.value.trim();
+        if (accentEl && accentEl.value) cfg.accent = accentEl.value;
+        if (bgEl && bgEl.value) cfg.bgColor = bgEl.value;
+
+        var files = ArbelCinematicCompiler.compile(cfg);
+        if (!files || !files['index.html']) {
+            alert('Failed to compile. Please ensure you have at least one scene.');
+            return;
+        }
+
+        var zip = new JSZip();
+        Object.keys(files).forEach(function (path) {
+            zip.file(path, files[path]);
+        });
+
+        zip.generateAsync({ type: 'blob' }).then(function (blob) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = (cfg.brandName || 'site').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase() + '.zip';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    /* ─── Image Crop Tool ─── */
+    function _showCropTool() {
+        var el = _getSelectedElement();
+        if (!el || el.tag !== 'img') return;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'arbel-dialog-overlay';
+
+        var dialog = document.createElement('div');
+        dialog.className = 'arbel-dialog';
+        dialog.style.maxWidth = '560px';
+
+        var title = document.createElement('h3');
+        title.className = 'arbel-dialog-title';
+        title.textContent = 'Crop Image';
+
+        // Crop preview area
+        var previewWrap = document.createElement('div');
+        previewWrap.style.cssText = 'position:relative;width:100%;max-height:320px;overflow:hidden;background:#111;border-radius:8px;margin-bottom:12px';
+
+        var img = document.createElement('img');
+        img.src = el.src || '';
+        img.style.cssText = 'width:100%;max-height:320px;object-fit:contain;display:block';
+
+        var cropOverlay = document.createElement('div');
+        cropOverlay.style.cssText = 'position:absolute;inset:0;pointer-events:none';
+
+        previewWrap.appendChild(img);
+        previewWrap.appendChild(cropOverlay);
+
+        // Crop sliders: top / right / bottom / left (inset values)
+        var current = { top: 0, right: 0, bottom: 0, left: 0 };
+        // Parse existing clip-path if present
+        if (el.style && el.style.clipPath) {
+            var m = el.style.clipPath.match(/inset\(([^)]+)\)/);
+            if (m) {
+                var parts = m[1].split(/\s+/);
+                if (parts.length >= 4) {
+                    current.top = parseInt(parts[0]) || 0;
+                    current.right = parseInt(parts[1]) || 0;
+                    current.bottom = parseInt(parts[2]) || 0;
+                    current.left = parseInt(parts[3]) || 0;
+                }
+            }
+        }
+
+        function updateCropPreview() {
+            cropOverlay.style.boxShadow =
+                'inset 0 ' + (current.top / 100 * previewWrap.offsetHeight) + 'px 0 rgba(0,0,0,0.6),' +
+                'inset -' + (current.right / 100 * previewWrap.offsetWidth) + 'px 0 0 rgba(0,0,0,0.6),' +
+                'inset 0 -' + (current.bottom / 100 * previewWrap.offsetHeight) + 'px 0 rgba(0,0,0,0.6),' +
+                'inset ' + (current.left / 100 * previewWrap.offsetWidth) + 'px 0 0 rgba(0,0,0,0.6)';
+        }
+
+        function makeSlider(label, key) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.75rem;color:rgba(255,255,255,0.7)';
+            var lbl = document.createElement('span');
+            lbl.textContent = label;
+            lbl.style.width = '48px';
+            var slider = document.createElement('input');
+            slider.type = 'range';
+            slider.min = '0';
+            slider.max = '50';
+            slider.value = current[key];
+            slider.style.cssText = 'flex:1';
+            var val = document.createElement('span');
+            val.className = 'mono';
+            val.textContent = current[key] + '%';
+            val.style.width = '36px';
+            slider.addEventListener('input', function () {
+                current[key] = parseInt(slider.value);
+                val.textContent = current[key] + '%';
+                updateCropPreview();
+            });
+            row.appendChild(lbl);
+            row.appendChild(slider);
+            row.appendChild(val);
+            return row;
+        }
+
+        var controls = document.createElement('div');
+        controls.style.cssText = 'padding:12px 0';
+        controls.appendChild(makeSlider('Top', 'top'));
+        controls.appendChild(makeSlider('Right', 'right'));
+        controls.appendChild(makeSlider('Bottom', 'bottom'));
+        controls.appendChild(makeSlider('Left', 'left'));
+
+        // Aspect ratio presets
+        var presets = document.createElement('div');
+        presets.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px';
+        [{ label: 'Free', t: 0, r: 0, b: 0, l: 0 },
+         { label: 'Square', t: 0, r: 12, b: 0, l: 12 },
+         { label: '16:9', t: 10, r: 0, b: 10, l: 0 },
+         { label: 'Circle', t: 0, r: 0, b: 0, l: 0, circle: true }
+        ].forEach(function (p) {
+            var btn = document.createElement('button');
+            btn.className = 'gen-btn';
+            btn.style.cssText = 'padding:4px 10px;font-size:0.7rem';
+            btn.textContent = p.label;
+            btn.addEventListener('click', function () {
+                if (p.circle) {
+                    // Use clip-path: circle instead
+                    _pushUndo();
+                    el.style.clipPath = 'circle(50% at 50% 50%)';
+                    _notifyUpdate(true);
+                    document.body.removeChild(overlay);
+                    return;
+                }
+                current.top = p.t; current.right = p.r; current.bottom = p.b; current.left = p.l;
+                controls.querySelectorAll('input[type=range]').forEach(function (s, i) {
+                    var keys = ['top', 'right', 'bottom', 'left'];
+                    s.value = current[keys[i]];
+                    s.nextElementSibling.textContent = current[keys[i]] + '%';
+                });
+                updateCropPreview();
+            });
+            presets.appendChild(btn);
+        });
+
+        // Buttons
+        var btns = document.createElement('div');
+        btns.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:12px';
+
+        var resetBtn = document.createElement('button');
+        resetBtn.className = 'gen-btn';
+        resetBtn.textContent = 'Reset';
+        resetBtn.addEventListener('click', function () {
+            _pushUndo();
+            delete el.style.clipPath;
+            _notifyUpdate(true);
+            document.body.removeChild(overlay);
+        });
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.className = 'gen-btn';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', function () {
+            document.body.removeChild(overlay);
+        });
+
+        var applyBtn = document.createElement('button');
+        applyBtn.className = 'gen-btn gen-btn-primary';
+        applyBtn.textContent = 'Apply Crop';
+        applyBtn.addEventListener('click', function () {
+            _pushUndo();
+            if (current.top === 0 && current.right === 0 && current.bottom === 0 && current.left === 0) {
+                delete el.style.clipPath;
+            } else {
+                el.style.clipPath = 'inset(' + current.top + '% ' + current.right + '% ' + current.bottom + '% ' + current.left + '%)';
+            }
+            _notifyUpdate(true);
+            document.body.removeChild(overlay);
+        });
+
+        btns.appendChild(resetBtn);
+        btns.appendChild(cancelBtn);
+        btns.appendChild(applyBtn);
+
+        dialog.appendChild(title);
+        dialog.appendChild(previewWrap);
+        dialog.appendChild(presets);
+        dialog.appendChild(controls);
+        dialog.appendChild(btns);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) document.body.removeChild(overlay);
+        });
+
+        setTimeout(updateCropPreview, 50);
+    }
+
     /* ─── Send message to cinematic iframe ─── */
     function _postIframe(type, payload) {
         if (_iframe && _iframe.contentWindow) {
@@ -3993,7 +4324,9 @@ window.ArbelCinematicEditor = (function () {
         display: true, whiteSpace: true, cursor: true,
         backdropFilter: true, filter: true, boxShadow: true,
         backgroundImage: true, backgroundSize: true, backgroundPosition: true,
-        objectFit: true
+        objectFit: true,
+        clipPath: true,
+        transformStyle: true, perspective: true
     };
 
     /* Allowlisted scroll animation properties */
