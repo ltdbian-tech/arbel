@@ -19,6 +19,31 @@ window.ArbelPreview = (function () {
         _blobUrls = [];
     }
 
+    /** Convert a data:video URL to a blob URL for reliable iframe playback */
+    function _dataUrlToBlob(dataUrl) {
+        try {
+            var parts = dataUrl.split(',');
+            var mimeMatch = parts[0].match(/:(.*?);/);
+            var mime = mimeMatch ? mimeMatch[1] : 'video/mp4';
+            var b64 = parts[1];
+            var binary = atob(b64);
+            var arr = new Uint8Array(binary.length);
+            for (var i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+            return new Blob([arr], { type: mime });
+        } catch (ex) { return null; }
+    }
+
+    /** Replace inline data:video URLs with blob URLs for preview */
+    function _convertVideoUrls(html) {
+        return html.replace(/src="(data:video\/[^"]+)"/g, function (match, dataUrl) {
+            var blob = _dataUrlToBlob(dataUrl);
+            if (!blob) return match;
+            var blobUrl = URL.createObjectURL(blob);
+            _blobUrls.push(blobUrl);
+            return 'src="' + blobUrl + '"';
+        });
+    }
+
     /**
      * Build an inline HTML document from compiled files.
      * Instead of creating separate blob URLs for CSS/JS,
@@ -65,6 +90,9 @@ window.ArbelPreview = (function () {
         _cleanup();
 
         var inlinedHTML = _buildInlineHTML(files);
+
+        // Convert data:video URLs to blob URLs for reliable playback in iframe
+        inlinedHTML = _convertVideoUrls(inlinedHTML);
 
         // Inject editor overlay script if provided
         if (editorScript) {

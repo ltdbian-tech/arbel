@@ -251,7 +251,7 @@ window.ArbelCinematicEditor = (function () {
 
         _setupUI();
         _renderSceneList();
-        _selectScene(0);
+        _selectScene(0, true);
 
         window.addEventListener('message', _handleMessage);
     }
@@ -689,6 +689,8 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /* ─── Element List (inside scene panel) ─── */
+    var _dragElIdx = -1; // track drag source index for layer reorder
+
     function _renderElementList() {
         var list = _qs('#cneElementList');
         if (!list) return;
@@ -700,6 +702,49 @@ window.ArbelCinematicEditor = (function () {
         scene.elements.forEach(function (el, i) {
             var row = document.createElement('div');
             row.className = 'cne-el-item' + (_selectedElementIds.indexOf(el.id) >= 0 ? ' active' : '');
+            row.draggable = true;
+            row.dataset.elIdx = i;
+
+            // Drag-to-reorder handlers
+            row.addEventListener('dragstart', function (e) {
+                _dragElIdx = i;
+                row.classList.add('cne-el-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            row.addEventListener('dragend', function () {
+                _dragElIdx = -1;
+                row.classList.remove('cne-el-dragging');
+                var all = list.querySelectorAll('.cne-el-item');
+                for (var k = 0; k < all.length; k++) all[k].classList.remove('cne-el-dragover');
+            });
+            row.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                var all = list.querySelectorAll('.cne-el-item');
+                for (var k = 0; k < all.length; k++) all[k].classList.remove('cne-el-dragover');
+                row.classList.add('cne-el-dragover');
+            });
+            row.addEventListener('dragleave', function () {
+                row.classList.remove('cne-el-dragover');
+            });
+            row.addEventListener('drop', function (e) {
+                e.preventDefault();
+                row.classList.remove('cne-el-dragover');
+                if (_dragElIdx < 0 || _dragElIdx === i) return;
+                _pushUndo();
+                var moved = scene.elements.splice(_dragElIdx, 1)[0];
+                scene.elements.splice(i, 0, moved);
+                _dragElIdx = -1;
+                _renderElementList();
+                _notifyUpdate(true);
+            });
+
+            // Z-index badge
+            var zBadge = document.createElement('span');
+            zBadge.className = 'cne-el-zbadge mono';
+            var zVal = (el.style && el.style.zIndex) ? el.style.zIndex : String(i);
+            zBadge.textContent = 'z' + zVal;
+            zBadge.title = 'z-index: ' + zVal;
 
             var tagBadge = document.createElement('span');
             tagBadge.className = 'cne-el-tag mono';
@@ -794,6 +839,7 @@ window.ArbelCinematicEditor = (function () {
             });
 
             row.appendChild(tagBadge);
+            row.appendChild(zBadge);
             row.appendChild(nameSpan);
             row.appendChild(actions);
             row.appendChild(vis);
@@ -3011,6 +3057,12 @@ window.ArbelCinematicEditor = (function () {
         if (exportBtn) exportBtn.addEventListener('click', function () { _exportJSON(); });
         if (importBtn) importBtn.addEventListener('click', function () { _importJSON(); });
 
+        // New Project / Open Project
+        var newBtn = _qs('#cneNewProject');
+        if (newBtn) newBtn.addEventListener('click', function () { _newProject(); });
+        var openBtn = _qs('#cneOpenProject');
+        if (openBtn) openBtn.addEventListener('click', function () { _importJSON(); });
+
         // Export as ZIP
         var exportZipBtn = _qs('#cneExportZIP');
         if (exportZipBtn) exportZipBtn.addEventListener('click', function () { _exportZIP(); });
@@ -4479,6 +4531,21 @@ window.ArbelCinematicEditor = (function () {
         var redoBtn = _qs('#cneRedo');
         if (undoBtn) undoBtn.disabled = _undoStack.length === 0;
         if (redoBtn) redoBtn.disabled = _redoStack.length === 0;
+    }
+
+    /* ─── New Project (clear all) ─── */
+    function _newProject() {
+        if (!confirm('Start a new project? This will clear all scenes and unsaved work.')) return;
+        _flushBursts();
+        _pushUndo();
+        _clearAutosave();
+        _scenes = [ArbelCinematicCompiler.createScene('hero', 0)];
+        _overrides = {};
+        _selectedElementId = null;
+        _selectedElementIds = [];
+        _currentSceneIdx = 0;
+        _renderSceneList();
+        _selectScene(0, true);
     }
 
     /* ─── Export / Import Scene JSON ─── */
