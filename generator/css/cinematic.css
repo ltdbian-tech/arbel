@@ -128,6 +128,65 @@
     border-color: rgba(108,92,231,0.2);
 }
 
+/* Auto-Generate button */
+.cne-toolbar-btn--generate {
+    color: #10b981;
+    border-color: rgba(16,185,129,0.3);
+    font-size: 0.6rem;
+    font-weight: 700;
+    gap: 3px;
+    display: inline-flex;
+    align-items: center;
+}
+.cne-toolbar-btn--generate:hover {
+    background: rgba(16,185,129,0.15);
+    box-shadow: 0 0 12px rgba(16,185,129,0.2);
+}
+
+/* Effects Presets button */
+.cne-toolbar-btn--effects {
+    color: #f59e0b;
+    border-color: rgba(245,158,11,0.3);
+    font-size: 0.6rem;
+    font-weight: 700;
+    gap: 3px;
+    display: inline-flex;
+    align-items: center;
+}
+.cne-toolbar-btn--effects:hover {
+    background: rgba(245,158,11,0.15);
+    box-shadow: 0 0 12px rgba(245,158,11,0.2);
+}
+
+/* Effects dropdown menu */
+.cne-effects-menu {
+    z-index: 10000;
+    background: #1a1a2e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 240px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    backdrop-filter: blur(12px);
+}
+.cne-effects-menu-item {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.cne-effects-menu-item:hover {
+    background: rgba(108,92,231,0.2);
+    color: #fff;
+}
+
 /* Zoom */
 .cne-zoom {
     display: flex;

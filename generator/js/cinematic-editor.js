@@ -3088,6 +3088,22 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // Auto-Generate button
+        var autoGenBtn = _qs('#cneAutoGenerate');
+        if (autoGenBtn) {
+            autoGenBtn.addEventListener('click', function () {
+                _autoGenerate();
+            });
+        }
+
+        // Effects Presets button
+        var effectsBtn = _qs('#cneEffectsBtn');
+        if (effectsBtn) {
+            effectsBtn.addEventListener('click', function () {
+                _showEffectsMenu(effectsBtn);
+            });
+        }
+
         // Keyboard shortcuts (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z / Ctrl+C / Ctrl+V / Ctrl+D / Ctrl+A)
         _keydownHandler = function (e) {
             if (!_active) return;
@@ -4531,6 +4547,465 @@ window.ArbelCinematicEditor = (function () {
         var redoBtn = _qs('#cneRedo');
         if (undoBtn) undoBtn.disabled = _undoStack.length === 0;
         if (redoBtn) redoBtn.disabled = _redoStack.length === 0;
+    }
+
+    /* ═══════════════════════════════════════════════
+       AUTO-GENERATE / RANDOMIZER  — Smart algorithmic
+       website builder that creates a complete multi-scene
+       cinematic website from the user's brand info.
+       Uses design rules, curated palettes, and weighted
+       random selection — no AI model needed.
+       ═══════════════════════════════════════════════ */
+
+    var _DESIGN_PALETTES = [
+        { name: 'Midnight Luxe',   bg: '#0a0a0f', primary: '#6C5CE7', secondary: '#a29bfe', text: '#f0f0f0', surface: '#1a1a2e' },
+        { name: 'Ember Glow',      bg: '#0d0907', primary: '#e17055', secondary: '#fdcb6e', text: '#ffeaa7', surface: '#2d1f1a' },
+        { name: 'Ocean Depth',     bg: '#0a0e14', primary: '#0984e3', secondary: '#74b9ff', text: '#dfe6e9', surface: '#0f1923' },
+        { name: 'Aurora Night',    bg: '#050a12', primary: '#00cec9', secondary: '#55efc4', text: '#f0f0f0', surface: '#0a1628' },
+        { name: 'Rose Gold',       bg: '#0f0a0b', primary: '#e84393', secondary: '#fd79a8', text: '#ffeef5', surface: '#1f1218' },
+        { name: 'Forest Mist',     bg: '#080d08', primary: '#00b894', secondary: '#badc58', text: '#e8f8e8', surface: '#0f1f0f' },
+        { name: 'Neon Cyber',      bg: '#0a0a14', primary: '#a855f7', secondary: '#06ffa5', text: '#e0e0ff', surface: '#14142a' },
+        { name: 'Warm Sand',       bg: '#100d08', primary: '#f39c12', secondary: '#f1c40f', text: '#fdf6e3', surface: '#1f1a10' },
+        { name: 'Arctic Frost',    bg: '#0a0c10', primary: '#74b9ff', secondary: '#a0d2ff', text: '#ecf0f1', surface: '#121820' },
+        { name: 'Crimson Dark',    bg: '#0c0808', primary: '#d63031', secondary: '#ff7675', text: '#ffeaea', surface: '#1a0f0f' }
+    ];
+
+    /* Which scene templates go well together in a flow */
+    var _FLOW_RECIPES = [
+        ['hero', 'featureGrid', 'showcase', 'stats', 'testimonial', 'ctaSection'],
+        ['gradientHero', 'splitMedia', 'marquee', 'featureGrid', 'bigText', 'ctaSection'],
+        ['hero', 'textReveal', 'imageReveal', 'stats', 'cardStack', 'ctaSection'],
+        ['gradientHero', 'marquee', 'showcase', 'testimonial', 'featureGrid', 'ctaSection'],
+        ['hero', 'splitMedia', 'stats', 'imageReveal', 'testimonial', 'ctaSection'],
+        ['gradientHero', 'bigText', 'featureGrid', 'splitMedia', 'marquee', 'ctaSection'],
+        ['hero', 'cardStack', 'textReveal', 'showcase', 'stats', 'ctaSection'],
+        ['gradientHero', 'imageReveal', 'marquee', 'featureGrid', 'testimonial', 'ctaSection']
+    ];
+
+    /* Curated entrance animation sets — each is a cohesive visual style */
+    var _ENTRANCE_SETS = [
+        ['fadeInUp', 'fadeInUp', 'fadeInLeft', 'fadeInRight', 'scaleIn'],
+        ['blurIn', 'blurInUp', 'blurInScale', 'fadeInUp', 'scaleInUp'],
+        ['slideInUp', 'clipRevealUp', 'clipRevealLeft', 'slideInLeft', 'slideInRight'],
+        ['cinematicFade', 'cinematicSlide', 'cinematicReveal', 'cinematicRise', 'cinematicDrop'],
+        ['flip3DX', 'cubeRotate', 'doorOpen', 'perspective3D', 'unfold'],
+        ['bounceIn', 'bounceInUp', 'bounceInLeft', 'rubberBand', 'jackInTheBox'],
+        ['scaleIn', 'scaleInUp', 'zoomIn', 'fadeInUp', 'blurInUp'],
+        ['rotateIn', 'rotateInLeft', 'swingIn', 'flipInX', 'flipInY']
+    ];
+
+    /* 3D background effect palettes (effect → what it pairs well with) */
+    var _BG3D_OPTIONS = [
+        { type: 'gradient-orbs', intensity: '6', speed: 'medium' },
+        { type: 'particle-field', intensity: '5', speed: 'slow' },
+        { type: 'aurora', intensity: '7', speed: 'medium' },
+        { type: 'mesh-gradient', intensity: '5', speed: 'slow' },
+        { type: 'noise-fog', intensity: '4', speed: 'slow' },
+        { type: 'starfield', intensity: '6', speed: 'medium' },
+        { type: 'wave-grid', intensity: '5', speed: 'medium' }
+    ];
+
+    /* Content variations for template placeholder text */
+    var _SECTION_COPY = {
+        hero: [
+            { title: '{brand}', sub: '{tagline}' },
+            { title: 'Welcome to {brand}', sub: '{tagline}' },
+            { title: '{brand}', sub: 'Something amazing is here' }
+        ],
+        splitMedia: [
+            { title: 'Our Story', sub: 'We craft experiences that inspire and delight.' },
+            { title: 'Who We Are', sub: 'Built with passion, designed for impact.' },
+            { title: 'Our Vision', sub: 'Pushing boundaries, one project at a time.' }
+        ],
+        showcase: [
+            { title: 'Featured Work', sub: 'A showcase of our finest creations.' },
+            { title: 'Our Portfolio', sub: 'Explore what we\'ve built.' },
+            { title: 'Highlights', sub: 'The work that defines us.' }
+        ],
+        stats: [
+            { title: 'By The Numbers', sub: '' },
+            { title: 'Our Impact', sub: '' },
+            { title: 'Results That Matter', sub: '' }
+        ],
+        textReveal: [
+            { line1: 'Design', line2: 'Matters' },
+            { line1: 'Build', line2: 'Better' },
+            { line1: 'Create', line2: 'Impact' }
+        ],
+        marquee: [
+            { text: '{brand} \u2022 Innovation \u2022 Design \u2022 Excellence \u2022' },
+            { text: 'Creativity \u2022 Vision \u2022 {brand} \u2022 Craft \u2022' },
+            { text: '{brand} \u2022 Premium \u2022 Quality \u2022 Design \u2022' }
+        ],
+        featureGrid: [
+            { title: 'What We Do', items: ['Strategy', 'Design', 'Development', 'Growth'] },
+            { title: 'Services', items: ['Branding', 'Web Design', 'Marketing', 'Analytics'] },
+            { title: 'Capabilities', items: ['UI/UX', 'Engineering', 'Consulting', 'Support'] }
+        ],
+        imageReveal: [
+            { title: 'See It In Action', sub: '' },
+            { title: 'Visual Story', sub: '' },
+            { title: 'Behind The Scenes', sub: '' }
+        ],
+        testimonial: [
+            { quote: '"Working with {brand} was a game-changer. They delivered beyond our expectations."', author: '\u2014 Happy Client' },
+            { quote: '"Exceptional quality and attention to detail. Highly recommended."', author: '\u2014 Satisfied Partner' },
+            { quote: '"The team at {brand} truly understands modern design."', author: '\u2014 Industry Expert' }
+        ],
+        ctaSection: [
+            { title: 'Ready to Start?', sub: 'Let\'s build something incredible together.', btn: 'Get Started' },
+            { title: 'Let\'s Talk', sub: 'Your next big project starts here.', btn: 'Contact Us' },
+            { title: 'Join Us', sub: 'Be part of something extraordinary.', btn: 'Learn More' }
+        ],
+        bigText: [
+            { text: '{brand}' },
+            { text: 'THINK BIG' },
+            { text: 'NEXT LEVEL' }
+        ],
+        gradientHero: [
+            { title: '{brand}', sub: '{tagline}' },
+            { title: 'Welcome to the future', sub: '{tagline}' },
+            { title: '{brand}', sub: 'Designed for tomorrow' }
+        ],
+        cardStack: [
+            { title: 'Our Process', items: ['Research', 'Design', 'Develop', 'Launch'] },
+            { title: 'How We Work', items: ['Discover', 'Create', 'Test', 'Ship'] },
+            { title: 'Capabilities', items: ['Strategy', 'Build', 'Optimize', 'Scale'] }
+        ]
+    };
+
+    function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function _shuffle(arr) {
+        var a = arr.slice();
+        for (var i = a.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = a[i]; a[i] = a[j]; a[j] = t;
+        }
+        return a;
+    }
+
+    function _getBrandInfo() {
+        var brandEl = document.querySelector('#brandName');
+        var tagEl = document.querySelector('#tagline');
+        var brand = (brandEl && brandEl.value && brandEl.value.trim()) || 'My Site';
+        var tagline = (tagEl && tagEl.value && tagEl.value.trim()) || 'Crafting digital experiences';
+        return { brand: brand, tagline: tagline };
+    }
+
+    function _fillTemplate(str, info) {
+        return str.replace(/\{brand\}/g, info.brand).replace(/\{tagline\}/g, info.tagline);
+    }
+
+    /* Apply curated content to a scene's elements based on template type */
+    function _applyContent(scene, templateId, info) {
+        var copies = _SECTION_COPY[templateId];
+        if (!copies) return;
+        var copy = _pick(copies);
+        var els = scene.elements;
+
+        if (templateId === 'hero' || templateId === 'gradientHero') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'hero-title' || base === 'gh-title') el.text = _fillTemplate(copy.title, info);
+                if (base === 'hero-sub' || base === 'gh-sub') el.text = _fillTemplate(copy.sub, info);
+            });
+        } else if (templateId === 'textReveal') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'reveal-line1') el.text = copy.line1;
+                if (base === 'reveal-line2') el.text = copy.line2;
+            });
+        } else if (templateId === 'testimonial') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'test-quote') el.text = _fillTemplate(copy.quote, info);
+                if (base === 'test-author') el.text = copy.author;
+            });
+        } else if (templateId === 'ctaSection') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'cta-heading') el.text = copy.title;
+                if (base === 'cta-sub') el.text = copy.sub;
+                if (base === 'cta-btn') el.text = copy.btn;
+            });
+        } else if (templateId === 'marquee') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'mrq-center') el.text = _fillTemplate(copy.text, info);
+            });
+        } else if (templateId === 'bigText') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'bt-word') el.text = _fillTemplate(copy.text, info);
+            });
+        } else if (templateId === 'splitMedia' || templateId === 'showcase' || templateId === 'imageReveal') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base.indexOf('title') !== -1 || base.indexOf('heading') !== -1) el.text = copy.title;
+                if (base.indexOf('sub') !== -1 || base.indexOf('caption') !== -1 || base.indexOf('desc') !== -1) el.text = copy.sub || '';
+            });
+        } else if (templateId === 'stats') {
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base === 'stats-heading') el.text = copy.title;
+            });
+        } else if (templateId === 'featureGrid' || templateId === 'cardStack') {
+            var idx = 0;
+            els.forEach(function (el) {
+                var base = el.id.replace(/-[^-]+$/, '');
+                if (base.indexOf('heading') !== -1 || base === 'fg-title' || base === 'cs-title') el.text = copy.title;
+                if ((base.indexOf('card') !== -1 || base.indexOf('item') !== -1) && copy.items && idx < copy.items.length) {
+                    el.text = copy.items[idx++];
+                }
+            });
+        }
+    }
+
+    /* Apply random scroll animation to each element of a scene */
+    function _applyRandomAnimations(scene, entranceSet) {
+        scene.elements.forEach(function (el, i) {
+            var preset = entranceSet[i % entranceSet.length];
+            var presetData = ArbelCinematicCompiler.getPreset(preset);
+            if (presetData) {
+                el.scroll = JSON.parse(JSON.stringify(presetData));
+                // Stagger the start/end slightly per element
+                el.scroll.start = Math.min(0.4, (el.scroll.start || 0) + i * 0.04);
+                el.scroll.end = Math.min(0.9, (el.scroll.end || 0.4) + i * 0.04);
+            }
+        });
+    }
+
+    /* Apply a 3D background effect to a scene */
+    function _apply3DBackground(scene, bg3d, palette) {
+        scene.bg3dType = bg3d.type;
+        scene.bg3dColor1 = palette.primary;
+        scene.bg3dColor2 = palette.secondary;
+        scene.bg3dIntensity = bg3d.intensity;
+        scene.bg3dSpeed = bg3d.speed;
+    }
+
+    function _autoGenerate() {
+        var info = _getBrandInfo();
+
+        // Pick a random flow recipe and palette
+        var flow = _pick(_FLOW_RECIPES);
+        var palette = _pick(_DESIGN_PALETTES);
+        var entranceSet = _pick(_ENTRANCE_SETS);
+
+        // How many scenes (4-6, based on flow)
+        var sceneCount = 4 + Math.floor(Math.random() * 3); // 4-6
+        sceneCount = Math.min(sceneCount, flow.length);
+        var templates = flow.slice(0, sceneCount);
+
+        // Pick which scenes get 3D backgrounds (2-3 scenes, always the hero)
+        var bg3dCount = 2 + Math.floor(Math.random() * 2); // 2-3
+        var bg3dIndices = [0]; // hero always gets one
+        var otherIndices = _shuffle(templates.map(function (_, i) { return i; }).filter(function (i) { return i > 0; }));
+        for (var b = 0; b < Math.min(bg3dCount - 1, otherIndices.length); b++) {
+            bg3dIndices.push(otherIndices[b]);
+        }
+
+        // Shuffle available 3D effects
+        var bg3dPool = _shuffle(_BG3D_OPTIONS);
+
+        // Build the scenes
+        var newScenes = [];
+        templates.forEach(function (tplId, idx) {
+            var scene = ArbelCinematicCompiler.createScene(tplId, idx);
+            scene.bgColor = palette.bg;
+
+            // Apply content
+            _applyContent(scene, tplId, info);
+
+            // Apply entrance animations
+            _applyRandomAnimations(scene, entranceSet);
+
+            // Apply 3D background to selected scenes
+            if (bg3dIndices.indexOf(idx) !== -1) {
+                _apply3DBackground(scene, bg3dPool[idx % bg3dPool.length], palette);
+            }
+
+            newScenes.push(scene);
+        });
+
+        // Apply design tokens from palette
+        _designTokens.primary = palette.primary;
+        _designTokens.secondary = palette.secondary;
+        _designTokens.text = palette.text;
+        _designTokens.bg = palette.bg;
+        _designTokens.surface = palette.surface;
+        _syncTokenUI();
+
+        // Commit
+        _flushBursts();
+        _pushUndo();
+        _scenes = newScenes;
+        _overrides = {};
+        _selectedElementId = null;
+        _selectedElementIds = [];
+        _currentSceneIdx = 0;
+        _renderSceneList();
+        _selectScene(0, true);
+    }
+
+    /* Shuffle just the effects/animations on existing scenes (keep content) */
+    function _shuffleEffects() {
+        if (_scenes.length === 0) return;
+        _flushBursts();
+        _pushUndo();
+
+        var palette = _pick(_DESIGN_PALETTES);
+        var entranceSet = _pick(_ENTRANCE_SETS);
+        var bg3dPool = _shuffle(_BG3D_OPTIONS);
+
+        // Pick 2-3 scenes for 3D backgrounds
+        var bg3dCount = Math.min(2 + Math.floor(Math.random() * 2), _scenes.length);
+        var indices = _shuffle(_scenes.map(function (_, i) { return i; }));
+        var bg3dIndices = indices.slice(0, bg3dCount);
+        // Always include first scene
+        if (bg3dIndices.indexOf(0) === -1) { bg3dIndices[bg3dIndices.length - 1] = 0; }
+
+        _scenes.forEach(function (scene, idx) {
+            // Re-randomize animations
+            _applyRandomAnimations(scene, entranceSet);
+
+            // Clear or apply 3D backgrounds
+            if (bg3dIndices.indexOf(idx) !== -1) {
+                _apply3DBackground(scene, bg3dPool[idx % bg3dPool.length], palette);
+            } else {
+                scene.bg3dType = '';
+            }
+        });
+
+        // Update tokens
+        _designTokens.primary = palette.primary;
+        _designTokens.secondary = palette.secondary;
+        _syncTokenUI();
+
+        _renderSceneList();
+        _selectScene(_currentSceneIdx, true);
+    }
+
+    /* ═══ Effects Presets — One-click lively combos ═══ */
+    var _EFFECTS_PRESETS = [
+        {
+            name: '\u2728 Floating Orbs + Blur Reveals',
+            bg3d: { type: 'gradient-orbs', intensity: '6', speed: 'medium' },
+            animations: ['blurIn', 'blurInUp', 'blurInScale', 'fadeInUp', 'scaleInUp']
+        },
+        {
+            name: '\u2728 Aurora + Cinematic Slides',
+            bg3d: { type: 'aurora', intensity: '7', speed: 'medium' },
+            animations: ['cinematicFade', 'cinematicSlide', 'cinematicReveal', 'cinematicRise', 'cinematicDrop']
+        },
+        {
+            name: '\u2728 Starfield + 3D Flips',
+            bg3d: { type: 'starfield', intensity: '6', speed: 'medium' },
+            animations: ['flip3DX', 'cubeRotate', 'doorOpen', 'perspective3D', 'unfold']
+        },
+        {
+            name: '\u2728 Wave Grid + Bouncy',
+            bg3d: { type: 'wave-grid', intensity: '5', speed: 'medium' },
+            animations: ['bounceIn', 'bounceInUp', 'bounceInLeft', 'rubberBand', 'jackInTheBox']
+        },
+        {
+            name: '\u2728 Particles + Fade & Scale',
+            bg3d: { type: 'particle-field', intensity: '5', speed: 'slow' },
+            animations: ['fadeInUp', 'scaleIn', 'scaleInUp', 'fadeInLeft', 'fadeInRight']
+        },
+        {
+            name: '\u2728 Mesh Gradient + Clip Reveals',
+            bg3d: { type: 'mesh-gradient', intensity: '5', speed: 'slow' },
+            animations: ['clipRevealUp', 'clipRevealLeft', 'slideInUp', 'slideInLeft', 'slideInRight']
+        },
+        {
+            name: '\u2728 Fog + Rotate Entrances',
+            bg3d: { type: 'noise-fog', intensity: '4', speed: 'slow' },
+            animations: ['rotateIn', 'rotateInLeft', 'swingIn', 'pivotIn', 'swingDoor']
+        }
+    ];
+
+    function _applyEffectsPreset(preset) {
+        if (_scenes.length === 0) return;
+        _flushBursts();
+        _pushUndo();
+
+        var palette = _DESIGN_PALETTES[0]; // Use current tokens
+        // Try to match current primary to a palette
+        for (var pi = 0; pi < _DESIGN_PALETTES.length; pi++) {
+            if (_DESIGN_PALETTES[pi].primary === _designTokens.primary) {
+                palette = _DESIGN_PALETTES[pi];
+                break;
+            }
+        }
+
+        _scenes.forEach(function (scene, idx) {
+            _applyRandomAnimations(scene, preset.animations);
+            // Apply 3D to first scene and every other scene
+            if (idx === 0 || idx % 2 === 0) {
+                _apply3DBackground(scene, preset.bg3d, palette);
+            } else {
+                scene.bg3dType = '';
+            }
+        });
+
+        _renderSceneList();
+        _selectScene(_currentSceneIdx, true);
+    }
+
+    function _showEffectsMenu(anchorEl) {
+        // Remove any existing menu
+        var existing = document.getElementById('cneEffectsMenu');
+        if (existing) { existing.remove(); return; }
+
+        var menu = document.createElement('div');
+        menu.id = 'cneEffectsMenu';
+        menu.className = 'cne-effects-menu';
+
+        // Presets
+        _EFFECTS_PRESETS.forEach(function (preset) {
+            var item = document.createElement('button');
+            item.className = 'cne-effects-menu-item';
+            item.textContent = preset.name;
+            item.addEventListener('click', function () {
+                _applyEffectsPreset(preset);
+                menu.remove();
+            });
+            menu.appendChild(item);
+        });
+
+        // Divider
+        var divider = document.createElement('div');
+        divider.style.cssText = 'height:1px;background:rgba(255,255,255,0.1);margin:4px 0;';
+        menu.appendChild(divider);
+
+        // Shuffle button
+        var shuffleItem = document.createElement('button');
+        shuffleItem.className = 'cne-effects-menu-item';
+        shuffleItem.textContent = '\uD83C\uDFB2 Shuffle All Effects';
+        shuffleItem.addEventListener('click', function () {
+            _shuffleEffects();
+            menu.remove();
+        });
+        menu.appendChild(shuffleItem);
+
+        // Position below anchor
+        var rect = anchorEl.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+        document.body.appendChild(menu);
+
+        // Close on outside click
+        setTimeout(function () {
+            function close(e) {
+                if (!menu.contains(e.target) && e.target !== anchorEl) {
+                    menu.remove();
+                    document.removeEventListener('click', close);
+                }
+            }
+            document.addEventListener('click', close);
+        }, 0);
     }
 
     /* ─── New Project (clear all) ─── */
