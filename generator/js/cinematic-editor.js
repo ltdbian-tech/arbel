@@ -110,6 +110,98 @@ window.ArbelCinematicEditor = (function () {
         return el.style;
     }
 
+    /**
+     * Auto-generate responsive overrides for elements that have none.
+     * Called when switching to tablet or mobile for the first time.
+     */
+    function _autoResponsive(device) {
+        var scenes = _scenes;
+        var changed = false;
+        scenes.forEach(function (scene) {
+            (scene.elements || []).forEach(function (el) {
+                if (!el.style) return;
+                var bucket = (device === 'tablet') ? el.tabletStyle : el.mobileStyle;
+                // Skip if user already has overrides set
+                if (bucket && Object.keys(bucket).length > 0) return;
+
+                var s = el.style;
+                var overrides = {};
+                var isMobile = (device === 'mobile');
+                var scale = isMobile ? 0.65 : 0.85;
+
+                // Scale font sizes
+                if (s.fontSize) {
+                    var fs = String(s.fontSize);
+                    var vwMatch = fs.match(/^([\d.]+)\s*vw$/);
+                    var pxMatch = fs.match(/^([\d.]+)\s*px$/);
+                    var remMatch = fs.match(/^([\d.]+)\s*rem$/);
+                    if (vwMatch) {
+                        overrides.fontSize = (parseFloat(vwMatch[1]) * (isMobile ? 1.6 : 1.15)).toFixed(1) + 'vw';
+                    } else if (pxMatch) {
+                        overrides.fontSize = Math.round(parseFloat(pxMatch[1]) * scale) + 'px';
+                    } else if (remMatch) {
+                        overrides.fontSize = (parseFloat(remMatch[1]) * scale).toFixed(2) + 'rem';
+                    }
+                }
+
+                // Parse width value to percentage for comparison
+                var wStr = String(s.width || '');
+                var wPct = wStr.match(/^([\d.]+)\s*%$/) ? parseFloat(wStr) : -1;
+                var wPx = wStr.match(/^([\d.]+)\s*px$/) ? parseFloat(wStr) : -1;
+
+                // Widen narrow elements
+                if (isMobile) {
+                    if (wPct > 0 && wPct < 70) {
+                        overrides.width = '88%';
+                        overrides.left = '6%';
+                        // Remove translateX centering if present since we're using left %
+                        if (s.transform && s.transform.indexOf('translateX(-50%)') >= 0) {
+                            overrides.transform = s.transform.replace(/translateX\(-50%\)/g, 'translateX(0)');
+                        } else if (s.transform && s.transform.indexOf('translate(-50%') >= 0) {
+                            overrides.transform = s.transform.replace(/translate\(-50%,/, 'translate(0,');
+                        }
+                    } else if (wPx > 300) {
+                        overrides.width = '88%';
+                        overrides.left = '6%';
+                        if (s.transform && s.transform.indexOf('translateX(-50%)') >= 0) {
+                            overrides.transform = s.transform.replace(/translateX\(-50%\)/g, 'translateX(0)');
+                        } else if (s.transform && s.transform.indexOf('translate(-50%') >= 0) {
+                            overrides.transform = s.transform.replace(/translate\(-50%,/, 'translate(0,');
+                        }
+                    }
+                } else {
+                    // tablet
+                    if (wPct > 0 && wPct < 45) {
+                        overrides.width = Math.min(wPct * 1.4, 80).toFixed(0) + '%';
+                    } else if (wPx > 500) {
+                        overrides.width = '75%';
+                    }
+                }
+
+                // Scale down large padding/margins for mobile
+                if (isMobile && s.padding) {
+                    var pad = String(s.padding);
+                    var padPx = pad.match(/^([\d.]+)\s*px$/);
+                    if (padPx && parseFloat(padPx[1]) > 20) {
+                        overrides.padding = Math.round(parseFloat(padPx[1]) * 0.6) + 'px';
+                    }
+                }
+
+                if (Object.keys(overrides).length > 0) {
+                    if (device === 'tablet') {
+                        if (!el.tabletStyle) el.tabletStyle = {};
+                        Object.keys(overrides).forEach(function (k) { el.tabletStyle[k] = overrides[k]; });
+                    } else {
+                        if (!el.mobileStyle) el.mobileStyle = {};
+                        Object.keys(overrides).forEach(function (k) { el.mobileStyle[k] = overrides[k]; });
+                    }
+                    changed = true;
+                }
+            });
+        });
+        return changed;
+    }
+
     /* ─── Initialize ─── */
     function init(iframe, containerEl, onUpdateCb) {
         _iframe = iframe;
@@ -420,7 +512,7 @@ window.ArbelCinematicEditor = (function () {
             var pin = _qs('#cneScenePin'); if (pin) pin.checked = scene.pin !== false;
             var dur = _qs('#cneSceneDuration'); if (dur) dur.value = scene.duration || 100;
             var bg = _qs('#cneSceneBg'); if (bg) bg.value = scene.bgColor || '#0a0a0f';
-            var bgImg = _qs('#cneSceneBgImage'); if (bgImg) bgImg.value = scene.bgImage || '';
+            var bgImg = _qs('#cneSceneBgImage'); if (bgImg) bgImg.value = (scene.bgImage && scene.bgImage.indexOf('data:') === 0) ? '(uploaded)' : (scene.bgImage || '');
             // 3D background fields
             var bg3d = _qs('#cneSceneBg3d'); if (bg3d) bg3d.value = scene.bg3dType || '';
             var bg3dc1 = _qs('#cneBg3dColor1'); if (bg3dc1) bg3dc1.value = scene.bg3dColor1 || '#6c5ce7';
@@ -1519,6 +1611,26 @@ window.ArbelCinematicEditor = (function () {
             }
         });
 
+        // Video upload
+        var videoUpload = _qs('#cneVideoUpload');
+        if (videoUpload) {
+            videoUpload.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (!el || !videoUpload.files || !videoUpload.files[0]) return;
+                var file = videoUpload.files[0];
+                if (file.size > 10 * 1024 * 1024) { alert('Video must be under 10MB'); return; }
+                _pushUndo();
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    el.src = e.target.result;
+                    var srcInput = _qs('#cneVideoSrc');
+                    if (srcInput) srcInput.value = '(uploaded)';
+                    _notifyUpdate(true);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         // Stock Photos button
         var stockBtn = _qs('#cneStockBtn');
         if (stockBtn) {
@@ -1677,10 +1789,32 @@ window.ArbelCinematicEditor = (function () {
         if (elBgImage) {
             elBgImage.addEventListener('input', function () {
                 var raw = elBgImage.value.replace(/[\\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
-                if (raw && !/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/)./.test(raw)) { return; }
+                if (raw && !/^(https?:\/\/|\/\/|\/|\.\/|\.\.\\/|data:image\/)./.test(raw)) { return; }
                 _setElStyle('backgroundImage', raw ? 'url(' + raw + ')' : '');
                 _setElStyle('backgroundSize', raw ? 'cover' : '');
                 _setElStyle('backgroundPosition', raw ? 'center' : '');
+            });
+        }
+
+        // Element background-image upload
+        var elBgUpload = _qs('#cneElBgUpload');
+        if (elBgUpload) {
+            elBgUpload.addEventListener('change', function () {
+                if (!elBgUpload.files || !elBgUpload.files[0]) return;
+                var file = elBgUpload.files[0];
+                if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+                _pushUndo();
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var dataUrl = e.target.result;
+                    _setElStyle('backgroundImage', 'url(' + dataUrl + ')');
+                    _setElStyle('backgroundSize', 'cover');
+                    _setElStyle('backgroundPosition', 'center');
+                    var bgInput = _qs('#cneElBgImage');
+                    if (bgInput) bgInput.value = '(uploaded)';
+                    _notifyUpdate(true);
+                };
+                reader.readAsDataURL(file);
             });
         }
 
@@ -2663,6 +2797,10 @@ window.ArbelCinematicEditor = (function () {
                     frame.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
                     frame.classList.add('preview-' + _activeDevice);
                 }
+                // Auto-generate responsive overrides on first switch
+                if (_activeDevice !== 'desktop') {
+                    _autoResponsive(_activeDevice);
+                }
                 // Show device badge on props panel
                 var badge = _qs('#cneDeviceBadge');
                 if (badge) {
@@ -2866,6 +3004,26 @@ window.ArbelCinematicEditor = (function () {
                     _commitBurst('scene', 600);
                     _notifyUpdate(true);
                 }
+            });
+        }
+
+        // Scene background image upload
+        var sceneBgUpload = _qs('#cneSceneBgUpload');
+        if (sceneBgUpload) {
+            sceneBgUpload.addEventListener('change', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene || !sceneBgUpload.files || !sceneBgUpload.files[0]) return;
+                var file = sceneBgUpload.files[0];
+                if (file.size > 3 * 1024 * 1024) { alert('Image must be under 3MB'); return; }
+                _pushUndo();
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    scene.bgImage = e.target.result;
+                    var bgInput = _qs('#cneSceneBgImage');
+                    if (bgInput) bgInput.value = '(uploaded)';
+                    _notifyUpdate(true);
+                };
+                reader.readAsDataURL(file);
             });
         }
 
@@ -3521,6 +3679,8 @@ window.ArbelCinematicEditor = (function () {
             if (imgFitRow) imgFitRow.style.display = isImg ? '' : 'none';
             if (videoRow) videoRow.style.display = isVideo ? '' : 'none';
             if (videoOptsRow) videoOptsRow.style.display = isVideo ? '' : 'none';
+            var videoUploadRow = _qs('#cneVideoUploadRow');
+            if (videoUploadRow) videoUploadRow.style.display = isVideo ? '' : 'none';
             var cropBtn = _qs('#cneCropBtn');
             if (cropBtn) cropBtn.style.display = isImg ? '' : 'none';
             var lottieRow = _qs('#cneLottieRow');
@@ -3539,7 +3699,7 @@ window.ArbelCinematicEditor = (function () {
             if (imgFit) imgFit.value = _getElStyleValue(el, 'objectFit') || 'cover';
         } else if (el.tag === 'video') {
             var videoSrc = _qs('#cneVideoSrc');
-            if (videoSrc) videoSrc.value = el.src || '';
+            if (videoSrc) videoSrc.value = (el.src && el.src.indexOf('data:') === 0) ? '(uploaded)' : (el.src || '');
             var va = _qs('#cneVideoAutoplay'); if (va) va.checked = el.videoAutoplay !== false;
             var vl = _qs('#cneVideoLoop'); if (vl) vl.checked = el.videoLoop !== false;
             var vm = _qs('#cneVideoMuted'); if (vm) vm.checked = el.videoMuted !== false;
@@ -3602,7 +3762,8 @@ window.ArbelCinematicEditor = (function () {
         var elBgImage = _qs('#cneElBgImage');
         if (elBgImage) {
             var bgImgVal = _getElStyleValue(el, 'backgroundImage') || '';
-            elBgImage.value = bgImgVal.replace(/^url\((['"]?)(.*)\1\)$/i, '$2');
+            var bgImgUrl = bgImgVal.replace(/^url\((['"]?)(.*)\1\)$/i, '$2');
+            elBgImage.value = (bgImgUrl && bgImgUrl.indexOf('data:') === 0) ? '(uploaded)' : bgImgUrl;
         }
 
         var opacity = _qs('#cneOpacity');

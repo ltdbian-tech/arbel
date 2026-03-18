@@ -797,6 +797,65 @@ test('autosave functions exist on editor', () => {
 });
 
 // ─────────────────────────────────────────────
+//  RESPONSIVE / AUTO-ADJUST
+// ─────────────────────────────────────────────
+console.log('\n📱  Responsive Auto-Adjust');
+
+test('tablet responsive overrides compile to @media query', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Hero', template: 'hero', duration: 100, pin: true,
+        elements: [{
+            id: 'h-1', tag: 'h1', text: 'Title', visible: true,
+            style: { position: 'absolute', top: '35%', left: '50%', fontSize: '6vw', width: '80%' },
+            tabletStyle: { fontSize: '8vw', width: '90%' },
+            mobileStyle: { fontSize: '10vw', width: '95%', left: '2.5%' }
+        }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    const css = f['css/style.css'];
+    assert(css.indexOf('@media (max-width: 768px)') >= 0, 'tablet @media query should exist');
+    assert(css.indexOf('font-size: 8vw') >= 0, 'tablet font-size override should be in CSS');
+});
+
+test('mobile responsive overrides compile to @media query', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Hero', template: 'hero', duration: 100, pin: true,
+        elements: [{
+            id: 'h-1', tag: 'h1', text: 'Title', visible: true,
+            style: { position: 'absolute', top: '35%', left: '50%', fontSize: '6vw', width: '80%' },
+            mobileStyle: { fontSize: '10vw', width: '95%' }
+        }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    const css = f['css/style.css'];
+    assert(css.indexOf('@media (max-width: 480px)') >= 0, 'mobile @media query should exist');
+    assert(css.indexOf('font-size: 10vw') >= 0, 'mobile font-size override should be in CSS');
+});
+
+test('data URL in scene background compiles correctly', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        bgImage: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==',
+        elements: []
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('data:image/png;base64,') >= 0, 'data URL should compile in scene bg');
+});
+
+test('data URL in element background-image compiles correctly', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
+        elements: [{
+            id: 'div-1', tag: 'div', text: '', visible: true,
+            style: { position: 'absolute', top: '0', left: '0', width: '100%', height: '100%',
+                backgroundImage: 'url(data:image/png;base64,iVBORw0KGgo=)', backgroundSize: 'cover' }
+        }]
+    }];
+    const f = ArbelCinematicCompiler.compile(cfg);
+    assert(f['index.html'].indexOf('data:image/png;base64,') >= 0, 'data URL in element bg should compile');
+});
+
+// ─────────────────────────────────────────────
 //  SUMMARY
 // ─────────────────────────────────────────────
 console.log('\n' + '─'.repeat(55));
