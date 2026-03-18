@@ -533,6 +533,14 @@ window.ArbelCinematicEditor = (function () {
             var customHead = _qs('#cneCustomHead'); if (customHead) customHead.value = _overrides.customHead || '';
             var customCSS = _qs('#cneCustomCSS'); if (customCSS) customCSS.value = _overrides.customCSS || '';
             var customBodyEnd = _qs('#cneCustomBodyEnd'); if (customBodyEnd) customBodyEnd.value = _overrides.customBodyEnd || '';
+
+            // Reset scene bg file inputs & update status indicators
+            var _sbgU = _qs('#cneSceneBgUpload'); if (_sbgU) _sbgU.value = '';
+            var _sbgV = _qs('#cneSceneBgVideoUpload'); if (_sbgV) _sbgV.value = '';
+            var _sbgIS = _qs('#cneSceneBgImgStatus'); if (_sbgIS) _sbgIS.style.display = scene.bgImage ? '' : 'none';
+            var _sbgIR = _qs('#cneSceneBgImgRemove'); if (_sbgIR) _sbgIR.style.display = scene.bgImage ? '' : 'none';
+            var _sbgVS = _qs('#cneSceneBgVidStatus'); if (_sbgVS) _sbgVS.style.display = scene.bgVideo ? '' : 'none';
+            var _sbgVR = _qs('#cneSceneBgVidRemove'); if (_sbgVR) _sbgVR.style.display = scene.bgVideo ? '' : 'none';
         }
         _notifyUpdate(!!rerender);
     }
@@ -1784,6 +1792,21 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // --- Element background status helpers ---
+        function _updateElBgStatus() {
+            var el = _getSelectedElement();
+            var imgStatus = _qs('#cneElBgImgStatus');
+            var imgRemove = _qs('#cneElBgImgRemove');
+            var vidStatus = _qs('#cneElBgVidStatus');
+            var vidRemove = _qs('#cneElBgVidRemove');
+            var hasImg = el && _getElStyleValue(el, 'backgroundImage') && _getElStyleValue(el, 'backgroundImage') !== '';
+            var hasVid = el && el.bgVideo;
+            if (imgStatus) imgStatus.style.display = hasImg ? '' : 'none';
+            if (imgRemove) imgRemove.style.display = hasImg ? '' : 'none';
+            if (vidStatus) vidStatus.style.display = hasVid ? '' : 'none';
+            if (vidRemove) vidRemove.style.display = hasVid ? '' : 'none';
+        }
+
         // Element background-image upload
         var elBgUpload = _qs('#cneElBgUpload');
         if (elBgUpload) {
@@ -1791,16 +1814,35 @@ window.ArbelCinematicEditor = (function () {
                 if (!elBgUpload.files || !elBgUpload.files[0]) return;
                 var file = elBgUpload.files[0];
                 if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+                var el = _getSelectedElement();
+                if (!el) return;
                 _pushUndo();
+                // Mutual exclusivity: clear video if setting image
+                if (el.bgVideo) delete el.bgVideo;
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     var dataUrl = e.target.result;
                     _setElStyle('backgroundImage', 'url(' + dataUrl + ')');
                     _setElStyle('backgroundSize', 'cover');
                     _setElStyle('backgroundPosition', 'center');
+                    _updateElBgStatus();
                     _notifyUpdate(true);
                 };
                 reader.readAsDataURL(file);
+            });
+        }
+
+        // Element background-image remove
+        var elBgImgRemove = _qs('#cneElBgImgRemove');
+        if (elBgImgRemove) {
+            elBgImgRemove.addEventListener('click', function () {
+                _pushUndo();
+                _setElStyle('backgroundImage', '');
+                _setElStyle('backgroundSize', '');
+                _setElStyle('backgroundPosition', '');
+                if (elBgUpload) elBgUpload.value = '';
+                _updateElBgStatus();
+                _notifyUpdate(true);
             });
         }
 
@@ -1814,12 +1856,31 @@ window.ArbelCinematicEditor = (function () {
                 var el = _getSelectedElement();
                 if (!el) return;
                 _pushUndo();
+                // Mutual exclusivity: clear bg image if setting video
+                _setElStyle('backgroundImage', '');
+                _setElStyle('backgroundSize', '');
+                _setElStyle('backgroundPosition', '');
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     el.bgVideo = e.target.result;
+                    _updateElBgStatus();
                     _notifyUpdate(true);
                 };
                 reader.readAsDataURL(file);
+            });
+        }
+
+        // Element background video remove
+        var elBgVidRemove = _qs('#cneElBgVidRemove');
+        if (elBgVidRemove) {
+            elBgVidRemove.addEventListener('click', function () {
+                var el = _getSelectedElement();
+                if (!el) return;
+                _pushUndo();
+                delete el.bgVideo;
+                if (elBgVideoUpload) elBgVideoUpload.value = '';
+                _updateElBgStatus();
+                _notifyUpdate(true);
             });
         }
 
@@ -3186,6 +3247,21 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // --- Scene background status helpers ---
+        function _updateSceneBgStatus() {
+            var scene = _scenes[_currentSceneIdx];
+            var imgStatus = _qs('#cneSceneBgImgStatus');
+            var imgRemove = _qs('#cneSceneBgImgRemove');
+            var vidStatus = _qs('#cneSceneBgVidStatus');
+            var vidRemove = _qs('#cneSceneBgVidRemove');
+            var hasImg = scene && scene.bgImage;
+            var hasVid = scene && scene.bgVideo;
+            if (imgStatus) imgStatus.style.display = hasImg ? '' : 'none';
+            if (imgRemove) imgRemove.style.display = hasImg ? '' : 'none';
+            if (vidStatus) vidStatus.style.display = hasVid ? '' : 'none';
+            if (vidRemove) vidRemove.style.display = hasVid ? '' : 'none';
+        }
+
         // Scene background image upload
         var sceneBgUpload = _qs('#cneSceneBgUpload');
         if (sceneBgUpload) {
@@ -3195,12 +3271,29 @@ window.ArbelCinematicEditor = (function () {
                 var file = sceneBgUpload.files[0];
                 if (file.size > 3 * 1024 * 1024) { alert('Image must be under 3MB'); return; }
                 _pushUndo();
+                // Mutual exclusivity: clear video if setting image
+                if (scene.bgVideo) delete scene.bgVideo;
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     scene.bgImage = e.target.result;
+                    _updateSceneBgStatus();
                     _notifyUpdate(true);
                 };
                 reader.readAsDataURL(file);
+            });
+        }
+
+        // Scene background image remove
+        var sceneBgImgRemove = _qs('#cneSceneBgImgRemove');
+        if (sceneBgImgRemove) {
+            sceneBgImgRemove.addEventListener('click', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                _pushUndo();
+                delete scene.bgImage;
+                if (sceneBgUpload) sceneBgUpload.value = '';
+                _updateSceneBgStatus();
+                _notifyUpdate(true);
             });
         }
 
@@ -3213,12 +3306,29 @@ window.ArbelCinematicEditor = (function () {
                 var file = sceneBgVideoUpload.files[0];
                 if (file.size > 15 * 1024 * 1024) { alert('Video must be under 15MB'); return; }
                 _pushUndo();
+                // Mutual exclusivity: clear bg image if setting video
+                if (scene.bgImage) delete scene.bgImage;
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     scene.bgVideo = e.target.result;
+                    _updateSceneBgStatus();
                     _notifyUpdate(true);
                 };
                 reader.readAsDataURL(file);
+            });
+        }
+
+        // Scene background video remove
+        var sceneBgVidRemove = _qs('#cneSceneBgVidRemove');
+        if (sceneBgVidRemove) {
+            sceneBgVidRemove.addEventListener('click', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                _pushUndo();
+                delete scene.bgVideo;
+                if (sceneBgVideoUpload) sceneBgVideoUpload.value = '';
+                _updateSceneBgStatus();
+                _notifyUpdate(true);
             });
         }
 
@@ -3953,6 +4063,15 @@ window.ArbelCinematicEditor = (function () {
 
         var bgColor = _qs('#cneBgColor');
         if (bgColor) bgColor.value = _toHex(_getElStyleValue(el, 'background')) || '#000000';
+
+        // Reset element bg file inputs & update status indicators
+        var _ebgU = _qs('#cneElBgUpload'); if (_ebgU) _ebgU.value = '';
+        var _ebgV = _qs('#cneElBgVideoUpload'); if (_ebgV) _ebgV.value = '';
+        var _hasElBgImg = _getElStyleValue(el, 'backgroundImage') && _getElStyleValue(el, 'backgroundImage') !== '';
+        var _ebgIS = _qs('#cneElBgImgStatus'); if (_ebgIS) _ebgIS.style.display = _hasElBgImg ? '' : 'none';
+        var _ebgIR = _qs('#cneElBgImgRemove'); if (_ebgIR) _ebgIR.style.display = _hasElBgImg ? '' : 'none';
+        var _ebgVS = _qs('#cneElBgVidStatus'); if (_ebgVS) _ebgVS.style.display = el.bgVideo ? '' : 'none';
+        var _ebgVR = _qs('#cneElBgVidRemove'); if (_ebgVR) _ebgVR.style.display = el.bgVideo ? '' : 'none';
 
         var opacity = _qs('#cneOpacity');
         if (opacity) {

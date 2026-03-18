@@ -377,6 +377,17 @@ window.ArbelCinematicCompiler = (function () {
             if (animJS) files['js/' + animFile] = animJS;
         }
 
+        // Extract inline data:video URLs to separate asset files
+        var html = files['index.html'];
+        var vidIdx = 0;
+        html = html.replace(/src="(data:video\/([a-z0-9]+);base64,[A-Za-z0-9+\/=]+)"/g, function (match, dataUrl, ext) {
+            var assetName = 'assets/video-' + vidIdx + '.' + (ext === 'webm' ? 'webm' : ext === 'ogg' ? 'ogg' : 'mp4');
+            files[assetName] = dataUrl;
+            vidIdx++;
+            return 'src="' + assetName + '"';
+        });
+        files['index.html'] = html;
+
         return files;
     }
 
@@ -901,7 +912,8 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
         css += '.cne-element { position: absolute; will-change: transform, opacity; }\n';
         css += '.cne-scene-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }\n';
-        css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n\n';
+        css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n';
+        css += '@media (max-width: 768px) { .cne-scene-bgvid, .cne-el-bgvid { display: none; } }\n\n';
 
         // Split text
         css += '.cne-char, .cne-word { display: inline-block; will-change: transform, opacity; }\n';
@@ -1138,15 +1150,12 @@ window.ArbelCinematicCompiler = (function () {
 
         // Preserve CSS translate centering by converting to GSAP xPercent/yPercent
         js += '      /* Preserve CSS translate centering */\n';
-        js += '      var ct = getComputedStyle(el).transform;\n';
         js += '      var inT = el.style.transform || "";\n';
-        js += '      if(inT.indexOf("translateX(-50%)") >= 0 || inT.indexOf("translate(-50%") >= 0){\n';
-        js += '        gsap.set(el, { xPercent: -50 });\n';
-        js += '      }\n';
-        js += '      if(inT.indexOf("translateY(-50%)") >= 0 || inT.indexOf("translate(-50%,-50%)") >= 0 || inT.indexOf("translate(-50%, -50%)") >= 0){\n';
-        js += '        gsap.set(el, { yPercent: -50 });\n';
-        js += '      }\n';
-        js += '      el.style.transform = "";\n\n';
+        js += '      var hasXCenter = inT.indexOf("translateX(-50%)") >= 0 || inT.indexOf("translate(-50%") >= 0;\n';
+        js += '      var hasYCenter = inT.indexOf("translateY(-50%)") >= 0 || inT.indexOf("translate(-50%,-50%)") >= 0 || inT.indexOf("translate(-50%, -50%)") >= 0;\n';
+        js += '      if(hasXCenter) gsap.set(el, { xPercent: -50 });\n';
+        js += '      if(hasYCenter) gsap.set(el, { yPercent: -50 });\n';
+        js += '      if(hasXCenter || hasYCenter) el.style.transform = "";\n\n';
 
         // Split text handling
         js += '      /* Split text if flagged */\n';
