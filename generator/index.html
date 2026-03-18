@@ -2016,30 +2016,38 @@
                         </div>
                     </div>
 
-                    <div class="cne-section-label">COLORS</div>
+                    <div class="cne-section-label">TEXT COLOR</div>
                     <div class="cne-row">
                         <div class="cne-col">
                             <span class="cne-hint mono">Text</span>
                             <input type="color" class="cne-color-input" id="cneColor" value="#ffffff">
                         </div>
+                    </div>
+                        </div>
+                    </div>
+                    <div class="cne-section-label">ELEMENT BACKGROUND</div>
+                    <div class="cne-row">
                         <div class="cne-col">
-                            <span class="cne-hint mono">Background</span>
+                            <span class="cne-hint mono">Color</span>
                             <input type="color" class="cne-color-input" id="cneBgColor" value="#000000">
                             <button class="cne-grad-toggle" id="cneGradToggle" title="Gradient mode">&#9698;</button>
                         </div>
                     </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
-                            <span class="cne-hint mono">Background Image URL</span>
-                            <input type="text" class="gen-input" id="cneElBgImage" placeholder="Direct image link (.jpg, .png, .webp)">
+                            <label class="cne-upload-btn" id="cneElBgUploadLabel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                Upload Element Background Image
+                                <input type="file" accept="image/*" id="cneElBgUpload" style="display:none">
+                            </label>
                         </div>
                     </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
-                            <label class="cne-upload-btn" id="cneElBgUploadLabel">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                                Upload Background Image
-                                <input type="file" accept="image/*" id="cneElBgUpload" style="display:none">
+                            <label class="cne-upload-btn" id="cneElBgVideoUploadLabel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                Upload Element Background Video
+                                <input type="file" accept="video/mp4,video/webm,video/ogg" id="cneElBgVideoUpload" style="display:none">
                             </label>
                         </div>
                     </div>
@@ -2630,7 +2638,7 @@
                         </div>
                     </div>
 
-                    <div class="cne-section-label">BACKGROUND</div>
+                    <div class="cne-section-label">SCENE BACKGROUND</div>
                     <div class="cne-row">
                         <div class="cne-col">
                             <span class="cne-hint mono">Color</span>
@@ -2639,16 +2647,19 @@
                     </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
-                            <span class="cne-hint mono">Background Image URL</span>
-                            <input type="text" class="gen-input" id="cneSceneBgImage" placeholder="Direct image link (.jpg, .png, .webp)">
+                            <label class="cne-upload-btn" id="cneSceneBgUploadLabel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                Upload Scene Background Image
+                                <input type="file" accept="image/*" id="cneSceneBgUpload" style="display:none">
+                            </label>
                         </div>
                     </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
-                            <label class="cne-upload-btn" id="cneSceneBgUploadLabel">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                                Upload Scene Background
-                                <input type="file" accept="image/*" id="cneSceneBgUpload" style="display:none">
+                            <label class="cne-upload-btn" id="cneSceneBgVideoUploadLabel">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                Upload Scene Background Video
+                                <input type="file" accept="video/mp4,video/webm,video/ogg" id="cneSceneBgVideoUpload" style="display:none">
                             </label>
                         </div>
                     </div>

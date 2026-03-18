@@ -600,6 +600,17 @@ window.ArbelCinematicCompiler = (function () {
             if (sceneBg) html += ' style="' + sceneBg + '"';
             html += '>\n';
 
+            // Scene background video
+            if (scene.bgVideo) {
+                var safeBgVid = scene.bgVideo.replace(/[\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
+                if (/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/|data:video\/)/i.test(safeBgVid)) {
+                    html += '    <video class="cne-scene-bgvid" autoplay loop muted playsinline';
+                    html += ' src="' + escHref(safeBgVid) + '"';
+                    html += ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none"';
+                    html += '></video>\n';
+                }
+            }
+
             // 3D background effect
             if (scene.bg3dType) {
                 var bg3dC1 = esc(scene.bg3dColor1 || '#6c5ce7');
@@ -734,28 +745,36 @@ window.ArbelCinematicCompiler = (function () {
                     html += '      <button type="submit" class="cne-form-submit">' + submitText + '</button>\n';
                     html += '    </form>\n';
                 } else {
+                    // Element background video
+                    var elBgVidHtml = '';
+                    if (el.bgVideo) {
+                        var safeElVid = el.bgVideo.replace(/[\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
+                        if (/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/|data:video\/)/i.test(safeElVid)) {
+                            elBgVidHtml = '<video class="cne-el-bgvid" autoplay loop muted playsinline src="' + escHref(safeElVid) + '"></video>';
+                        }
+                    }
                     // Lottie animation embed
                     if (el.lottieUrl && /^https?:\/\//.test(el.lottieUrl)) {
                         var safeLottie = escHref(el.lottieUrl);
-                        html += '><dotlottie-player src="' + safeLottie + '" background="transparent" speed="1" loop autoplay style="width:100%;height:100%"></dotlottie-player></' + tag + '>\n';
+                        html += '>' + elBgVidHtml + '<dotlottie-player src="' + safeLottie + '" background="transparent" speed="1" loop autoplay style="width:100%;height:100%"></dotlottie-player></' + tag + '>\n';
                     // SVG illustration
                     } else if (el.svgContent) {
                         // Sanitize SVG: strip scripts and event handlers
                         var safeSvg = el.svgContent
                             .replace(/<script[\s\S]*?<\/script>/gi, '')
                             .replace(/\bon\w+\s*=/gi, 'data-removed=');
-                        html += '>' + safeSvg + '</' + tag + '>\n';
+                        html += '>' + elBgVidHtml + safeSvg + '</' + tag + '>\n';
                     // iFrame embed (YouTube, Vimeo, etc.)
                     } else if (el.embedUrl && /^https:\/\//.test(el.embedUrl)) {
                         var safeEmbed = escHref(el.embedUrl);
-                        html += '><iframe src="' + safeEmbed + '" style="width:100%;height:100%;border:none" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></' + tag + '>\n';
+                        html += '>' + elBgVidHtml + '<iframe src="' + safeEmbed + '" style="width:100%;height:100%;border:none" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></' + tag + '>\n';
                     // For non-anchor elements with href, wrap in anchor
                     } else if (el.href && el.href !== '#' && el.href !== '') {
                         var anchorHref = escHref(el.href);
                         var anchorAttrs = ' href="' + anchorHref + '"';
                         if (el.linkNewTab) anchorAttrs += ' target="_blank" rel="noopener noreferrer"';
                         anchorAttrs += ' style="text-decoration:none;color:inherit;display:contents"';
-                        html += '>' + esc(el.text) + '</' + tag + '>\n';
+                        html += '>' + elBgVidHtml + esc(el.text) + '</' + tag + '>\n';
                         // Wrap: inject opening <a> before the element, closing </a> after
                         var elOpen = '    <' + tag + ' class="cne-element"';
                         var lastIdx = html.lastIndexOf(elOpen);
@@ -763,7 +782,7 @@ window.ArbelCinematicCompiler = (function () {
                             html = html.substring(0, lastIdx) + '    <a' + anchorAttrs + '>\n    ' + html.substring(lastIdx) + '    </a>\n';
                         }
                     } else {
-                        html += '>' + esc(el.text) + '</' + tag + '>\n';
+                        html += '>' + elBgVidHtml + esc(el.text) + '</' + tag + '>\n';
                     }
                 }
             });
@@ -880,7 +899,9 @@ window.ArbelCinematicCompiler = (function () {
         // Scenes
         css += '.cne-scenes { position: relative; z-index: 1; }\n';
         css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
-        css += '.cne-element { position: absolute; will-change: transform, opacity; }\n\n';
+        css += '.cne-element { position: absolute; will-change: transform, opacity; }\n';
+        css += '.cne-scene-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }\n';
+        css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n\n';
 
         // Split text
         css += '.cne-char, .cne-word { display: inline-block; will-change: transform, opacity; }\n';
@@ -1114,6 +1135,18 @@ window.ArbelCinematicCompiler = (function () {
         js += '      var sd;\n';
         js += '      try { sd = JSON.parse(el.dataset.scroll); } catch(e){ return; }\n';
         js += '      if(!sd) return;\n\n';
+
+        // Preserve CSS translate centering by converting to GSAP xPercent/yPercent
+        js += '      /* Preserve CSS translate centering */\n';
+        js += '      var ct = getComputedStyle(el).transform;\n';
+        js += '      var inT = el.style.transform || "";\n';
+        js += '      if(inT.indexOf("translateX(-50%)") >= 0 || inT.indexOf("translate(-50%") >= 0){\n';
+        js += '        gsap.set(el, { xPercent: -50 });\n';
+        js += '      }\n';
+        js += '      if(inT.indexOf("translateY(-50%)") >= 0 || inT.indexOf("translate(-50%,-50%)") >= 0 || inT.indexOf("translate(-50%, -50%)") >= 0){\n';
+        js += '        gsap.set(el, { yPercent: -50 });\n';
+        js += '      }\n';
+        js += '      el.style.transform = "";\n\n';
 
         // Split text handling
         js += '      /* Split text if flagged */\n';
