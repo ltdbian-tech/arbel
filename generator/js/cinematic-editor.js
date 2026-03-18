@@ -1946,17 +1946,20 @@ window.ArbelCinematicEditor = (function () {
         // Border
         var borderWidth = _qs('#cneBorderWidth');
         var borderColor = _qs('#cneBorderColor');
+        var borderStyle = _qs('#cneBorderStyle');
         function updateBorder() {
             var w = borderWidth ? borderWidth.value : '';
             var c = borderColor ? borderColor.value : '#ffffff';
+            var s = borderStyle ? borderStyle.value : 'solid';
             if (w && parseInt(w) > 0) {
-                _setElStyle('border', w + 'px solid ' + c);
+                _setElStyle('border', w + 'px ' + s + ' ' + c);
             } else {
                 _setElStyle('border', '');
             }
         }
         if (borderWidth) borderWidth.addEventListener('input', updateBorder);
         if (borderColor) borderColor.addEventListener('input', updateBorder);
+        if (borderStyle) borderStyle.addEventListener('change', updateBorder);
 
         // Padding
         ['Top', 'Right', 'Bottom', 'Left'].forEach(function (side) {
@@ -1983,6 +1986,191 @@ window.ArbelCinematicEditor = (function () {
                 });
             }
         });
+
+        // ─── Rich Text Formatting ───
+        var richTextBar = _qs('#cneRichTextBar');
+        if (richTextBar) {
+            richTextBar.addEventListener('click', function (e) {
+                var btn = e.target.closest('.cne-icon-btn');
+                if (!btn) return;
+                var prop = btn.getAttribute('data-prop');
+                var val = btn.getAttribute('data-val');
+                if (!prop) return;
+                var el = _getSelectedElement();
+                if (!el) return;
+                var current = _getElStyleValue(el, prop);
+                // Toggle: if already set to this value, clear it
+                if (current === val) {
+                    _setElStyle(prop, '');
+                    btn.classList.remove('active');
+                } else {
+                    _setElStyle(prop, val);
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Text transform
+        var textTransform = _qs('#cneTextTransform');
+        if (textTransform) {
+            textTransform.addEventListener('change', function () {
+                _setElStyle('textTransform', textTransform.value);
+            });
+        }
+
+        // Word spacing
+        var wordSpacing = _qs('#cneWordSpacing');
+        if (wordSpacing) {
+            wordSpacing.addEventListener('input', function () {
+                var val = wordSpacing.value;
+                if (val && /^\d+(\.\d+)?$/.test(val)) val += 'px';
+                _setElStyle('wordSpacing', val);
+            });
+        }
+
+        // Text shadow
+        var textShadow = _qs('#cneTextShadow');
+        if (textShadow) {
+            textShadow.addEventListener('change', function () {
+                _setElStyle('textShadow', textShadow.value);
+            });
+        }
+
+        // Text stroke (e.g. "2px #fff")
+        var textStroke = _qs('#cneTextStroke');
+        if (textStroke) {
+            textStroke.addEventListener('input', function () {
+                _setElStyle('webkitTextStroke', textStroke.value);
+            });
+        }
+
+        // ─── Image Filters ───
+        var filterProps = [
+            { id: 'cneFilterBrightness', fn: 'brightness', unit: '%', def: 100 },
+            { id: 'cneFilterContrast', fn: 'contrast', unit: '%', def: 100 },
+            { id: 'cneFilterSaturate', fn: 'saturate', unit: '%', def: 100 },
+            { id: 'cneFilterBlur', fn: 'blur', unit: 'px', def: 0 },
+            { id: 'cneFilterHue', fn: 'hue-rotate', unit: 'deg', def: 0 },
+            { id: 'cneFilterGrayscale', fn: 'grayscale', unit: '%', def: 0 },
+            { id: 'cneFilterSepia', fn: 'sepia', unit: '%', def: 0 },
+            { id: 'cneFilterInvert', fn: 'invert', unit: '%', def: 0 }
+        ];
+        function _buildFilterString() {
+            var parts = [];
+            filterProps.forEach(function (fp) {
+                var input = _qs('#' + fp.id);
+                if (!input) return;
+                var val = parseFloat(input.value);
+                if (val !== fp.def) {
+                    parts.push(fp.fn + '(' + val + fp.unit + ')');
+                }
+            });
+            return parts.join(' ');
+        }
+        function _onFilterChange() {
+            // Update value labels
+            filterProps.forEach(function (fp) {
+                var input = _qs('#' + fp.id);
+                var label = _qs('#' + fp.id + 'Val');
+                if (input && label) label.textContent = input.value + fp.unit;
+            });
+            _setElStyle('filter', _buildFilterString());
+        }
+        filterProps.forEach(function (fp) {
+            var input = _qs('#' + fp.id);
+            if (input) input.addEventListener('input', _onFilterChange);
+        });
+
+        // Clip path / mask shape
+        var clipPath = _qs('#cneClipPath');
+        if (clipPath) {
+            clipPath.addEventListener('change', function () {
+                _setElStyle('clipPath', clipPath.value);
+            });
+        }
+
+        // ─── Layout (Flex) Section ───
+        var flexDir = _qs('#cneFlexDir');
+        if (flexDir) {
+            flexDir.addEventListener('change', function () {
+                if (flexDir.value) {
+                    _setElStyle('display', 'flex');
+                    _setElStyle('flexDirection', flexDir.value);
+                } else {
+                    _setElStyle('display', '');
+                    _setElStyle('flexDirection', '');
+                }
+            });
+        }
+        var flexWrap = _qs('#cneFlexWrap');
+        if (flexWrap) {
+            flexWrap.addEventListener('change', function () {
+                _setElStyle('flexWrap', flexWrap.value);
+            });
+        }
+        var justify = _qs('#cneJustify');
+        if (justify) {
+            justify.addEventListener('change', function () {
+                _setElStyle('justifyContent', justify.value);
+            });
+        }
+        var alignItems = _qs('#cneAlignItems');
+        if (alignItems) {
+            alignItems.addEventListener('change', function () {
+                _setElStyle('alignItems', alignItems.value);
+            });
+        }
+        var flexGap = _qs('#cneFlexGap');
+        if (flexGap) {
+            flexGap.addEventListener('input', function () {
+                var val = flexGap.value;
+                if (val && /^\d+(\.\d+)?$/.test(val)) val += 'px';
+                _setElStyle('gap', val);
+            });
+        }
+        var overflow = _qs('#cneOverflow');
+        if (overflow) {
+            overflow.addEventListener('change', function () {
+                _setElStyle('overflow', overflow.value);
+            });
+        }
+
+        // ─── Advanced Section (Blend Mode + Cursor) ───
+        var blendMode = _qs('#cneBlendMode');
+        if (blendMode) {
+            blendMode.addEventListener('change', function () {
+                _setElStyle('mixBlendMode', blendMode.value);
+            });
+        }
+        var cursor = _qs('#cneCursor');
+        if (cursor) {
+            cursor.addEventListener('change', function () {
+                _setElStyle('cursor', cursor.value);
+            });
+        }
+
+        // ─── Alignment Toolbar (single element position helpers) ───
+        var alignToolbar = _qs('#cneAlignToolbar');
+        if (alignToolbar) {
+            alignToolbar.addEventListener('click', function (e) {
+                var btn = e.target.closest('.cne-icon-btn');
+                if (!btn) return;
+                var align = btn.getAttribute('data-align');
+                if (!align) return;
+                var el = _getSelectedElement();
+                if (!el) return;
+                _pushUndo();
+                switch (align) {
+                    case 'left':    _setElStyle('left', '0%'); _setElStyle('right', ''); break;
+                    case 'centerH': _setElStyle('left', '50%'); _setElStyle('right', ''); break;
+                    case 'right':   _setElStyle('left', ''); _setElStyle('right', '0%'); break;
+                    case 'top':     _setElStyle('top', '0%'); _setElStyle('bottom', ''); break;
+                    case 'centerV': _setElStyle('top', '50%'); _setElStyle('bottom', ''); break;
+                    case 'bottom':  _setElStyle('top', ''); _setElStyle('bottom', '0%'); break;
+                }
+                _updatePropertiesFromScene(el);
+            });
+        }
     }
 
     function _setupScrollInputs() {
@@ -3814,10 +4002,12 @@ window.ArbelCinematicEditor = (function () {
         // Border
         var borderWidth = _qs('#cneBorderWidth');
         var borderColor = _qs('#cneBorderColor');
-        if (borderWidth || borderColor) {
-            var borderParts = (_getElStyleValue(el, 'border') || '').match(/^(\d+)px\s+\S+\s+(.+)$/);
+        var borderStyleSel = _qs('#cneBorderStyle');
+        if (borderWidth || borderColor || borderStyleSel) {
+            var borderParts = (_getElStyleValue(el, 'border') || '').match(/^(\d+)px\s+(\S+)\s+(.+)$/);
             if (borderWidth) borderWidth.value = borderParts ? borderParts[1] : '';
-            if (borderColor) borderColor.value = (borderParts ? _toHex(borderParts[2]) : '') || '#ffffff';
+            if (borderStyleSel) borderStyleSel.value = borderParts ? borderParts[2] : 'solid';
+            if (borderColor) borderColor.value = (borderParts ? _toHex(borderParts[3]) : '') || '#ffffff';
         }
 
         // Padding
@@ -3858,6 +4048,88 @@ window.ArbelCinematicEditor = (function () {
                 _renderFormFieldsList(el);
             }
         }
+
+        // ─── Rich Text Section (show for text-capable elements) ───
+        var isTextEl = ['h1','h2','h3','p','span','a'].indexOf(el.tag) >= 0;
+        var richTextSection = _qs('#cneRichTextSection');
+        if (richTextSection) {
+            richTextSection.style.display = isTextEl ? '' : 'none';
+            if (isTextEl) {
+                // Sync rich text button active states
+                var richBtns = _qsa('#cneRichTextBar .cne-icon-btn');
+                richBtns.forEach(function (btn) {
+                    var prop = btn.getAttribute('data-prop');
+                    var val = btn.getAttribute('data-val');
+                    btn.classList.toggle('active', _getElStyleValue(el, prop) === val);
+                });
+                var tt = _qs('#cneTextTransform'); if (tt) tt.value = _getElStyleValue(el, 'textTransform') || '';
+                var ws = _qs('#cneWordSpacing'); if (ws) ws.value = _getElStyleValue(el, 'wordSpacing') || '';
+                var ts = _qs('#cneTextShadow'); if (ts) ts.value = _getElStyleValue(el, 'textShadow') || '';
+                var tst = _qs('#cneTextStroke'); if (tst) tst.value = _getElStyleValue(el, 'webkitTextStroke') || '';
+            }
+        }
+
+        // ─── Image Filters Section (show for img elements) ───
+        var isImgEl = el.tag === 'img';
+        var imgFiltersSection = _qs('#cneImageFiltersSection');
+        if (imgFiltersSection) {
+            imgFiltersSection.style.display = isImgEl ? '' : 'none';
+            if (isImgEl) {
+                // Parse existing filter string to populate sliders
+                var filterStr = _getElStyleValue(el, 'filter') || '';
+                var filterDefaults = {
+                    'cneFilterBrightness': 100, 'cneFilterContrast': 100, 'cneFilterSaturate': 100,
+                    'cneFilterBlur': 0, 'cneFilterHue': 0, 'cneFilterGrayscale': 0,
+                    'cneFilterSepia': 0, 'cneFilterInvert': 0
+                };
+                var filterMap = {
+                    'brightness': 'cneFilterBrightness', 'contrast': 'cneFilterContrast',
+                    'saturate': 'cneFilterSaturate', 'blur': 'cneFilterBlur',
+                    'hue-rotate': 'cneFilterHue', 'grayscale': 'cneFilterGrayscale',
+                    'sepia': 'cneFilterSepia', 'invert': 'cneFilterInvert'
+                };
+                // Reset to defaults
+                Object.keys(filterDefaults).forEach(function (id) {
+                    var inp = _qs('#' + id);
+                    if (inp) inp.value = filterDefaults[id];
+                    var lbl = _qs('#' + id + 'Val');
+                    if (lbl) lbl.textContent = filterDefaults[id] + (id === 'cneFilterBlur' ? 'px' : id === 'cneFilterHue' ? '°' : '%');
+                });
+                // Parse each filter function
+                var filterRe = /([\w-]+)\(([^)]+)\)/g;
+                var fMatch;
+                while ((fMatch = filterRe.exec(filterStr))) {
+                    var fId = filterMap[fMatch[1]];
+                    if (fId) {
+                        var fVal = parseFloat(fMatch[2]);
+                        var fInp = _qs('#' + fId);
+                        if (fInp) fInp.value = fVal;
+                        var fLbl = _qs('#' + fId + 'Val');
+                        if (fLbl) fLbl.textContent = fVal + (fId === 'cneFilterBlur' ? 'px' : fId === 'cneFilterHue' ? '°' : '%');
+                    }
+                }
+                var cp = _qs('#cneClipPath'); if (cp) cp.value = _getElStyleValue(el, 'clipPath') || '';
+            }
+        }
+
+        // ─── Layout Section (show for div/container elements) ───
+        var isDivEl = el.tag === 'div' || el.tag === 'section' || el.tag === 'header' || el.tag === 'footer' || el.tag === 'nav';
+        var layoutSection = _qs('#cneLayoutSection');
+        if (layoutSection) {
+            layoutSection.style.display = isDivEl ? '' : 'none';
+            if (isDivEl) {
+                var fd = _qs('#cneFlexDir'); if (fd) fd.value = _getElStyleValue(el, 'flexDirection') || '';
+                var fw = _qs('#cneFlexWrap'); if (fw) fw.value = _getElStyleValue(el, 'flexWrap') || '';
+                var jc = _qs('#cneJustify'); if (jc) jc.value = _getElStyleValue(el, 'justifyContent') || '';
+                var ai = _qs('#cneAlignItems'); if (ai) ai.value = _getElStyleValue(el, 'alignItems') || '';
+                var fg = _qs('#cneFlexGap'); if (fg) fg.value = _getElStyleValue(el, 'gap') || '';
+                var ov = _qs('#cneOverflow'); if (ov) ov.value = _getElStyleValue(el, 'overflow') || '';
+            }
+        }
+
+        // ─── Advanced Section (blend mode + cursor — all elements) ───
+        var bm = _qs('#cneBlendMode'); if (bm) bm.value = _getElStyleValue(el, 'mixBlendMode') || '';
+        var cr = _qs('#cneCursor'); if (cr) cr.value = _getElStyleValue(el, 'cursor') || '';
 
         // Show properties panel
         var propsContainer = _qs('#cnePropsContainer');

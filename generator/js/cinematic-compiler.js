@@ -174,15 +174,19 @@ window.ArbelCinematicCompiler = (function () {
     /* ─── Animation Presets (Framer-style quick-apply) ─── */
     var ANIMATION_PRESETS = {
         none:           null,
+        // ── Fade In ──
         fadeInUp:       { opacity: [0, 1], y: [60, 0], start: 0, end: 0.4, ease: 'power2.out' },
         fadeInDown:     { opacity: [0, 1], y: [-60, 0], start: 0, end: 0.4, ease: 'power2.out' },
         fadeInLeft:     { opacity: [0, 1], x: [-80, 0], start: 0, end: 0.4, ease: 'power2.out' },
         fadeInRight:    { opacity: [0, 1], x: [80, 0], start: 0, end: 0.4, ease: 'power2.out' },
+        // ── Scale In ──
         scaleIn:        { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4, ease: 'power3.out' },
         scaleInUp:      { opacity: [0, 1], scale: [0.8, 1], y: [40, 0], start: 0, end: 0.4, ease: 'power3.out' },
+        // ── Blur In ──
         blurIn:         { opacity: [0, 1], blur: [20, 0], start: 0, end: 0.4, ease: 'power2.out' },
         blurInUp:       { opacity: [0, 1], blur: [15, 0], y: [40, 0], start: 0, end: 0.4, ease: 'power2.out' },
         blurInScale:    { opacity: [0, 1], blur: [12, 0], scale: [0.9, 1], start: 0, end: 0.45, ease: 'power2.out' },
+        // ── Slide / Clip ──
         slideInUp:      { clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], y: [20, 0], start: 0, end: 0.45, ease: 'power3.out' },
         slideInDown:    { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], y: [-20, 0], start: 0, end: 0.45, ease: 'power3.out' },
         slideInLeft:    { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], x: [-20, 0], start: 0, end: 0.45, ease: 'power3.out' },
@@ -191,33 +195,110 @@ window.ArbelCinematicCompiler = (function () {
         clipRevealDown: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0, end: 0.5, ease: 'power3.out' },
         clipRevealLeft: { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], start: 0, end: 0.5, ease: 'power3.out' },
         clipRevealRight:{ clipPath: ['inset(0 0 0 100%)', 'inset(0 0 0 0%)'], start: 0, end: 0.5, ease: 'power3.out' },
+        // ── Rotate / Flip In ──
         rotateIn:       { opacity: [0, 1], rotation: [15, 0], scale: [0.9, 1], start: 0, end: 0.4, ease: 'power2.out' },
         rotateInLeft:   { opacity: [0, 1], rotation: [-15, 0], x: [-60, 0], start: 0, end: 0.45, ease: 'power2.out' },
         flipInX:        { opacity: [0, 1], rotateX: [90, 0], start: 0, end: 0.5, ease: 'power3.out' },
         flipInY:        { opacity: [0, 1], rotateY: [90, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        // ── Zoom ──
         zoomIn:         { scale: [0.5, 1], opacity: [0, 1], start: 0, end: 0.5, ease: 'power2.out' },
         zoomOut:        { scale: [1.3, 1], opacity: [0, 1], start: 0, end: 0.5, ease: 'power2.out' },
+        // ── Bounce In ──
         bounceIn:       { opacity: [0, 1], scale: [0.3, 1.05, 0.95, 1], y: [60, -10, 5, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
-        fadeOut:         { opacity: [1, 0], y: [0, -40], start: 0.6, end: 1, ease: 'power1.in' },
-        fadeOutDown:     { opacity: [1, 0], y: [0, 60], start: 0.6, end: 1, ease: 'power1.in' },
-        scaleOut:        { opacity: [1, 0], scale: [1, 0.8], start: 0.6, end: 1, ease: 'power2.in' },
-        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1, ease: 'power1.in' },
-
-        // Cinematic entrance presets
+        bounceInUp:     { opacity: [0, 1], y: [120, -15, 5, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
+        bounceInLeft:   { opacity: [0, 1], x: [-120, 15, -5, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
+        bounceInDown:   { opacity: [0, 1], y: [-120, 15, -5, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
+        // ── Special Entrance ──
+        rollIn:         { opacity: [0, 1], x: [-120, 0], rotation: [-120, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        jackInTheBox:   { opacity: [0, 1], scale: [0.1, 1], rotation: [30, -10, 3, 0], start: 0, end: 0.5, ease: 'back.out(2)' },
+        backInUp:       { opacity: [0, 0.7, 1], scale: [0.7, 0.7, 1], y: [120, 0, 0], start: 0, end: 0.5, ease: 'power2.out' },
+        backInLeft:     { opacity: [0, 0.7, 1], scale: [0.7, 0.7, 1], x: [-200, 0, 0], start: 0, end: 0.5, ease: 'power2.out' },
+        lightSpeedInRight: { opacity: [0, 1], x: [200, 0], skewX: [-30, 0], start: 0, end: 0.4, ease: 'power3.out' },
+        swingIn:        { opacity: [0, 1], rotation: [15, -10, 5, -2, 0], start: 0, end: 0.5, ease: 'power2.out' },
+        rubberBand:     { opacity: [0, 1], scale: [0.3, 1.25, 0.75, 1.15, 0.95, 1], start: 0, end: 0.5, ease: 'power1.out' },
+        jello:          { opacity: [0, 1], skewX: [0, -12.5, 6.25, -3.1, 1.5, 0], skewY: [0, -12.5, 6.25, -3.1, 1.5, 0], start: 0, end: 0.5, ease: 'power1.out' },
+        tada:           { opacity: [0, 1], scale: [0.9, 0.9, 1.1, 1.1, 1.1, 1.1, 1.1, 1], rotation: [0, -3, -3, 3, -3, 3, -3, 0], start: 0, end: 0.5, ease: 'power1.out' },
+        heartBeat:      { opacity: [0, 1], scale: [1, 1.3, 1, 1.3, 1], start: 0, end: 0.5, ease: 'power1.inOut' },
+        // ── 3D Entrance ──
+        flip3DX:        { opacity: [0, 1], rotateX: [180, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        flip3DY:        { opacity: [0, 1], rotateY: [180, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        cubeRotate:     { opacity: [0, 1], rotateY: [-90, 0], y: [50, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        doorOpen:       { opacity: [0, 1], rotateY: [-90, 0], start: 0, end: 0.6, ease: 'expo.out' },
+        unfold:         { opacity: [0, 1], rotateX: [-90, 0], y: [-40, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        pivotIn:        { opacity: [0, 1], rotation: [-90, 0], scale: [0.5, 1], start: 0, end: 0.5, ease: 'power3.out' },
+        swingDoor:      { opacity: [0, 1], rotateY: [90, -20, 10, 0], start: 0, end: 0.6, ease: 'power2.out' },
+        perspective3D:  { opacity: [0, 1], rotateX: [30, 0], rotateY: [-30, 0], y: [60, 0], start: 0, end: 0.5, ease: 'power3.out' },
+        // ── Cinematic Entrance ──
         cinematicFade:   { opacity: [0, 1], scale: [1.1, 1], blur: [8, 0], start: 0, end: 0.5, ease: 'power2.out' },
         cinematicSlide:  { opacity: [0, 1], x: [-120, 0], skewX: [8, 0], start: 0, end: 0.5, ease: 'power3.out' },
         cinematicReveal: { clipPath: ['inset(0 100% 0 0)', 'inset(0 0% 0 0)'], opacity: [0.5, 1], scale: [0.95, 1], start: 0, end: 0.6, ease: 'expo.out' },
         cinematicDrop:   { opacity: [0, 1], y: [-100, 0], rotateX: [45, 0], start: 0, end: 0.5, ease: 'back.out(1.7)' },
         cinematicRise:   { opacity: [0, 1], y: [100, 0], scale: [0.9, 1], blur: [12, 0], start: 0, end: 0.55, ease: 'power3.out' },
-
-        // Parallax presets
+        // ── Exit — Fade ──
+        fadeOut:         { opacity: [1, 0], y: [0, -40], start: 0.6, end: 1, ease: 'power1.in' },
+        fadeOutUp:       { opacity: [1, 0], y: [0, -80], start: 0.6, end: 1, ease: 'power1.in' },
+        fadeOutDown:     { opacity: [1, 0], y: [0, 60], start: 0.6, end: 1, ease: 'power1.in' },
+        fadeOutLeft:     { opacity: [1, 0], x: [0, -80], start: 0.6, end: 1, ease: 'power1.in' },
+        fadeOutRight:    { opacity: [1, 0], x: [0, 80], start: 0.6, end: 1, ease: 'power1.in' },
+        // ── Exit — Slide / Scale ──
+        slideOutUp:      { clipPath: ['inset(0% 0 0 0)', 'inset(0 0 100% 0)'], y: [0, -20], start: 0.6, end: 1, ease: 'power3.in' },
+        slideOutDown:    { clipPath: ['inset(0 0 0% 0)', 'inset(100% 0 0 0)'], y: [0, 20], start: 0.6, end: 1, ease: 'power3.in' },
+        slideOutLeft:    { clipPath: ['inset(0 0% 0 0)', 'inset(0 0 0 100%)'], x: [0, -20], start: 0.6, end: 1, ease: 'power3.in' },
+        slideOutRight:   { clipPath: ['inset(0 0 0 0%)', 'inset(0 100% 0 0)'], x: [0, 20], start: 0.6, end: 1, ease: 'power3.in' },
+        scaleOut:        { opacity: [1, 0], scale: [1, 0.8], start: 0.6, end: 1, ease: 'power2.in' },
+        zoomOutUp:       { opacity: [1, 0], scale: [1, 0.4], y: [0, -80], start: 0.6, end: 1, ease: 'power2.in' },
+        zoomOutDown:     { opacity: [1, 0], scale: [1, 0.4], y: [0, 80], start: 0.6, end: 1, ease: 'power2.in' },
+        // ── Exit — Special ──
+        blurOut:         { opacity: [1, 0], blur: [0, 20], start: 0.6, end: 1, ease: 'power1.in' },
+        bounceOut:       { opacity: [1, 0], scale: [1, 0.95, 1.1, 0.3], start: 0.6, end: 1, ease: 'power1.in' },
+        rollOut:         { opacity: [1, 0], x: [0, 120], rotation: [0, 120], start: 0.6, end: 1, ease: 'power2.in' },
+        backOutUp:       { opacity: [1, 0.7, 0], scale: [1, 0.7, 0.7], y: [0, 0, -120], start: 0.6, end: 1, ease: 'power2.in' },
+        backOutLeft:     { opacity: [1, 0.7, 0], scale: [1, 0.7, 0.7], x: [0, 0, -200], start: 0.6, end: 1, ease: 'power2.in' },
+        lightSpeedOutRight: { opacity: [1, 0], x: [0, 200], skewX: [0, 30], start: 0.6, end: 1, ease: 'power3.in' },
+        flipOutX:        { opacity: [1, 0], rotateX: [0, 90], start: 0.6, end: 1, ease: 'power3.in' },
+        flipOutY:        { opacity: [1, 0], rotateY: [0, 90], start: 0.6, end: 1, ease: 'power3.in' },
+        hinge:           { opacity: [1, 1, 0], rotation: [0, 80, 60, 80, 0], y: [0, 0, 300], start: 0.5, end: 1, ease: 'power2.in' },
+        // ── Attention / Continuous ──
+        pulse:           { scale: [1, 1.08, 1], start: 0, end: 1, ease: 'sine.inOut' },
+        shake:           { x: [0, -10, 10, -10, 10, -6, 6, -2, 0], start: 0, end: 1, ease: 'none' },
+        swing:           { rotation: [0, 15, -10, 5, -5, 0], start: 0, end: 1, ease: 'power1.inOut' },
+        wobble:          { x: [0, -60, 40, -30, 20, -10, 0], rotation: [0, -5, 3, -3, 2, -1, 0], start: 0, end: 1, ease: 'none' },
+        bounce:          { y: [0, -30, 0, -15, 0, -5, 0], start: 0, end: 1, ease: 'none' },
+        flash:           { opacity: [1, 0, 1, 0, 1], start: 0, end: 1, ease: 'none' },
+        headShake:       { x: [0, -6, 5, -3, 2, 0], rotation: [0, -9, 7, -5, 3, 0], start: 0, end: 1, ease: 'none' },
+        pendulum:        { rotation: [-15, 15, -10, 10, -5, 0], start: 0, end: 1, ease: 'sine.inOut' },
+        vibrate:         { x: [0, -3, 3, -3, 3, -2, 2, -1, 0], start: 0, end: 1, ease: 'none' },
+        wiggle:          { rotation: [0, -12, 8, -8, 4, -2, 0], start: 0, end: 1, ease: 'power1.inOut' },
+        sway:            { x: [-20, 20], rotation: [-3, 3], start: 0, end: 1, ease: 'sine.inOut' },
+        floatLoop:       { y: [-20, 20], rotation: [-2, 2], start: 0, end: 1, ease: 'none' },
+        breatheLoop:     { scale: [0.95, 1.05], opacity: [0.7, 1], start: 0, end: 1, ease: 'sine.inOut' },
+        driftLoop:       { x: [-30, 30], y: [-15, 15], start: 0, end: 1, ease: 'none' },
+        // ── Text Presets ──
+        typewriterFade:  { opacity: [0, 1], x: [20, 0], blur: [4, 0], start: 0, end: 0.3, ease: 'power1.out' },
+        headlineSlam:    { opacity: [0, 1], scale: [2, 1], blur: [20, 0], start: 0, end: 0.4, ease: 'expo.out' },
+        subtitleGlide:   { opacity: [0, 1], y: [30, 0], x: [-20, 0], start: 0.1, end: 0.4, ease: 'power2.out' },
+        letterByLetter:  { opacity: [0, 1], y: [20, 0], start: 0, end: 0.3, ease: 'power2.out', splitText: true },
+        wordByWord:      { opacity: [0, 1], y: [15, 0], blur: [4, 0], start: 0, end: 0.35, ease: 'power2.out', splitText: true },
+        lineReveal:      { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], y: [20, 0], start: 0, end: 0.4, ease: 'power3.out' },
+        splitFade:       { opacity: [0, 1], x: [-30, 0], blur: [8, 0], start: 0, end: 0.35, ease: 'power2.out', splitText: true },
+        scrambleIn:      { opacity: [0, 1], blur: [6, 0], rotation: [5, 0], start: 0, end: 0.35, ease: 'power2.out' },
+        glitchText:      { opacity: [0, 1], x: [-10, 10, -5, 0], skewX: [10, -5, 3, 0], start: 0, end: 0.3, ease: 'power1.out' },
+        waveText:        { opacity: [0, 1], y: [30, -10, 5, 0], start: 0, end: 0.4, ease: 'power2.out', splitText: true },
+        bounceLetters:   { opacity: [0, 1], y: [40, -8, 3, 0], scale: [0.5, 1.1, 0.95, 1], start: 0, end: 0.4, ease: 'back.out(1.7)', splitText: true },
+        cascadeWords:    { opacity: [0, 1], y: [40, 0], x: [-20, 0], start: 0, end: 0.35, ease: 'power3.out', splitText: true },
+        neonFlicker:     { opacity: [0, 1, 0.4, 1, 0.7, 1], start: 0, end: 0.4, ease: 'none' },
+        // ── Parallax ──
         parallaxSlow:    { y: [80, -80], start: 0, end: 1, ease: 'none' },
         parallaxFast:    { y: [200, -200], start: 0, end: 1, ease: 'none' },
         parallaxZoom:    { scale: [0.8, 1.2], start: 0, end: 1, ease: 'none' },
         parallaxRotate:  { rotation: [-5, 5], y: [60, -60], start: 0, end: 1, ease: 'none' },
         parallaxTilt:    { rotateX: [10, -10], rotateY: [-5, 5], y: [40, -40], start: 0, end: 1, ease: 'none' },
-
-        // Stagger-friendly presets (individual element delay via start offset)
+        parallaxDeep:    { y: [300, -300], scale: [0.9, 1.1], start: 0, end: 1, ease: 'none' },
+        parallaxMultiLayer: { y: [100, -100], x: [-30, 30], opacity: [0.6, 1], start: 0, end: 1, ease: 'none' },
+        horizontalScroll:{ x: [400, -400], start: 0, end: 1, ease: 'none' },
+        pinAndZoom:      { scale: [1, 2.5], opacity: [1, 0.3], start: 0, end: 1, ease: 'power1.in' },
+        scrubRotate:     { rotation: [0, 360], start: 0, end: 1, ease: 'none' },
+        // ── Stagger ──
         staggerFadeUp1:  { opacity: [0, 1], y: [40, 0], start: 0, end: 0.3, ease: 'power2.out' },
         staggerFadeUp2:  { opacity: [0, 1], y: [40, 0], start: 0.05, end: 0.35, ease: 'power2.out' },
         staggerFadeUp3:  { opacity: [0, 1], y: [40, 0], start: 0.1, end: 0.4, ease: 'power2.out' },
@@ -226,17 +307,7 @@ window.ArbelCinematicCompiler = (function () {
         staggerScaleIn1: { opacity: [0, 1], scale: [0.7, 1], start: 0, end: 0.3, ease: 'back.out(1.7)' },
         staggerScaleIn2: { opacity: [0, 1], scale: [0.7, 1], start: 0.06, end: 0.36, ease: 'back.out(1.7)' },
         staggerScaleIn3: { opacity: [0, 1], scale: [0.7, 1], start: 0.12, end: 0.42, ease: 'back.out(1.7)' },
-        staggerScaleIn4: { opacity: [0, 1], scale: [0.7, 1], start: 0.18, end: 0.48, ease: 'back.out(1.7)' },
-
-        // Text-specific presets
-        typewriterFade:  { opacity: [0, 1], x: [20, 0], blur: [4, 0], start: 0, end: 0.3, ease: 'power1.out' },
-        headlineSlam:    { opacity: [0, 1], scale: [2, 1], blur: [20, 0], start: 0, end: 0.4, ease: 'expo.out' },
-        subtitleGlide:   { opacity: [0, 1], y: [30, 0], x: [-20, 0], start: 0.1, end: 0.4, ease: 'power2.out' },
-
-        // Continuous scroll-linked animations
-        floatLoop:       { y: [-20, 20], rotation: [-2, 2], start: 0, end: 1, ease: 'none' },
-        breatheLoop:     { scale: [0.95, 1.05], opacity: [0.7, 1], start: 0, end: 1, ease: 'sine.inOut' },
-        driftLoop:       { x: [-30, 30], y: [-15, 15], start: 0, end: 1, ease: 'none' }
+        staggerScaleIn4: { opacity: [0, 1], scale: [0.7, 1], start: 0.18, end: 0.48, ease: 'back.out(1.7)' }
     };
 
     /* ─── Default Scene Factory ─── */
@@ -397,26 +468,70 @@ window.ArbelCinematicCompiler = (function () {
         // Collect used font families from elements
         var usedFonts = { 'Inter': 'Inter:wght@300;400;500;600;700;800;900' };
         var fontMap = {
+            // Sans Serif
             'Space Mono': 'Space+Mono:wght@400;700',
             'Space Grotesk': 'Space+Grotesk:wght@300;400;500;600;700',
-            'Playfair Display': 'Playfair+Display:wght@400;500;600;700;800;900',
             'DM Sans': 'DM+Sans:wght@300;400;500;600;700',
-            'DM Serif Display': 'DM+Serif+Display',
             'Sora': 'Sora:wght@300;400;500;600;700;800',
             'Outfit': 'Outfit:wght@300;400;500;600;700;800',
             'Poppins': 'Poppins:wght@300;400;500;600;700;800;900',
             'Montserrat': 'Montserrat:wght@300;400;500;600;700;800;900',
             'Raleway': 'Raleway:wght@300;400;500;600;700;800;900',
-            'Oswald': 'Oswald:wght@300;400;500;600;700',
-            'Lora': 'Lora:wght@400;500;600;700',
-            'Merriweather': 'Merriweather:wght@300;400;700;900',
             'Roboto': 'Roboto:wght@300;400;500;700;900',
             'Open Sans': 'Open+Sans:wght@300;400;500;600;700;800',
+            'Nunito': 'Nunito:wght@300;400;500;600;700;800;900',
+            'Rubik': 'Rubik:wght@300;400;500;600;700;800;900',
+            'Work Sans': 'Work+Sans:wght@300;400;500;600;700;800',
+            'Quicksand': 'Quicksand:wght@300;400;500;600;700',
+            'Lexend': 'Lexend:wght@300;400;500;600;700;800',
+            'Urbanist': 'Urbanist:wght@300;400;500;600;700;800',
+            'Figtree': 'Figtree:wght@300;400;500;600;700;800',
+            'Plus Jakarta Sans': 'Plus+Jakarta+Sans:wght@300;400;500;600;700;800',
+            'Manrope': 'Manrope:wght@300;400;500;600;700;800',
+            'Albert Sans': 'Albert+Sans:wght@300;400;500;600;700;800',
+            'Onest': 'Onest:wght@300;400;500;600;700;800',
+            'Geist': 'Geist:wght@300;400;500;600;700;800;900',
+            // Serif
+            'Playfair Display': 'Playfair+Display:wght@400;500;600;700;800;900',
+            'DM Serif Display': 'DM+Serif+Display',
+            'Lora': 'Lora:wght@400;500;600;700',
+            'Merriweather': 'Merriweather:wght@300;400;700;900',
+            'Crimson Text': 'Crimson+Text:wght@400;600;700',
+            'Source Serif 4': 'Source+Serif+4:wght@300;400;500;600;700;800;900',
+            'Noto Serif': 'Noto+Serif:wght@400;500;600;700;800;900',
+            'EB Garamond': 'EB+Garamond:wght@400;500;600;700;800',
+            'Cormorant Garamond': 'Cormorant+Garamond:wght@300;400;500;600;700',
+            'Libre Baskerville': 'Libre+Baskerville:wght@400;700',
+            'Fraunces': 'Fraunces:wght@300;400;500;600;700;800;900',
+            'Bodoni Moda': 'Bodoni+Moda:wght@400;500;600;700;800;900',
+            'Young Serif': 'Young+Serif',
+            'Instrument Serif': 'Instrument+Serif:ital@0;1',
+            // Display
+            'Oswald': 'Oswald:wght@300;400;500;600;700',
             'Bebas Neue': 'Bebas+Neue',
             'Archivo Black': 'Archivo+Black',
-            'Crimson Text': 'Crimson+Text:wght@400;600;700',
+            'Anton': 'Anton',
+            'Abril Fatface': 'Abril+Fatface',
+            'Righteous': 'Righteous',
+            'Permanent Marker': 'Permanent+Marker',
+            'Pacifico': 'Pacifico',
+            'Lobster': 'Lobster',
+            'Josefin Sans': 'Josefin+Sans:wght@300;400;500;600;700',
+            // Monospace
             'JetBrains Mono': 'JetBrains+Mono:wght@400;500;600;700',
-            'Fira Code': 'Fira+Code:wght@400;500;600;700'
+            'Fira Code': 'Fira+Code:wght@400;500;600;700',
+            'Source Code Pro': 'Source+Code+Pro:wght@300;400;500;600;700',
+            'Inconsolata': 'Inconsolata:wght@300;400;500;600;700;800;900',
+            'Roboto Mono': 'Roboto+Mono:wght@300;400;500;600;700',
+            'Ubuntu Mono': 'Ubuntu+Mono:wght@400;700',
+            'IBM Plex Mono': 'IBM+Plex+Mono:wght@300;400;500;600;700',
+            // Handwritten
+            'Caveat': 'Caveat:wght@400;500;600;700',
+            'Dancing Script': 'Dancing+Script:wght@400;500;600;700',
+            'Satisfy': 'Satisfy',
+            'Great Vibes': 'Great+Vibes',
+            'Kalam': 'Kalam:wght@300;400;700',
+            'Shadows Into Light': 'Shadows+Into+Light'
         };
         (cfg.scenes || []).forEach(function (scene) {
             (scene.elements || []).forEach(function (el) {
