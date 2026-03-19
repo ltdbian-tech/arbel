@@ -3720,6 +3720,18 @@ window.ArbelCinematicEditor = (function () {
         if (revealFeather) revealFeather.addEventListener('input', _syncRevealEffect);
         if (revealSpeed) revealSpeed.addEventListener('input', _syncRevealEffect);
         if (revealInvert) revealInvert.addEventListener('change', _syncRevealEffect);
+
+        // Content position toggle
+        var contentPos = _qs('#cneRevealContentPos');
+        if (contentPos) {
+            contentPos.addEventListener('change', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene || !scene.revealEffect) return;
+                _pushUndo();
+                scene.revealEffect.contentPosition = contentPos.value;
+                _notifyUpdate(true);
+            });
+        }
     }
 
     /* ─── Drag & Drop state for layer reordering ─── */
@@ -3736,12 +3748,57 @@ window.ArbelCinematicEditor = (function () {
         var layers = (scene && scene.revealLayers) || [];
         layerList.innerHTML = '';
 
-        var hasLayers = layers.length >= 2;
+        var hasLayers = layers.length >= 1;
         if (settingsPanel) settingsPanel.style.display = hasLayers ? '' : 'none';
         if (layerHeader) layerHeader.style.display = layers.length > 0 ? '' : 'none';
         if (emptyState) emptyState.style.display = hasLayers ? 'none' : '';
 
         if (layers.length === 0) return;
+
+        // ── Scene Background pseudo-layer (not draggable) ──
+        var bgRow = document.createElement('div');
+        bgRow.className = 'cne-reveal-layer-item cne-reveal-layer-item--locked';
+        var bgHandle = document.createElement('div');
+        bgHandle.className = 'cne-reveal-drag-handle';
+        bgHandle.style.opacity = '0.15';
+        bgHandle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>';
+        var bgThumb = document.createElement('div');
+        bgThumb.className = 'cne-reveal-layer-thumb';
+        var bgSrc = scene.bgVideo || scene.bgImage || '';
+        if (bgSrc) {
+            if (/^data:video/.test(bgSrc)) {
+                var bgVid = document.createElement('video');
+                bgVid.src = bgSrc; bgVid.muted = true;
+                bgVid.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px';
+                bgThumb.appendChild(bgVid);
+            } else {
+                bgThumb.style.backgroundImage = 'url(' + bgSrc + ')';
+                bgThumb.style.backgroundSize = 'cover';
+                bgThumb.style.backgroundPosition = 'center';
+            }
+        } else {
+            bgThumb.style.background = scene.bgColor || 'var(--border)';
+        }
+        var bgInfo = document.createElement('div');
+        bgInfo.className = 'cne-reveal-layer-info';
+        var bgLabel = document.createElement('span');
+        bgLabel.className = 'cne-reveal-layer-label';
+        bgLabel.textContent = 'Scene Background';
+        var bgMeta = document.createElement('span');
+        bgMeta.className = 'cne-hint mono';
+        bgMeta.style.fontSize = '0.58rem';
+        bgMeta.textContent = scene.bgVideo ? 'VIDEO · base' : scene.bgImage ? 'IMAGE · base' : 'COLOR · base';
+        bgInfo.appendChild(bgLabel);
+        bgInfo.appendChild(bgMeta);
+        var bgLock = document.createElement('span');
+        bgLock.className = 'cne-hint';
+        bgLock.style.cssText = 'font-size:0.7rem;opacity:0.3;flex-shrink:0';
+        bgLock.textContent = '\uD83D\uDD12';
+        bgRow.appendChild(bgHandle);
+        bgRow.appendChild(bgThumb);
+        bgRow.appendChild(bgInfo);
+        bgRow.appendChild(bgLock);
+        layerList.appendChild(bgRow);
 
         layers.sort(function (a, b) { return a.order - b.order; });
 
@@ -3816,7 +3873,7 @@ window.ArbelCinematicEditor = (function () {
             info.className = 'cne-reveal-layer-info';
             var label = document.createElement('span');
             label.className = 'cne-reveal-layer-label';
-            label.textContent = idx === 0 ? 'Base Layer' : 'Reveal Layer ' + idx;
+            label.textContent = 'Reveal Layer ' + (idx + 1);
             var meta = document.createElement('span');
             meta.className = 'cne-hint mono';
             meta.style.fontSize = '0.58rem';
@@ -3834,7 +3891,7 @@ window.ArbelCinematicEditor = (function () {
                 _pushUndo();
                 scene.revealLayers.splice(scene.revealLayers.indexOf(layer), 1);
                 scene.revealLayers.forEach(function (l, li) { l.order = li; });
-                if (scene.revealLayers.length < 2) { delete scene.revealEffect; }
+                if (scene.revealLayers.length < 1) { delete scene.revealEffect; }
                 _renderRevealLayerList();
                 _notifyUpdate(true);
             });
@@ -3845,6 +3902,49 @@ window.ArbelCinematicEditor = (function () {
             row.appendChild(delBtn);
             layerList.appendChild(row);
         });
+
+        // ── Content (text/elements) pseudo-layer ──
+        var contentPos = (scene.revealEffect && scene.revealEffect.contentPosition) || 'above';
+        var cRow = document.createElement('div');
+        cRow.className = 'cne-reveal-layer-item cne-reveal-layer-item--locked cne-reveal-layer-item--content';
+        var cHandle = document.createElement('div');
+        cHandle.className = 'cne-reveal-drag-handle';
+        cHandle.style.opacity = '0.15';
+        cHandle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>';
+        var cThumb = document.createElement('div');
+        cThumb.className = 'cne-reveal-layer-thumb';
+        cThumb.style.cssText = 'display:flex;align-items:center;justify-content:center;background:rgba(108,92,231,0.15);font-size:0.6rem;color:var(--accent2);font-weight:600';
+        cThumb.textContent = 'Aa';
+        var cInfo = document.createElement('div');
+        cInfo.className = 'cne-reveal-layer-info';
+        var cLabel = document.createElement('span');
+        cLabel.className = 'cne-reveal-layer-label';
+        cLabel.textContent = 'Text & Elements';
+        var cMeta = document.createElement('span');
+        cMeta.className = 'cne-hint mono';
+        cMeta.style.fontSize = '0.58rem';
+        cMeta.textContent = contentPos === 'above' ? 'ABOVE · always visible' : 'BELOW · masked with effect';
+        cInfo.appendChild(cLabel);
+        cInfo.appendChild(cMeta);
+        var cToggle = document.createElement('button');
+        cToggle.className = 'cne-toolbar-btn';
+        cToggle.style.cssText = 'padding:2px 6px;font-size:0.55rem;min-height:auto;flex-shrink:0';
+        cToggle.textContent = contentPos === 'above' ? '\u2B06' : '\u2B07';
+        cToggle.title = contentPos === 'above' ? 'Move below reveal' : 'Move above reveal';
+        cToggle.addEventListener('click', function () {
+            _pushUndo();
+            if (!scene.revealEffect) return;
+            scene.revealEffect.contentPosition = scene.revealEffect.contentPosition === 'below' ? 'above' : 'below';
+            var cp = _qs('#cneRevealContentPos');
+            if (cp) cp.value = scene.revealEffect.contentPosition;
+            _renderRevealLayerList();
+            _notifyUpdate(true);
+        });
+        cRow.appendChild(cHandle);
+        cRow.appendChild(cThumb);
+        cRow.appendChild(cInfo);
+        cRow.appendChild(cToggle);
+        layerList.appendChild(cRow);
 
         // Sync effect grid active state
         _syncRevealEffectGrid();
@@ -3866,7 +3966,7 @@ window.ArbelCinematicEditor = (function () {
         var emptyState = _qs('#cneRevealEmpty');
         var layerList = _qs('#cneRevealLayerList');
 
-        var hasLayers = scene && scene.revealLayers && scene.revealLayers.length >= 2;
+        var hasLayers = scene && scene.revealLayers && scene.revealLayers.length >= 1;
 
         if (!hasLayers) {
             if (settingsPanel) settingsPanel.style.display = 'none';
@@ -3887,6 +3987,7 @@ window.ArbelCinematicEditor = (function () {
         var rv = _qs('#cneRevealRadiusVal'); if (rv) rv.textContent = eff.radius;
         var fv = _qs('#cneRevealFeatherVal'); if (fv) fv.textContent = eff.feather;
         var sv = _qs('#cneRevealSpeedVal'); if (sv) sv.textContent = eff.speed.toFixed(2);
+        var cp = _qs('#cneRevealContentPos'); if (cp) cp.value = eff.contentPosition || 'above';
 
         _renderRevealLayerList();
     }

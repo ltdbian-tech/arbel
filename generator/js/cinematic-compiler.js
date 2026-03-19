@@ -662,10 +662,11 @@ window.ArbelCinematicCompiler = (function () {
                 html += ' loading="lazy" title="3D Scene" aria-hidden="true"></iframe>\n';
             }
 
-            // Hover Reveal Layers
-            if (scene.revealLayers && scene.revealLayers.length >= 2 && scene.revealEffect) {
+            // Hover Reveal Layers — scene bg acts as implicit base, uploaded layers are reveal tops
+            if (scene.revealLayers && scene.revealLayers.length >= 1 && scene.revealEffect) {
                 var rlSorted = scene.revealLayers.slice().sort(function (a, b) { return a.order - b.order; });
                 var eff = scene.revealEffect;
+                var contentBelow = eff.contentPosition === 'below';
                 html += '    <div class="cne-reveal-container" data-reveal-type="' + esc(eff.type) + '"';
                 html += ' data-reveal-radius="' + (parseInt(eff.radius) || 120) + '"';
                 html += ' data-reveal-feather="' + (parseInt(eff.feather) || 40) + '"';
@@ -673,7 +674,7 @@ window.ArbelCinematicCompiler = (function () {
                 html += ' data-reveal-invert="' + (eff.invert ? 'true' : 'false') + '"';
                 html += '>\n';
                 rlSorted.forEach(function (layer, li) {
-                    var cls = 'cne-reveal-layer' + (li === 0 ? ' cne-reveal-base' : ' cne-reveal-top');
+                    var cls = 'cne-reveal-layer cne-reveal-top';
                     var src = layer.dataUrl;
                     if (layer.mediaType === 'video') {
                         html += '      <div class="' + cls + '" data-layer="' + li + '">';
@@ -687,6 +688,13 @@ window.ArbelCinematicCompiler = (function () {
                     }
                 });
                 html += '    </div>\n';
+                // If content below, mark the scene so elements get lower z-index
+                if (contentBelow) {
+                    html = html.replace(
+                        'data-scene-id="' + esc(scene.id) + '"',
+                        'data-scene-id="' + esc(scene.id) + '" data-content-below="true"'
+                    );
+                }
             }
 
             (scene.elements || []).forEach(function (el) {
@@ -1009,11 +1017,12 @@ window.ArbelCinematicCompiler = (function () {
 
         // Hover Reveal Layer styles
         css += '/* Hover Reveal Layers */\n';
-        css += '.cne-reveal-container { position: absolute; inset: 0; z-index: 0; overflow: hidden; cursor: none; }\n';
+        css += '.cne-reveal-container { position: absolute; inset: 0; z-index: 2; overflow: hidden; cursor: none; }\n';
         css += '.cne-reveal-layer { position: absolute; inset: 0; width: 100%; height: 100%; }\n';
-        css += '.cne-reveal-base { z-index: 0; }\n';
         css += '.cne-reveal-top { z-index: 1; }\n';
-        css += '.cne-reveal-cursor { position: fixed; pointer-events: none; z-index: 9999; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%,-50%); transition: opacity 0.3s; mix-blend-mode: difference; }\n\n';
+        css += '.cne-reveal-cursor { position: fixed; pointer-events: none; z-index: 9999; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%,-50%); transition: opacity 0.3s; mix-blend-mode: difference; }\n';
+        css += '[data-content-below="true"] .cne-element { z-index: 0 !important; }\n';
+        css += '[data-content-below="true"] .cne-reveal-container { z-index: 2; }\n\n';
 
         // Hero on-load entrance animation (CSS, not scroll-dependent)
         // NOTE: Must NOT animate 'transform' — it would override GSAP xPercent/yPercent centering

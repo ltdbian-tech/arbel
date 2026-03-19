@@ -1624,6 +1624,18 @@
     border-color: rgba(255,107,107,0.3);
     background: rgba(255,107,107,0.08);
 }
+.cne-reveal-layer-item--locked {
+    cursor: default;
+    opacity: 0.7;
+    border-style: dashed;
+}
+.cne-reveal-layer-item--locked:hover {
+    border-color: var(--border);
+    background: rgba(255,255,255,0.03);
+}
+.cne-reveal-layer-item--content {
+    border-color: rgba(108,92,231,0.2);
+}
 
 /* Effect type grid */
 .cne-reveal-effect-grid {
