@@ -972,6 +972,11 @@ window.ArbelCinematicCompiler = (function () {
         css += '  .cne-nav-links { display: none; }\n';
         css += '  .cne-element { font-size: 0.85em; }\n';
         css += '  .cne-scene { min-height: 80vh; }\n';
+        css += '}\n';
+        css += '@media (max-width: 480px) {\n';
+        css += '  .cne-element { font-size: 0.78em; }\n';
+        css += '  .cne-scene { min-height: 75vh; }\n';
+        css += '  .cne-nav-logo { font-size: 1rem; }\n';
         css += '}\n\n';
 
         // Form element styles

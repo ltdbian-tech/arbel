@@ -111,32 +111,35 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /**
-     * Auto-generate responsive overrides for elements that have none.
-     * Called when switching to tablet or mobile for the first time.
+     * Auto-generate responsive overrides for elements — template-aware.
+     * Knows how to stack multi-column layouts (stats, featureGrid, splitMedia)
+     * vertically on mobile and adjust positioning/sizes for tablet.
      */
     function _autoResponsive(device) {
         var scenes = _scenes;
         var changed = false;
+        var isMobile = (device === 'mobile');
+        var scale = isMobile ? 0.6 : 0.85;
+
         scenes.forEach(function (scene) {
+            var tplId = scene.template || '';
             (scene.elements || []).forEach(function (el) {
                 if (!el.style) return;
                 var bucket = (device === 'tablet') ? el.tabletStyle : el.mobileStyle;
-                // Skip if user already has overrides set
                 if (bucket && Object.keys(bucket).length > 0) return;
 
                 var s = el.style;
                 var overrides = {};
-                var isMobile = (device === 'mobile');
-                var scale = isMobile ? 0.65 : 0.85;
+                var base = el.id.replace(/-[^-]+$/, '');
 
-                // Scale font sizes
+                // ─── Scale font sizes ───
                 if (s.fontSize) {
                     var fs = String(s.fontSize);
                     var vwMatch = fs.match(/^([\d.]+)\s*vw$/);
                     var pxMatch = fs.match(/^([\d.]+)\s*px$/);
                     var remMatch = fs.match(/^([\d.]+)\s*rem$/);
                     if (vwMatch) {
-                        overrides.fontSize = (parseFloat(vwMatch[1]) * (isMobile ? 1.6 : 1.15)).toFixed(1) + 'vw';
+                        overrides.fontSize = (parseFloat(vwMatch[1]) * (isMobile ? 1.8 : 1.15)).toFixed(1) + 'vw';
                     } else if (pxMatch) {
                         overrides.fontSize = Math.round(parseFloat(pxMatch[1]) * scale) + 'px';
                     } else if (remMatch) {
@@ -144,67 +147,134 @@ window.ArbelCinematicEditor = (function () {
                     }
                 }
 
-                // Parse width value to percentage for comparison
-                var wStr = String(s.width || '');
-                var wPct = wStr.match(/^([\d.]+)\s*%$/) ? parseFloat(wStr) : -1;
-                var wPx = wStr.match(/^([\d.]+)\s*px$/) ? parseFloat(wStr) : -1;
-
-                // Widen narrow elements
+                // ─── MOBILE: Template-specific stacking ───
                 if (isMobile) {
-                    if (wPct > 0 && wPct < 70) {
-                        overrides.width = '88%';
-                        overrides.left = '6%';
-                        // Remove translateX centering if present since we're using left %
-                        if (s.transform && s.transform.indexOf('translateX(-50%)') >= 0) {
-                            overrides.transform = s.transform.replace(/translateX\(-50%\)/g, 'translateX(0)');
-                        } else if (s.transform && s.transform.indexOf('translate(-50%') >= 0) {
-                            overrides.transform = s.transform.replace(/translate\(-50%,/, 'translate(0,');
+                    if (tplId === 'stats') {
+                        if (base === 'stats-heading') { overrides.fontSize = '6.5vw'; }
+                        else if (base === 'stat-1') {
+                            overrides.top = '32%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
+                            overrides.fontSize = '10vw';
+                        } else if (base === 'stat-2') {
+                            overrides.top = '50%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
+                            overrides.fontSize = '10vw';
+                        } else if (base === 'stat-3') {
+                            overrides.top = '68%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
+                            overrides.fontSize = '10vw';
                         }
-                    } else if (wPx > 300) {
-                        overrides.width = '88%';
-                        overrides.left = '6%';
-                        if (s.transform && s.transform.indexOf('translateX(-50%)') >= 0) {
-                            overrides.transform = s.transform.replace(/translateX\(-50%\)/g, 'translateX(0)');
-                        } else if (s.transform && s.transform.indexOf('translate(-50%') >= 0) {
-                            overrides.transform = s.transform.replace(/translate\(-50%,/, 'translate(0,');
+                    } else if (tplId === 'featureGrid') {
+                        if (base === 'fg-title') { overrides.fontSize = '6.5vw'; }
+                        else if (base === 'fg-card1') { overrides.top = '16%'; overrides.left = '6%'; overrides.width = '88%'; overrides.height = '20%'; }
+                        else if (base === 'fg-c1-title') { overrides.top = '19%'; overrides.left = '10%'; overrides.width = '80%'; }
+                        else if (base === 'fg-c1-desc') { overrides.top = '25%'; overrides.left = '10%'; overrides.width = '80%'; }
+                        else if (base === 'fg-card2') { overrides.top = '40%'; overrides.left = '6%'; overrides.width = '88%'; overrides.height = '20%'; }
+                        else if (base === 'fg-c2-title') { overrides.top = '43%'; overrides.left = '10%'; overrides.width = '80%'; }
+                        else if (base === 'fg-c2-desc') { overrides.top = '49%'; overrides.left = '10%'; overrides.width = '80%'; }
+                        else if (base === 'fg-card3') { overrides.top = '64%'; overrides.left = '6%'; overrides.width = '88%'; overrides.height = '20%'; }
+                        else if (base === 'fg-c3-title') { overrides.top = '67%'; overrides.left = '10%'; overrides.width = '80%'; }
+                        else if (base === 'fg-c3-desc') { overrides.top = '73%'; overrides.left = '10%'; overrides.width = '80%'; }
+                    } else if (tplId === 'splitMedia') {
+                        if (base === 'split-title') { overrides.top = '8%'; overrides.left = '6%'; overrides.width = '88%'; overrides.fontSize = '7vw'; }
+                        else if (base === 'split-desc') { overrides.top = '20%'; overrides.left = '6%'; overrides.width = '88%'; }
+                        else if (base === 'split-media') { overrides.top = '42%'; overrides.left = '6%'; overrides.width = '88%'; overrides.right = 'auto'; overrides.height = '50%'; }
+                    } else if (tplId === 'cardStack') {
+                        if (base === 'cs-card1') { overrides.left = '6%'; overrides.width = '88%'; }
+                        else if (base === 'cs-card2') { overrides.left = '4%'; overrides.width = '92%'; }
+                        else if (base === 'cs-card3') { overrides.left = '2%'; overrides.width = '96%'; }
+                        else if (base === 'cs-title') { overrides.width = '80%'; }
+                        else if (base === 'cs-desc') { overrides.width = '75%'; }
+                    } else if (tplId === 'hero' || tplId === 'gradientHero') {
+                        if (base === 'hero-title' || base === 'gh-title') { overrides.width = '90%'; overrides.fontSize = '10vw'; }
+                        else if (base === 'hero-sub' || base === 'gh-sub') { overrides.width = '85%'; }
+                        else if (base === 'gh-tag') { overrides.fontSize = '2.5vw'; }
+                    } else if (tplId === 'testimonial') {
+                        if (base === 'tst-quote') { overrides.width = '85%'; overrides.left = '7.5%'; overrides.fontSize = '5vw'; }
+                        else if (base === 'tst-bg') { overrides.width = '300px'; overrides.height = '300px'; }
+                    } else if (tplId === 'ctaSection') {
+                        if (base === 'cta-heading') { overrides.width = '90%'; overrides.fontSize = '7vw'; }
+                        else if (base === 'cta-sub') { overrides.width = '85%'; }
+                        else if (base === 'cta-glow') { overrides.width = '250px'; overrides.height = '250px'; }
+                    } else if (tplId === 'marquee') {
+                        if (base === 'mrq-line1' || base === 'mrq-line2') { overrides.fontSize = '12vw'; }
+                        else if (base === 'mrq-center') { overrides.fontSize = '5vw'; overrides.width = '85%'; }
+                    } else if (tplId === 'bigText') {
+                        if (base === 'bt-word1' || base === 'bt-word2' || base === 'bt-word3') { overrides.fontSize = '16vw'; }
+                        else if (base === 'bt-overlay') { overrides.fontSize = '5vw'; overrides.width = '85%'; }
+                    } else if (tplId === 'imageReveal') {
+                        if (base === 'imgr-frame') { overrides.left = '4%'; overrides.width = '92%'; }
+                        else if (base === 'imgr-title') { overrides.fontSize = '6vw'; }
+                    } else if (tplId === 'showcase') {
+                        if (base === 'showcase-item') { overrides.left = '5%'; overrides.width = '90%'; }
+                        else if (base === 'showcase-title') { overrides.fontSize = '5.5vw'; }
+                    } else {
+                        // Generic mobile: widen narrow elements
+                        var wStr = String(s.width || '');
+                        var wPct = wStr.match(/^([\d.]+)\s*%$/) ? parseFloat(wStr) : -1;
+                        var wPx = wStr.match(/^([\d.]+)\s*px$/) ? parseFloat(wStr) : -1;
+                        if (wPct > 0 && wPct < 70) {
+                            overrides.width = '90%'; overrides.left = '5%';
+                            if (s.transform && s.transform.indexOf('translateX(-50%)') >= 0) {
+                                overrides.transform = s.transform.replace(/translateX\(-50%\)/g, 'translateX(0)');
+                            } else if (s.transform && s.transform.indexOf('translate(-50%') >= 0) {
+                                overrides.transform = s.transform.replace(/translate\(-50%,/, 'translate(0,');
+                            }
+                        } else if (wPx > 300) {
+                            overrides.width = '90%'; overrides.left = '5%';
                         }
+                        if (s.right && !overrides.left) {
+                            overrides.right = 'auto'; overrides.left = '5%'; overrides.width = '90%';
+                        }
+                        var leftStr = String(s.left || '');
+                        var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
+                        if (leftPx && parseFloat(leftPx[1]) > 200) { overrides.left = '5%'; }
+                        var topStr = String(s.top || '');
+                        var topPx = topStr.match(/^([\d.]+)\s*px$/);
+                        if (topPx && parseFloat(topPx[1]) > 600) { overrides.top = Math.round(parseFloat(topPx[1]) * 0.5) + 'px'; }
                     }
-                } else {
-                    // tablet
-                    if (wPct > 0 && wPct < 45) {
-                        overrides.width = Math.min(wPct * 1.4, 80).toFixed(0) + '%';
-                    } else if (wPx > 500) {
-                        overrides.width = '75%';
+                    // Scale down large padding for mobile
+                    if (s.padding) {
+                        var pad = String(s.padding);
+                        var padPx = pad.match(/^([\d.]+)\s*px$/);
+                        if (padPx && parseFloat(padPx[1]) > 20) {
+                            overrides.padding = Math.round(parseFloat(padPx[1]) * 0.6) + 'px';
+                        }
                     }
                 }
-
-                // Scale down large padding/margins for mobile
-                if (isMobile && s.padding) {
-                    var pad = String(s.padding);
-                    var padPx = pad.match(/^([\d.]+)\s*px$/);
-                    if (padPx && parseFloat(padPx[1]) > 20) {
-                        overrides.padding = Math.round(parseFloat(padPx[1]) * 0.6) + 'px';
-                    }
-                }
-
-                // Reposition absolute elements with pixel left/top that would overflow
-                if (isMobile) {
-                    var leftStr = String(s.left || '');
-                    var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
-                    if (leftPx && parseFloat(leftPx[1]) > 200) {
-                        overrides.left = '5%';
-                    }
-                    var topStr = String(s.top || '');
-                    var topPx = topStr.match(/^([\d.]+)\s*px$/);
-                    if (topPx && parseFloat(topPx[1]) > 600) {
-                        overrides.top = Math.round(parseFloat(topPx[1]) * 0.5) + 'px';
-                    }
-                } else {
-                    // tablet: nudge in large left values
-                    var leftStr = String(s.left || '');
-                    var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
-                    if (leftPx && parseFloat(leftPx[1]) > 500) {
-                        overrides.left = Math.round(parseFloat(leftPx[1]) * 0.7) + 'px';
+                // ─── TABLET handling ───
+                else {
+                    if (tplId === 'stats') {
+                        if (base === 'stat-1') { overrides.left = '8%'; overrides.width = '25%'; }
+                        else if (base === 'stat-3') { overrides.left = '60%'; overrides.width = '25%'; }
+                    } else if (tplId === 'featureGrid') {
+                        if (base === 'fg-card1') { overrides.width = '30%'; overrides.left = '2%'; }
+                        else if (base === 'fg-c1-title') { overrides.left = '5%'; overrides.width = '24%'; }
+                        else if (base === 'fg-c1-desc') { overrides.left = '5%'; overrides.width = '24%'; }
+                        else if (base === 'fg-card2') { overrides.width = '30%'; overrides.left = '35%'; }
+                        else if (base === 'fg-c2-title') { overrides.left = '38%'; overrides.width = '24%'; }
+                        else if (base === 'fg-c2-desc') { overrides.left = '38%'; overrides.width = '24%'; }
+                        else if (base === 'fg-card3') { overrides.width = '30%'; overrides.left = '68%'; }
+                        else if (base === 'fg-c3-title') { overrides.left = '71%'; overrides.width = '24%'; }
+                        else if (base === 'fg-c3-desc') { overrides.left = '71%'; overrides.width = '24%'; }
+                    } else if (tplId === 'splitMedia') {
+                        if (base === 'split-title') { overrides.width = '42%'; }
+                        else if (base === 'split-desc') { overrides.width = '40%'; }
+                        else if (base === 'split-media') { overrides.width = '38%'; }
+                    } else {
+                        var wStr = String(s.width || '');
+                        var wPct = wStr.match(/^([\d.]+)\s*%$/) ? parseFloat(wStr) : -1;
+                        var wPx = wStr.match(/^([\d.]+)\s*px$/) ? parseFloat(wStr) : -1;
+                        if (wPct > 0 && wPct < 45) {
+                            overrides.width = Math.min(wPct * 1.3, 80).toFixed(0) + '%';
+                        } else if (wPx > 500) {
+                            overrides.width = '75%';
+                        }
+                        var leftStr = String(s.left || '');
+                        var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
+                        if (leftPx && parseFloat(leftPx[1]) > 500) {
+                            overrides.left = Math.round(parseFloat(leftPx[1]) * 0.7) + 'px';
+                        }
                     }
                 }
 
@@ -4904,45 +4974,108 @@ window.ArbelCinematicEditor = (function () {
         scene.bg3dSpeed = bg3d.speed;
     }
 
-    /* Apply accent color tinting into element styles for richer look */
+    /* Apply accent color tinting, gradient text, glow effects for premium look */
     function _tintSceneElements(scene, palette) {
         scene.elements.forEach(function (el) {
             if (!el.style) return;
-            // Tint stat numbers with accent colors
             var base = el.id.replace(/-[^-]+$/, '');
-            if (base === 'stat-1') el.style.color = palette.primary;
-            else if (base === 'stat-2') el.style.color = palette.secondary;
-            else if (base === 'stat-3') el.style.color = palette.accent2 || palette.secondary;
-            // Tint CTA button gradient
+
+            // ─── Gradient text on hero / gradient hero titles ───
+            if (base === 'hero-title' || base === 'gh-title') {
+                el.style.background = 'linear-gradient(135deg, ' + palette.text + ', ' + palette.primary + ', ' + (palette.accent2 || palette.secondary) + ')';
+                el.style.WebkitBackgroundClip = 'text';
+                el.style.WebkitTextFillColor = 'transparent';
+                el.style.backgroundClip = 'text';
+            }
+            // ─── Text-shadow glow on major headings (non-gradient) ───
+            if (base === 'cta-heading' || base === 'reveal-line1') {
+                el.style.textShadow = '0 0 40px ' + palette.primary + '40, 0 0 80px ' + palette.primary + '20';
+            }
+            // ─── Second reveal line: primary color + glow ───
+            if (base === 'reveal-line2') {
+                el.style.color = palette.primary;
+                el.style.textShadow = '0 0 40px ' + palette.primary + '50';
+            }
+            // ─── Stat numbers with accent colors + glow ───
+            if (base === 'stat-1') {
+                el.style.color = palette.primary;
+                el.style.textShadow = '0 0 30px ' + palette.primary + '60';
+            } else if (base === 'stat-2') {
+                el.style.color = palette.secondary;
+                el.style.textShadow = '0 0 30px ' + palette.secondary + '60';
+            } else if (base === 'stat-3') {
+                el.style.color = palette.accent2 || palette.secondary;
+                el.style.textShadow = '0 0 30px ' + (palette.accent2 || palette.secondary) + '60';
+            }
+            // ─── Stats heading subtle glow ───
+            if (base === 'stats-heading') {
+                el.style.textShadow = '0 0 20px ' + palette.primary + '20';
+            }
+            // ─── CTA button: gradient + glow shadow ───
             if (base === 'cta-btn') {
                 el.style.background = 'linear-gradient(135deg, ' + palette.primary + ', ' + (palette.accent2 || palette.secondary) + ')';
+                el.style.boxShadow = '0 8px 32px ' + palette.primary + '40, 0 0 60px ' + palette.primary + '15';
             }
-            // Tint glow elements
+            // ─── Glow / ambient elements ───
             if (base === 'cta-glow' || base === 'tst-bg') {
                 el.style.background = 'radial-gradient(circle, ' + palette.primary + '33, transparent 70%)';
             }
-            // Tint gradient orbs in gradientHero
+            // ─── Gradient orbs ───
             if (base === 'gh-grad1') {
                 el.style.background = 'radial-gradient(circle, ' + palette.primary + '66, transparent 70%)';
             }
             if (base === 'gh-grad2') {
                 el.style.background = 'radial-gradient(circle, ' + palette.secondary + '4d, transparent 70%)';
             }
-            // Glass cards get subtle accent border
+            // ─── Enhanced glassmorphism on cards ───
             if (base.indexOf('fg-card') !== -1 || base.indexOf('cs-card') !== -1) {
-                el.style.border = '1px solid ' + palette.primary + '18';
+                el.style.border = '1px solid ' + palette.primary + '22';
+                el.style.background = 'rgba(255,255,255,0.03)';
+                el.style.backdropFilter = 'blur(20px)';
+                el.style.boxShadow = '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 ' + palette.primary + '10';
             }
-            // Foreground card gets accent gradient
+            // ─── Front card gets richer gradient ───
             if (base === 'cs-card1') {
                 el.style.background = 'linear-gradient(180deg, ' + palette.primary + '26, rgba(0,0,0,0.3))';
+                el.style.boxShadow = '0 12px 40px rgba(0,0,0,0.4), inset 0 1px 0 ' + palette.primary + '15';
             }
-            // Showcase item accent
+            // ─── Showcase / split / image reveal: accent + depth shadow ───
             if (base === 'showcase-item' || base === 'split-media' || base === 'imgr-frame') {
                 el.style.background = 'linear-gradient(135deg, ' + palette.primary + '4d, ' + palette.secondary + '33)';
-                el.style.border = '1px solid ' + palette.primary + '14';
+                el.style.border = '1px solid ' + palette.primary + '18';
+                el.style.boxShadow = '0 20px 60px ' + palette.primary + '15';
             }
-            // Second reveal line gets primary color
-            if (base === 'reveal-line2') el.style.color = palette.primary;
+            // ─── Subtle glow on subtitles ───
+            if (base === 'hero-sub' || base === 'gh-sub' || base === 'cta-sub') {
+                el.style.textShadow = '0 0 20px ' + palette.primary + '15';
+            }
+            // ─── Feature grid card headings get accent color ───
+            if (base === 'fg-c1-title' || base === 'fg-c2-title' || base === 'fg-c3-title') {
+                el.style.color = palette.primary;
+            }
+            // ─── Testimonial quote gets subtle accent ───
+            if (base === 'tst-quote') {
+                el.style.textShadow = '0 0 30px ' + palette.primary + '15';
+            }
+            // ─── Tags and small labels get accent color ───
+            if (base === 'gh-tag' || base === 'imgr-tag' || base === 'showcase-tag' || base === 'imgr-cat') {
+                el.style.color = palette.primary + 'aa';
+            }
+        });
+    }
+
+    /* Apply subtle parallax depth to decorative / background elements */
+    function _applyParallaxDepth(scene) {
+        scene.elements.forEach(function (el) {
+            var base = el.id.replace(/-[^-]+$/, '');
+            if (base === 'gh-grad1' || base === 'gh-grad2' || base === 'cta-glow' || base === 'tst-bg') {
+                el.parallax = 0.5 + Math.random() * 0.3;
+            }
+            if (base === 'mrq-line1') el.parallax = 0.7;
+            if (base === 'mrq-line2') el.parallax = 1.3;
+            if (base === 'bt-word1' || base === 'bt-word2' || base === 'bt-word3') {
+                el.parallax = 0.6 + Math.random() * 0.3;
+            }
         });
     }
 
@@ -5016,21 +5149,25 @@ window.ArbelCinematicEditor = (function () {
         // Capture existing data before overwrite if keeping it
         var existingData = keepData ? _extractExistingData() : null;
 
-        // Pick a random flow recipe and palette
-        var flow = _pick(_FLOW_RECIPES);
+        // Pick palette
         var palette = _pick(_DESIGN_PALETTES);
 
-        // How many scenes (4-7, based on flow)
-        var sceneCount = 4 + Math.floor(Math.random() * 4); // 4-7
-        sceneCount = Math.min(sceneCount, flow.length);
-        var templates = flow.slice(0, sceneCount);
+        // When keeping data, preserve existing template sequence; otherwise pick random flow
+        var templates;
+        if (keepData && _scenes.length > 0) {
+            templates = _scenes.map(function (s) { return s.template || 'hero'; });
+        } else {
+            var flow = _pick(_FLOW_RECIPES);
+            var sceneCount = 4 + Math.floor(Math.random() * 4); // 4-7
+            sceneCount = Math.min(sceneCount, flow.length);
+            templates = flow.slice(0, sceneCount);
+        }
 
-        // Pick which scenes get 3D backgrounds (2-4 scenes, always the hero + CTA)
-        var bg3dCount = 2 + Math.floor(Math.random() * 3); // 2-4
+        // Pick which scenes get 3D backgrounds (3-5 scenes for more cinematic feel)
+        var bg3dCount = 3 + Math.floor(Math.random() * 3); // 3-5
         bg3dCount = Math.min(bg3dCount, templates.length);
         var bg3dIndices = [0]; // hero always gets one
-        // CTA (last) often gets one too
-        if (templates.length > 2 && Math.random() > 0.3) bg3dIndices.push(templates.length - 1);
+        if (templates.length > 2) bg3dIndices.push(templates.length - 1);
         var otherIndices = _shuffle(templates.map(function (_, i) { return i; }).filter(function (i) { return bg3dIndices.indexOf(i) === -1; }));
         for (var b = 0; bg3dIndices.length < bg3dCount && b < otherIndices.length; b++) {
             bg3dIndices.push(otherIndices[b]);
@@ -5049,8 +5186,8 @@ window.ArbelCinematicEditor = (function () {
             // Pick a different entrance set for every 2 scenes (natural variation)
             var entranceSet = usedEntranceSets[Math.floor(idx / 2) % usedEntranceSets.length];
 
-            // Apply content (skip if keeping data and we have matching data for this template)
-            if (keepData && existingData && existingData.texts[tplId]) {
+            // Restore existing content for ALL matching templates when keeping data
+            if (keepData && existingData) {
                 _restoreExistingData(scene, tplId, existingData);
             } else {
                 _applyContent(scene, tplId, info);
@@ -5059,8 +5196,11 @@ window.ArbelCinematicEditor = (function () {
             // Apply entrance animations
             _applyRandomAnimations(scene, entranceSet);
 
-            // Apply accent tinting
+            // Apply accent tinting (gradient text, glows, depth)
             _tintSceneElements(scene, palette);
+
+            // Apply parallax to decorative background elements
+            _applyParallaxDepth(scene);
 
             // Apply 3D background to selected scenes
             if (bg3dIndices.indexOf(idx) !== -1) {
@@ -5088,6 +5228,10 @@ window.ArbelCinematicEditor = (function () {
         _currentSceneIdx = 0;
         _renderSceneList();
         _selectScene(0, true);
+
+        // Force-generate responsive overrides for the new scenes
+        _autoResponsive('tablet');
+        _autoResponsive('mobile');
     }
 
     /* Shuffle just the effects/animations on existing scenes (keep content) */
@@ -5100,8 +5244,8 @@ window.ArbelCinematicEditor = (function () {
         var bg3dPool = _shuffle(_BG3D_OPTIONS);
         var usedEntranceSets = _shuffle(_ENTRANCE_SETS);
 
-        // Pick 2-4 scenes for 3D backgrounds
-        var bg3dCount = Math.min(2 + Math.floor(Math.random() * 3), _scenes.length);
+        // Pick 3-5 scenes for 3D backgrounds (more cinematic)
+        var bg3dCount = Math.min(3 + Math.floor(Math.random() * 3), _scenes.length);
         var indices = _shuffle(_scenes.map(function (_, i) { return i; }));
         var bg3dIndices = indices.slice(0, bg3dCount);
         // Always include first scene
@@ -5112,8 +5256,11 @@ window.ArbelCinematicEditor = (function () {
             var entranceSet = usedEntranceSets[Math.floor(idx / 2) % usedEntranceSets.length];
             _applyRandomAnimations(scene, entranceSet);
 
-            // Apply accent tinting
+            // Apply accent tinting (gradient text, glows, depth)
             _tintSceneElements(scene, palette);
+
+            // Apply parallax depth to decorative elements
+            _applyParallaxDepth(scene);
 
             // Clear or apply 3D backgrounds
             if (bg3dIndices.indexOf(idx) !== -1) {
@@ -5130,6 +5277,10 @@ window.ArbelCinematicEditor = (function () {
 
         _renderSceneList();
         _selectScene(_currentSceneIdx, true);
+
+        // Regenerate responsive overrides for new styles
+        _autoResponsive('tablet');
+        _autoResponsive('mobile');
     }
 
     /* ═══ Effects Presets — One-click lively combos ═══ */
@@ -5212,6 +5363,7 @@ window.ArbelCinematicEditor = (function () {
         _scenes.forEach(function (scene, idx) {
             _applyRandomAnimations(scene, preset.animations);
             _tintSceneElements(scene, palette);
+            _applyParallaxDepth(scene);
             // Apply 3D to first scene and every other scene
             if (idx === 0 || idx % 2 === 0) {
                 _apply3DBackground(scene, preset.bg3d, palette);
@@ -5222,6 +5374,10 @@ window.ArbelCinematicEditor = (function () {
 
         _renderSceneList();
         _selectScene(_currentSceneIdx, true);
+
+        // Regenerate responsive overrides
+        _autoResponsive('tablet');
+        _autoResponsive('mobile');
     }
 
     function _showEffectsMenu(anchorEl) {
