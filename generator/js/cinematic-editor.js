@@ -6474,7 +6474,7 @@ window.ArbelCinematicEditor = (function () {
             'window.parent.postMessage({type:"arbel-rotate",id:rotating.el.getAttribute("data-arbel-id"),deg:deg.toFixed(1)},"*");' +
             'return;' +
           '}' +
-          'if(resize){' + +
+          'if(resize){' +
             'var dx=e.clientX-resize.startX,dy=e.clientY-resize.startY;' +
             'var h=resize.handle,nw=resize.origW,nh=resize.origH,nt=resize.origT,nl=resize.origL;' +
             'if(h.indexOf("e")>=0)nw=Math.max(20,resize.origW+dx);' +
