@@ -1493,11 +1493,16 @@ window.ArbelCinematicCompiler = (function () {
         js += '    var mx = -9999, my = -9999, cx = -9999, cy = -9999;\n';
         js += '    var active = false;\n\n';
 
+        // Set initial mask state: non-inverted = hidden, inverted = fully visible
+        js += '    tops.forEach(function(t){\n';
+        js += '      if(!invert) { t.style.webkitMaskImage = "none"; t.style.maskImage = "none"; }\n';
+        js += '    });\n\n';
+
         js += '    container.addEventListener("mouseenter", function(){ active = true; });\n';
         js += '    container.addEventListener("mouseleave", function(){\n';
         js += '      active = false;\n';
         js += '      tops.forEach(function(t){\n';
-        js += '        if(invert) { t.style.webkitMaskImage = "none"; t.style.maskImage = "none"; }\n';
+        js += '        if(!invert) { t.style.webkitMaskImage = "none"; t.style.maskImage = "none"; }\n';
         js += '        else { t.style.webkitMaskImage = ""; t.style.maskImage = ""; }\n';
         js += '      });\n';
         js += '    });\n\n';
