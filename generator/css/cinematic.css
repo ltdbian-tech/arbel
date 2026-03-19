@@ -1522,3 +1522,79 @@
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
 }
+
+/* ─── Hover Reveal Layers Panel ─── */
+.cne-reveal-layer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+}
+.cne-reveal-layer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s;
+}
+.cne-reveal-layer-item:hover {
+    border-color: var(--border-hover);
+}
+.cne-reveal-layer-thumb {
+    width: 48px;
+    height: 32px;
+    border-radius: 4px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.3);
+}
+.cne-reveal-layer-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.cne-reveal-layer-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--fg2);
+}
+.cne-reveal-layer-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+.cne-range {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+}
+.cne-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--fg2);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.cne-range::-webkit-slider-thumb:hover {
+    background: var(--fg);
+}
+.cne-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: var(--fg2);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+}

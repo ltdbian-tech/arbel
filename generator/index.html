@@ -2741,6 +2741,64 @@
                         </div>
                     </div>
 
+                    <!-- Hover Reveal Layers -->
+                    <div class="cne-section-label">HOVER REVEAL LAYERS</div>
+                    <p class="cne-hint" style="margin-bottom:6px">Stack images/videos that reveal on hover with a cursor-driven mask effect.</p>
+
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <label class="cne-upload-btn" id="cneRevealAddLayer">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                                Add Layer (Image or Video)
+                                <input type="file" accept="image/*,video/mp4,video/webm" id="cneRevealFileInput" style="display:none" multiple>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Layer list (populated dynamically) -->
+                    <div id="cneRevealLayerList" class="cne-reveal-layer-list"></div>
+
+                    <!-- Reveal effect settings (hidden until layers exist) -->
+                    <div id="cneRevealSettings" style="display:none">
+                        <div class="cne-row" style="margin-top:8px">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Reveal Effect</span>
+                                <select class="gen-select" id="cneRevealType">
+                                    <option value="circle">Circle</option>
+                                    <option value="spotlight">Spotlight</option>
+                                    <option value="blob">Blob</option>
+                                    <option value="wipe">Wipe</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Radius: <span id="cneRevealRadiusVal">120</span>px</span>
+                                <input type="range" class="cne-range" id="cneRevealRadius" min="40" max="400" value="120">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Feather: <span id="cneRevealFeatherVal">40</span>px</span>
+                                <input type="range" class="cne-range" id="cneRevealFeather" min="0" max="150" value="40">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Follow Speed: <span id="cneRevealSpeedVal">0.15</span>s</span>
+                                <input type="range" class="cne-range" id="cneRevealSpeed" min="0" max="50" value="15">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                                    <input type="checkbox" id="cneRevealInvert">
+                                    <span class="cne-hint mono">Invert (hide on hover instead)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="cne-section-label">CUSTOM CODE</div>
                     <p class="cne-hint" style="margin-bottom:6px">Inject custom HTML, CSS, or tracking scripts into the compiled output.</p>
                     <div class="cne-row">

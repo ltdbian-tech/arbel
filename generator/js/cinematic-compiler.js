@@ -651,6 +651,33 @@ window.ArbelCinematicCompiler = (function () {
                 html += ' loading="lazy" title="3D Scene" aria-hidden="true"></iframe>\n';
             }
 
+            // Hover Reveal Layers
+            if (scene.revealLayers && scene.revealLayers.length >= 2 && scene.revealEffect) {
+                var rlSorted = scene.revealLayers.slice().sort(function (a, b) { return a.order - b.order; });
+                var eff = scene.revealEffect;
+                html += '    <div class="cne-reveal-container" data-reveal-type="' + esc(eff.type) + '"';
+                html += ' data-reveal-radius="' + (parseInt(eff.radius) || 120) + '"';
+                html += ' data-reveal-feather="' + (parseInt(eff.feather) || 40) + '"';
+                html += ' data-reveal-speed="' + (parseFloat(eff.speed) || 0.15) + '"';
+                html += ' data-reveal-invert="' + (eff.invert ? 'true' : 'false') + '"';
+                html += '>\n';
+                rlSorted.forEach(function (layer, li) {
+                    var cls = 'cne-reveal-layer' + (li === 0 ? ' cne-reveal-base' : ' cne-reveal-top');
+                    var assetPath = 'assets/reveal/' + layer.id + '_' + layer.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    if (layer.mediaType === 'video') {
+                        html += '      <div class="' + cls + '" data-layer="' + li + '">';
+                        html += '<video autoplay loop muted playsinline src="' + esc(assetPath) + '"';
+                        html += ' style="width:100%;height:100%;object-fit:cover"></video>';
+                        html += '</div>\n';
+                    } else {
+                        html += '      <div class="' + cls + '" data-layer="' + li + '"';
+                        html += ' style="background-image:url(\'' + esc(assetPath) + '\');background-size:cover;background-position:center">';
+                        html += '</div>\n';
+                    }
+                });
+                html += '    </div>\n';
+            }
+
             (scene.elements || []).forEach(function (el) {
                 if (!el.visible) return;
                 var validTags = ['h1','h2','h3','p','span','div','img','video','a','form','section','header','footer','nav','ul','li','ol'];
@@ -968,6 +995,14 @@ window.ArbelCinematicCompiler = (function () {
         css += '@keyframes cne-star-twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }\n';
         css += '.cne-bg3d-grid-line { position: absolute; background: currentColor; opacity: 0.04; }\n';
         css += '.cne-bg3d-vignette { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%); }\n\n';
+
+        // Hover Reveal Layer styles
+        css += '/* Hover Reveal Layers */\n';
+        css += '.cne-reveal-container { position: absolute; inset: 0; z-index: 0; overflow: hidden; cursor: none; }\n';
+        css += '.cne-reveal-layer { position: absolute; inset: 0; width: 100%; height: 100%; }\n';
+        css += '.cne-reveal-base { z-index: 0; }\n';
+        css += '.cne-reveal-top { z-index: 1; }\n';
+        css += '.cne-reveal-cursor { position: fixed; pointer-events: none; z-index: 9999; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%,-50%); transition: opacity 0.3s; mix-blend-mode: difference; }\n\n';
 
         // Hero on-load entrance animation (CSS, not scroll-dependent)
         // NOTE: Must NOT animate 'transform' — it would override GSAP xPercent/yPercent centering
@@ -1397,6 +1432,68 @@ window.ArbelCinematicCompiler = (function () {
         js += '      lastY = y;\n';
         js += '    });\n';
         js += '  }\n';
+
+        // Hover Reveal Layer engine
+        js += '\n  /* Hover Reveal Layers */\n';
+        js += '  document.querySelectorAll(".cne-reveal-container").forEach(function(container){\n';
+        js += '    var type = container.dataset.revealType || "circle";\n';
+        js += '    var radius = parseInt(container.dataset.revealRadius) || 120;\n';
+        js += '    var feather = parseInt(container.dataset.revealFeather) || 40;\n';
+        js += '    var speed = parseFloat(container.dataset.revealSpeed) || 0.15;\n';
+        js += '    var invert = container.dataset.revealInvert === "true";\n';
+        js += '    var tops = container.querySelectorAll(".cne-reveal-top");\n';
+        js += '    if(!tops.length) return;\n\n';
+
+        js += '    var mx = -9999, my = -9999, cx = -9999, cy = -9999;\n';
+        js += '    var active = false;\n\n';
+
+        js += '    container.addEventListener("mouseenter", function(){ active = true; });\n';
+        js += '    container.addEventListener("mouseleave", function(){\n';
+        js += '      active = false;\n';
+        js += '      tops.forEach(function(t){\n';
+        js += '        if(invert) { t.style.webkitMaskImage = "none"; t.style.maskImage = "none"; }\n';
+        js += '        else { t.style.webkitMaskImage = ""; t.style.maskImage = ""; }\n';
+        js += '      });\n';
+        js += '    });\n\n';
+
+        js += '    container.addEventListener("mousemove", function(e){\n';
+        js += '      var rect = container.getBoundingClientRect();\n';
+        js += '      mx = e.clientX - rect.left;\n';
+        js += '      my = e.clientY - rect.top;\n';
+        js += '    });\n\n';
+
+        // rAF loop for smooth following
+        js += '    function tick(){\n';
+        js += '      if(active){\n';
+        js += '        cx += (mx - cx) * Math.min(1, speed * 3);\n';
+        js += '        cy += (my - cy) * Math.min(1, speed * 3);\n';
+        js += '        var mask;\n';
+        js += '        if(type === "circle"){\n';
+        js += '          mask = "radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, transparent " + Math.max(0, radius - feather) + "px, black " + radius + "px)";\n';
+        js += '          if(!invert) mask = "radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, black " + Math.max(0, radius - feather) + "px, transparent " + radius + "px)";\n';
+        js += '        } else if(type === "spotlight"){\n';
+        js += '          var r2 = radius * 1.5;\n';
+        js += '          mask = "radial-gradient(ellipse " + r2 + "px " + (r2 * 0.7) + "px at " + cx + "px " + cy + "px, transparent " + Math.max(0, r2 - feather * 2) + "px, black " + r2 + "px)";\n';
+        js += '          if(!invert) mask = "radial-gradient(ellipse " + r2 + "px " + (r2 * 0.7) + "px at " + cx + "px " + cy + "px, black " + Math.max(0, r2 - feather * 2) + "px, transparent " + r2 + "px)";\n';
+        js += '        } else if(type === "blob"){\n';
+        js += '          var t = Date.now() * 0.002;\n';
+        js += '          var r1 = radius + Math.sin(t * 1.3) * radius * 0.2;\n';
+        js += '          var r2b = radius + Math.cos(t * 0.9) * radius * 0.25;\n';
+        js += '          mask = "radial-gradient(ellipse " + r1 + "px " + r2b + "px at " + cx + "px " + cy + "px, transparent " + Math.max(0, Math.min(r1, r2b) - feather) + "px, black " + Math.max(r1, r2b) + "px)";\n';
+        js += '          if(!invert) mask = "radial-gradient(ellipse " + r1 + "px " + r2b + "px at " + cx + "px " + cy + "px, black " + Math.max(0, Math.min(r1, r2b) - feather) + "px, transparent " + Math.max(r1, r2b) + "px)";\n';
+        js += '        } else if(type === "wipe"){\n';
+        js += '          var pct = Math.max(0, Math.min(100, (cx / container.offsetWidth) * 100));\n';
+        js += '          mask = "linear-gradient(to right, transparent " + Math.max(0, pct - feather / 2) + "%, black " + Math.min(100, pct + feather / 2) + "%)";\n';
+        js += '          if(!invert) mask = "linear-gradient(to right, black " + Math.max(0, pct - feather / 2) + "%, transparent " + Math.min(100, pct + feather / 2) + "%)";\n';
+        js += '        }\n';
+        js += '        if(mask){\n';
+        js += '          tops.forEach(function(t){ t.style.webkitMaskImage = mask; t.style.maskImage = mask; });\n';
+        js += '        }\n';
+        js += '      }\n';
+        js += '      requestAnimationFrame(tick);\n';
+        js += '    }\n';
+        js += '    tick();\n';
+        js += '  });\n\n';
 
         js += '}\n';
         js += '})();\n';
