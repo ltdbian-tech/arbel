@@ -1508,13 +1508,15 @@ window.ArbelCinematicCompiler = (function () {
         js += '    if(!tops.length) return;\n\n';
 
         js += '    var mx = -9999, my = -9999, cx = -9999, cy = -9999;\n';
-        js += '    var active = false;\n\n';
+        js += '    var active = false;\n';
+        js += '    var evtTarget = scene || container;\n';
+        js += '    if(scene) scene.style.cursor = "none";\n\n';
 
         // Initial state handled by CSS (.cne-reveal-top / .cne-reveal-masked has transparent mask by default)
         js += '    var hideMask = "linear-gradient(transparent,transparent)";\n';
 
-        js += '    container.addEventListener("mouseenter", function(){ active = true; });\n';
-        js += '    container.addEventListener("mouseleave", function(){\n';
+        js += '    evtTarget.addEventListener("mouseenter", function(){ active = true; });\n';
+        js += '    evtTarget.addEventListener("mouseleave", function(){\n';
         js += '      active = false;\n';
         js += '      tops.forEach(function(t){\n';
         js += '        if(!invert){ t.style.webkitMaskImage = hideMask; t.style.maskImage = hideMask; }\n';
@@ -1522,7 +1524,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '      });\n';
         js += '    });\n\n';
 
-        js += '    container.addEventListener("mousemove", function(e){\n';
+        js += '    evtTarget.addEventListener("mousemove", function(e){\n';
         js += '      var rect = container.getBoundingClientRect();\n';
         js += '      mx = e.clientX - rect.left;\n';
         js += '      my = e.clientY - rect.top;\n';
