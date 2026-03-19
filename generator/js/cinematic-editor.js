@@ -4951,9 +4951,25 @@ window.ArbelCinematicEditor = (function () {
         }
     }
 
-    /* Apply random scroll animation to each element of a scene — per-scene variety */
-    function _applyRandomAnimations(scene, entranceSet) {
+    /* Apply random scroll animation to each element of a scene — per-scene variety.
+       sceneIdx: when 0, apply exit-only animations (content starts visible on load). */
+    function _applyRandomAnimations(scene, entranceSet, sceneIdx) {
         scene.elements.forEach(function (el, i) {
+            if (sceneIdx === 0) {
+                // First scene: content must be visible on page load.
+                // Apply exit-only scroll animation (fade out + drift as user scrolls away).
+                var exitDelay = 0.35 + i * 0.04;
+                el.scroll = {
+                    opacity: [1, 1, 0],
+                    y: [0, 0, -60 - i * 15],
+                    start: 0,
+                    end: 0.9
+                };
+                // Add a subtle CSS on-load entrance animation
+                if (!el.style) el.style = {};
+                el.style.animation = 'cne-hero-entrance 0.8s cubic-bezier(0.16,1,0.3,1) ' + (i * 0.12) + 's both';
+                return;
+            }
             var preset = entranceSet[i % entranceSet.length];
             var presetData = ArbelCinematicCompiler.getPreset(preset);
             if (presetData) {
@@ -5254,7 +5270,7 @@ window.ArbelCinematicEditor = (function () {
         _scenes.forEach(function (scene, idx) {
             // Per-scene entrance set variety
             var entranceSet = usedEntranceSets[Math.floor(idx / 2) % usedEntranceSets.length];
-            _applyRandomAnimations(scene, entranceSet);
+            _applyRandomAnimations(scene, entranceSet, idx);
 
             // Apply accent tinting (gradient text, glows, depth)
             _tintSceneElements(scene, palette);
@@ -5361,7 +5377,7 @@ window.ArbelCinematicEditor = (function () {
         }
 
         _scenes.forEach(function (scene, idx) {
-            _applyRandomAnimations(scene, preset.animations);
+            _applyRandomAnimations(scene, preset.animations, idx);
             _tintSceneElements(scene, palette);
             _applyParallaxDepth(scene);
             // Apply 3D to first scene and every other scene

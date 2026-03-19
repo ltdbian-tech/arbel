@@ -966,6 +966,9 @@ window.ArbelCinematicCompiler = (function () {
         css += '@keyframes cne-star-twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }\n';
         css += '.cne-bg3d-grid-line { position: absolute; background: currentColor; opacity: 0.1; }\n\n';
 
+        // Hero on-load entrance animation (CSS, not scroll-dependent)
+        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; transform: translateY(30px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }\n\n';
+
         // Responsive — generic layout
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
