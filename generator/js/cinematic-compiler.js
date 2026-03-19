@@ -664,32 +664,58 @@ window.ArbelCinematicCompiler = (function () {
 
             // Hover Reveal Layers — scene bg acts as implicit base, uploaded layers are reveal tops
             if (scene.revealLayers && scene.revealLayers.length >= 1 && scene.revealEffect) {
-                var rlSorted = scene.revealLayers.slice().sort(function (a, b) { return a.order - b.order; });
                 var eff = scene.revealEffect;
                 var contentBelow = eff.contentPosition === 'below';
-                html += '    <div class="cne-reveal-container" data-reveal-type="' + esc(eff.type) + '"';
-                html += ' data-reveal-radius="' + (parseInt(eff.radius) || 120) + '"';
-                html += ' data-reveal-feather="' + (parseInt(eff.feather) || 40) + '"';
-                html += ' data-reveal-speed="' + (parseFloat(eff.speed) || 0.15) + '"';
-                html += ' data-reveal-invert="' + (eff.invert ? 'true' : 'false') + '"';
-                html += '>\n';
-                rlSorted.forEach(function (layer, li) {
-                    var cls = 'cne-reveal-layer cne-reveal-top';
-                    var src = layer.dataUrl;
-                    if (layer.mediaType === 'video') {
-                        html += '      <div class="' + cls + '" data-layer="' + li + '">';
-                        html += '<video autoplay loop muted playsinline src="' + esc(src) + '"';
-                        html += ' style="width:100%;height:100%;object-fit:cover"></video>';
-                        html += '</div>\n';
+                // Filter visible layers only
+                var visibleRevealLayers = scene.revealLayers.filter(function (l) { return l.visible !== false; });
+                if (visibleRevealLayers.length >= 1) {
+                    // Use layerOrder for z-index assignment if available
+                    var layerOrder = eff.layerOrder;
+                    var rlSorted;
+                    if (layerOrder) {
+                        rlSorted = [];
+                        layerOrder.forEach(function (lid) {
+                            if (lid === 'bg' || lid === 'content') return;
+                            for (var ri = 0; ri < visibleRevealLayers.length; ri++) {
+                                if (visibleRevealLayers[ri].id === lid) { rlSorted.push(visibleRevealLayers[ri]); break; }
+                            }
+                        });
                     } else {
-                        html += '      <div class="' + cls + '" data-layer="' + li + '"';
-                        html += ' style="background-image:url(\'' + esc(src) + '\');background-size:cover;background-position:center">';
-                        html += '</div>\n';
+                        rlSorted = visibleRevealLayers.slice().sort(function (a, b) { return a.order - b.order; });
                     }
-                });
-                html += '    </div>\n';
-                // If content below, mark the scene so elements get lower z-index
-                if (contentBelow) {
+                    html += '    <div class="cne-reveal-container" data-reveal-type="' + esc(eff.type) + '"';
+                    html += ' data-reveal-radius="' + (parseInt(eff.radius) || 120) + '"';
+                    html += ' data-reveal-feather="' + (parseInt(eff.feather) || 40) + '"';
+                    html += ' data-reveal-speed="' + (parseFloat(eff.speed) || 0.15) + '"';
+                    html += ' data-reveal-invert="' + (eff.invert ? 'true' : 'false') + '"';
+                    html += '>\n';
+                    rlSorted.forEach(function (layer, li) {
+                        var cls = 'cne-reveal-layer cne-reveal-top';
+                        var src = layer.dataUrl;
+                        if (layer.mediaType === 'video') {
+                            html += '      <div class="' + cls + '" data-layer="' + li + '">';
+                            html += '<video autoplay loop muted playsinline src="' + esc(src) + '"';
+                            html += ' style="width:100%;height:100%;object-fit:cover"></video>';
+                            html += '</div>\n';
+                        } else {
+                            html += '      <div class="' + cls + '" data-layer="' + li + '"';
+                            html += ' style="background-image:url(\'' + esc(src) + '\');background-size:cover;background-position:center">';
+                            html += '</div>\n';
+                        }
+                    });
+                    html += '    </div>\n';
+                }
+                // Determine content z-index from layerOrder
+                if (layerOrder) {
+                    var bgIdx = layerOrder.indexOf('bg');
+                    var contentIdx = layerOrder.indexOf('content');
+                    if (contentIdx < bgIdx || contentBelow) {
+                        html = html.replace(
+                            'data-scene-id="' + esc(scene.id) + '"',
+                            'data-scene-id="' + esc(scene.id) + '" data-content-below="true"'
+                        );
+                    }
+                } else if (contentBelow) {
                     html = html.replace(
                         'data-scene-id="' + esc(scene.id) + '"',
                         'data-scene-id="' + esc(scene.id) + '" data-content-below="true"'
@@ -1487,27 +1513,91 @@ window.ArbelCinematicCompiler = (function () {
         js += '      if(active){\n';
         js += '        cx += (mx - cx) * Math.min(1, speed * 3);\n';
         js += '        cy += (my - cy) * Math.min(1, speed * 3);\n';
-        js += '        var mask;\n';
+        js += '        var mask, isMulti = false;\n';
+        js += '        var ci = invert ? "transparent" : "black";\n';
+        js += '        var co = invert ? "black" : "transparent";\n';
         js += '        if(type === "circle"){\n';
-        js += '          mask = "radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, transparent " + Math.max(0, radius - feather) + "px, black " + radius + "px)";\n';
-        js += '          if(!invert) mask = "radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, black " + Math.max(0, radius - feather) + "px, transparent " + radius + "px)";\n';
+        js += '          mask = "radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, " + ci + " " + Math.max(0, radius - feather) + "px, " + co + " " + radius + "px)";\n';
         js += '        } else if(type === "spotlight"){\n';
         js += '          var r2 = radius * 1.5;\n';
-        js += '          mask = "radial-gradient(ellipse " + r2 + "px " + (r2 * 0.7) + "px at " + cx + "px " + cy + "px, transparent " + Math.max(0, r2 - feather * 2) + "px, black " + r2 + "px)";\n';
-        js += '          if(!invert) mask = "radial-gradient(ellipse " + r2 + "px " + (r2 * 0.7) + "px at " + cx + "px " + cy + "px, black " + Math.max(0, r2 - feather * 2) + "px, transparent " + r2 + "px)";\n';
+        js += '          mask = "radial-gradient(ellipse " + r2 + "px " + (r2 * 0.7) + "px at " + cx + "px " + cy + "px, " + ci + " " + Math.max(0, r2 - feather * 2) + "px, " + co + " " + r2 + "px)";\n';
         js += '        } else if(type === "blob"){\n';
         js += '          var t = Date.now() * 0.002;\n';
         js += '          var r1 = radius + Math.sin(t * 1.3) * radius * 0.2;\n';
         js += '          var r2b = radius + Math.cos(t * 0.9) * radius * 0.25;\n';
-        js += '          mask = "radial-gradient(ellipse " + r1 + "px " + r2b + "px at " + cx + "px " + cy + "px, transparent " + Math.max(0, Math.min(r1, r2b) - feather) + "px, black " + Math.max(r1, r2b) + "px)";\n';
-        js += '          if(!invert) mask = "radial-gradient(ellipse " + r1 + "px " + r2b + "px at " + cx + "px " + cy + "px, black " + Math.max(0, Math.min(r1, r2b) - feather) + "px, transparent " + Math.max(r1, r2b) + "px)";\n';
+        js += '          mask = "radial-gradient(ellipse " + r1 + "px " + r2b + "px at " + cx + "px " + cy + "px, " + ci + " " + Math.max(0, Math.min(r1, r2b) - feather) + "px, " + co + " " + Math.max(r1, r2b) + "px)";\n';
         js += '        } else if(type === "wipe"){\n';
         js += '          var pct = Math.max(0, Math.min(100, (cx / container.offsetWidth) * 100));\n';
-        js += '          mask = "linear-gradient(to right, transparent " + Math.max(0, pct - feather / 2) + "%, black " + Math.min(100, pct + feather / 2) + "%)";\n';
-        js += '          if(!invert) mask = "linear-gradient(to right, black " + Math.max(0, pct - feather / 2) + "%, transparent " + Math.min(100, pct + feather / 2) + "%)";\n';
+        js += '          mask = "linear-gradient(to right, " + ci + " " + Math.max(0, pct - feather / 2) + "%, " + co + " " + Math.min(100, pct + feather / 2) + "%)";\n';
+
+        // Venom — organic tendrils radiating from cursor
+        js += '        } else if(type === "venom"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.001;\n';
+        js += '          var masks = [];\n';
+        js += '          var cb = radius * 0.5;\n';
+        js += '          masks.push("radial-gradient(circle " + cb + "px at " + cx + "px " + cy + "px, " + ci + " " + Math.max(0, cb - feather) + "px, " + co + " " + cb + "px)");\n';
+        js += '          for(var k = 0; k < 6; k++){\n';
+        js += '            var angle = k * 1.047 + t * 0.5 + Math.sin(t * 1.5 + k) * 0.4;\n';
+        js += '            for(var j = 1; j <= 5; j++){\n';
+        js += '              var dist = j * radius * 0.22 + Math.sin(t * 2 + k + j * 0.5) * 8;\n';
+        js += '              var sz = Math.max(6, radius * 0.25 * (1.1 - j * 0.18) + Math.sin(t * 3 + k * 0.7 + j) * 4);\n';
+        js += '              var px = cx + Math.cos(angle + Math.sin(t + j * 0.3) * 0.15) * dist;\n';
+        js += '              var py = cy + Math.sin(angle + Math.sin(t + j * 0.3) * 0.15) * dist;\n';
+        js += '              masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.3) + "px, " + co + " " + sz + "px)");\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Particles — scattered dots around cursor
+        js += '        } else if(type === "particles"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.001;\n';
+        js += '          var masks = [];\n';
+        js += '          var cg = radius * 0.25;\n';
+        js += '          masks.push("radial-gradient(circle " + cg + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + cg + "px)");\n';
+        js += '          for(var k = 0; k < 30; k++){\n';
+        js += '            var a = k * 2.399 + t * 0.4 + Math.sin(t * 0.7 + k * 0.5) * 0.6;\n';
+        js += '            var d = (k / 30) * radius * 1.3 + Math.sin(t * 1.5 + k * 1.1) * 12;\n';
+        js += '            var px = cx + Math.cos(a) * d;\n';
+        js += '            var py = cy + Math.sin(a) * d;\n';
+        js += '            var sz = 3 + k * 0.25 + Math.sin(t * 2.5 + k * 0.9) * 2.5;\n';
+        js += '            masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.3) + "px, " + co + " " + sz + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Noise — dissolve/static edge reveal
+        js += '        } else if(type === "noise"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.001;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, " + ci + " " + Math.max(0, radius * 0.25) + "px, " + co + " " + radius + "px)");\n';
+        js += '          for(var k = 0; k < 40; k++){\n';
+        js += '            var a = k * 2.399 + Math.sin(t * 0.8 + k * 0.9) * 0.4;\n';
+        js += '            var d = radius * 0.55 + Math.sin(t * 1.2 + k * 2.1) * radius * 0.55;\n';
+        js += '            var px = cx + Math.cos(a) * d;\n';
+        js += '            var py = cy + Math.sin(a) * d;\n';
+        js += '            var sz = feather * 0.25 + Math.abs(Math.sin(k * 1.7 + t * 0.9)) * feather * 0.35;\n';
+        js += '            masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " 0px, " + co + " " + sz + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
         js += '        }\n';
         js += '        if(mask){\n';
-        js += '          tops.forEach(function(t){ t.style.webkitMaskImage = mask; t.style.maskImage = mask; });\n';
+        js += '          tops.forEach(function(t){\n';
+        js += '            t.style.webkitMaskImage = mask;\n';
+        js += '            t.style.maskImage = mask;\n';
+        js += '            if(isMulti && invert){\n';
+        js += '              t.style.webkitMaskComposite = "source-in";\n';
+        js += '              t.style.maskComposite = "intersect";\n';
+        js += '            } else if(isMulti){\n';
+        js += '              t.style.webkitMaskComposite = "source-over";\n';
+        js += '              t.style.maskComposite = "add";\n';
+        js += '            } else {\n';
+        js += '              t.style.webkitMaskComposite = "";\n';
+        js += '              t.style.maskComposite = "";\n';
+        js += '            }\n';
+        js += '          });\n';
         js += '        }\n';
         js += '      }\n';
         js += '      requestAnimationFrame(tick);\n';

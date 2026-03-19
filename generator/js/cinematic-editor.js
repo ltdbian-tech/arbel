@@ -3625,6 +3625,12 @@ window.ArbelCinematicEditor = (function () {
             if (!scene.revealEffect) {
                 scene.revealEffect = { type: 'circle', radius: 120, feather: 40, speed: 0.15, invert: false };
             }
+            var eff = scene.revealEffect;
+            if (!eff.layerOrder) {
+                eff.layerOrder = ['bg'];
+                scene.revealLayers.forEach(function (l) { eff.layerOrder.push(l.id); });
+                eff.layerOrder.push('content');
+            }
             var pending = files.length;
             for (var i = 0; i < files.length; i++) {
                 (function (file) {
@@ -3634,13 +3640,18 @@ window.ArbelCinematicEditor = (function () {
                     if (!isVideo && file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); pending--; return; }
                     var reader = new FileReader();
                     reader.onload = function (e) {
+                        var newId = 'rl-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
                         scene.revealLayers.push({
-                            id: 'rl-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+                            id: newId,
                             dataUrl: e.target.result,
                             fileName: file.name,
                             mediaType: mediaType,
                             order: scene.revealLayers.length
                         });
+                        // Insert new layer just before 'content' in layerOrder
+                        var contentIdx = eff.layerOrder.indexOf('content');
+                        if (contentIdx === -1) contentIdx = eff.layerOrder.length;
+                        eff.layerOrder.splice(contentIdx, 0, newId);
                         pending--;
                         if (pending <= 0) {
                             _renderRevealLayerList();
@@ -3755,196 +3766,214 @@ window.ArbelCinematicEditor = (function () {
 
         if (layers.length === 0) return;
 
-        // ── Scene Background pseudo-layer (not draggable) ──
-        var bgRow = document.createElement('div');
-        bgRow.className = 'cne-reveal-layer-item cne-reveal-layer-item--locked';
-        var bgHandle = document.createElement('div');
-        bgHandle.className = 'cne-reveal-drag-handle';
-        bgHandle.style.opacity = '0.15';
-        bgHandle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>';
-        var bgThumb = document.createElement('div');
-        bgThumb.className = 'cne-reveal-layer-thumb';
-        var bgSrc = scene.bgVideo || scene.bgImage || '';
-        if (bgSrc) {
-            if (/^data:video/.test(bgSrc)) {
-                var bgVid = document.createElement('video');
-                bgVid.src = bgSrc; bgVid.muted = true;
-                bgVid.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px';
-                bgThumb.appendChild(bgVid);
-            } else {
-                bgThumb.style.backgroundImage = 'url(' + bgSrc + ')';
-                bgThumb.style.backgroundSize = 'cover';
-                bgThumb.style.backgroundPosition = 'center';
-            }
-        } else {
-            bgThumb.style.background = scene.bgColor || 'var(--border)';
+        var eff = scene.revealEffect;
+        if (!eff) return;
+
+        // Ensure layerOrder exists with all entries
+        if (!eff.layerOrder) {
+            eff.layerOrder = ['bg'];
+            layers.slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (l) { eff.layerOrder.push(l.id); });
+            eff.layerOrder.push('content');
         }
-        var bgInfo = document.createElement('div');
-        bgInfo.className = 'cne-reveal-layer-info';
-        var bgLabel = document.createElement('span');
-        bgLabel.className = 'cne-reveal-layer-label';
-        bgLabel.textContent = 'Scene Background';
-        var bgMeta = document.createElement('span');
-        bgMeta.className = 'cne-hint mono';
-        bgMeta.style.fontSize = '0.58rem';
-        bgMeta.textContent = scene.bgVideo ? 'VIDEO · base' : scene.bgImage ? 'IMAGE · base' : 'COLOR · base';
-        bgInfo.appendChild(bgLabel);
-        bgInfo.appendChild(bgMeta);
-        var bgLock = document.createElement('span');
-        bgLock.className = 'cne-hint';
-        bgLock.style.cssText = 'font-size:0.7rem;opacity:0.3;flex-shrink:0';
-        bgLock.textContent = '\uD83D\uDD12';
-        bgRow.appendChild(bgHandle);
-        bgRow.appendChild(bgThumb);
-        bgRow.appendChild(bgInfo);
-        bgRow.appendChild(bgLock);
-        layerList.appendChild(bgRow);
-
-        layers.sort(function (a, b) { return a.order - b.order; });
-
-        layers.forEach(function (layer, idx) {
-            var row = document.createElement('div');
-            row.className = 'cne-reveal-layer-item';
-            row.draggable = true;
-            row.dataset.idx = idx;
-
-            // ── Drag handle ──
-            var handle = document.createElement('div');
-            handle.className = 'cne-reveal-drag-handle';
-            handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" opacity="0.4"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>';
-
-            // ── Drag events for reordering ──
-            row.addEventListener('dragstart', function (e) {
-                _revealDragIdx = idx;
-                row.classList.add('cne-reveal-layer-item--dragging');
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', String(idx));
-            });
-            row.addEventListener('dragend', function () {
-                _revealDragIdx = null;
-                row.classList.remove('cne-reveal-layer-item--dragging');
-                var items = layerList.querySelectorAll('.cne-reveal-layer-item');
-                items.forEach(function (it) { it.classList.remove('cne-reveal-layer-item--over'); });
-            });
-            row.addEventListener('dragover', function (e) {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (_revealDragIdx !== null && _revealDragIdx !== idx) {
-                    row.classList.add('cne-reveal-layer-item--over');
-                }
-            });
-            row.addEventListener('dragleave', function () {
-                row.classList.remove('cne-reveal-layer-item--over');
-            });
-            row.addEventListener('drop', function (e) {
-                e.preventDefault();
-                row.classList.remove('cne-reveal-layer-item--over');
-                if (_revealDragIdx === null || _revealDragIdx === idx) return;
-                _pushUndo();
-                // Reorder: move dragged layer to drop target position
-                var sorted = layers.slice().sort(function (a, b) { return a.order - b.order; });
-                var moved = sorted.splice(_revealDragIdx, 1)[0];
-                sorted.splice(idx, 0, moved);
-                sorted.forEach(function (l, li) { l.order = li; });
-                _revealDragIdx = null;
-                _renderRevealLayerList();
-                _notifyUpdate(true);
-            });
-
-            // ── Thumbnail ──
-            var thumb = document.createElement('div');
-            thumb.className = 'cne-reveal-layer-thumb';
-            if (layer.mediaType === 'video') {
-                var vid = document.createElement('video');
-                vid.src = layer.dataUrl;
-                vid.muted = true;
-                vid.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px';
-                vid.addEventListener('mouseenter', function () { vid.play(); });
-                vid.addEventListener('mouseleave', function () { vid.pause(); vid.currentTime = 0; });
-                thumb.appendChild(vid);
-            } else {
-                thumb.style.backgroundImage = 'url(' + layer.dataUrl + ')';
-                thumb.style.backgroundSize = 'cover';
-                thumb.style.backgroundPosition = 'center';
+        // Ensure all layers appear in layerOrder (handle stale data)
+        var layerMap = {};
+        layers.forEach(function (l) { layerMap[l.id] = l; });
+        layers.forEach(function (l) {
+            if (eff.layerOrder.indexOf(l.id) === -1) {
+                var ci = eff.layerOrder.indexOf('content');
+                if (ci === -1) ci = eff.layerOrder.length;
+                eff.layerOrder.splice(ci, 0, l.id);
             }
-
-            // ── Info ──
-            var info = document.createElement('div');
-            info.className = 'cne-reveal-layer-info';
-            var label = document.createElement('span');
-            label.className = 'cne-reveal-layer-label';
-            label.textContent = 'Reveal Layer ' + (idx + 1);
-            var meta = document.createElement('span');
-            meta.className = 'cne-hint mono';
-            meta.style.fontSize = '0.58rem';
-            var fname = layer.fileName.length > 22 ? layer.fileName.substr(0, 19) + '...' : layer.fileName;
-            meta.textContent = layer.mediaType.toUpperCase() + ' · ' + fname;
-            info.appendChild(label);
-            info.appendChild(meta);
-
-            // ── Delete button ──
-            var delBtn = document.createElement('button');
-            delBtn.className = 'cne-reveal-layer-del';
-            delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-            delBtn.title = 'Remove layer';
-            delBtn.addEventListener('click', function () {
-                _pushUndo();
-                scene.revealLayers.splice(scene.revealLayers.indexOf(layer), 1);
-                scene.revealLayers.forEach(function (l, li) { l.order = li; });
-                if (scene.revealLayers.length < 1) { delete scene.revealEffect; }
-                _renderRevealLayerList();
-                _notifyUpdate(true);
-            });
-
-            row.appendChild(handle);
-            row.appendChild(thumb);
-            row.appendChild(info);
-            row.appendChild(delBtn);
-            layerList.appendChild(row);
         });
-
-        // ── Content (text/elements) pseudo-layer ──
-        var contentPos = (scene.revealEffect && scene.revealEffect.contentPosition) || 'above';
-        var cRow = document.createElement('div');
-        cRow.className = 'cne-reveal-layer-item cne-reveal-layer-item--locked cne-reveal-layer-item--content';
-        var cHandle = document.createElement('div');
-        cHandle.className = 'cne-reveal-drag-handle';
-        cHandle.style.opacity = '0.15';
-        cHandle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>';
-        var cThumb = document.createElement('div');
-        cThumb.className = 'cne-reveal-layer-thumb';
-        cThumb.style.cssText = 'display:flex;align-items:center;justify-content:center;background:rgba(108,92,231,0.15);font-size:0.6rem;color:var(--accent2);font-weight:600';
-        cThumb.textContent = 'Aa';
-        var cInfo = document.createElement('div');
-        cInfo.className = 'cne-reveal-layer-info';
-        var cLabel = document.createElement('span');
-        cLabel.className = 'cne-reveal-layer-label';
-        cLabel.textContent = 'Text & Elements';
-        var cMeta = document.createElement('span');
-        cMeta.className = 'cne-hint mono';
-        cMeta.style.fontSize = '0.58rem';
-        cMeta.textContent = contentPos === 'above' ? 'ABOVE · always visible' : 'BELOW · masked with effect';
-        cInfo.appendChild(cLabel);
-        cInfo.appendChild(cMeta);
-        var cToggle = document.createElement('button');
-        cToggle.className = 'cne-toolbar-btn';
-        cToggle.style.cssText = 'padding:2px 6px;font-size:0.55rem;min-height:auto;flex-shrink:0';
-        cToggle.textContent = contentPos === 'above' ? '\u2B06' : '\u2B07';
-        cToggle.title = contentPos === 'above' ? 'Move below reveal' : 'Move above reveal';
-        cToggle.addEventListener('click', function () {
-            _pushUndo();
-            if (!scene.revealEffect) return;
-            scene.revealEffect.contentPosition = scene.revealEffect.contentPosition === 'below' ? 'above' : 'below';
-            var cp = _qs('#cneRevealContentPos');
-            if (cp) cp.value = scene.revealEffect.contentPosition;
-            _renderRevealLayerList();
-            _notifyUpdate(true);
+        // Remove stale IDs
+        eff.layerOrder = eff.layerOrder.filter(function (id) {
+            return id === 'bg' || id === 'content' || !!layerMap[id];
         });
-        cRow.appendChild(cHandle);
-        cRow.appendChild(cThumb);
-        cRow.appendChild(cInfo);
-        cRow.appendChild(cToggle);
-        layerList.appendChild(cRow);
+        if (eff.layerOrder.indexOf('bg') === -1) eff.layerOrder.unshift('bg');
+        if (eff.layerOrder.indexOf('content') === -1) eff.layerOrder.push('content');
+
+        var order = eff.layerOrder;
+
+        // Render all layers in order (index 0 = bottom, last = top).
+        // Display list shows them top→bottom so the top-most layer appears first.
+        for (var di = order.length - 1; di >= 0; di--) {
+            (function (orderIdx) {
+                var id = order[orderIdx];
+                var isBg = id === 'bg';
+                var isContent = id === 'content';
+                var layer = layerMap[id] || null;
+
+                // Determine visibility
+                var isVisible;
+                if (isBg) isVisible = eff.bgVisible !== false;
+                else if (isContent) isVisible = eff.contentVisible !== false;
+                else isVisible = layer && layer.visible !== false;
+
+                var row = document.createElement('div');
+                row.className = 'cne-reveal-layer-item' + (isVisible ? '' : ' cne-reveal-layer-item--hidden');
+                row.draggable = true;
+                row.dataset.orderIdx = String(orderIdx);
+
+                // ── Drag handle ──
+                var handle = document.createElement('div');
+                handle.className = 'cne-reveal-drag-handle';
+                handle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor" opacity="0.4"><circle cx="3" cy="2" r="1.2"/><circle cx="7" cy="2" r="1.2"/><circle cx="3" cy="7" r="1.2"/><circle cx="7" cy="7" r="1.2"/><circle cx="3" cy="12" r="1.2"/><circle cx="7" cy="12" r="1.2"/></svg>';
+
+                // ── Drag events ──
+                row.addEventListener('dragstart', function (e) {
+                    _revealDragIdx = orderIdx;
+                    row.classList.add('cne-reveal-layer-item--dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', String(orderIdx));
+                });
+                row.addEventListener('dragend', function () {
+                    _revealDragIdx = null;
+                    row.classList.remove('cne-reveal-layer-item--dragging');
+                    layerList.querySelectorAll('.cne-reveal-layer-item').forEach(function (it) {
+                        it.classList.remove('cne-reveal-layer-item--over');
+                    });
+                });
+                row.addEventListener('dragover', function (e) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (_revealDragIdx !== null && _revealDragIdx !== orderIdx) {
+                        row.classList.add('cne-reveal-layer-item--over');
+                    }
+                });
+                row.addEventListener('dragleave', function () {
+                    row.classList.remove('cne-reveal-layer-item--over');
+                });
+                row.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    row.classList.remove('cne-reveal-layer-item--over');
+                    if (_revealDragIdx === null || _revealDragIdx === orderIdx) return;
+                    _pushUndo();
+                    // Move the dragged item to the dropped position in layerOrder
+                    var moved = order.splice(_revealDragIdx, 1)[0];
+                    order.splice(orderIdx, 0, moved);
+                    // Sync .order field on media layers
+                    order.forEach(function (lid, oi) {
+                        if (layerMap[lid]) layerMap[lid].order = oi;
+                    });
+                    _revealDragIdx = null;
+                    _renderRevealLayerList();
+                    _notifyUpdate(true);
+                });
+
+                // ── Thumbnail ──
+                var thumb = document.createElement('div');
+                thumb.className = 'cne-reveal-layer-thumb';
+
+                if (isBg) {
+                    var bgSrc = scene.bgVideo || scene.bgImage || '';
+                    if (bgSrc && /^data:video/.test(bgSrc)) {
+                        var bgVid = document.createElement('video');
+                        bgVid.src = bgSrc; bgVid.muted = true;
+                        bgVid.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px';
+                        thumb.appendChild(bgVid);
+                    } else if (bgSrc) {
+                        thumb.style.backgroundImage = 'url(' + bgSrc + ')';
+                        thumb.style.backgroundSize = 'cover';
+                        thumb.style.backgroundPosition = 'center';
+                    } else {
+                        thumb.style.background = scene.bgColor || 'var(--border)';
+                    }
+                } else if (isContent) {
+                    thumb.style.cssText = 'display:flex;align-items:center;justify-content:center;background:rgba(108,92,231,0.15);font-size:0.6rem;color:var(--accent2);font-weight:600';
+                    thumb.textContent = 'Aa';
+                } else if (layer) {
+                    if (layer.mediaType === 'video') {
+                        var vid = document.createElement('video');
+                        vid.src = layer.dataUrl; vid.muted = true;
+                        vid.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px';
+                        vid.addEventListener('mouseenter', function () { vid.play(); });
+                        vid.addEventListener('mouseleave', function () { vid.pause(); vid.currentTime = 0; });
+                        thumb.appendChild(vid);
+                    } else {
+                        thumb.style.backgroundImage = 'url(' + layer.dataUrl + ')';
+                        thumb.style.backgroundSize = 'cover';
+                        thumb.style.backgroundPosition = 'center';
+                    }
+                }
+
+                // ── Info ──
+                var info = document.createElement('div');
+                info.className = 'cne-reveal-layer-info';
+                var label = document.createElement('span');
+                label.className = 'cne-reveal-layer-label';
+                var meta = document.createElement('span');
+                meta.className = 'cne-hint mono';
+                meta.style.fontSize = '0.58rem';
+
+                if (isBg) {
+                    label.textContent = 'Scene Background';
+                    meta.textContent = scene.bgVideo ? 'VIDEO · base' : scene.bgImage ? 'IMAGE · base' : 'COLOR · base';
+                } else if (isContent) {
+                    label.textContent = 'Text & Elements';
+                    var contentPos = eff.contentPosition || 'above';
+                    meta.textContent = contentPos === 'above' ? 'ABOVE · always visible' : 'BELOW · masked with effect';
+                } else if (layer) {
+                    var layerNum = 0;
+                    for (var li = 0; li < order.length; li++) {
+                        if (order[li] !== 'bg' && order[li] !== 'content') {
+                            layerNum++;
+                            if (order[li] === id) break;
+                        }
+                    }
+                    label.textContent = 'Reveal Layer ' + layerNum;
+                    var fname = layer.fileName.length > 22 ? layer.fileName.substr(0, 19) + '...' : layer.fileName;
+                    meta.textContent = layer.mediaType.toUpperCase() + ' · ' + fname;
+                }
+                info.appendChild(label);
+                info.appendChild(meta);
+
+                // ── Visibility toggle (eye) ──
+                var eyeBtn = document.createElement('button');
+                eyeBtn.className = 'cne-reveal-eye-btn' + (isVisible ? '' : ' cne-reveal-eye-btn--off');
+                eyeBtn.title = isVisible ? 'Hide layer' : 'Show layer';
+                eyeBtn.innerHTML = isVisible
+                    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+                    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+                eyeBtn.addEventListener('click', function () {
+                    _pushUndo();
+                    if (isBg) eff.bgVisible = !isVisible;
+                    else if (isContent) eff.contentVisible = !isVisible;
+                    else if (layer) layer.visible = !isVisible;
+                    _renderRevealLayerList();
+                    _notifyUpdate(true);
+                });
+
+                // ── Delete button (only for uploaded layers) ──
+                var actions = document.createElement('div');
+                actions.className = 'cne-reveal-layer-actions';
+                actions.appendChild(eyeBtn);
+
+                if (!isBg && !isContent && layer) {
+                    var delBtn = document.createElement('button');
+                    delBtn.className = 'cne-reveal-layer-del';
+                    delBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+                    delBtn.title = 'Remove layer';
+                    delBtn.addEventListener('click', function () {
+                        _pushUndo();
+                        var li2 = scene.revealLayers.indexOf(layer);
+                        if (li2 !== -1) scene.revealLayers.splice(li2, 1);
+                        var oi = eff.layerOrder.indexOf(id);
+                        if (oi !== -1) eff.layerOrder.splice(oi, 1);
+                        scene.revealLayers.forEach(function (l, ii) { l.order = ii; });
+                        if (scene.revealLayers.length < 1) { delete scene.revealEffect; }
+                        _renderRevealLayerList();
+                        _notifyUpdate(true);
+                    });
+                    actions.appendChild(delBtn);
+                }
+
+                row.appendChild(handle);
+                row.appendChild(thumb);
+                row.appendChild(info);
+                row.appendChild(actions);
+                layerList.appendChild(row);
+            })(di);
+        }
 
         // Sync effect grid active state
         _syncRevealEffectGrid();
