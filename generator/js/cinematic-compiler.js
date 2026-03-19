@@ -970,7 +970,8 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-bg3d-vignette { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%); }\n\n';
 
         // Hero on-load entrance animation (CSS, not scroll-dependent)
-        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; transform: translateY(30px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }\n\n';
+        // NOTE: Must NOT animate 'transform' — it would override GSAP xPercent/yPercent centering
+        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; filter: blur(8px); } 100% { opacity: 1; filter: blur(0); } }\n\n';
 
         // Responsive — generic layout
         css += '@media (max-width: 768px) {\n';
