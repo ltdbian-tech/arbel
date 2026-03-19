@@ -1488,11 +1488,15 @@ window.ArbelCinematicCompiler = (function () {
         // Hover Reveal Layer engine
         js += '\n  /* Hover Reveal Layers */\n';
         js += '  document.querySelectorAll(".cne-reveal-container").forEach(function(container){\n';
-        js += '    var type = container.dataset.revealType || "circle";\n';
-        js += '    var radius = parseInt(container.dataset.revealRadius) || 120;\n';
-        js += '    var feather = parseInt(container.dataset.revealFeather) || 40;\n';
-        js += '    var speed = parseFloat(container.dataset.revealSpeed) || 0.15;\n';
-        js += '    var invert = container.dataset.revealInvert === "true";\n';
+        js += '    var type, radius, feather, speed, invert;\n';
+        js += '    function readSettings(){\n';
+        js += '      type = container.dataset.revealType || "circle";\n';
+        js += '      radius = parseInt(container.dataset.revealRadius) || 120;\n';
+        js += '      feather = parseInt(container.dataset.revealFeather) || 40;\n';
+        js += '      speed = parseFloat(container.dataset.revealSpeed) || 0.15;\n';
+        js += '      invert = container.dataset.revealInvert === "true";\n';
+        js += '    }\n';
+        js += '    readSettings();\n';
         js += '    var tops = Array.prototype.slice.call(container.querySelectorAll(".cne-reveal-top"));\n';
         js += '    var scene = container.closest(".cne-scene");\n';
         js += '    var contentMasked = container.dataset.contentMasked === "true";\n';
@@ -1532,6 +1536,7 @@ window.ArbelCinematicCompiler = (function () {
 
         // rAF loop for smooth following
         js += '    function tick(){\n';
+        js += '      readSettings();\n';
         js += '      if(active){\n';
         js += '        cx += (mx - cx) * Math.min(1, speed * 3);\n';
         js += '        cy += (my - cy) * Math.min(1, speed * 3);\n';

@@ -3716,7 +3716,8 @@ window.ArbelCinematicEditor = (function () {
                     effectBtns.forEach(function (b) { b.classList.remove('active'); });
                     btn.classList.add('active');
                     scene.revealEffect.type = btn.dataset.effect;
-                    _notifyUpdate(true);
+                    _postRevealSettings(scene);
+                    _notifyUpdate(false);
                 });
             });
         }
@@ -3726,6 +3727,19 @@ window.ArbelCinematicEditor = (function () {
         var revealFeather = _qs('#cneRevealFeather');
         var revealSpeed = _qs('#cneRevealSpeed');
         var revealInvert = _qs('#cneRevealInvert');
+
+        function _postRevealSettings(scene) {
+            if (!scene || !scene.revealEffect || !_iframe) return;
+            var eff = scene.revealEffect;
+            _iframe.contentWindow.postMessage({
+                type: 'arbel-update-reveal',
+                revealType: eff.type || 'circle',
+                revealRadius: String(eff.radius || 120),
+                revealFeather: String(eff.feather || 40),
+                revealSpeed: String(eff.speed || 0.15),
+                revealInvert: String(!!eff.invert)
+            }, '*');
+        }
 
         function _syncRevealEffect() {
             var scene = _scenes[_currentSceneIdx];
@@ -3739,7 +3753,8 @@ window.ArbelCinematicEditor = (function () {
             var fv = _qs('#cneRevealFeatherVal'); if (fv) fv.textContent = scene.revealEffect.feather;
             var sv = _qs('#cneRevealSpeedVal'); if (sv) sv.textContent = scene.revealEffect.speed.toFixed(2);
             _commitBurst('reveal', 600);
-            _notifyUpdate(true);
+            _postRevealSettings(scene);
+            _notifyUpdate(false);
         }
 
         if (revealRadius) revealRadius.addEventListener('input', _syncRevealEffect);
@@ -6650,6 +6665,15 @@ window.ArbelCinematicEditor = (function () {
           'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2){el2.style[d.prop]=d.value;if(primary===el2&&selected.length===1)posHandles(el2)}}' +
           'if(d.type==="arbel-update-text"){var el3=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el3)el3.textContent=d.text}' +
           'if(d.type==="arbel-edit-text"){var el4=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el4&&el4.hasAttribute("data-arbel-edit"))startEdit(el4)}' +
+          'if(d.type==="arbel-update-reveal"){' +
+            'document.querySelectorAll(".cne-reveal-container").forEach(function(c){' +
+              'if(d.revealType)c.dataset.revealType=d.revealType;' +
+              'if(d.revealRadius)c.dataset.revealRadius=d.revealRadius;' +
+              'if(d.revealFeather)c.dataset.revealFeather=d.revealFeather;' +
+              'if(d.revealSpeed)c.dataset.revealSpeed=d.revealSpeed;' +
+              'if(d.revealInvert!==undefined)c.dataset.revealInvert=d.revealInvert;' +
+            '});' +
+          '}' +
         '});' +
         /* ── Reposition handles on scroll ── */
         'window.addEventListener("scroll",function(){if(selected.length===1&&primary&&!resize)posHandles(primary)},true);' +
