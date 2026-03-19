@@ -395,6 +395,17 @@ window.ArbelCinematicCompiler = (function () {
             vidIdx++;
             return 'src="' + assetName + '"';
         });
+
+        // Extract reveal layer images (background-image data URLs)
+        var imgIdx = 0;
+        html = html.replace(/background-image:url\('(data:image\/([a-z0-9+]+);base64,[A-Za-z0-9+\/=]+)'\)/g, function (match, dataUrl, ext) {
+            var fext = ext === 'png' ? 'png' : ext === 'webp' ? 'webp' : ext === 'gif' ? 'gif' : ext === 'svg+xml' ? 'svg' : 'jpg';
+            var assetName = 'assets/reveal/img-' + imgIdx + '.' + fext;
+            files[assetName] = dataUrl;
+            imgIdx++;
+            return "background-image:url('" + assetName + "')";
+        });
+
         files['index.html'] = html;
         return files;
     }
@@ -663,15 +674,15 @@ window.ArbelCinematicCompiler = (function () {
                 html += '>\n';
                 rlSorted.forEach(function (layer, li) {
                     var cls = 'cne-reveal-layer' + (li === 0 ? ' cne-reveal-base' : ' cne-reveal-top');
-                    var assetPath = 'assets/reveal/' + layer.id + '_' + layer.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    var src = layer.dataUrl;
                     if (layer.mediaType === 'video') {
                         html += '      <div class="' + cls + '" data-layer="' + li + '">';
-                        html += '<video autoplay loop muted playsinline src="' + esc(assetPath) + '"';
+                        html += '<video autoplay loop muted playsinline src="' + esc(src) + '"';
                         html += ' style="width:100%;height:100%;object-fit:cover"></video>';
                         html += '</div>\n';
                     } else {
                         html += '      <div class="' + cls + '" data-layer="' + li + '"';
-                        html += ' style="background-image:url(\'' + esc(assetPath) + '\');background-size:cover;background-position:center">';
+                        html += ' style="background-image:url(\'' + esc(src) + '\');background-size:cover;background-position:center">';
                         html += '</div>\n';
                     }
                 });

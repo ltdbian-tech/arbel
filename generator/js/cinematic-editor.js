@@ -5921,25 +5921,22 @@ window.ArbelCinematicEditor = (function () {
             return;
         }
 
+        // Extract inline data URLs to separate asset files for ZIP
+        ArbelCinematicCompiler.extractAssets(files);
+
         var zip = new JSZip();
         Object.keys(files).forEach(function (path) {
-            zip.file(path, files[path]);
-        });
-
-        // Add reveal layer media assets to ZIP
-        (cfg.scenes || []).forEach(function (scene) {
-            if (!scene.revealLayers || scene.revealLayers.length < 2) return;
-            scene.revealLayers.forEach(function (layer) {
-                if (!layer.dataUrl) return;
-                var safeName = layer.fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-                var assetPath = 'assets/reveal/' + layer.id + '_' + safeName;
-                // Convert dataURL to binary
-                var parts = layer.dataUrl.split(',');
+            var content = files[path];
+            // Convert data URL strings to binary for asset files
+            if (typeof content === 'string' && /^data:[^;]+;base64,/.test(content)) {
+                var parts = content.split(',');
                 var raw = atob(parts[1]);
                 var arr = new Uint8Array(raw.length);
                 for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-                zip.file(assetPath, arr, { binary: true });
-            });
+                zip.file(path, arr, { binary: true });
+            } else {
+                zip.file(path, content);
+            }
         });
 
         zip.generateAsync({ type: 'blob' }).then(function (blob) {
