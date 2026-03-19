@@ -6352,15 +6352,15 @@ window.ArbelCinematicEditor = (function () {
             'var p=h.getAttribute("data-rh"),t,l;' +
             'if(p.indexOf("n")>=0)t=r.top-hs;else if(p.indexOf("s")>=0)t=r.bottom-hs;else t=r.top+r.height/2-hs;' +
             'if(p.indexOf("w")>=0)l=r.left-hs;else if(p.indexOf("e")>=0)l=r.right-hs;else l=r.left+r.width/2-hs;' +
-            'h.style.top=t+"px";h.style.left=l+"px";h.style.display="";' +
+            'h.style.top=t+"px";h.style.left=l+"px";h.style.display="block";' +
           '});' +
           'rotHandle.style.left=(r.left+r.width/2-8)+"px";' +
           'rotHandle.style.top=(r.top-30)+"px";' +
-          'rotHandle.style.display="";' +
+          'rotHandle.style.display="block";' +
           'rotLine.style.left=(r.left+r.width/2)+"px";' +
           'rotLine.style.top=(r.top-22)+"px";' +
           'rotLine.style.height="22px";' +
-          'rotLine.style.display="";' +
+          'rotLine.style.display="block";' +
         '}' +
         'rHandles.forEach(function(h){' +
           'h.addEventListener("mousedown",function(e){' +
@@ -6379,7 +6379,7 @@ window.ArbelCinematicEditor = (function () {
           'var r=primary.getBoundingClientRect();' +
           'rotating={el:primary,cx:r.left+r.width/2,cy:r.top+r.height/2,startAngle:0};' +
           'var cur=primary.style.transform||"";' +
-          'var m=cur.match(/rotate\(([\-\d.]+)deg\)/);' +
+          'var m=cur.match(/rotate\\(([\\-\\d.]+)deg\\)/);' +
           'rotating.startDeg=m?parseFloat(m[1]):0;' +
           'rotating.startAngle=Math.atan2(e.clientY-rotating.cy,e.clientX-rotating.cx);' +
           'window.parent.postMessage({type:"arbel-resize-start"},"*");' +
@@ -6434,13 +6434,13 @@ window.ArbelCinematicEditor = (function () {
               'if(dx<bestDx){bestDx=dx;sv=pairsX[k][1];snx=newL+(pairsX[k][1]-pairsX[k][0]);}' +
             '}' +
           '}' +
-          'if(bestDy<=SNAP_DIST){snapH.style.top=sh+"px";snapH.style.display="";}else{snapH.style.display="none";}' +
-          'if(bestDx<=SNAP_DIST){snapV.style.left=sv+"px";snapV.style.display="";}else{snapV.style.display="none";}' +
+          'if(bestDy<=SNAP_DIST){snapH.style.top=sh+"px";snapH.style.display="block";}else{snapH.style.display="none";}' +
+          'if(bestDx<=SNAP_DIST){snapV.style.left=sv+"px";snapV.style.display="block";}else{snapV.style.display="none";}' +
           /* Show center crosshair guides when element center is near viewport center */
           'var cmidY=vt+h/2+(bestDy<=SNAP_DIST?(sny-newT):0);' +
           'var cmidX=vl+w/2+(bestDx<=SNAP_DIST?(snx-newL):0);' +
-          'if(Math.abs(cmidY-vh/2)<=SNAP_DIST){guideH.style.top=(vh/2)+\"px\";guideH.style.display=\"\";}else{guideH.style.display=\"none\";}' +
-          'if(Math.abs(cmidX-vw/2)<=SNAP_DIST){guideV.style.left=(vw/2)+\"px\";guideV.style.display=\"\";}else{guideV.style.display=\"none\";}' +
+          'if(Math.abs(cmidY-vh/2)<=SNAP_DIST){guideH.style.top=(vh/2)+\"px\";guideH.style.display=\"block\";}else{guideH.style.display=\"none\";}' +
+          'if(Math.abs(cmidX-vw/2)<=SNAP_DIST){guideV.style.left=(vw/2)+\"px\";guideV.style.display=\"block\";}else{guideV.style.display=\"none\";}' +
           'return{top:bestDy<=SNAP_DIST?sny:newT,left:bestDx<=SNAP_DIST?snx:newL};' +
         '}' +
         'function hideSnap(){snapH.style.display="none";snapV.style.display="none";guideH.style.display="none";guideV.style.display="none";}' +
@@ -6467,7 +6467,7 @@ window.ArbelCinematicEditor = (function () {
             'var deg=rotating.startDeg+(a-rotating.startAngle)*180/Math.PI;' +
             'if(e.shiftKey)deg=Math.round(deg/15)*15;' +
             'var cur=rotating.el.style.transform||"";' +
-            'cur=cur.replace(/rotate\([^)]+\)/,"").trim();' +
+            'cur=cur.replace(/rotate\\([^)]+\\)/,"").trim();' +
             'rotating.el.style.transform=(cur+" rotate("+deg.toFixed(1)+"deg)").trim();' +
             'posHandles(rotating.el);' +
             'posLbl.textContent=deg.toFixed(1)+"\u00B0";posLbl.classList.add("vis");' +
