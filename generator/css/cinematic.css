@@ -1658,6 +1658,33 @@
     color: var(--fg3);
     border-color: var(--border);
 }
+.cne-reveal-mask-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--fg3);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    opacity: 0.3;
+}
+.cne-reveal-mask-btn:hover {
+    opacity: 0.8;
+    border-color: var(--border);
+}
+.cne-reveal-mask-btn--on {
+    opacity: 0.8;
+    color: var(--accent2);
+}
+.cne-reveal-mask-btn--on:hover {
+    opacity: 1;
+    border-color: rgba(108,92,231,0.3);
+}
 .cne-reveal-layer-item--hidden {
     opacity: 0.4;
 }

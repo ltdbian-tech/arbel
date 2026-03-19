@@ -622,12 +622,30 @@ window.ArbelCinematicCompiler = (function () {
                 }
             }
 
+            // Pre-compute reveal layer z-indexes for the section tag
+            var revealVars = '';
+            var revealSceneAttrs = '';
+            if (scene.revealLayers && scene.revealLayers.length >= 1 && scene.revealEffect) {
+                var rEff = scene.revealEffect;
+                var rOrder = rEff.layerOrder;
+                if (rOrder) {
+                    var cZ = rOrder.indexOf('content') + 1;
+                    var mZ = 0;
+                    rOrder.forEach(function (lid, zi) {
+                        if (lid !== 'bg' && lid !== 'content') { if (zi + 1 > mZ) mZ = zi + 1; }
+                    });
+                    revealVars = '--content-z:' + cZ + ';--reveal-z:' + (mZ || 2) + ';';
+                }
+                revealSceneAttrs = ' data-reveal-invert="' + (rEff.invert ? 'true' : 'false') + '"';
+            }
+
             html += '  <section class="cne-scene"';
             html += ' data-scene-id="' + esc(scene.id) + '"';
             html += ' data-scene-index="' + i + '"';
             html += ' data-pin="' + (scene.pin !== false ? 'true' : 'false') + '"';
             html += ' data-duration="' + (scene.duration || 100) + '"';
-            if (sceneBg) html += ' style="' + sceneBg + '"';
+            html += revealSceneAttrs;
+            if (sceneBg || revealVars) html += ' style="' + sceneBg + revealVars + '"';
             html += '>\n';
 
             // Scene background video
@@ -665,7 +683,6 @@ window.ArbelCinematicCompiler = (function () {
             // Hover Reveal Layers — scene bg acts as implicit base, uploaded layers are reveal tops
             if (scene.revealLayers && scene.revealLayers.length >= 1 && scene.revealEffect) {
                 var eff = scene.revealEffect;
-                var contentBelow = eff.contentPosition === 'below';
                 // Filter visible layers only
                 var visibleRevealLayers = scene.revealLayers.filter(function (l) { return l.visible !== false; });
                 if (visibleRevealLayers.length >= 1) {
@@ -683,14 +700,18 @@ window.ArbelCinematicCompiler = (function () {
                     } else {
                         rlSorted = visibleRevealLayers.slice().sort(function (a, b) { return a.order - b.order; });
                     }
+
                     html += '    <div class="cne-reveal-container" data-reveal-type="' + esc(eff.type) + '"';
                     html += ' data-reveal-radius="' + (parseInt(eff.radius) || 120) + '"';
                     html += ' data-reveal-feather="' + (parseInt(eff.feather) || 40) + '"';
                     html += ' data-reveal-speed="' + (parseFloat(eff.speed) || 0.15) + '"';
                     html += ' data-reveal-invert="' + (eff.invert ? 'true' : 'false') + '"';
+                    html += ' data-content-masked="' + (eff.contentMasked ? 'true' : 'false') + '"';
+                    html += ' data-bg-masked="' + (eff.bgMasked ? 'true' : 'false') + '"';
                     html += '>\n';
                     rlSorted.forEach(function (layer, li) {
-                        var cls = 'cne-reveal-layer cne-reveal-top';
+                        var isMasked = layer.masked !== false;
+                        var cls = 'cne-reveal-layer' + (isMasked ? ' cne-reveal-top' : '');
                         var src = layer.dataUrl;
                         if (layer.mediaType === 'video') {
                             html += '      <div class="' + cls + '" data-layer="' + li + '">';
@@ -704,22 +725,6 @@ window.ArbelCinematicCompiler = (function () {
                         }
                     });
                     html += '    </div>\n';
-                }
-                // Determine content z-index from layerOrder
-                if (layerOrder) {
-                    var bgIdx = layerOrder.indexOf('bg');
-                    var contentIdx = layerOrder.indexOf('content');
-                    if (contentIdx < bgIdx || contentBelow) {
-                        html = html.replace(
-                            'data-scene-id="' + esc(scene.id) + '"',
-                            'data-scene-id="' + esc(scene.id) + '" data-content-below="true"'
-                        );
-                    }
-                } else if (contentBelow) {
-                    html = html.replace(
-                        'data-scene-id="' + esc(scene.id) + '"',
-                        'data-scene-id="' + esc(scene.id) + '" data-content-below="true"'
-                    );
                 }
             }
 
@@ -992,7 +997,7 @@ window.ArbelCinematicCompiler = (function () {
         // Scenes
         css += '.cne-scenes { position: relative; z-index: 1; }\n';
         css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
-        css += '.cne-element { position: absolute; will-change: transform, opacity; z-index: 1; }\n';
+        css += '.cne-element { position: absolute; will-change: transform, opacity; z-index: var(--content-z, 1); }\n';
         css += '.cne-scene-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }\n';
         css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n';
         css += '@media (max-width: 768px) { .cne-scene-bgvid, .cne-el-bgvid { display: none; } }\n\n';
@@ -1043,13 +1048,13 @@ window.ArbelCinematicCompiler = (function () {
 
         // Hover Reveal Layer styles
         css += '/* Hover Reveal Layers */\n';
-        css += '.cne-reveal-container { position: absolute; inset: 0; z-index: 2; overflow: hidden; cursor: none; }\n';
+        css += '.cne-reveal-container { position: absolute; inset: 0; z-index: var(--reveal-z, 2); overflow: hidden; cursor: none; }\n';
         css += '.cne-reveal-layer { position: absolute; inset: 0; width: 100%; height: 100%; }\n';
         css += '.cne-reveal-top { z-index: 1; -webkit-mask-image: linear-gradient(transparent,transparent); mask-image: linear-gradient(transparent,transparent); }\n';
         css += '.cne-reveal-container[data-reveal-invert="true"] .cne-reveal-top { -webkit-mask-image: none; mask-image: none; }\n';
         css += '.cne-reveal-cursor { position: fixed; pointer-events: none; z-index: 9999; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%,-50%); transition: opacity 0.3s; mix-blend-mode: difference; }\n';
-        css += '[data-content-below="true"] .cne-element { z-index: 0 !important; }\n';
-        css += '[data-content-below="true"] .cne-reveal-container { z-index: 2; }\n\n';
+        css += '.cne-reveal-masked { -webkit-mask-image: linear-gradient(transparent,transparent); mask-image: linear-gradient(transparent,transparent); }\n';
+        css += '.cne-scene[data-reveal-invert="true"] .cne-reveal-masked { -webkit-mask-image: none; mask-image: none; }\n\n';
 
         // Hero on-load entrance animation (CSS, not scroll-dependent)
         // NOTE: Must NOT animate 'transform' — it would override GSAP xPercent/yPercent centering
@@ -1488,13 +1493,24 @@ window.ArbelCinematicCompiler = (function () {
         js += '    var feather = parseInt(container.dataset.revealFeather) || 40;\n';
         js += '    var speed = parseFloat(container.dataset.revealSpeed) || 0.15;\n';
         js += '    var invert = container.dataset.revealInvert === "true";\n';
-        js += '    var tops = container.querySelectorAll(".cne-reveal-top");\n';
+        js += '    var tops = Array.prototype.slice.call(container.querySelectorAll(".cne-reveal-top"));\n';
+        js += '    var scene = container.closest(".cne-scene");\n';
+        js += '    var contentMasked = container.dataset.contentMasked === "true";\n';
+        js += '    var bgMasked = container.dataset.bgMasked === "true";\n';
+        js += '    if(contentMasked && scene){\n';
+        js += '      var els = scene.querySelectorAll(".cne-element");\n';
+        js += '      els.forEach(function(el){ tops.push(el); el.classList.add("cne-reveal-masked"); });\n';
+        js += '    }\n';
+        js += '    if(bgMasked && scene){\n';
+        js += '      var bgvid = scene.querySelector(".cne-scene-bgvid");\n';
+        js += '      if(bgvid){ tops.push(bgvid); bgvid.classList.add("cne-reveal-masked"); }\n';
+        js += '    }\n';
         js += '    if(!tops.length) return;\n\n';
 
         js += '    var mx = -9999, my = -9999, cx = -9999, cy = -9999;\n';
         js += '    var active = false;\n\n';
 
-        // Initial state handled by CSS (.cne-reveal-top has transparent mask by default)
+        // Initial state handled by CSS (.cne-reveal-top / .cne-reveal-masked has transparent mask by default)
         js += '    var hideMask = "linear-gradient(transparent,transparent)";\n';
 
         js += '    container.addEventListener("mouseenter", function(){ active = true; });\n';

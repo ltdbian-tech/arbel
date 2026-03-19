@@ -3732,17 +3732,7 @@ window.ArbelCinematicEditor = (function () {
         if (revealSpeed) revealSpeed.addEventListener('input', _syncRevealEffect);
         if (revealInvert) revealInvert.addEventListener('change', _syncRevealEffect);
 
-        // Content position toggle
-        var contentPos = _qs('#cneRevealContentPos');
-        if (contentPos) {
-            contentPos.addEventListener('change', function () {
-                var scene = _scenes[_currentSceneIdx];
-                if (!scene || !scene.revealEffect) return;
-                _pushUndo();
-                scene.revealEffect.contentPosition = contentPos.value;
-                _notifyUpdate(true);
-            });
-        }
+
     }
 
     /* ─── Drag & Drop state for layer reordering ─── */
@@ -3907,11 +3897,11 @@ window.ArbelCinematicEditor = (function () {
 
                 if (isBg) {
                     label.textContent = 'Scene Background';
-                    meta.textContent = scene.bgVideo ? 'VIDEO · base' : scene.bgImage ? 'IMAGE · base' : 'COLOR · base';
+                    var bgMeta = scene.bgVideo ? 'VIDEO' : scene.bgImage ? 'IMAGE' : 'COLOR';
+                    meta.textContent = bgMeta + (eff.bgMasked ? ' · masked' : ' · base');
                 } else if (isContent) {
                     label.textContent = 'Text & Elements';
-                    var contentPos = eff.contentPosition || 'above';
-                    meta.textContent = contentPos === 'above' ? 'ABOVE · always visible' : 'BELOW · masked with effect';
+                    meta.textContent = eff.contentMasked ? 'MASKED · hover effect' : 'ABOVE · always visible';
                 } else if (layer) {
                     var layerNum = 0;
                     for (var li = 0; li < order.length; li++) {
@@ -3943,9 +3933,31 @@ window.ArbelCinematicEditor = (function () {
                     _notifyUpdate(true);
                 });
 
+                // ── Mask toggle ──
+                var isMasked;
+                if (isBg) isMasked = eff.bgMasked === true;
+                else if (isContent) isMasked = eff.contentMasked === true;
+                else isMasked = !layer || layer.masked !== false;
+
+                var maskBtn = document.createElement('button');
+                maskBtn.className = 'cne-reveal-mask-btn' + (isMasked ? ' cne-reveal-mask-btn--on' : '');
+                maskBtn.title = isMasked ? 'Remove hover mask from layer' : 'Apply hover mask to layer';
+                maskBtn.innerHTML = isMasked
+                    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>'
+                    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
+                maskBtn.addEventListener('click', function () {
+                    _pushUndo();
+                    if (isBg) eff.bgMasked = !isMasked;
+                    else if (isContent) eff.contentMasked = !isMasked;
+                    else if (layer) layer.masked = !isMasked;
+                    _renderRevealLayerList();
+                    _notifyUpdate(true);
+                });
+
                 // ── Delete button (only for uploaded layers) ──
                 var actions = document.createElement('div');
                 actions.className = 'cne-reveal-layer-actions';
+                actions.appendChild(maskBtn);
                 actions.appendChild(eyeBtn);
 
                 if (!isBg && !isContent && layer) {
@@ -4019,7 +4031,7 @@ window.ArbelCinematicEditor = (function () {
         var rv = _qs('#cneRevealRadiusVal'); if (rv) rv.textContent = eff.radius;
         var fv = _qs('#cneRevealFeatherVal'); if (fv) fv.textContent = eff.feather;
         var sv = _qs('#cneRevealSpeedVal'); if (sv) sv.textContent = eff.speed.toFixed(2);
-        var cp = _qs('#cneRevealContentPos'); if (cp) cp.value = eff.contentPosition || 'above';
+
 
         _renderRevealLayerList();
     }
