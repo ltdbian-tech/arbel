@@ -640,6 +640,8 @@ window.ArbelCinematicCompiler = (function () {
                 html += ' data-color1="' + bg3dC1 + '" data-color2="' + bg3dC2 + '"';
                 html += ' data-intensity="' + bg3dIntensity + '" data-speed="' + bg3dSpeed + '"';
                 html += ' aria-hidden="true"></div>\n';
+                // Vignette overlay to ensure content readability over 3D backgrounds
+                html += '    <div class="cne-bg3d-vignette" aria-hidden="true"></div>\n';
             }
 
             // Spline 3D embed
@@ -918,7 +920,7 @@ window.ArbelCinematicCompiler = (function () {
         // Scenes
         css += '.cne-scenes { position: relative; z-index: 1; }\n';
         css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
-        css += '.cne-element { position: absolute; will-change: transform, opacity; }\n';
+        css += '.cne-element { position: absolute; will-change: transform, opacity; z-index: 1; }\n';
         css += '.cne-scene-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }\n';
         css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n';
         css += '@media (max-width: 768px) { .cne-scene-bgvid, .cne-el-bgvid { display: none; } }\n\n';
@@ -952,22 +954,29 @@ window.ArbelCinematicCompiler = (function () {
 
         // 3D background effect containers
         css += '/* 3D Background Effects */\n';
-        css += '.cne-bg3d { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }\n';
+        css += '.cne-bg3d { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: 0.55; }\n';
         css += '.cne-bg3d canvas { width: 100%; height: 100%; display: block; }\n';
-        css += '.cne-bg3d-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5; animation: cne-orb-float var(--orb-speed, 12s) ease-in-out infinite alternate; }\n';
+        css += '.cne-bg3d-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: cne-orb-float var(--orb-speed, 12s) ease-in-out infinite alternate; }\n';
         css += '@keyframes cne-orb-float { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -40px) scale(1.15); } 100% { transform: translate(-20px, 30px) scale(0.95); } }\n';
         css += '.cne-bg3d-particle { position: absolute; border-radius: 50%; animation: cne-particle-drift var(--p-speed, 20s) linear infinite; }\n';
         css += '@keyframes cne-particle-drift { 0% { transform: translateY(100vh) scale(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-10vh) scale(1); opacity: 0; } }\n';
-        css += '.cne-bg3d-aurora { position: absolute; inset: 0; opacity: 0.4; background: linear-gradient(180deg, transparent 30%, var(--aurora-c1, #6c5ce7) 50%, var(--aurora-c2, #00cec9) 70%, transparent 90%); filter: blur(60px); animation: cne-aurora-shift var(--aurora-speed, 8s) ease-in-out infinite alternate; }\n';
+        css += '.cne-bg3d-aurora { position: absolute; inset: 0; opacity: 0.25; background: linear-gradient(180deg, transparent 30%, var(--aurora-c1, #6c5ce7) 50%, var(--aurora-c2, #00cec9) 70%, transparent 90%); filter: blur(60px); animation: cne-aurora-shift var(--aurora-speed, 8s) ease-in-out infinite alternate; }\n';
         css += '@keyframes cne-aurora-shift { 0% { transform: translateX(-20%) skewY(-2deg); opacity: 0.3; } 100% { transform: translateX(20%) skewY(2deg); opacity: 0.6; } }\n';
         css += '.cne-bg3d-mesh { position: absolute; inset: -50%; width: 200%; height: 200%; animation: cne-mesh-rotate var(--mesh-speed, 20s) linear infinite; }\n';
         css += '@keyframes cne-mesh-rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }\n';
         css += '.cne-bg3d-star { position: absolute; border-radius: 50%; background: #fff; animation: cne-star-twinkle var(--star-speed, 3s) ease-in-out infinite alternate; }\n';
         css += '@keyframes cne-star-twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }\n';
-        css += '.cne-bg3d-grid-line { position: absolute; background: currentColor; opacity: 0.1; }\n\n';
+        css += '.cne-bg3d-grid-line { position: absolute; background: currentColor; opacity: 0.04; }\n';
+        css += '.cne-bg3d-vignette { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%); }\n\n';
 
         // Hero on-load entrance animation (CSS, not scroll-dependent)
-        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; transform: translateY(30px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }\n\n';
+        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; transform: translateY(30px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }\n';
+
+        // Smooth page-level styles
+        css += 'html { scroll-behavior: smooth; }\n';
+
+        // Scene divider line (subtle accent) between scenes
+        css += '.cne-scene + .cne-scene::before { content: ""; position: absolute; top: 0; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent); z-index: 2; pointer-events: none; }\n\n';
 
         // Responsive — generic layout
         css += '@media (max-width: 768px) {\n';
@@ -1290,7 +1299,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '        p.style.width = pSize + "px"; p.style.height = pSize + "px";\n';
         js += '        p.style.background = Math.random() > 0.5 ? c1 : c2;\n';
         js += '        p.style.left = Math.random() * 100 + "%";\n';
-        js += '        p.style.opacity = 0.3 + Math.random() * 0.5;\n';
+        js += '        p.style.opacity = 0.15 + Math.random() * 0.35;\n';
         js += '        p.style.setProperty("--p-speed", (speedMs + Math.random() * 15) + "s");\n';
         js += '        p.style.animationDelay = -(Math.random() * 30) + "s";\n';
         js += '        container.appendChild(p);\n';
@@ -1353,7 +1362,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '    }\n\n';
 
         js += '    if(type === "wave-grid"){\n';
-        js += '      var cols = 20; var rows = 12;\n';
+        js += '      var cols = 12; var rows = 8;\n';
         js += '      for(var gy = 0; gy < rows; gy++){\n';
         js += '        var line = document.createElement("div");\n';
         js += '        line.className = "cne-bg3d-grid-line";\n';
@@ -1373,7 +1382,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '        container.appendChild(vline);\n';
         js += '      }\n';
         js += '      gsap.to(container.querySelectorAll(".cne-bg3d-grid-line"), {\n';
-        js += '        opacity: 0.3,\n';
+        js += '        opacity: 0.12,\n';
         js += '        duration: speedMs * 0.5,\n';
         js += '        stagger: { each: 0.05, repeat: -1, yoyo: true },\n';
         js += '        ease: "sine.inOut"\n';

@@ -4996,12 +4996,10 @@ window.ArbelCinematicEditor = (function () {
             if (!el.style) return;
             var base = el.id.replace(/-[^-]+$/, '');
 
-            // ─── Gradient text on hero / gradient hero titles ───
+            // ─── Hero / gradient hero titles: solid white + accent glow for legibility ───
             if (base === 'hero-title' || base === 'gh-title') {
-                el.style.background = 'linear-gradient(135deg, ' + palette.text + ', ' + palette.primary + ', ' + (palette.accent2 || palette.secondary) + ')';
-                el.style.WebkitBackgroundClip = 'text';
-                el.style.WebkitTextFillColor = 'transparent';
-                el.style.backgroundClip = 'text';
+                el.style.color = '#ffffff';
+                el.style.textShadow = '0 0 60px ' + palette.primary + '80, 0 0 120px ' + palette.primary + '40, 0 4px 20px rgba(0,0,0,0.5)';
             }
             // ─── Text-shadow glow on major headings (non-gradient) ───
             if (base === 'cta-heading' || base === 'reveal-line1') {
@@ -5027,10 +5025,12 @@ window.ArbelCinematicEditor = (function () {
             if (base === 'stats-heading') {
                 el.style.textShadow = '0 0 20px ' + palette.primary + '20';
             }
-            // ─── CTA button: gradient + glow shadow ───
+            // ─── CTA button: gradient + glow shadow + border ───
             if (base === 'cta-btn') {
                 el.style.background = 'linear-gradient(135deg, ' + palette.primary + ', ' + (palette.accent2 || palette.secondary) + ')';
                 el.style.boxShadow = '0 8px 32px ' + palette.primary + '40, 0 0 60px ' + palette.primary + '15';
+                el.style.border = '1px solid rgba(255,255,255,0.15)';
+                el.style.letterSpacing = '0.02em';
             }
             // ─── Glow / ambient elements ───
             if (base === 'cta-glow' || base === 'tst-bg') {
@@ -5061,8 +5061,12 @@ window.ArbelCinematicEditor = (function () {
                 el.style.border = '1px solid ' + palette.primary + '18';
                 el.style.boxShadow = '0 20px 60px ' + palette.primary + '15';
             }
-            // ─── Subtle glow on subtitles ───
-            if (base === 'hero-sub' || base === 'gh-sub' || base === 'cta-sub') {
+            // ─── Subtitles: legible white with subtle glow ───
+            if (base === 'hero-sub' || base === 'gh-sub') {
+                el.style.color = 'rgba(255,255,255,0.85)';
+                el.style.textShadow = '0 0 30px ' + palette.primary + '40, 0 2px 10px rgba(0,0,0,0.4)';
+            }
+            if (base === 'cta-sub') {
                 el.style.textShadow = '0 0 20px ' + palette.primary + '15';
             }
             // ─── Feature grid card headings get accent color ───
@@ -5076,6 +5080,10 @@ window.ArbelCinematicEditor = (function () {
             // ─── Tags and small labels get accent color ───
             if (base === 'gh-tag' || base === 'imgr-tag' || base === 'showcase-tag' || base === 'imgr-cat') {
                 el.style.color = palette.primary + 'aa';
+            }
+            // ─── All other headings: ensure readability with subtle text shadow ───
+            if (base === 'bt-overlay' || base === 'showcase-title' || base === 'split-title' || base === 'cs-title') {
+                el.style.textShadow = '0 2px 20px rgba(0,0,0,0.4)';
             }
         });
     }
@@ -5091,6 +5099,69 @@ window.ArbelCinematicEditor = (function () {
             if (base === 'mrq-line2') el.parallax = 1.3;
             if (base === 'bt-word1' || base === 'bt-word2' || base === 'bt-word3') {
                 el.parallax = 0.6 + Math.random() * 0.3;
+            }
+        });
+    }
+
+    /* Apply hover effects to interactive elements */
+    function _applyHoverEffects(scene, palette) {
+        scene.elements.forEach(function (el) {
+            var base = el.id.replace(/-[^-]+$/, '');
+
+            // CTA buttons: scale up + lift + glow
+            if (base === 'cta-btn' || base === 'hero-cta') {
+                el.hoverStyle = {
+                    scale: 1.05,
+                    translateY: -3,
+                    boxShadow: '0 12px 40px ' + palette.primary + '60, 0 0 80px ' + palette.primary + '25',
+                    _duration: 0.3
+                };
+            }
+            // Feature grid & card stack cards: lift + border glow
+            if (base.indexOf('fg-card') !== -1 || base.indexOf('cs-card') !== -1) {
+                el.hoverStyle = {
+                    scale: 1.03,
+                    translateY: -6,
+                    boxShadow: '0 16px 48px rgba(0,0,0,0.4), 0 0 30px ' + palette.primary + '20',
+                    _duration: 0.35
+                };
+            }
+            // Showcase / split-media / image-reveal frames
+            if (base === 'showcase-item' || base === 'split-media' || base === 'imgr-frame') {
+                el.hoverStyle = {
+                    scale: 1.02,
+                    boxShadow: '0 24px 64px ' + palette.primary + '25',
+                    _duration: 0.4
+                };
+            }
+            // Nav links: accent color on hover
+            if (base === 'nav-link') {
+                el.hoverStyle = {
+                    color: palette.primary,
+                    _duration: 0.25
+                };
+            }
+            // Nav logo: subtle scale
+            if (base === 'nav-logo') {
+                el.hoverStyle = {
+                    scale: 1.05,
+                    _duration: 0.25
+                };
+            }
+            // Stat numbers: glow up on hover
+            if (base === 'stat-1' || base === 'stat-2' || base === 'stat-3') {
+                el.hoverStyle = {
+                    scale: 1.1,
+                    _duration: 0.3
+                };
+            }
+            // Testimonial card: lift
+            if (base === 'tst-card' || base === 'tst-bg') {
+                el.hoverStyle = {
+                    scale: 1.02,
+                    translateY: -4,
+                    _duration: 0.35
+                };
             }
         });
     }
@@ -5209,14 +5280,17 @@ window.ArbelCinematicEditor = (function () {
                 _applyContent(scene, tplId, info);
             }
 
-            // Apply entrance animations
-            _applyRandomAnimations(scene, entranceSet);
+            // Apply entrance animations (pass idx so scene 0 gets visible-by-default treatment)
+            _applyRandomAnimations(scene, entranceSet, idx);
 
-            // Apply accent tinting (gradient text, glows, depth)
+            // Apply accent tinting (glows, depth, hover effects)
             _tintSceneElements(scene, palette);
 
             // Apply parallax to decorative background elements
             _applyParallaxDepth(scene);
+
+            // Apply hover effects to interactive elements
+            _applyHoverEffects(scene, palette);
 
             // Apply 3D background to selected scenes
             if (bg3dIndices.indexOf(idx) !== -1) {
@@ -5277,6 +5351,9 @@ window.ArbelCinematicEditor = (function () {
 
             // Apply parallax depth to decorative elements
             _applyParallaxDepth(scene);
+
+            // Apply hover effects
+            _applyHoverEffects(scene, palette);
 
             // Clear or apply 3D backgrounds
             if (bg3dIndices.indexOf(idx) !== -1) {
@@ -5380,6 +5457,7 @@ window.ArbelCinematicEditor = (function () {
             _applyRandomAnimations(scene, preset.animations, idx);
             _tintSceneElements(scene, palette);
             _applyParallaxDepth(scene);
+            _applyHoverEffects(scene, palette);
             // Apply 3D to first scene and every other scene
             if (idx === 0 || idx % 2 === 0) {
                 _apply3DBackground(scene, preset.bg3d, palette);
