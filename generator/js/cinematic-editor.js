@@ -463,6 +463,21 @@ window.ArbelCinematicEditor = (function () {
         if (d.type === 'arbel-resize-end') {
             _resizeUndoPushed = false;
         }
+        if (d.type === 'arbel-rotate' && d.id) {
+            var scene = _scenes[_currentSceneIdx];
+            if (scene) {
+                for (var i = 0; i < scene.elements.length; i++) {
+                    if (scene.elements[i].id === d.id) {
+                        var bucket = _getStyleBucket(scene.elements[i]);
+                        var cur = bucket.transform || '';
+                        cur = cur.replace(/rotate\([^)]+\)/, '').trim();
+                        bucket.transform = (cur + ' rotate(' + d.deg + 'deg)').trim();
+                        break;
+                    }
+                }
+            }
+            _notifyUpdate(_activeDevice !== 'desktop');
+        }
         if (d.type === 'arbel-deselect') {
             _iframeTextUndoPushed = false; // reset on deselect
             _selectedElementId = null;
@@ -6282,7 +6297,7 @@ window.ArbelCinematicEditor = (function () {
     /* ─── Overlay script injected into cinematic iframe ─── */
     function _getOverlayScript() {
         return '(function(){' +
-        'var selected=[],primary=null,editing=false,drag=null,resize=null,marquee=null;' +
+        'var selected=[],primary=null,editing=false,drag=null,resize=null,marquee=null,rotating=null;' +
         'var s=document.createElement("style");' +
         's.textContent="' +
           '[data-arbel-id]{cursor:pointer;transition:outline .15s,outline-offset .15s}' +
@@ -6296,17 +6311,28 @@ window.ArbelCinematicEditor = (function () {
           '.arbel-pos-lbl{position:fixed;bottom:8px;right:8px;z-index:99999;background:rgba(0,0,0,.75);color:#fff;' +
           'font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;' +
           'opacity:0;transition:opacity .15s}.arbel-pos-lbl.vis{opacity:1}' +
-          '.arbel-rh{position:fixed;width:8px;height:8px;background:#646cff;border:1px solid #fff;' +
-          'border-radius:1px;z-index:100000;display:none;box-sizing:border-box}' +
+          '.arbel-rh{position:fixed;width:10px;height:10px;background:#fff;border:2px solid #646cff;' +
+          'border-radius:2px;z-index:100000;display:none;box-sizing:border-box}' +
           '.arbel-rh-nw{cursor:nw-resize}.arbel-rh-n{cursor:n-resize}.arbel-rh-ne{cursor:ne-resize}' +
           '.arbel-rh-w{cursor:w-resize}.arbel-rh-e{cursor:e-resize}' +
           '.arbel-rh-sw{cursor:sw-resize}.arbel-rh-s{cursor:s-resize}.arbel-rh-se{cursor:se-resize}' +
+          '.arbel-rot{position:fixed;width:16px;height:16px;background:#fff;border:2px solid #646cff;' +
+          'border-radius:50%;z-index:100000;display:none;cursor:grab;box-sizing:border-box}' +
+          '.arbel-rot-line{position:fixed;width:1px;background:#646cff;z-index:99999;display:none;pointer-events:none}' +
           '.arbel-snap{position:fixed;background:#ff6b35;z-index:99998;pointer-events:none;display:none}' +
           '.arbel-snap-h{height:1px;left:0;right:0}.arbel-snap-v{width:1px;top:0;bottom:0}' +
+          '.arbel-guide{position:fixed;z-index:99997;pointer-events:none;display:none}' +
+          '.arbel-guide-h{height:1px;left:0;right:0;border-top:1px dashed rgba(100,108,255,.35)}' +
+          '.arbel-guide-v{width:1px;top:0;bottom:0;border-left:1px dashed rgba(100,108,255,.35)}' +
           '.arbel-marquee{position:fixed;border:1px dashed #646cff;background:rgba(100,108,255,.08);z-index:99997;pointer-events:none}' +
+          '.cne-reveal-container,.cne-reveal-layer,.cne-reveal-top{pointer-events:none!important}' +
         '";document.head.appendChild(s);' +
         'var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);' +
         'var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";document.body.appendChild(posLbl);' +
+
+        /* ── Center alignment guides (persistent crosshair lines) ── */
+        'var guideH=document.createElement("div");guideH.className="arbel-guide arbel-guide-h";document.body.appendChild(guideH);' +
+        'var guideV=document.createElement("div");guideV.className="arbel-guide arbel-guide-v";document.body.appendChild(guideV);' +
 
         /* ── Resize handles ── */
         'var rHandles=[];' +
@@ -6314,15 +6340,27 @@ window.ArbelCinematicEditor = (function () {
           'var h=document.createElement("div");h.className="arbel-rh arbel-rh-"+p;' +
           'h.setAttribute("data-rh",p);document.body.appendChild(h);rHandles.push(h);' +
         '});' +
+
+        /* ── Rotation handle ── */
+        'var rotHandle=document.createElement("div");rotHandle.className="arbel-rot";document.body.appendChild(rotHandle);' +
+        'var rotLine=document.createElement("div");rotLine.className="arbel-rot-line";document.body.appendChild(rotLine);' +
+
         'function posHandles(el){' +
-          'if(!el){rHandles.forEach(function(h){h.style.display="none"});return}' +
-          'var r=el.getBoundingClientRect(),hs=4;' +
+          'if(!el){rHandles.forEach(function(h){h.style.display="none"});rotHandle.style.display="none";rotLine.style.display="none";return}' +
+          'var r=el.getBoundingClientRect(),hs=5;' +
           'rHandles.forEach(function(h){' +
             'var p=h.getAttribute("data-rh"),t,l;' +
             'if(p.indexOf("n")>=0)t=r.top-hs;else if(p.indexOf("s")>=0)t=r.bottom-hs;else t=r.top+r.height/2-hs;' +
             'if(p.indexOf("w")>=0)l=r.left-hs;else if(p.indexOf("e")>=0)l=r.right-hs;else l=r.left+r.width/2-hs;' +
             'h.style.top=t+"px";h.style.left=l+"px";h.style.display="";' +
           '});' +
+          'rotHandle.style.left=(r.left+r.width/2-8)+"px";' +
+          'rotHandle.style.top=(r.top-30)+"px";' +
+          'rotHandle.style.display="";' +
+          'rotLine.style.left=(r.left+r.width/2)+"px";' +
+          'rotLine.style.top=(r.top-22)+"px";' +
+          'rotLine.style.height="22px";' +
+          'rotLine.style.display="";' +
         '}' +
         'rHandles.forEach(function(h){' +
           'h.addEventListener("mousedown",function(e){' +
@@ -6333,6 +6371,18 @@ window.ArbelCinematicEditor = (function () {
               'origT:primary.offsetTop,origL:primary.offsetLeft};' +
             'window.parent.postMessage({type:"arbel-resize-start"},"*");' +
           '});' +
+        '});' +
+
+        /* ── Rotation handle mousedown ── */
+        'rotHandle.addEventListener("mousedown",function(e){' +
+          'if(selected.length!==1||editing)return;e.stopPropagation();e.preventDefault();' +
+          'var r=primary.getBoundingClientRect();' +
+          'rotating={el:primary,cx:r.left+r.width/2,cy:r.top+r.height/2,startAngle:0};' +
+          'var cur=primary.style.transform||"";' +
+          'var m=cur.match(/rotate\(([\-\d.]+)deg\)/);' +
+          'rotating.startDeg=m?parseFloat(m[1]):0;' +
+          'rotating.startAngle=Math.atan2(e.clientY-rotating.cy,e.clientX-rotating.cx);' +
+          'window.parent.postMessage({type:"arbel-resize-start"},"*");' +
         '});' +
 
         /* ── Click → select ── */
@@ -6364,7 +6414,14 @@ window.ArbelCinematicEditor = (function () {
             'targets.push({t:r.top,m:r.top+r.height/2,b:r.top+r.height,l:r.left,c:r.left+r.width/2,r:r.left+r.width});' +
           '});' +
           'var vw=window.innerWidth,vh=window.innerHeight;' +
+          /* Scene center */
           'targets.push({t:vh/2,m:vh/2,b:vh/2,l:vw/2,c:vw/2,r:vw/2});' +
+          /* Scene edges */
+          'targets.push({t:0,m:0,b:0,l:0,c:0,r:0});' +
+          'targets.push({t:vh,m:vh,b:vh,l:vw,c:vw,r:vw});' +
+          /* Scene quadrant lines */
+          'targets.push({t:vh*0.25,m:vh*0.25,b:vh*0.25,l:vw*0.25,c:vw*0.25,r:vw*0.25});' +
+          'targets.push({t:vh*0.75,m:vh*0.75,b:vh*0.75,l:vw*0.75,c:vw*0.75,r:vw*0.75});' +
           'var sh=null,sv=null,sny=newT,snx=newL;' +
           'var bestDy=SNAP_DIST+1,bestDx=SNAP_DIST+1;' +
           'for(var i=0;i<targets.length;i++){var o=targets[i];' +
@@ -6379,13 +6436,18 @@ window.ArbelCinematicEditor = (function () {
           '}' +
           'if(bestDy<=SNAP_DIST){snapH.style.top=sh+"px";snapH.style.display="";}else{snapH.style.display="none";}' +
           'if(bestDx<=SNAP_DIST){snapV.style.left=sv+"px";snapV.style.display="";}else{snapV.style.display="none";}' +
+          /* Show center crosshair guides when element center is near viewport center */
+          'var cmidY=vt+h/2+(bestDy<=SNAP_DIST?(sny-newT):0);' +
+          'var cmidX=vl+w/2+(bestDx<=SNAP_DIST?(snx-newL):0);' +
+          'if(Math.abs(cmidY-vh/2)<=SNAP_DIST){guideH.style.top=(vh/2)+\"px\";guideH.style.display=\"\";}else{guideH.style.display=\"none\";}' +
+          'if(Math.abs(cmidX-vw/2)<=SNAP_DIST){guideV.style.left=(vw/2)+\"px\";guideV.style.display=\"\";}else{guideV.style.display=\"none\";}' +
           'return{top:bestDy<=SNAP_DIST?sny:newT,left:bestDx<=SNAP_DIST?snx:newL};' +
         '}' +
-        'function hideSnap(){snapH.style.display="none";snapV.style.display="none";}' +
+        'function hideSnap(){snapH.style.display="none";snapV.style.display="none";guideH.style.display="none";guideV.style.display="none";}' +
 
         /* ── Mousedown → start drag or marquee ── */
         'document.addEventListener("mousedown",function(e){' +
-          'if(editing||resize)return;' +
+          'if(editing||resize||rotating)return;' +
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(el&&e.button===0){' +
             'if(selected.indexOf(el)<0){sel(el,e.shiftKey);}' +
@@ -6398,9 +6460,21 @@ window.ArbelCinematicEditor = (function () {
           '}' +
         '},true);' +
 
-        /* ── Mousemove → drag elements, resize, or marquee ── */
+        /* ── Mousemove → drag elements, resize, rotate, or marquee ── */
         'document.addEventListener("mousemove",function(e){' +
-          'if(resize){' +
+          'if(rotating){' +
+            'var a=Math.atan2(e.clientY-rotating.cy,e.clientX-rotating.cx);' +
+            'var deg=rotating.startDeg+(a-rotating.startAngle)*180/Math.PI;' +
+            'if(e.shiftKey)deg=Math.round(deg/15)*15;' +
+            'var cur=rotating.el.style.transform||"";' +
+            'cur=cur.replace(/rotate\([^)]+\)/,"").trim();' +
+            'rotating.el.style.transform=(cur+" rotate("+deg.toFixed(1)+"deg)").trim();' +
+            'posHandles(rotating.el);' +
+            'posLbl.textContent=deg.toFixed(1)+"\u00B0";posLbl.classList.add("vis");' +
+            'window.parent.postMessage({type:"arbel-rotate",id:rotating.el.getAttribute("data-arbel-id"),deg:deg.toFixed(1)},"*");' +
+            'return;' +
+          '}' +
+          'if(resize){' + +
             'var dx=e.clientX-resize.startX,dy=e.clientY-resize.startY;' +
             'var h=resize.handle,nw=resize.origW,nh=resize.origH,nt=resize.origT,nl=resize.origL;' +
             'if(h.indexOf("e")>=0)nw=Math.max(20,resize.origW+dx);' +
@@ -6445,8 +6519,13 @@ window.ArbelCinematicEditor = (function () {
           'window.parent.postMessage({type:"arbel-multi-move",moves:moves},"*");' +
         '});' +
 
-        /* ── Mouseup → end drag, resize, or marquee ── */
+        /* ── Mouseup → end drag, resize, rotate, or marquee ── */
         'document.addEventListener("mouseup",function(e){' +
+          'if(rotating){' +
+            'posLbl.classList.remove("vis");' +
+            'window.parent.postMessage({type:"arbel-resize-end",id:rotating.el.getAttribute("data-arbel-id")},"*");' +
+            'rotating=null;return;' +
+          '}' +
           'if(resize){' +
             'posLbl.classList.remove("vis");hideSnap();' +
             'window.parent.postMessage({type:"arbel-resize-end",id:resize.el.getAttribute("data-arbel-id")},"*");' +
