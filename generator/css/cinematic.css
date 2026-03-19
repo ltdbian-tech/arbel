@@ -663,10 +663,10 @@
 }
 .cne-prop-tab {
     flex: 1;
-    padding: 12px 6px;
+    padding: 12px 4px;
     font-family: var(--font-mono);
-    font-size: 0.58rem;
-    letter-spacing: 0.06em;
+    font-size: 0.56rem;
+    letter-spacing: 0.04em;
     color: var(--fg3);
     background: transparent;
     border: none;
@@ -1524,28 +1524,70 @@
 }
 
 /* ─── Hover Reveal Layers Panel ─── */
+.cne-reveal-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    background: rgba(255,255,255,0.01);
+    transition: all 0.2s;
+    margin-bottom: 12px;
+}
+.cne-reveal-dropzone--active,
+.cne-reveal-dropzone:hover {
+    border-color: var(--accent);
+    background: rgba(108,92,231,0.05);
+}
+.cne-reveal-dropzone--active svg,
+.cne-reveal-dropzone:hover svg { opacity: 0.7 !important; }
+
 .cne-reveal-layer-list {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin-top: 6px;
+    margin-bottom: 12px;
+    min-height: 0;
 }
 .cne-reveal-layer-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 8px;
+    padding: 8px 10px;
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    transition: border-color 0.15s;
+    transition: all 0.15s;
+    cursor: grab;
+    user-select: none;
 }
 .cne-reveal-layer-item:hover {
     border-color: var(--border-hover);
+    background: rgba(255,255,255,0.05);
+}
+.cne-reveal-layer-item--dragging {
+    opacity: 0.4;
+    border-color: var(--accent);
+}
+.cne-reveal-layer-item--over {
+    border-color: var(--accent);
+    background: rgba(108,92,231,0.08);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+.cne-reveal-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    flex-shrink: 0;
+    cursor: grab;
+    color: var(--fg3);
 }
 .cne-reveal-layer-thumb {
-    width: 48px;
-    height: 32px;
+    width: 52px;
+    height: 36px;
     border-radius: 4px;
     overflow: hidden;
     flex-shrink: 0;
@@ -1560,14 +1602,98 @@
 }
 .cne-reveal-layer-label {
     font-size: 0.65rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--fg2);
 }
-.cne-reveal-layer-actions {
+.cne-reveal-layer-del {
     display: flex;
-    gap: 2px;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--fg3);
+    cursor: pointer;
     flex-shrink: 0;
+    transition: all 0.15s;
 }
+.cne-reveal-layer-del:hover {
+    color: #ff6b6b;
+    border-color: rgba(255,107,107,0.3);
+    background: rgba(255,107,107,0.08);
+}
+
+/* Effect type grid */
+.cne-reveal-effect-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.cne-reveal-effect-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 4px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg3);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.55rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.03em;
+}
+.cne-reveal-effect-btn:hover {
+    border-color: var(--border-hover);
+    color: var(--fg2);
+    background: rgba(255,255,255,0.05);
+}
+.cne-reveal-effect-btn.active {
+    border-color: var(--accent);
+    color: var(--accent2);
+    background: rgba(108,92,231,0.1);
+    box-shadow: 0 0 0 1px rgba(108,92,231,0.2);
+}
+
+/* Range row layout */
+.cne-range-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 4px;
+}
+.cne-range-row .cne-hint.mono { flex: 1; }
+.cne-range-val {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--accent2);
+    min-width: 28px;
+    text-align: right;
+}
+
+/* Invert label */
+.cne-reveal-invert-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 0;
+}
+
+/* Empty state */
+.cne-reveal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    opacity: 0.6;
+}
+
 .cne-range {
     width: 100%;
     height: 4px;

@@ -1534,6 +1534,7 @@
                     <button class="cne-prop-tab active" data-tab="style">STYLE</button>
                     <button class="cne-prop-tab" data-tab="scroll">SCROLL</button>
                     <button class="cne-prop-tab" data-tab="scene">SCENE</button>
+                    <button class="cne-prop-tab" data-tab="hover">HOVER</button>
                     <button class="cne-prop-tab" data-tab="tokens">TOKENS</button>
                 </div>
 
@@ -2741,64 +2742,6 @@
                         </div>
                     </div>
 
-                    <!-- Hover Reveal Layers -->
-                    <div class="cne-section-label">HOVER REVEAL LAYERS</div>
-                    <p class="cne-hint" style="margin-bottom:6px">Stack images/videos that reveal on hover with a cursor-driven mask effect.</p>
-
-                    <div class="cne-row">
-                        <div class="cne-col" style="flex:1">
-                            <label class="cne-upload-btn" id="cneRevealAddLayer">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                                Add Layer (Image or Video)
-                                <input type="file" accept="image/*,video/mp4,video/webm" id="cneRevealFileInput" style="display:none" multiple>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Layer list (populated dynamically) -->
-                    <div id="cneRevealLayerList" class="cne-reveal-layer-list"></div>
-
-                    <!-- Reveal effect settings (hidden until layers exist) -->
-                    <div id="cneRevealSettings" style="display:none">
-                        <div class="cne-row" style="margin-top:8px">
-                            <div class="cne-col" style="flex:1">
-                                <span class="cne-hint mono">Reveal Effect</span>
-                                <select class="gen-select" id="cneRevealType">
-                                    <option value="circle">Circle</option>
-                                    <option value="spotlight">Spotlight</option>
-                                    <option value="blob">Blob</option>
-                                    <option value="wipe">Wipe</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="cne-row">
-                            <div class="cne-col" style="flex:1">
-                                <span class="cne-hint mono">Radius: <span id="cneRevealRadiusVal">120</span>px</span>
-                                <input type="range" class="cne-range" id="cneRevealRadius" min="40" max="400" value="120">
-                            </div>
-                        </div>
-                        <div class="cne-row">
-                            <div class="cne-col" style="flex:1">
-                                <span class="cne-hint mono">Feather: <span id="cneRevealFeatherVal">40</span>px</span>
-                                <input type="range" class="cne-range" id="cneRevealFeather" min="0" max="150" value="40">
-                            </div>
-                        </div>
-                        <div class="cne-row">
-                            <div class="cne-col" style="flex:1">
-                                <span class="cne-hint mono">Follow Speed: <span id="cneRevealSpeedVal">0.15</span>s</span>
-                                <input type="range" class="cne-range" id="cneRevealSpeed" min="0" max="50" value="15">
-                            </div>
-                        </div>
-                        <div class="cne-row">
-                            <div class="cne-col" style="flex:1">
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                                    <input type="checkbox" id="cneRevealInvert">
-                                    <span class="cne-hint mono">Invert (hide on hover instead)</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="cne-section-label">CUSTOM CODE</div>
                     <p class="cne-hint" style="margin-bottom:6px">Inject custom HTML, CSS, or tracking scripts into the compiled output.</p>
                     <div class="cne-row">
@@ -2818,6 +2761,106 @@
                             <span class="cne-hint mono">Body End (scripts before &lt;/body&gt;)</span>
                             <textarea class="gen-input" id="cneCustomBodyEnd" rows="3" placeholder="<script>...</script>" style="font-family:var(--font-mono);font-size:0.7rem;resize:vertical"></textarea>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Hover Panel -->
+                <div class="cne-prop-panel" data-panel="hover">
+                    <div class="cne-el-header">Hover Reveal Layers</div>
+                    <p class="cne-hint" style="margin-bottom:12px">Stack images &amp; videos that reveal on hover with cursor-driven mask effects. Drag layers to reorder.</p>
+
+                    <!-- Drop zone / upload area -->
+                    <div class="cne-reveal-dropzone" id="cneRevealDropzone">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.4">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <span class="cne-hint" style="margin-top:6px">Drop images or videos here</span>
+                        <label class="cne-upload-btn" id="cneRevealAddLayer" style="margin-top:8px">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                            Browse Files
+                            <input type="file" accept="image/*,video/mp4,video/webm" id="cneRevealFileInput" style="display:none" multiple>
+                        </label>
+                        <span class="cne-hint" style="font-size:0.55rem;margin-top:4px;opacity:0.5">Images &lt;5MB &middot; Videos &lt;15MB &middot; MP4, WebM, PNG, JPG, WebP</span>
+                    </div>
+
+                    <!-- Layer list with drag-and-drop -->
+                    <div class="cne-section-label" id="cneRevealLayerHeader" style="display:none">LAYERS <span class="cne-hint" style="font-weight:normal;letter-spacing:0;text-transform:none">(drag to reorder)</span></div>
+                    <div id="cneRevealLayerList" class="cne-reveal-layer-list"></div>
+
+                    <!-- Reveal effect settings -->
+                    <div id="cneRevealSettings" style="display:none">
+                        <div class="cne-section-label">MASK EFFECT</div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <div class="cne-reveal-effect-grid" id="cneRevealEffectGrid">
+                                    <button class="cne-reveal-effect-btn active" data-effect="circle" title="Circle">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/></svg>
+                                        <span>Circle</span>
+                                    </button>
+                                    <button class="cne-reveal-effect-btn" data-effect="spotlight" title="Spotlight">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="12" rx="10" ry="7"/></svg>
+                                        <span>Spotlight</span>
+                                    </button>
+                                    <button class="cne-reveal-effect-btn" data-effect="blob" title="Blob">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 4c3 0 6 1 7 4s0 6-2 8-5 4-8 3-5-3-6-6 1-5 3-7 3-2 6-2z"/></svg>
+                                        <span>Blob</span>
+                                    </button>
+                                    <button class="cne-reveal-effect-btn" data-effect="wipe" title="Wipe">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+                                        <span>Wipe</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cne-section-label" style="margin-top:12px">SETTINGS</div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <div class="cne-range-row">
+                                    <span class="cne-hint mono">Radius</span>
+                                    <span class="cne-range-val" id="cneRevealRadiusVal">120</span><span class="cne-hint">px</span>
+                                </div>
+                                <input type="range" class="cne-range" id="cneRevealRadius" min="40" max="400" value="120">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <div class="cne-range-row">
+                                    <span class="cne-hint mono">Feather</span>
+                                    <span class="cne-range-val" id="cneRevealFeatherVal">40</span><span class="cne-hint">px</span>
+                                </div>
+                                <input type="range" class="cne-range" id="cneRevealFeather" min="0" max="150" value="40">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <div class="cne-range-row">
+                                    <span class="cne-hint mono">Follow Speed</span>
+                                    <span class="cne-range-val" id="cneRevealSpeedVal">0.15</span><span class="cne-hint">s</span>
+                                </div>
+                                <input type="range" class="cne-range" id="cneRevealSpeed" min="0" max="50" value="15">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <label class="cne-reveal-invert-label">
+                                    <input type="checkbox" id="cneRevealInvert">
+                                    <span class="cne-hint mono">Invert mask (hide on hover instead of reveal)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div id="cneRevealEmpty" class="cne-reveal-empty">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="opacity:0.2">
+                            <rect x="2" y="2" width="20" height="20" rx="3"/>
+                            <circle cx="8" cy="8" r="2"/>
+                            <path d="M2 16l5-5 4 4 3-3 8 8"/>
+                        </svg>
+                        <span class="cne-hint" style="margin-top:8px;text-align:center">Upload at least 2 layers to enable<br>hover reveal effects</span>
                     </div>
                 </div>
 
