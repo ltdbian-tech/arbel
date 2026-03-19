@@ -1587,6 +1587,243 @@ window.ArbelCinematicCompiler = (function () {
         js += '          }\n';
         js += '          mask = masks.join(", ");\n';
 
+        // Ripple — concentric rings pulsing outward
+        js += '        } else if(type === "ripple"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.003;\n';
+        js += '          var masks = [];\n';
+        js += '          for(var k = 0; k < 5; k++){\n';
+        js += '            var phase = (t + k * 1.2) % 6.0;\n';
+        js += '            var rr = phase / 6.0 * radius * 2;\n';
+        js += '            var w = feather * 0.3 * (1 - phase / 6.0);\n';
+        js += '            if(rr > 0 && w > 1){\n';
+        js += '              masks.push("radial-gradient(circle " + rr + "px at " + cx + "px " + cy + "px, " + co + " " + Math.max(0, rr - w) + "px, " + ci + " " + rr + "px, " + co + " " + (rr + w) + "px)");\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.15) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.15) + "px)");\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Spiral — rotating arms from cursor
+        js += '        } else if(type === "spiral"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.002;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.3) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.3) + "px)");\n';
+        js += '          for(var arm = 0; arm < 3; arm++){\n';
+        js += '            var baseA = arm * 2.094 + t;\n';
+        js += '            for(var k = 0; k < 10; k++){\n';
+        js += '              var d = (k + 1) * radius * 0.12;\n';
+        js += '              var a = baseA + k * 0.5;\n';
+        js += '              var sz = Math.max(4, radius * 0.15 - k * 1.2);\n';
+        js += '              var px = cx + Math.cos(a) * d;\n';
+        js += '              var py = cy + Math.sin(a) * d;\n';
+        js += '              masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.2) + "px, " + co + " " + sz + "px)");\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Honeycomb — hexagonal cells expanding from cursor
+        js += '        } else if(type === "honeycomb"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var masks = [];\n';
+        js += '          var cellR = Math.max(12, radius * 0.18);\n';
+        js += '          var cols = Math.ceil(radius * 2.5 / (cellR * 1.5));\n';
+        js += '          for(var gy = -cols; gy <= cols; gy++){\n';
+        js += '            for(var gx = -cols; gx <= cols; gx++){\n';
+        js += '              var px = cx + gx * cellR * 1.75 + (gy % 2) * cellR * 0.875;\n';
+        js += '              var py = cy + gy * cellR * 1.52;\n';
+        js += '              var dist = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));\n';
+        js += '              if(dist < radius * 1.3){\n';
+        js += '                var fade = 1 - dist / (radius * 1.3);\n';
+        js += '                var sz = cellR * fade;\n';
+        js += '                if(sz > 2) masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.7) + "px, " + co + " " + sz + "px)");\n';
+        js += '              }\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          if(!masks.length) masks.push("radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + radius + "px)");\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Shatter — angular glass fragments
+        js += '        } else if(type === "shatter"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.0005;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.25) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.25) + "px)");\n';
+        js += '          for(var k = 0; k < 18; k++){\n';
+        js += '            var a = k * 0.349 + Math.sin(t + k * 2.3) * 0.15;\n';
+        js += '            var d = radius * 0.3 + (k % 3) * radius * 0.25 + Math.sin(k * 1.7 + t) * radius * 0.08;\n';
+        js += '            var px = cx + Math.cos(a) * d;\n';
+        js += '            var py = cy + Math.sin(a) * d;\n';
+        js += '            var szx = radius * 0.2 + Math.sin(k * 2.1) * radius * 0.08;\n';
+        js += '            var szy = radius * 0.12 + Math.cos(k * 1.3) * radius * 0.06;\n';
+        js += '            masks.push("radial-gradient(ellipse " + szx + "px " + szy + "px at " + px + "px " + py + "px, " + ci + " " + (Math.min(szx, szy) * 0.4) + "px, " + co + " " + Math.max(szx, szy) + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Smoke — soft drifting clouds
+        js += '        } else if(type === "smoke"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.0008;\n';
+        js += '          var masks = [];\n';
+        js += '          for(var k = 0; k < 8; k++){\n';
+        js += '            var a = k * 0.785 + Math.sin(t * 0.7 + k) * 0.6;\n';
+        js += '            var d = Math.sin(t * 0.5 + k * 1.2) * radius * 0.4 + radius * 0.2;\n';
+        js += '            var px = cx + Math.cos(a) * d;\n';
+        js += '            var py = cy + Math.sin(a) * d - Math.sin(t + k) * 15;\n';
+        js += '            var sz = radius * 0.5 + Math.sin(t * 0.9 + k * 0.8) * radius * 0.2;\n';
+        js += '            var szy = sz * (0.6 + Math.sin(t * 0.6 + k * 1.1) * 0.2);\n';
+        js += '            masks.push("radial-gradient(ellipse " + sz + "px " + szy + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.15) + "px, " + co + " " + sz + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Glitch — horizontal scan line bars
+        js += '        } else if(type === "glitch"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.002;\n';
+        js += '          var masks = [];\n';
+        js += '          var w = container.offsetWidth;\n';
+        js += '          for(var k = 0; k < 12; k++){\n';
+        js += '            var barY = cy + (k - 6) * (radius * 0.18) + Math.sin(t * 3 + k * 2.3) * 8;\n';
+        js += '            var barH = radius * 0.06 + Math.abs(Math.sin(t * 2.5 + k * 1.7)) * radius * 0.08;\n';
+        js += '            var offX = Math.sin(t * 4 + k * 0.9) * 30;\n';
+        js += '            var bw = w * 0.3 + Math.sin(t * 1.5 + k * 1.3) * w * 0.15;\n';
+        js += '            masks.push("radial-gradient(ellipse " + bw + "px " + barH + "px at " + (cx + offX) + "px " + barY + "px, " + ci + " " + (bw * 0.7) + "px, " + co + " " + bw + "px)");\n';
+        js += '          }\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.2) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.2) + "px)");\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Drip — vertical dripping tendrils
+        js += '        } else if(type === "drip"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.001;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.35) + "px at " + cx + "px " + cy + "px, " + ci + " " + (radius * 0.1) + "px, " + co + " " + (radius * 0.35) + "px)");\n';
+        js += '          for(var k = 0; k < 7; k++){\n';
+        js += '            var dx = (k - 3) * radius * 0.2 + Math.sin(t * 0.8 + k * 1.5) * 6;\n';
+        js += '            var speed2 = 0.8 + k * 0.15;\n';
+        js += '            for(var j = 0; j < 6; j++){\n';
+        js += '              var dy = j * radius * 0.22 + Math.sin(t * speed2 + k + j * 0.7) * 10;\n';
+        js += '              var sz = Math.max(4, radius * 0.12 * (1 - j * 0.12));\n';
+        js += '              masks.push("radial-gradient(ellipse " + (sz * 0.7) + "px " + sz + "px at " + (cx + dx) + "px " + (cy + dy) + "px, " + ci + " " + (sz * 0.2) + "px, " + co + " " + sz + "px)");\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Fireworks — exploding burst pattern
+        js += '        } else if(type === "fireworks"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.001;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.2) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.2) + "px)");\n';
+        js += '          for(var burst = 0; burst < 3; burst++){\n';
+        js += '            var phase = ((t * 0.7 + burst * 2.1) % 3.0) / 3.0;\n';
+        js += '            var bRadius = phase * radius * 1.5;\n';
+        js += '            var bAlpha = 1 - phase;\n';
+        js += '            if(bAlpha > 0.1){\n';
+        js += '              for(var k = 0; k < 12; k++){\n';
+        js += '                var a = k * 0.524 + burst * 0.3;\n';
+        js += '                var px = cx + Math.cos(a) * bRadius;\n';
+        js += '                var py = cy + Math.sin(a) * bRadius;\n';
+        js += '                var sz = Math.max(3, radius * 0.1 * bAlpha);\n';
+        js += '                masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.3) + "px, " + co + " " + sz + "px)");\n';
+        js += '              }\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Cells — organic bubble clusters
+        js += '        } else if(type === "cells"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.0006;\n';
+        js += '          var masks = [];\n';
+        js += '          for(var k = 0; k < 15; k++){\n';
+        js += '            var seed = k * 7.31;\n';
+        js += '            var a = seed + Math.sin(t + seed) * 0.4;\n';
+        js += '            var d = (seed * 3.7 % 1) * radius + Math.sin(t * 0.7 + seed) * 15;\n';
+        js += '            var px = cx + Math.cos(a) * d;\n';
+        js += '            var py = cy + Math.sin(a) * d;\n';
+        js += '            var sz = radius * 0.15 + Math.sin(t * 0.5 + seed * 0.3) * radius * 0.1;\n';
+        js += '            masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.5) + "px, " + co + " " + sz + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Wave — sinusoidal revealing edge
+        js += '        } else if(type === "wave"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.002;\n';
+        js += '          var masks = [];\n';
+        js += '          var h = container.offsetHeight;\n';
+        js += '          var pct = Math.max(0, Math.min(1, cx / container.offsetWidth));\n';
+        js += '          for(var k = 0; k <= 20; k++){\n';
+        js += '            var yy = (k / 20) * h;\n';
+        js += '            var waveX = pct * container.offsetWidth + Math.sin(t + k * 0.6) * feather * 1.5;\n';
+        js += '            var sz = feather * 0.6 + Math.sin(t * 1.3 + k * 0.8) * feather * 0.2;\n';
+        js += '            masks.push("radial-gradient(ellipse " + sz + "px " + (h / 18) + "px at " + waveX + "px " + yy + "px, " + ci + " " + (sz * 0.6) + "px, " + co + " " + sz + "px)");\n';
+        js += '          }\n';
+        js += '          masks.push("linear-gradient(to right, " + ci + " " + Math.max(0, pct * 100 - 10) + "%, " + co + " " + (pct * 100 + 10) + "%)");\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Pixelate — blocky pixel grid
+        js += '        } else if(type === "pixelate"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var masks = [];\n';
+        js += '          var cellSz = Math.max(8, radius * 0.12);\n';
+        js += '          var span = Math.ceil(radius * 1.4 / cellSz);\n';
+        js += '          for(var gy = -span; gy <= span; gy++){\n';
+        js += '            for(var gx = -span; gx <= span; gx++){\n';
+        js += '              var px = cx + gx * cellSz * 1.1;\n';
+        js += '              var py = cy + gy * cellSz * 1.1;\n';
+        js += '              var dist = Math.sqrt(gx * gx + gy * gy) * cellSz;\n';
+        js += '              if(dist < radius * 1.3){\n';
+        js += '                var fade = Math.max(0, 1 - dist / radius);\n';
+        js += '                var sz = cellSz * 0.48 * fade;\n';
+        js += '                if(sz > 1) masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.85) + "px, " + co + " " + sz + "px)");\n';
+        js += '              }\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          if(!masks.length) masks.push("radial-gradient(circle " + radius + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + radius + "px)");\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Meteor — trailing particle shower
+        js += '        } else if(type === "meteor"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.001;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.3) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.3) + "px)");\n';
+        js += '          for(var k = 0; k < 25; k++){\n';
+        js += '            var trail = k * 0.12;\n';
+        js += '            var tx = cx - Math.cos(0.7) * radius * trail * 0.5 + Math.sin(t * 2 + k * 1.3) * (k * 1.5);\n';
+        js += '            var ty = cy - Math.sin(0.7) * radius * trail * 0.5 + Math.cos(t * 1.5 + k * 0.9) * (k * 1.2);\n';
+        js += '            var sz = Math.max(2, radius * 0.12 * (1 - k * 0.035));\n';
+        js += '            masks.push("radial-gradient(circle " + sz + "px at " + tx + "px " + ty + "px, " + ci + " " + (sz * 0.3) + "px, " + co + " " + sz + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
+        // Galaxy — spinning arms with scattered stars
+        js += '        } else if(type === "galaxy"){\n';
+        js += '          isMulti = true;\n';
+        js += '          var t = Date.now() * 0.0008;\n';
+        js += '          var masks = [];\n';
+        js += '          masks.push("radial-gradient(circle " + (radius * 0.2) + "px at " + cx + "px " + cy + "px, " + ci + " 0px, " + co + " " + (radius * 0.2) + "px)");\n';
+        js += '          for(var arm = 0; arm < 2; arm++){\n';
+        js += '            var baseA = arm * 3.14159 + t;\n';
+        js += '            for(var k = 0; k < 14; k++){\n';
+        js += '              var d = (k + 1) * radius * 0.09;\n';
+        js += '              var a = baseA + k * 0.45;\n';
+        js += '              var sz = Math.max(3, radius * 0.12 + Math.sin(t * 1.5 + k) * 3);\n';
+        js += '              var px = cx + Math.cos(a) * d + Math.sin(t * 2 + k * arm) * 3;\n';
+        js += '              var py = cy + Math.sin(a) * d + Math.cos(t * 2 + k * arm) * 3;\n';
+        js += '              masks.push("radial-gradient(circle " + sz + "px at " + px + "px " + py + "px, " + ci + " " + (sz * 0.2) + "px, " + co + " " + sz + "px)");\n';
+        js += '            }\n';
+        js += '          }\n';
+        js += '          for(var k = 0; k < 10; k++){\n';
+        js += '            var sa = k * 2.399 + t * 0.3;\n';
+        js += '            var sd = Math.sin(k * 3.7) * radius * 0.8;\n';
+        js += '            var ssz = 2 + Math.sin(t * 3 + k) * 1.5;\n';
+        js += '            masks.push("radial-gradient(circle " + ssz + "px at " + (cx + Math.cos(sa) * sd) + "px " + (cy + Math.sin(sa) * sd) + "px, " + ci + " 0px, " + co + " " + ssz + "px)");\n';
+        js += '          }\n';
+        js += '          mask = masks.join(", ");\n';
+
         js += '        }\n';
         js += '        if(mask){\n';
         js += '          tops.forEach(function(t){\n';

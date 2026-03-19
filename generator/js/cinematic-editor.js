@@ -3690,9 +3690,9 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
-        // ── Effect type grid buttons ──
+        // ── Effect type list buttons ──
         if (effectGrid) {
-            var effectBtns = effectGrid.querySelectorAll('.cne-reveal-effect-btn');
+            var effectBtns = effectGrid.querySelectorAll('.cne-reveal-effect-opt');
             effectBtns.forEach(function (btn) {
                 btn.addEventListener('click', function () {
                     var scene = _scenes[_currentSceneIdx];
@@ -3984,8 +3984,11 @@ window.ArbelCinematicEditor = (function () {
         if (!scene || !scene.revealEffect) return;
         var grid = _qs('#cneRevealEffectGrid');
         if (!grid) return;
-        var btns = grid.querySelectorAll('.cne-reveal-effect-btn');
+        var btns = grid.querySelectorAll('.cne-reveal-effect-opt');
         btns.forEach(function (b) { b.classList.toggle('active', b.dataset.effect === scene.revealEffect.type); });
+        // Scroll active item into view
+        var activeBtn = grid.querySelector('.cne-reveal-effect-opt.active');
+        if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest' });
     }
 
     function _syncRevealLayerUI() {

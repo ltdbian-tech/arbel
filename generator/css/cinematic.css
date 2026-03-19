@@ -1677,39 +1677,63 @@
     border-color: rgba(108,92,231,0.2);
 }
 
-/* Effect type grid */
-.cne-reveal-effect-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-}
-.cne-reveal-effect-btn {
+/* Effect type list */
+.cne-reveal-effect-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 10px 4px;
-    background: rgba(255,255,255,0.03);
+    gap: 2px;
+    max-height: 200px;
+    overflow-y: auto;
     border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+.cne-reveal-effect-list::-webkit-scrollbar { width: 4px; }
+.cne-reveal-effect-list::-webkit-scrollbar-track { background: transparent; }
+.cne-reveal-effect-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.cne-reveal-effect-opt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    background: transparent;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
     color: var(--fg3);
     cursor: pointer;
-    transition: all 0.15s;
-    font-size: 0.55rem;
+    transition: all 0.12s;
+    font-size: 0.62rem;
     font-family: var(--font-mono);
-    letter-spacing: 0.03em;
+    text-align: left;
+    white-space: nowrap;
 }
-.cne-reveal-effect-btn:hover {
-    border-color: var(--border-hover);
+.cne-reveal-effect-opt:hover {
+    background: rgba(255,255,255,0.04);
     color: var(--fg2);
-    background: rgba(255,255,255,0.05);
+    border-color: var(--border);
 }
-.cne-reveal-effect-btn.active {
+.cne-reveal-effect-opt.active {
+    background: rgba(108,92,231,0.1);
     border-color: var(--accent);
     color: var(--accent2);
-    background: rgba(108,92,231,0.1);
-    box-shadow: 0 0 0 1px rgba(108,92,231,0.2);
 }
+.cne-reveal-effect-icon {
+    font-size: 1rem;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1;
+}
+.cne-reveal-effect-name {
+    font-weight: 600;
+    color: var(--fg2);
+    min-width: 64px;
+}
+.cne-reveal-effect-opt.active .cne-reveal-effect-name { color: var(--accent2); }
+.cne-reveal-effect-opt .cne-hint { font-size: 0.52rem; opacity: 0.5; flex: 1; text-align: right; }
 
 /* Range row layout */
 .cne-range-row {
