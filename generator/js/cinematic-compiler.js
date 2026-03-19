@@ -970,13 +970,7 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-bg3d-vignette { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%); }\n\n';
 
         // Hero on-load entrance animation (CSS, not scroll-dependent)
-        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; transform: translateY(30px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }\n';
-
-        // Smooth page-level styles
-        css += 'html { scroll-behavior: smooth; }\n';
-
-        // Scene divider line (subtle accent) between scenes
-        css += '.cne-scene + .cne-scene::before { content: ""; position: absolute; top: 0; left: 10%; right: 10%; height: 1px; background: linear-gradient(90deg, transparent, var(--border) 30%, var(--border) 70%, transparent); z-index: 2; pointer-events: none; }\n\n';
+        css += '@keyframes cne-hero-entrance { 0% { opacity: 0; transform: translateY(30px); filter: blur(8px); } 100% { opacity: 1; transform: translateY(0); filter: blur(0); } }\n\n';
 
         // Responsive — generic layout
         css += '@media (max-width: 768px) {\n';
