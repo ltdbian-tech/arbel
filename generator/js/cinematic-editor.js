@@ -4582,6 +4582,21 @@ window.ArbelCinematicEditor = (function () {
 
     function _deleteSelectedElement() {
         if (_selectedElementIds.length === 0) return;
+        // If nav bar is selected, hide it via the toggle instead of trying to remove from scene.elements
+        var navIds = ['site-nav', 'site-logo'];
+        var isNav = _selectedElementIds.some(function (id) { return navIds.indexOf(id) >= 0; });
+        if (isNav) {
+            _overrides.showNav = false;
+            var navToggle = _qs('#cneShowNav');
+            if (navToggle) navToggle.checked = false;
+            var navLinkSection = _qs('#cneNavLinkSection');
+            if (navLinkSection) navLinkSection.style.display = 'none';
+            _selectedElementId = null;
+            _selectedElementIds = [];
+            _clearProperties();
+            _notifyUpdate(true);
+            return;
+        }
         _pushUndo();
         var scene = _scenes[_currentSceneIdx];
         if (!scene) return;
