@@ -590,18 +590,39 @@ window.ArbelCinematicCompiler = (function () {
         html += '    <div class="cne-preloader-bar"><div class="cne-preloader-fill"></div></div>\n';
         html += '  </div>\n</div>\n\n';
 
-        // Navigation
-        html += '<nav class="cne-nav" data-arbel-id="site-nav">\n';
-        html += '  <a href="#" class="cne-nav-logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n';
-        html += '  <div class="cne-nav-links">\n';
-        if (cfg.nav && cfg.nav.links) {
-            cfg.nav.links.forEach(function (link) {
-                html += '    <a href="' + escHref(link.href) + '" class="cne-nav-link" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
-            });
+        // Helper: slugify scene name for anchor IDs
+        function slugify(str) {
+            return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         }
-        html += '  </div>\n';
-        html += '  <div class="cne-scroll-progress"><div class="cne-scroll-progress-fill" id="scrollProgress"></div></div>\n';
-        html += '</nav>\n\n';
+
+        // Build scene-name → slug map for internal anchor links
+        var sceneSlugMap = {};
+        scenes.forEach(function (scene, i) {
+            var slug = slugify(scene.name || 'scene-' + (i + 1));
+            sceneSlugMap[scene.name] = slug;
+            sceneSlugMap[(scene.name || '').toLowerCase()] = slug;
+        });
+
+        // Navigation
+        if (!cfg.nav || cfg.nav.show !== false) {
+            html += '<nav class="cne-nav" data-arbel-id="site-nav">\n';
+            html += '  <a href="#" class="cne-nav-logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n';
+            html += '  <div class="cne-nav-links">\n';
+            if (cfg.nav && cfg.nav.links) {
+                cfg.nav.links.forEach(function (link) {
+                    var href = link.href || '#';
+                    // Resolve scene name references to anchor slugs
+                    var lowerHref = href.replace(/^#/, '');
+                    if (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]) {
+                        href = '#' + (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]);
+                    }
+                    html += '    <a href="' + escHref(href) + '" class="cne-nav-link" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
+                });
+            }
+            html += '  </div>\n';
+            html += '  <div class="cne-scroll-progress"><div class="cne-scroll-progress-fill" id="scrollProgress"></div></div>\n';
+            html += '</nav>\n\n';
+        }
 
         // P1: Shader styles use a WebGL canvas; non-shader styles use a plain div targeted by classic animation JS
         if (ArbelCompiler.getAnimCategory(cfg.style) === 'shader') {
@@ -640,6 +661,7 @@ window.ArbelCinematicCompiler = (function () {
             }
 
             html += '  <section class="cne-scene"';
+            html += ' id="' + esc(slugify(scene.name || 'scene-' + (i + 1))) + '"';
             html += ' data-scene-id="' + esc(scene.id) + '"';
             html += ' data-scene-index="' + i + '"';
             html += ' data-pin="' + (scene.pin !== false ? 'true' : 'false') + '"';
@@ -1574,6 +1596,15 @@ window.ArbelCinematicCompiler = (function () {
         js += '      lastY = y;\n';
         js += '    });\n';
         js += '  }\n';
+
+        // Smooth scroll for internal anchor nav links
+        js += '\n  /* Smooth scroll for nav anchor links */\n';
+        js += '  document.querySelectorAll(".cne-nav-link[href^=\'#\']").forEach(function(a){\n';
+        js += '    a.addEventListener("click", function(e){\n';
+        js += '      var target = document.getElementById(a.getAttribute("href").substring(1));\n';
+        js += '      if(target){ e.preventDefault(); target.scrollIntoView({ behavior: "smooth" }); }\n';
+        js += '    });\n';
+        js += '  });\n';
 
         // Hover Reveal Layer engine
         js += '\n  /* Hover Reveal Layers */\n';

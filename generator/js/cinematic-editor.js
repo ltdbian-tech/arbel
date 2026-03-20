@@ -3583,6 +3583,67 @@ window.ArbelCinematicEditor = (function () {
             }
         });
 
+        // Navigation toggle + link manager (site-wide, stored in _overrides)
+        var navToggle = _qs('#cneShowNav');
+        var navLinkSection = _qs('#cneNavLinkSection');
+        var navLinkList = _qs('#cneNavLinkList');
+        var addNavLinkBtn = _qs('#cneAddNavLink');
+
+        if (!_overrides.hasOwnProperty('showNav')) _overrides.showNav = true;
+        if (!_overrides.navLinks) _overrides.navLinks = [];
+
+        function _renderNavLinks() {
+            if (!navLinkList) return;
+            navLinkList.innerHTML = '';
+            _overrides.navLinks.forEach(function (link, i) {
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;gap:4px;align-items:center';
+                var txtIn = document.createElement('input');
+                txtIn.className = 'gen-input';
+                txtIn.style.cssText = 'flex:1;font-size:0.7rem';
+                txtIn.placeholder = 'Label';
+                txtIn.value = link.text || '';
+                txtIn.addEventListener('input', function () { _overrides.navLinks[i].text = txtIn.value; _notifyUpdate(true); });
+                var targetIn = document.createElement('input');
+                targetIn.className = 'gen-input';
+                targetIn.style.cssText = 'flex:1;font-size:0.7rem';
+                targetIn.placeholder = 'Scene name or URL';
+                targetIn.value = link.href || '';
+                targetIn.addEventListener('input', function () { _overrides.navLinks[i].href = targetIn.value; _notifyUpdate(true); });
+                var rmBtn = document.createElement('button');
+                rmBtn.className = 'cne-upload-btn';
+                rmBtn.style.cssText = 'color:#ff6b6b;padding:2px 6px;font-size:12px';
+                rmBtn.textContent = '\u00D7';
+                rmBtn.title = 'Remove link';
+                rmBtn.addEventListener('click', function () { _pushUndo(); _overrides.navLinks.splice(i, 1); _renderNavLinks(); _notifyUpdate(true); });
+                row.appendChild(txtIn);
+                row.appendChild(targetIn);
+                row.appendChild(rmBtn);
+                navLinkList.appendChild(row);
+            });
+        }
+
+        if (navToggle) {
+            navToggle.checked = _overrides.showNav !== false;
+            if (navLinkSection) navLinkSection.style.display = navToggle.checked ? '' : 'none';
+            navToggle.addEventListener('change', function () {
+                _overrides.showNav = navToggle.checked;
+                if (navLinkSection) navLinkSection.style.display = navToggle.checked ? '' : 'none';
+                _notifyUpdate(true);
+            });
+        }
+
+        if (addNavLinkBtn) {
+            addNavLinkBtn.addEventListener('click', function () {
+                _pushUndo();
+                _overrides.navLinks.push({ text: 'Link', href: '#' });
+                _renderNavLinks();
+                _notifyUpdate(true);
+            });
+        }
+
+        _renderNavLinks();
+
         // Form element settings
         var formAction = _qs('#cneFormAction');
         if (formAction) {
@@ -6078,7 +6139,7 @@ window.ArbelCinematicEditor = (function () {
             accent: '#6C5CE7',
             bgColor: '#0a0a0f',
             scenes: _scenes,
-            nav: { logo: 'My Site', links: [] },
+            nav: { logo: 'My Site', links: [], show: true },
             designTokens: _designTokens,
             editorOverrides: _overrides
         };
@@ -6092,6 +6153,8 @@ window.ArbelCinematicEditor = (function () {
         if (tagEl && tagEl.value) cfg.tagline = tagEl.value.trim();
         if (accentEl && accentEl.value) cfg.accent = accentEl.value;
         if (bgEl && bgEl.value) cfg.bgColor = bgEl.value;
+        cfg.nav.show = _overrides.showNav !== false;
+        cfg.nav.links = _overrides.navLinks || [];
 
         var files = ArbelCinematicCompiler.compile(cfg);
         if (!files || !files['index.html']) {
