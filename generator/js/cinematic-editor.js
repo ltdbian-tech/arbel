@@ -335,6 +335,12 @@ window.ArbelCinematicEditor = (function () {
         try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; }
         if (!d || !d.type) return;
 
+        // Forward keyboard events from iframe to the parent keydown handler
+        if (d.type === 'arbel-key' && _keydownHandler) {
+            _keydownHandler({ key: d.key, ctrlKey: !!d.ctrl, metaKey: !!d.ctrl, shiftKey: !!d.shift, altKey: !!d.alt, preventDefault: function () {} });
+            return;
+        }
+
         if (d.type === 'arbel-select') {
             _iframeTextUndoPushed = false; // reset on element switch
             // Auto-switch scene if clicked element is in a different scene
@@ -6759,6 +6765,15 @@ window.ArbelCinematicEditor = (function () {
         /* ── Reposition handles on scroll ── */
         'window.addEventListener("scroll",function(){if(selected.length===1&&primary&&!resize)posHandles(primary)},true);' +
         'window.addEventListener("resize",function(){if(selected.length===1&&primary)posHandles(primary)});' +
+        /* ── Forward keyboard shortcuts to parent (iframe eats keydown) ── */
+        'document.addEventListener("keydown",function(e){' +
+          'if(editing)return;' +
+          'var k=e.key;var ctrl=e.ctrlKey||e.metaKey;' +
+          'if(k==="Delete"||k==="Backspace"||k==="Escape"||(ctrl&&(k==="z"||k==="y"||k==="c"||k==="v"||k==="d"||k==="a"||k==="g"))){' +
+            'e.preventDefault();' +
+            'window.parent.postMessage({type:"arbel-key",key:k,ctrl:!!ctrl,shift:!!e.shiftKey,alt:!!e.altKey},"*");' +
+          '}' +
+        '});' +
         '})();';
     }
 
