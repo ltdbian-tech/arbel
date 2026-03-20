@@ -890,7 +890,13 @@ window.ArbelCinematicCompiler = (function () {
                         html += '>' + elBgVidHtml + '<iframe src="' + safeEmbed + '" style="width:100%;height:100%;border:none" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></' + tag + '>\n';
                     // For non-anchor elements with href, wrap in anchor
                     } else if (el.href && el.href !== '#' && el.href !== '') {
-                        var anchorHref = escHref(el.href);
+                        // Resolve scene name references to anchor slugs
+                        var elHref = el.href;
+                        var elHrefKey = elHref.replace(/^#/, '');
+                        if (sceneSlugMap[elHrefKey] || sceneSlugMap[elHrefKey.toLowerCase()]) {
+                            elHref = '#' + (sceneSlugMap[elHrefKey] || sceneSlugMap[elHrefKey.toLowerCase()]);
+                        }
+                        var anchorHref = escHref(elHref);
                         var anchorAttrs = ' href="' + anchorHref + '"';
                         if (el.linkNewTab) anchorAttrs += ' target="_blank" rel="noopener noreferrer"';
                         anchorAttrs += ' style="text-decoration:none;color:inherit;display:contents"';
@@ -1597,9 +1603,10 @@ window.ArbelCinematicCompiler = (function () {
         js += '    });\n';
         js += '  }\n';
 
-        // Smooth scroll for internal anchor nav links
-        js += '\n  /* Smooth scroll for nav anchor links */\n';
-        js += '  document.querySelectorAll(".cne-nav-link[href^=\'#\']").forEach(function(a){\n';
+        // Smooth scroll for ALL internal anchor links (nav links + buttons + any <a href="#...">)
+        js += '\n  /* Smooth scroll for internal anchor links */\n';
+        js += '  document.querySelectorAll("a[href^=\'#\']").forEach(function(a){\n';
+        js += '    if(a.getAttribute("href").length <= 1) return;\n';
         js += '    a.addEventListener("click", function(e){\n';
         js += '      var target = document.getElementById(a.getAttribute("href").substring(1));\n';
         js += '      if(target){ e.preventDefault(); target.scrollIntoView({ behavior: "smooth" }); }\n';
