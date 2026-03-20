@@ -638,6 +638,7 @@ window.ArbelCinematicEditor = (function () {
             if (bg3dColRow) bg3dColRow.style.display = show3d ? '' : 'none';
             if (bg3dIntRow) bg3dIntRow.style.display = show3d ? '' : 'none';
             if (bg3dSpdRow) bg3dSpdRow.style.display = show3d ? '' : 'none';
+            var bg3dWarn = _qs('#cneBg3dWarning'); if (bg3dWarn) bg3dWarn.style.display = show3d ? '' : 'none';
             // Spline 3D embed
             var spline = _qs('#cneSceneSpline'); if (spline) spline.value = scene.splineUrl || '';
             var splineInfo = _qs('#cneSplineInfo'); if (splineInfo) splineInfo.style.display = scene.splineUrl ? '' : 'none';
@@ -3520,12 +3521,14 @@ window.ArbelCinematicEditor = (function () {
         var bg3dColorRow = _qs('#cneBg3dColorRow');
         var bg3dIntRow = _qs('#cneBg3dIntensityRow');
         var bg3dSpeedRow = _qs('#cneBg3dSpeedRow');
+        var bg3dWarning = _qs('#cneBg3dWarning');
 
         function _toggle3dRows() {
             var show = bg3dSelect && bg3dSelect.value !== '';
             if (bg3dColorRow) bg3dColorRow.style.display = show ? '' : 'none';
             if (bg3dIntRow) bg3dIntRow.style.display = show ? '' : 'none';
             if (bg3dSpeedRow) bg3dSpeedRow.style.display = show ? '' : 'none';
+            if (bg3dWarning) bg3dWarning.style.display = show ? '' : 'none';
         }
 
         function _apply3dBg() {

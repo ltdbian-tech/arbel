@@ -2663,6 +2663,9 @@
                             <input type="color" class="cne-color-input" id="cneSceneBg" value="#0a0a0f">
                         </div>
                     </div>
+                    <div class="cne-row" id="cneBg3dWarning" style="display:none">
+                        <span class="cne-hint mono" style="color:#f0c040;font-size:10px">&#9888; Background effect is active &mdash; set it to None to see this color</span>
+                    </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
                             <label class="cne-upload-btn" id="cneSceneBgUploadLabel">
@@ -2692,13 +2695,45 @@
                             <span class="cne-hint mono">Effect Type</span>
                             <select class="gen-select" id="cneSceneBg3d">
                                 <option value="">None</option>
-                                <option value="gradient-orbs">Gradient Orbs</option>
-                                <option value="particle-field">Particle Field</option>
-                                <option value="aurora">Aurora Waves</option>
-                                <option value="mesh-gradient">Mesh Gradient</option>
-                                <option value="noise-fog">Noise Fog</option>
-                                <option value="starfield">Starfield</option>
-                                <option value="wave-grid">Wave Grid</option>
+                                <optgroup label="Particles">
+                                    <option value="particles">Floating Particles</option>
+                                    <option value="bubbles">Rising Bubbles</option>
+                                    <option value="stars">Twinkling Stars</option>
+                                    <option value="snow">Snowfall</option>
+                                    <option value="fireflies">Fireflies</option>
+                                    <option value="confetti">Confetti</option>
+                                    <option value="matrix">Matrix Rain</option>
+                                </optgroup>
+                                <optgroup label="Shapes">
+                                    <option value="blobs">Morphing Blobs</option>
+                                    <option value="geometric">Geometric</option>
+                                    <option value="orbits">Orbiting Dots</option>
+                                    <option value="dna">DNA Helix</option>
+                                </optgroup>
+                                <optgroup label="3D Shapes">
+                                    <option value="cube">3D Cube</option>
+                                    <option value="sphere">3D Sphere</option>
+                                    <option value="pyramid">3D Pyramid</option>
+                                    <option value="torus">3D Torus</option>
+                                    <option value="cylinder">3D Cylinder</option>
+                                    <option value="crystal">3D Crystal</option>
+                                    <option value="icosahedron">Icosahedron</option>
+                                    <option value="grid3d">3D Grid</option>
+                                </optgroup>
+                                <optgroup label="Ambient">
+                                    <option value="gradient">Animated Gradient</option>
+                                    <option value="waves">Wave Lines</option>
+                                    <option value="aurora">Aurora Glow</option>
+                                    <option value="noise">Noise Texture</option>
+                                </optgroup>
+                                <optgroup label="Cinematic">
+                                    <option value="gradient-orbs">Gradient Orbs</option>
+                                    <option value="particle-field">Particle Field</option>
+                                    <option value="mesh-gradient">Mesh Gradient</option>
+                                    <option value="noise-fog">Noise Fog</option>
+                                    <option value="starfield">Starfield</option>
+                                    <option value="wave-grid">Wave Grid</option>
+                                </optgroup>
                             </select>
                         </div>
                     </div>
