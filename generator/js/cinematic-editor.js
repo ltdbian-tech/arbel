@@ -336,8 +336,22 @@ window.ArbelCinematicEditor = (function () {
         if (!d || !d.type) return;
 
         // Forward keyboard events from iframe to the parent keydown handler
-        if (d.type === 'arbel-key' && _keydownHandler) {
-            _keydownHandler({ key: d.key, ctrlKey: !!d.ctrl, metaKey: !!d.ctrl, shiftKey: !!d.shift, altKey: !!d.alt, preventDefault: function () {} });
+        if (d.type === 'arbel-key') {
+            // Handle Delete/Backspace directly for reliability (no activeElement dependency)
+            if ((d.key === 'Delete' || d.key === 'Backspace') && _selectedElementIds.length > 0) {
+                _deleteSelectedElement();
+                return;
+            }
+            if (d.key === 'Escape') {
+                _selectedElementId = null;
+                _selectedElementIds = [];
+                _clearProperties();
+                _postIframe('arbel-deselect-all', {});
+                return;
+            }
+            if (_keydownHandler) {
+                _keydownHandler({ key: d.key, ctrlKey: !!d.ctrl, metaKey: !!d.ctrl, shiftKey: !!d.shift, altKey: !!d.alt, preventDefault: function () {} });
+            }
             return;
         }
 
