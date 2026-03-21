@@ -1266,7 +1266,7 @@ window.ArbelCinematicCompiler = (function () {
         js += '  initScrollProgress();\n\n';
 
         js += '  var scenes = document.querySelectorAll(".cne-scene");\n';
-        js += '  scenes.forEach(function(scene){\n';
+        js += '  scenes.forEach(function(scene, sceneIdx){\n';
         js += '    var shouldPin = scene.dataset.pin === "true";\n';
         js += '    var duration = parseInt(scene.dataset.duration) || 100;\n\n';
 
@@ -1284,7 +1284,7 @@ window.ArbelCinematicCompiler = (function () {
 
         // Animate elements within each scene
         js += '    var elems = scene.querySelectorAll("[data-scroll]");\n';
-        js += '    elems.forEach(function(el){\n';
+        js += '    elems.forEach(function(el, elIdx){\n';
         js += '      var sd;\n';
         js += '      try { sd = JSON.parse(el.dataset.scroll); } catch(e){ return; }\n';
         js += '      if(!sd) return;\n\n';
@@ -1303,6 +1303,26 @@ window.ArbelCinematicCompiler = (function () {
         js += '      var isSplit = el.dataset.splitText === "true";\n';
         js += '      var chars;\n';
         js += '      if(isSplit){ chars = splitText(el); }\n\n';
+
+        // First scene: entrance animation on page load
+        js += '      if(sceneIdx === 0){\n';
+        js += '        var fv = {};\n';
+        js += '        ["opacity","x","y","scale","rotation"].forEach(function(p){\n';
+        js += '          if(!sd[p]) return; var v = Array.isArray(sd[p]) ? sd[p] : [sd[p]];\n';
+        js += '          if(v.length >= 2) fv[p] = v[0];\n';
+        js += '        });\n';
+        js += '        ["blur","clipPath","rotateX","rotateY","skewX","skewY"].forEach(function(p){\n';
+        js += '          if(!sd[p]) return; var v = Array.isArray(sd[p]) ? sd[p] : [sd[p]];\n';
+        js += '          if(v.length < 2) return;\n';
+        js += '          if(p==="blur") fv.filter="blur("+v[0]+"px)";\n';
+        js += '          else if(p==="clipPath") fv.clipPath=v[0];\n';
+        js += '          else fv[p]=v[0];\n';
+        js += '        });\n';
+        js += '        fv.duration = 0.8; fv.delay = 0.15 + elIdx * 0.1; fv.ease = "power2.out";\n';
+        js += '        if(isSplit) fv.stagger = 0.03;\n';
+        js += '        gsap.from(isSplit ? chars : el, fv);\n';
+        js += '        return;\n';
+        js += '      }\n\n';
 
         // Build GSAP timeline
         js += '      var tl = gsap.timeline({\n';
