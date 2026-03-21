@@ -1373,7 +1373,7 @@ window.ArbelCinematicEditor = (function () {
         var scene = _scenes[_currentSceneIdx];
         if (!scene) return;
         _pushUndo();
-        var svgHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + pathD + '"/></svg>';
+        var svgHtml = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + pathD + '"/></svg>';
         var newEl = {
             id: 'div-' + Date.now().toString(36),
             tag: 'div',
@@ -1655,7 +1655,7 @@ window.ArbelCinematicEditor = (function () {
             };
             newEl.scroll = { opacity: [0, 1], scale: [0.8, 1], start: 0, end: 0.4 };
         } else if (t.tag === 'div' && t.variant === 'svg') {
-            newEl.svgContent = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="#6C5CE7" stroke-width="3" fill="none"/></svg>';
+            newEl.svgContent = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="#6C5CE7" stroke-width="3" fill="none"/></svg>';
             newEl.style = {
                 position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
                 width: '200px', height: '200px'

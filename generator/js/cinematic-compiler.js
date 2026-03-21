@@ -1056,7 +1056,8 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-glow { box-shadow: 0 0 60px color-mix(in srgb, var(--primary) 15%, transparent), 0 0 120px color-mix(in srgb, var(--primary) 5%, transparent); }\n';
         css += '.cne-noise::before { content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: 0.03; background-image: url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E"); }\n';
         css += '.cne-element[data-arbel-edit] { transition: outline 0.15s; }\n';
-        css += '.cne-element[style*="backdrop-filter"] { -webkit-backdrop-filter: inherit; }\n\n';
+        css += '.cne-element[style*="backdrop-filter"] { -webkit-backdrop-filter: inherit; }\n';
+        css += '.cne-element svg { width: 100%; height: 100%; display: block; }\n\n';
 
         // Selection highlight
         css += '/* Selection */\n';
