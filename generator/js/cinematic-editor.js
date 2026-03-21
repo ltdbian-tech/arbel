@@ -152,17 +152,26 @@ window.ArbelCinematicEditor = (function () {
                     if (tplId === 'stats') {
                         if (base === 'stats-heading') { overrides.fontSize = '6.5vw'; }
                         else if (base === 'stat-1') {
-                            overrides.top = '32%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.top = '28%'; overrides.left = '50%'; overrides.width = '80%';
                             overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
                             overrides.fontSize = '10vw';
+                        } else if (base === 'stat-1-label') {
+                            overrides.top = '38%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
                         } else if (base === 'stat-2') {
-                            overrides.top = '50%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.top = '46%'; overrides.left = '50%'; overrides.width = '80%';
                             overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
                             overrides.fontSize = '10vw';
+                        } else if (base === 'stat-2-label') {
+                            overrides.top = '56%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
                         } else if (base === 'stat-3') {
-                            overrides.top = '68%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.top = '64%'; overrides.left = '50%'; overrides.width = '80%';
                             overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
                             overrides.fontSize = '10vw';
+                        } else if (base === 'stat-3-label') {
+                            overrides.top = '74%'; overrides.left = '50%'; overrides.width = '80%';
+                            overrides.transform = 'translateX(-50%)'; overrides.textAlign = 'center';
                         }
                     } else if (tplId === 'featureGrid') {
                         if (base === 'fg-title') { overrides.fontSize = '6.5vw'; }
@@ -176,8 +185,9 @@ window.ArbelCinematicEditor = (function () {
                         else if (base === 'fg-c3-title') { overrides.top = '67%'; overrides.left = '10%'; overrides.width = '80%'; }
                         else if (base === 'fg-c3-desc') { overrides.top = '73%'; overrides.left = '10%'; overrides.width = '80%'; }
                     } else if (tplId === 'splitMedia') {
-                        if (base === 'split-title') { overrides.top = '8%'; overrides.left = '6%'; overrides.width = '88%'; overrides.fontSize = '7vw'; }
-                        else if (base === 'split-desc') { overrides.top = '20%'; overrides.left = '6%'; overrides.width = '88%'; }
+                        if (base === 'split-tag') { overrides.top = '4%'; overrides.left = '6%'; }
+                        else if (base === 'split-title') { overrides.top = '8%'; overrides.left = '6%'; overrides.width = '88%'; overrides.fontSize = '7vw'; }
+                        else if (base === 'split-desc') { overrides.top = '22%'; overrides.left = '6%'; overrides.width = '88%'; }
                         else if (base === 'split-media') { overrides.top = '42%'; overrides.left = '6%'; overrides.width = '88%'; overrides.right = 'auto'; overrides.height = '50%'; }
                     } else if (tplId === 'cardStack') {
                         if (base === 'cs-card1') { overrides.left = '6%'; overrides.width = '88%'; }
@@ -187,10 +197,12 @@ window.ArbelCinematicEditor = (function () {
                         else if (base === 'cs-desc') { overrides.width = '75%'; }
                     } else if (tplId === 'hero' || tplId === 'gradientHero') {
                         if (base === 'hero-title' || base === 'gh-title') { overrides.width = '90%'; overrides.fontSize = '10vw'; }
-                        else if (base === 'hero-sub' || base === 'gh-sub') { overrides.width = '85%'; }
-                        else if (base === 'gh-tag') { overrides.fontSize = '2.5vw'; }
+                        else if (base === 'hero-sub' || base === 'gh-sub') { overrides.width = '85%'; overrides.fontSize = '1rem'; }
+                        else if (base === 'hero-tag' || base === 'gh-tag') { overrides.fontSize = '2.5vw'; }
+                        else if (base === 'hero-cta') { overrides.fontSize = '0.8rem'; overrides.padding = '12px 28px'; }
                     } else if (tplId === 'testimonial') {
                         if (base === 'tst-quote') { overrides.width = '85%'; overrides.left = '7.5%'; overrides.fontSize = '5vw'; }
+                        else if (base === 'tst-quote-mark') { overrides.fontSize = '18vw'; }
                         else if (base === 'tst-bg') { overrides.width = '300px'; overrides.height = '300px'; }
                     } else if (tplId === 'ctaSection') {
                         if (base === 'cta-heading') { overrides.width = '90%'; overrides.fontSize = '7vw'; }
@@ -209,24 +221,38 @@ window.ArbelCinematicEditor = (function () {
                         if (base === 'showcase-item') { overrides.left = '5%'; overrides.width = '90%'; }
                         else if (base === 'showcase-title') { overrides.fontSize = '5.5vw'; }
                     } else {
-                        // Generic mobile: widen narrow elements
+                        // Generic mobile: center and widen narrow elements
                         var wStr = String(s.width || '');
                         var wPct = wStr.match(/^([\d.]+)\s*%$/) ? parseFloat(wStr) : -1;
                         var wPx = wStr.match(/^([\d.]+)\s*px$/) ? parseFloat(wStr) : -1;
-                        if (wPct > 0 && wPct < 70) {
-                            overrides.width = '90%'; overrides.left = '5%';
+                        var leftStr = String(s.left || '');
+                        var leftPct = leftStr.match(/^([\d.]+)\s*%$/) ? parseFloat(leftStr) : -1;
+
+                        // Elements positioned past 40% left or with narrow width: center them
+                        if (wPct > 0 && wPct < 80) {
+                            overrides.width = '90%';
+                            overrides.left = '5%';
+                            overrides.right = 'auto';
+                            // Remove translateX centering since we're repositioning
                             if (s.transform && s.transform.indexOf('translateX(-50%)') >= 0) {
                                 overrides.transform = s.transform.replace(/translateX\(-50%\)/g, 'translateX(0)');
                             } else if (s.transform && s.transform.indexOf('translate(-50%') >= 0) {
                                 overrides.transform = s.transform.replace(/translate\(-50%,/, 'translate(0,');
                             }
-                        } else if (wPx > 300) {
-                            overrides.width = '90%'; overrides.left = '5%';
+                        } else if (wPx > 200) {
+                            overrides.width = '90%'; overrides.left = '5%'; overrides.right = 'auto';
                         }
+                        // Right-positioned elements
                         if (s.right && !overrides.left) {
                             overrides.right = 'auto'; overrides.left = '5%'; overrides.width = '90%';
                         }
-                        var leftStr = String(s.left || '');
+                        // Elements with high left% but no width override yet
+                        if (leftPct >= 40 && !overrides.left) {
+                            overrides.left = '5%'; overrides.width = '90%'; overrides.right = 'auto';
+                            if (s.transform && s.transform.indexOf('-50%') >= 0) {
+                                overrides.transform = s.transform.replace(/translateX?\(-50%[^)]*\)/g, 'translateX(0)');
+                            }
+                        }
                         var leftPx = leftStr.match(/^([\d.]+)\s*px$/);
                         if (leftPx && parseFloat(leftPx[1]) > 200) { overrides.left = '5%'; }
                         var topStr = String(s.top || '');
@@ -327,6 +353,10 @@ window.ArbelCinematicEditor = (function () {
         if (_scenes.length === 0) {
             _scenes.push(ArbelCinematicCompiler.createScene('hero', 0));
         }
+
+        // Ensure responsive overrides exist for all scenes
+        _autoResponsive('tablet');
+        _autoResponsive('mobile');
 
         _setupUI();
         _renderSceneList();

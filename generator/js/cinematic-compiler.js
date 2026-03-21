@@ -831,7 +831,9 @@ window.ArbelCinematicCompiler = (function () {
                 var widthVal = parseFloat(s.width) || 100;
                 if (hasTransCenter) { rCls = ' cne-r-center'; }
                 else if (s.right && !s.left) { rCls = ' cne-r-right'; }
-                else if (leftVal < 45 && widthVal < 55) { rCls = ' cne-r-left'; }
+                else if (leftVal >= 30 && s.textAlign === 'center') { rCls = ' cne-r-center'; }
+                else if (leftVal < 40 && widthVal < 55) { rCls = ' cne-r-left'; }
+                else if (leftVal >= 40) { rCls = ' cne-r-center'; }
 
                 html += '    <' + tag + ' class="cne-element' + rCls + '"';
                 html += ' data-arbel-id="' + esc(el.id) + '"';
@@ -1116,9 +1118,13 @@ window.ArbelCinematicCompiler = (function () {
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
         css += '  .cne-nav-links { display: none; }\n';
-        css += '  .cne-scene { min-height: 100vh; }\n';
-        css += '  .cne-element { font-size: 0.9em; }\n';
-        css += '  .cne-r-center { width: 85% !important; }\n';
+        css += '  .cne-scene { min-height: 100vh; overflow: hidden; }\n';
+        css += '  .cne-element { font-size: 0.9em; max-width: 96vw; overflow-wrap: break-word; word-wrap: break-word; }\n';
+        css += '  .cne-r-center {\n';
+        css += '    left: 0 !important; right: 0 !important;\n';
+        css += '    margin-left: auto !important; margin-right: auto !important;\n';
+        css += '    width: 85% !important;\n';
+        css += '  }\n';
         css += '  .cne-r-left, .cne-r-right {\n';
         css += '    left: 0 !important; right: 0 !important;\n';
         css += '    margin-left: auto !important; margin-right: auto !important;\n';
@@ -1127,10 +1133,18 @@ window.ArbelCinematicCompiler = (function () {
         css += '}\n';
         // Responsive — mobile
         css += '@media (max-width: 480px) {\n';
-        css += '  .cne-element { font-size: 0.82em; }\n';
+        css += '  .cne-element { font-size: 0.82em; max-width: 96vw; }\n';
         css += '  .cne-nav-logo { font-size: 1rem; }\n';
-        css += '  .cne-r-center { width: 92% !important; }\n';
-        css += '  .cne-r-left, .cne-r-right { width: 90% !important; }\n';
+        css += '  .cne-r-center {\n';
+        css += '    left: 0 !important; right: 0 !important;\n';
+        css += '    margin-left: auto !important; margin-right: auto !important;\n';
+        css += '    width: 92% !important;\n';
+        css += '  }\n';
+        css += '  .cne-r-left, .cne-r-right {\n';
+        css += '    left: 0 !important; right: 0 !important;\n';
+        css += '    margin-left: auto !important; margin-right: auto !important;\n';
+        css += '    width: 90% !important;\n';
+        css += '  }\n';
         css += '}\n\n';
 
         // Form element styles
