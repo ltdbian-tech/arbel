@@ -1354,7 +1354,8 @@ window.ArbelCinematicEditor = (function () {
         var newEl = {
             id: 'div-' + Date.now().toString(36),
             tag: 'div',
-            text: svgHtml,
+            text: '',
+            svgContent: svgHtml,
             visible: true,
             style: {
                 position: 'absolute',
@@ -1394,7 +1395,8 @@ window.ArbelCinematicEditor = (function () {
         var newEl = {
             id: 'div-' + Date.now().toString(36),
             tag: 'div',
-            text: raw,
+            text: '',
+            svgContent: raw,
             visible: true,
             style: {
                 position: 'absolute',
@@ -3616,6 +3618,16 @@ window.ArbelCinematicEditor = (function () {
                 targetIn.placeholder = 'Scene name or URL';
                 targetIn.value = link.href || '';
                 targetIn.addEventListener('input', function () { _overrides.navLinks[i].href = targetIn.value; _notifyUpdate(true); });
+                var varBtn = document.createElement('button');
+                varBtn.className = 'cne-upload-btn';
+                varBtn.style.cssText = 'padding:2px 6px;font-size:9px;letter-spacing:0.05em;white-space:nowrap;min-width:32px;text-align:center';
+                varBtn.textContent = link.variant === 'button' ? 'BTN' : 'LINK';
+                varBtn.title = 'Toggle link / button style';
+                varBtn.addEventListener('click', function () {
+                    _overrides.navLinks[i].variant = _overrides.navLinks[i].variant === 'button' ? 'link' : 'button';
+                    varBtn.textContent = _overrides.navLinks[i].variant === 'button' ? 'BTN' : 'LINK';
+                    _notifyUpdate(true);
+                });
                 var rmBtn = document.createElement('button');
                 rmBtn.className = 'cne-upload-btn';
                 rmBtn.style.cssText = 'color:#ff6b6b;padding:2px 6px;font-size:12px';
@@ -3624,6 +3636,7 @@ window.ArbelCinematicEditor = (function () {
                 rmBtn.addEventListener('click', function () { _pushUndo(); _overrides.navLinks.splice(i, 1); _renderNavLinks(); _notifyUpdate(true); });
                 row.appendChild(txtIn);
                 row.appendChild(targetIn);
+                row.appendChild(varBtn);
                 row.appendChild(rmBtn);
                 navLinkList.appendChild(row);
             });

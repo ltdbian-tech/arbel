@@ -616,7 +616,8 @@ window.ArbelCinematicCompiler = (function () {
                     if (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]) {
                         href = '#' + (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]);
                     }
-                    html += '    <a href="' + escHref(href) + '" class="cne-nav-link" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
+                    var linkClass = link.variant === 'button' ? 'cne-nav-link cne-nav-cta' : 'cne-nav-link';
+                    html += '    <a href="' + escHref(href) + '" class="' + linkClass + '" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
                 });
             }
             html += '  </div>\n';
@@ -1013,9 +1014,11 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: calc(var(--token-space-unit) * 1.5) calc(var(--token-space-unit) * 3); display: flex; align-items: center; justify-content: space-between; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(10,10,15,0.5); border-bottom: 1px solid var(--border); transition: transform 0.4s; }\n';
         css += '.cne-nav.hidden { transform: translateY(-100%); }\n';
         css += '.cne-nav-logo { font-size: 1.1rem; font-weight: 700; color: var(--fg); text-decoration: none; letter-spacing: -0.02em; }\n';
-        css += '.cne-nav-links { display: flex; gap: calc(var(--token-space-unit) * 3); }\n';
+        css += '.cne-nav-links { display: flex; gap: calc(var(--token-space-unit) * 3); align-items: center; }\n';
         css += '.cne-nav-link { font-size: 0.8rem; color: var(--fg2); text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.3s; }\n';
         css += '.cne-nav-link:hover { color: var(--fg); }\n';
+        css += '.cne-nav-cta { padding: 0.5rem 1.4rem; border: 1px solid var(--fg2); border-radius: 50px; color: var(--fg); transition: background 0.3s, color 0.3s, border-color 0.3s; }\n';
+        css += '.cne-nav-cta:hover { background: var(--fg); color: var(--bg); border-color: var(--fg); }\n';
         css += '.cne-scroll-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: transparent; }\n';
         css += '.cne-scroll-progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.1s linear; }\n\n';
 
