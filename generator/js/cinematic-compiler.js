@@ -900,6 +900,21 @@ window.ArbelCinematicCompiler = (function () {
                     if (el.lottieUrl && /^https?:\/\//.test(el.lottieUrl)) {
                         var safeLottie = escHref(el.lottieUrl);
                         html += '>' + elBgVidHtml + '<dotlottie-player src="' + safeLottie + '" background="transparent" speed="1" loop autoplay style="width:100%;height:100%"></dotlottie-player></' + tag + '>\n';
+                    // Frame element (image or video inside shaped clip)
+                    } else if (el.frameShape) {
+                        var frameFit = esc(el.frameObjectFit || 'cover');
+                        var frameInner = '';
+                        if (el.frameSrc) {
+                            var safeFSrc = escHref(el.frameSrc);
+                            if (el.frameMediaType === 'video') {
+                                frameInner = '<video autoplay loop muted playsinline src="' + safeFSrc + '" style="width:100%;height:100%;object-fit:' + frameFit + ';display:block"></video>';
+                            } else {
+                                frameInner = '<img src="' + safeFSrc + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:' + frameFit + ';display:block">';
+                            }
+                        } else {
+                            frameInner = '<div style="width:100%;height:100%;background:rgba(255,255,255,0.06)"></div>';
+                        }
+                        html += '>' + elBgVidHtml + frameInner + '</' + tag + '>\n';
                     // SVG illustration
                     } else if (el.svgContent) {
                         // Sanitize SVG: strip scripts and event handlers

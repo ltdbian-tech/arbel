@@ -1626,6 +1626,70 @@
                         </div>
                     </div>
 
+                    <!-- Frame section (shown for frame elements) -->
+                    <div class="cne-section-frame" id="cneFrameSection" style="display:none">
+                        <div class="cne-section-label">FRAME MEDIA</div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Media Type</span>
+                                <select class="gen-select" id="cneFrameMediaType">
+                                    <option value="image">Image</option>
+                                    <option value="video">Video</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneFrameImgRow">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Image URL</span>
+                                <input type="text" class="gen-input" id="cneFrameSrc" placeholder="https://... image link">
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneFrameUploadRow">
+                            <div class="cne-col" style="flex:1">
+                                <label class="cne-upload-btn" id="cneFrameUploadLabel">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                    Upload Image / Video
+                                    <input type="file" accept="image/*,video/mp4,video/webm" id="cneFrameUpload" style="display:none">
+                                </label>
+                            </div>
+                        </div>
+                        <div class="cne-row" id="cneFrameVideoRow" style="display:none">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Video URL (MP4/WebM)</span>
+                                <input type="text" class="gen-input" id="cneFrameVideoSrc" placeholder="https://...mp4">
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Object Fit</span>
+                                <select class="gen-select" id="cneFrameFit">
+                                    <option value="cover">Cover</option>
+                                    <option value="contain">Contain</option>
+                                    <option value="fill">Fill</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col" style="flex:1">
+                                <span class="cne-hint mono">Frame Shape</span>
+                                <select class="gen-select" id="cneFrameShape">
+                                    <option value="circle">Circle</option>
+                                    <option value="square">Square</option>
+                                    <option value="rounded-square">Rounded</option>
+                                    <option value="triangle">Triangle</option>
+                                    <option value="diamond">Diamond</option>
+                                    <option value="hexagon">Hexagon</option>
+                                    <option value="star">Star</option>
+                                    <option value="heart">Heart</option>
+                                    <option value="octagon">Octagon</option>
+                                    <option value="pentagon">Pentagon</option>
+                                    <option value="arch">Arch</option>
+                                    <option value="cross">Cross</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Link section (shown for <a> and button variant) -->
                     <div class="cne-section-link" id="cneLinkSection" style="display:none">
                         <div class="cne-section-label">LINK</div>

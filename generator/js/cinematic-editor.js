@@ -93,6 +93,27 @@ window.ArbelCinematicEditor = (function () {
         radius: 8
     };
 
+    /* ─── Shape & Frame Definitions ─── */
+    var SHAPE_PATHS = {
+        'circle':         { svg: '<ellipse cx="50" cy="50" rx="48" ry="48"/>', clip: 'circle(50% at 50% 50%)' },
+        'square':         { svg: '<rect x="2" y="2" width="96" height="96"/>', clip: 'inset(0)' },
+        'rounded-square': { svg: '<rect x="2" y="2" width="96" height="96" rx="16"/>', clip: 'inset(0 round 16%)' },
+        'triangle':       { svg: '<polygon points="50,2 98,98 2,98"/>', clip: 'polygon(50% 0%, 100% 100%, 0% 100%)' },
+        'diamond':        { svg: '<polygon points="50,2 98,50 50,98 2,50"/>', clip: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
+        'pentagon':       { svg: '<polygon points="50,2 97,36 79,96 21,96 3,36"/>', clip: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)' },
+        'hexagon':        { svg: '<polygon points="50,2 93,27 93,73 50,98 7,73 7,27"/>', clip: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+        'octagon':        { svg: '<polygon points="30,2 70,2 98,30 98,70 70,98 30,98 2,70 2,30"/>', clip: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)' },
+        'star':           { svg: '<polygon points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38"/>', clip: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' },
+        'heart':          { svg: '<path d="M50,90 C20,60 2,40 2,25 A22,22,0,0,1,50,20 A22,22,0,0,1,98,25 C98,40 80,60 50,90Z"/>', clip: 'polygon(50% 0%, 61% 0%, 72% 4%, 81% 12%, 88% 22%, 93% 34%, 95% 46%, 93% 58%, 86% 70%, 75% 80%, 60% 90%, 50% 100%, 40% 90%, 25% 80%, 14% 70%, 7% 58%, 5% 46%, 7% 34%, 12% 22%, 19% 12%, 28% 4%, 39% 0%)' },
+        'cross':          { svg: '<polygon points="35,2 65,2 65,35 98,35 98,65 65,65 65,98 35,98 35,65 2,65 2,35 35,35"/>', clip: 'polygon(35% 0%, 65% 0%, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%, 0% 35%, 35% 35%)' },
+        'arrow-right':    { svg: '<polygon points="2,20 65,20 65,2 98,50 65,98 65,80 2,80"/>', clip: 'polygon(0% 20%, 65% 20%, 65% 0%, 100% 50%, 65% 100%, 65% 80%, 0% 80%)' },
+        'ring':           { svg: '<circle cx="50" cy="50" r="46" stroke-width="8" fill="none"/>', clip: null, isStroke: true },
+        'semicircle':     { svg: '<path d="M2,98 A48,48,0,0,1,98,98Z"/>', clip: 'ellipse(50% 50% at 50% 100%)' },
+        'pill':           { svg: '<rect x="2" y="20" width="96" height="60" rx="30"/>', clip: 'inset(20% 0 20% 0 round 50%)' },
+        'parallelogram':  { svg: '<polygon points="20,2 98,2 80,98 2,98"/>', clip: 'polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)' },
+        'arch':           { svg: '<path d="M2,98 L2,50 A48,48,0,0,1,98,50 L98,98Z"/>', clip: 'polygon(0% 100%, 0% 50%, 5% 35%, 15% 20%, 28% 9%, 43% 3%, 57% 3%, 72% 9%, 85% 20%, 95% 35%, 100% 50%, 100% 100%)' }
+    };
+
     /* ─── DOM Shorthand ─── */
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
     function _qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
@@ -913,6 +934,8 @@ window.ArbelCinematicEditor = (function () {
                 el.tag === 'img' ? 'Image' :
                 el.tag === 'video' ? 'Video' :
                 el.lottieUrl !== undefined ? 'Lottie' :
+                el.frameShape ? (el.frameShape.charAt(0).toUpperCase() + el.frameShape.slice(1) + ' Frame') :
+                el.shapeName ? (el.shapeName.charAt(0).toUpperCase() + el.shapeName.slice(1) + ' Shape') :
                 el.svgContent !== undefined ? 'SVG' :
                 el.embedUrl !== undefined ? 'Embed' :
                 el.id
@@ -1492,6 +1515,34 @@ window.ArbelCinematicEditor = (function () {
             { tag: 'video', label: 'Video', text: '', cat: 'Media' },
             { tag: 'div', label: 'Box / Container', text: '', cat: 'Layout' },
             { tag: 'div', label: 'Glass Card', text: '', variant: 'glass', cat: 'Layout' },
+            { tag: 'div', label: 'Circle', text: '', variant: 'shape', shapeName: 'circle', cat: 'Shapes' },
+            { tag: 'div', label: 'Square', text: '', variant: 'shape', shapeName: 'square', cat: 'Shapes' },
+            { tag: 'div', label: 'Rounded Square', text: '', variant: 'shape', shapeName: 'rounded-square', cat: 'Shapes' },
+            { tag: 'div', label: 'Triangle', text: '', variant: 'shape', shapeName: 'triangle', cat: 'Shapes' },
+            { tag: 'div', label: 'Diamond', text: '', variant: 'shape', shapeName: 'diamond', cat: 'Shapes' },
+            { tag: 'div', label: 'Pentagon', text: '', variant: 'shape', shapeName: 'pentagon', cat: 'Shapes' },
+            { tag: 'div', label: 'Hexagon', text: '', variant: 'shape', shapeName: 'hexagon', cat: 'Shapes' },
+            { tag: 'div', label: 'Octagon', text: '', variant: 'shape', shapeName: 'octagon', cat: 'Shapes' },
+            { tag: 'div', label: 'Star', text: '', variant: 'shape', shapeName: 'star', cat: 'Shapes' },
+            { tag: 'div', label: 'Heart', text: '', variant: 'shape', shapeName: 'heart', cat: 'Shapes' },
+            { tag: 'div', label: 'Cross', text: '', variant: 'shape', shapeName: 'cross', cat: 'Shapes' },
+            { tag: 'div', label: 'Arrow Right', text: '', variant: 'shape', shapeName: 'arrow-right', cat: 'Shapes' },
+            { tag: 'div', label: 'Ring', text: '', variant: 'shape', shapeName: 'ring', cat: 'Shapes' },
+            { tag: 'div', label: 'Semicircle', text: '', variant: 'shape', shapeName: 'semicircle', cat: 'Shapes' },
+            { tag: 'div', label: 'Pill', text: '', variant: 'shape', shapeName: 'pill', cat: 'Shapes' },
+            { tag: 'div', label: 'Parallelogram', text: '', variant: 'shape', shapeName: 'parallelogram', cat: 'Shapes' },
+            { tag: 'div', label: 'Circle Frame', text: '', variant: 'frame', frameName: 'circle', cat: 'Frames' },
+            { tag: 'div', label: 'Square Frame', text: '', variant: 'frame', frameName: 'square', cat: 'Frames' },
+            { tag: 'div', label: 'Rounded Frame', text: '', variant: 'frame', frameName: 'rounded-square', cat: 'Frames' },
+            { tag: 'div', label: 'Triangle Frame', text: '', variant: 'frame', frameName: 'triangle', cat: 'Frames' },
+            { tag: 'div', label: 'Diamond Frame', text: '', variant: 'frame', frameName: 'diamond', cat: 'Frames' },
+            { tag: 'div', label: 'Hexagon Frame', text: '', variant: 'frame', frameName: 'hexagon', cat: 'Frames' },
+            { tag: 'div', label: 'Star Frame', text: '', variant: 'frame', frameName: 'star', cat: 'Frames' },
+            { tag: 'div', label: 'Heart Frame', text: '', variant: 'frame', frameName: 'heart', cat: 'Frames' },
+            { tag: 'div', label: 'Octagon Frame', text: '', variant: 'frame', frameName: 'octagon', cat: 'Frames' },
+            { tag: 'div', label: 'Pentagon Frame', text: '', variant: 'frame', frameName: 'pentagon', cat: 'Frames' },
+            { tag: 'div', label: 'Arch Frame', text: '', variant: 'frame', frameName: 'arch', cat: 'Frames' },
+            { tag: 'div', label: 'Cross Frame', text: '', variant: 'frame', frameName: 'cross', cat: 'Frames' },
             { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb', cat: 'Decorative' },
             { tag: 'div', label: 'Divider Line', text: '', variant: 'divider', cat: 'Decorative' },
             { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive' },
@@ -1525,8 +1576,18 @@ window.ArbelCinematicEditor = (function () {
             categories[cat].forEach(function (t) {
                 var btn = document.createElement('button');
                 btn.className = 'cne-el-type-btn';
-                var icon = t.tag === 'img' ? '&#128247;' : t.tag === 'video' ? '&#127909;' : t.tag === 'a' ? '&#128279;' : '';
-                btn.innerHTML = (icon ? '<span>' + icon + '</span> ' : '<span class="mono">&lt;' + t.tag + '&gt;</span> ') + t.label;
+                var icon = '';
+                var shapKey = t.shapeName || t.frameName;
+                if (shapKey && SHAPE_PATHS[shapKey]) {
+                    var sDef = SHAPE_PATHS[shapKey];
+                    var sFill = t.variant === 'frame' ? 'none' : (sDef.isStroke ? 'none' : '#a78bfa');
+                    var sStroke = t.variant === 'frame' || sDef.isStroke ? '#a78bfa' : 'none';
+                    icon = '<svg viewBox="0 0 100 100" width="20" height="20" style="vertical-align:middle;margin-right:6px">' + sDef.svg.replace('/>', ' fill="' + sFill + '" stroke="' + sStroke + '" stroke-width="3"/>') + '</svg>';
+                    btn.innerHTML = icon + t.label;
+                } else {
+                    icon = t.tag === 'img' ? '&#128247;' : t.tag === 'video' ? '&#127909;' : t.tag === 'a' ? '&#128279;' : '';
+                    btn.innerHTML = (icon ? '<span>' + icon + '</span> ' : '<span class="mono">&lt;' + t.tag + '&gt;</span> ') + t.label;
+                }
                 btn.addEventListener('click', function () {
                     _addElementFromType(t);
                     document.body.removeChild(overlay);
@@ -1613,6 +1674,30 @@ window.ArbelCinematicEditor = (function () {
                 borderRadius: '16px', background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)'
             };
+        } else if (t.tag === 'div' && t.variant === 'shape') {
+            var shapeDef = SHAPE_PATHS[t.shapeName] || SHAPE_PATHS['circle'];
+            var fill = '#ffffff';
+            var strokeAttr = shapeDef.isStroke ? ' stroke="' + fill + '"' : ' fill="' + fill + '"';
+            var extraFill = shapeDef.isStroke ? ' fill="none"' : '';
+            newEl.svgContent = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' + shapeDef.svg.replace('/>', strokeAttr + extraFill + ' />') + '</svg>';
+            newEl.shapeName = t.shapeName;
+            newEl.style = {
+                position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
+                width: '200px', height: '200px'
+            };
+        } else if (t.tag === 'div' && t.variant === 'frame') {
+            var frameDef = SHAPE_PATHS[t.frameName] || SHAPE_PATHS['circle'];
+            newEl.frameShape = t.frameName;
+            newEl.frameSrc = '';
+            newEl.frameMediaType = 'image';
+            newEl.frameObjectFit = 'cover';
+            newEl.style = {
+                position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)',
+                width: '300px', height: '300px', overflow: 'hidden'
+            };
+            if (frameDef.clip) {
+                newEl.style.clipPath = frameDef.clip;
+            }
         } else if (t.tag === 'div' && t.variant === 'orb') {
             newEl.style = {
                 position: 'absolute', top: '25%', left: '30%', width: '300px', height: '300px',
@@ -1907,6 +1992,95 @@ window.ArbelCinematicEditor = (function () {
                     _beginBurst('embed');
                     el.embedUrl = embedUrl.value;
                     _commitBurst('embed', 600);
+                    _notifyUpdate(true);
+                }
+            });
+        }
+
+        // ─── Frame controls ───
+        var frameMediaType = _qs('#cneFrameMediaType');
+        if (frameMediaType) {
+            frameMediaType.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (el && el.frameShape) {
+                    _pushUndo();
+                    el.frameMediaType = frameMediaType.value;
+                    el.frameSrc = '';
+                    var fmImgRow = _qs('#cneFrameImgRow'); if (fmImgRow) fmImgRow.style.display = (frameMediaType.value !== 'video') ? '' : 'none';
+                    var fmVideoRow = _qs('#cneFrameVideoRow'); if (fmVideoRow) fmVideoRow.style.display = (frameMediaType.value === 'video') ? '' : 'none';
+                    _notifyUpdate(true);
+                }
+            });
+        }
+        var frameSrcInput = _qs('#cneFrameSrc');
+        if (frameSrcInput) {
+            frameSrcInput.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el && el.frameShape) {
+                    _beginBurst('frameSrc');
+                    el.frameSrc = frameSrcInput.value;
+                    _commitBurst('frameSrc', 600);
+                    _notifyUpdate(true);
+                }
+            });
+        }
+        var frameVideoSrc = _qs('#cneFrameVideoSrc');
+        if (frameVideoSrc) {
+            frameVideoSrc.addEventListener('input', function () {
+                var el = _getSelectedElement();
+                if (el && el.frameShape) {
+                    _beginBurst('frameVid');
+                    el.frameSrc = frameVideoSrc.value;
+                    _commitBurst('frameVid', 600);
+                    _notifyUpdate(true);
+                }
+            });
+        }
+        var frameUpload = _qs('#cneFrameUpload');
+        if (frameUpload) {
+            frameUpload.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (!el || !el.frameShape || !frameUpload.files || !frameUpload.files[0]) return;
+                var file = frameUpload.files[0];
+                var isVid = /^video\//.test(file.type);
+                var maxSize = isVid ? 10 * 1024 * 1024 : 2 * 1024 * 1024;
+                if (file.size > maxSize) { alert(isVid ? 'Video must be under 10MB' : 'Image must be under 2MB'); return; }
+                _pushUndo();
+                el.frameMediaType = isVid ? 'video' : 'image';
+                var fmType = _qs('#cneFrameMediaType'); if (fmType) fmType.value = el.frameMediaType;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    el.frameSrc = e.target.result;
+                    var srcInput = _qs('#cneFrameSrc');
+                    if (srcInput) srcInput.value = '(uploaded)';
+                    _notifyUpdate(true);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        var frameFit = _qs('#cneFrameFit');
+        if (frameFit) {
+            frameFit.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (el && el.frameShape) {
+                    _pushUndo();
+                    el.frameObjectFit = frameFit.value;
+                    _notifyUpdate(true);
+                }
+            });
+        }
+        var frameShape = _qs('#cneFrameShape');
+        if (frameShape) {
+            frameShape.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (el && el.frameShape) {
+                    _pushUndo();
+                    el.frameShape = frameShape.value;
+                    var shapeDef = SHAPE_PATHS[frameShape.value] || SHAPE_PATHS['circle'];
+                    if (shapeDef.clip) {
+                        var bucket = _getStyleBucket(el);
+                        bucket.clipPath = shapeDef.clip;
+                    }
                     _notifyUpdate(true);
                 }
             });
@@ -4813,6 +4987,22 @@ window.ArbelCinematicEditor = (function () {
             if (hasLink) {
                 var lh = _qs('#cneLinkHref'); if (lh) lh.value = el.href || '';
                 var lt = _qs('#cneLinkNewTab'); if (lt) lt.checked = el.linkNewTab !== false;
+            }
+        }
+
+        // Show/hide frame section
+        var frameSection = _qs('#cneFrameSection');
+        if (frameSection) {
+            var isFrame = !!el.frameShape;
+            frameSection.style.display = isFrame ? '' : 'none';
+            if (isFrame) {
+                var fmType = _qs('#cneFrameMediaType'); if (fmType) fmType.value = el.frameMediaType || 'image';
+                var fmSrc = _qs('#cneFrameSrc');
+                if (fmSrc) fmSrc.value = (el.frameSrc && el.frameSrc.indexOf('data:') === 0) ? '(uploaded)' : (el.frameSrc || '');
+                var fmFit = _qs('#cneFrameFit'); if (fmFit) fmFit.value = el.frameObjectFit || 'cover';
+                var fmShape = _qs('#cneFrameShape'); if (fmShape) fmShape.value = el.frameShape || 'circle';
+                var fmImgRow = _qs('#cneFrameImgRow'); if (fmImgRow) fmImgRow.style.display = (el.frameMediaType !== 'video') ? '' : 'none';
+                var fmVideoRow = _qs('#cneFrameVideoRow'); if (fmVideoRow) fmVideoRow.style.display = (el.frameMediaType === 'video') ? '' : 'none';
             }
         }
 
