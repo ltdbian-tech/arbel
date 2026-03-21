@@ -35,45 +35,52 @@ window.ArbelCinematicCompiler = (function () {
         hero: {
             label: 'Hero',
             desc: 'Full-screen title with subtitle',
+            bg3dType: 'gradient-orbs',
             elements: [
-                { id: 'hero-title', tag: 'h1', text: 'Your Headline', style: { fontSize: '6vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%' }, scroll: { opacity: [1, 0], y: [0, -120], start: 0.3, end: 0.8 } },
-                { id: 'hero-sub', tag: 'p', text: 'Your subtitle goes here', style: { fontSize: '1.4rem', color: 'rgba(255,255,255,0.6)', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,0)', textAlign: 'center', width: '60%' }, scroll: { opacity: [0, 1, 0], y: [40, 0, -60], start: 0.05, end: 0.85 } }
+                { id: 'hero-tag', tag: 'span', text: 'WELCOME TO THE FUTURE', style: { fontSize: '0.7rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', position: 'absolute', top: '28%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [1, 0], y: [0, -40], start: 0.4, end: 0.8 } },
+                { id: 'hero-title', tag: 'h1', text: 'Your Headline', style: { fontSize: '7vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '38%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%', letterSpacing: '-0.03em', lineHeight: '1.05' }, scroll: { opacity: [1, 0], y: [0, -120], start: 0.3, end: 0.8 } },
+                { id: 'hero-sub', tag: 'p', text: 'Build stunning experiences that captivate and convert', style: { fontSize: '1.25rem', color: 'rgba(255,255,255,0.45)', position: 'absolute', top: '54%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '45%', lineHeight: '1.7', fontWeight: '300' }, scroll: { opacity: [1, 0], y: [0, -80], start: 0.35, end: 0.85 } },
+                { id: 'hero-cta', tag: 'div', text: 'Get Started \u2192', style: { fontSize: '0.85rem', fontWeight: '500', letterSpacing: '0.05em', color: '#ffffff', position: 'absolute', top: '68%', left: '50%', transform: 'translateX(-50%)', padding: '14px 36px', borderRadius: '50px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', cursor: 'pointer', textAlign: 'center' }, scroll: { opacity: [1, 0], y: [0, -60], start: 0.4, end: 0.85 } }
             ]
         },
         splitMedia: {
             label: 'Split + Media',
             desc: 'Left text, right image area',
             elements: [
-                { id: 'split-title', tag: 'h2', text: 'Feature Title', style: { fontSize: '3.5vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '30%', left: '8%', width: '38%' }, scroll: { opacity: [0, 1], x: [-80, 0], start: 0, end: 0.4 } },
-                { id: 'split-desc', tag: 'p', text: 'Describe your feature in detail. This text reveals as you scroll.', style: { fontSize: '1.2rem', color: 'rgba(255,255,255,0.65)', position: 'absolute', top: '48%', left: '8%', width: '35%', lineHeight: '1.7' }, scroll: { opacity: [0, 1], x: [-60, 0], start: 0.1, end: 0.5 } },
-                { id: 'split-media', tag: 'div', text: '', style: { position: 'absolute', top: '15%', right: '5%', width: '42%', height: '70%', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(108,92,231,0.3), rgba(0,206,201,0.2))', border: '1px solid rgba(255,255,255,0.1)' }, scroll: { opacity: [0, 1], scale: [0.85, 1], start: 0.05, end: 0.5 } }
+                { id: 'split-tag', tag: 'span', text: 'OUR APPROACH', style: { fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', position: 'absolute', top: '25%', left: '8%' }, scroll: { opacity: [0, 1], x: [-30, 0], start: 0, end: 0.25 } },
+                { id: 'split-title', tag: 'h2', text: 'Feature Title', style: { fontSize: '3.5vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '32%', left: '8%', width: '38%', letterSpacing: '-0.02em', lineHeight: '1.1' }, scroll: { opacity: [0, 1], x: [-60, 0], start: 0, end: 0.35 } },
+                { id: 'split-desc', tag: 'p', text: 'Describe your feature in detail. This text reveals as you scroll through the experience.', style: { fontSize: '1.05rem', color: 'rgba(255,255,255,0.45)', position: 'absolute', top: '50%', left: '8%', width: '35%', lineHeight: '1.8', fontWeight: '300' }, scroll: { opacity: [0, 1], x: [-40, 0], start: 0.1, end: 0.4 } },
+                { id: 'split-media', tag: 'div', text: '', style: { position: 'absolute', top: '12%', right: '5%', width: '44%', height: '76%', borderRadius: '20px', background: 'linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }, scroll: { opacity: [0, 1], scale: [0.9, 1], start: 0.05, end: 0.4 } }
             ]
         },
         showcase: {
             label: 'Showcase',
             desc: 'Centered large element with caption',
             elements: [
-                { id: 'showcase-item', tag: 'div', text: '', style: { position: 'absolute', top: '10%', left: '10%', width: '80%', height: '65%', borderRadius: '20px', background: 'linear-gradient(180deg, rgba(108,92,231,0.2), rgba(0,0,0,0.4))', border: '1px solid rgba(255,255,255,0.08)' }, scroll: { scale: [0.8, 1, 0.95], opacity: [0, 1, 0.8], start: 0, end: 0.9 } },
-                { id: 'showcase-title', tag: 'h2', text: 'Product Name', style: { fontSize: '2.8vw', fontWeight: '700', color: '#ffffff', position: 'absolute', bottom: '15%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [40, 0], start: 0.2, end: 0.6 } },
-                { id: 'showcase-tag', tag: 'span', text: 'Category — Year', style: { fontSize: '0.85rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)' }, scroll: { opacity: [0, 1], start: 0.3, end: 0.65 } }
+                { id: 'showcase-item', tag: 'div', text: '', style: { position: 'absolute', top: '8%', left: '8%', width: '84%', height: '68%', borderRadius: '24px', background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.2))', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }, scroll: { scale: [0.85, 1, 0.97], opacity: [0, 1, 0.9], start: 0, end: 0.9 } },
+                { id: 'showcase-title', tag: 'h2', text: 'Product Name', style: { fontSize: '2.8vw', fontWeight: '700', color: '#ffffff', position: 'absolute', bottom: '15%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', letterSpacing: '-0.02em' }, scroll: { opacity: [0, 1], y: [40, 0], blur: [6, 0], start: 0.2, end: 0.5 } },
+                { id: 'showcase-tag', tag: 'span', text: 'Category \u2014 Year', style: { fontSize: '0.75rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', position: 'absolute', bottom: '9%', left: '50%', transform: 'translateX(-50%)' }, scroll: { opacity: [0, 1], start: 0.3, end: 0.6 } }
             ]
         },
         stats: {
             label: 'Stats',
             desc: 'Animated numbers with labels',
             elements: [
-                { id: 'stats-heading', tag: 'h2', text: 'By The Numbers', style: { fontSize: '3vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [-30, 0], start: 0, end: 0.3 } },
-                { id: 'stat-1', tag: 'div', text: '500+', style: { fontSize: '4vw', fontWeight: '800', color: '#6C5CE7', position: 'absolute', top: '45%', left: '15%', textAlign: 'center', width: '20%' }, scroll: { opacity: [0, 1], scale: [0.5, 1], start: 0.1, end: 0.5 } },
-                { id: 'stat-2', tag: 'div', text: '98%', style: { fontSize: '4vw', fontWeight: '800', color: '#00CEC9', position: 'absolute', top: '45%', left: '40%', textAlign: 'center', width: '20%' }, scroll: { opacity: [0, 1], scale: [0.5, 1], start: 0.2, end: 0.6 } },
-                { id: 'stat-3', tag: 'div', text: '24/7', style: { fontSize: '4vw', fontWeight: '800', color: '#fd79a8', position: 'absolute', top: '45%', left: '65%', textAlign: 'center', width: '20%' }, scroll: { opacity: [0, 1], scale: [0.5, 1], start: 0.3, end: 0.7 } }
+                { id: 'stats-heading', tag: 'h2', text: 'By The Numbers', style: { fontSize: '3vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '15%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', letterSpacing: '-0.02em' }, scroll: { opacity: [0, 1], y: [-30, 0], start: 0, end: 0.25 } },
+                { id: 'stat-1', tag: 'div', text: '500+', style: { fontSize: '4.5vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '40%', left: '15%', textAlign: 'center', width: '20%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }, scroll: { opacity: [0, 1], y: [40, 0], start: 0.1, end: 0.4 } },
+                { id: 'stat-1-label', tag: 'p', text: 'Projects Delivered', style: { fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', position: 'absolute', top: '55%', left: '15%', textAlign: 'center', width: '20%', letterSpacing: '0.05em' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.15, end: 0.45 } },
+                { id: 'stat-2', tag: 'div', text: '98%', style: { fontSize: '4.5vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '40%', left: '40%', textAlign: 'center', width: '20%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }, scroll: { opacity: [0, 1], y: [40, 0], start: 0.2, end: 0.5 } },
+                { id: 'stat-2-label', tag: 'p', text: 'Client Satisfaction', style: { fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', position: 'absolute', top: '55%', left: '40%', textAlign: 'center', width: '20%', letterSpacing: '0.05em' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.25, end: 0.55 } },
+                { id: 'stat-3', tag: 'div', text: '24/7', style: { fontSize: '4.5vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '40%', left: '65%', textAlign: 'center', width: '20%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }, scroll: { opacity: [0, 1], y: [40, 0], start: 0.3, end: 0.6 } },
+                { id: 'stat-3-label', tag: 'p', text: 'Global Support', style: { fontSize: '0.8rem', color: 'rgba(255,255,255,0.35)', position: 'absolute', top: '55%', left: '65%', textAlign: 'center', width: '20%', letterSpacing: '0.05em' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.35, end: 0.65 } }
             ]
         },
         textReveal: {
             label: 'Text Reveal',
             desc: 'Split-text cinematic reveal',
             elements: [
-                { id: 'reveal-line1', tag: 'h1', text: 'Built for', style: { fontSize: '7vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', overflow: 'hidden' }, scroll: { opacity: [0, 1], y: [100, 0], start: 0, end: 0.35 }, splitText: true },
-                { id: 'reveal-line2', tag: 'h1', text: 'the future.', style: { fontSize: '7vw', fontWeight: '800', color: '#6C5CE7', position: 'absolute', top: '48%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', overflow: 'hidden' }, scroll: { opacity: [0, 1], y: [100, 0], start: 0.15, end: 0.5 }, splitText: true }
+                { id: 'reveal-line1', tag: 'h1', text: 'Built for', style: { fontSize: '8vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', overflow: 'hidden', letterSpacing: '-0.04em' }, scroll: { opacity: [0, 1], y: [100, 0], start: 0, end: 0.3 }, splitText: true },
+                { id: 'reveal-line2', tag: 'h1', text: 'the future.', style: { fontSize: '8vw', fontWeight: '800', position: 'absolute', top: '48%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', overflow: 'hidden', letterSpacing: '-0.04em', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }, scroll: { opacity: [0, 1], y: [100, 0], start: 0.15, end: 0.45 }, splitText: true }
             ]
         },
         blank: {
@@ -111,7 +118,7 @@ window.ArbelCinematicCompiler = (function () {
             desc: 'Full-width image with cinematic wipe',
             elements: [
                 { id: 'imgr-tag', tag: 'span', text: 'FEATURED WORK', style: { fontSize: '0.75rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '5%', left: '8%' }, scroll: { opacity: [0, 1], x: [-30, 0], start: 0, end: 0.3 } },
-                { id: 'imgr-frame', tag: 'div', text: '', style: { position: 'absolute', top: '12%', left: '8%', width: '84%', height: '70%', borderRadius: '20px', background: 'linear-gradient(135deg, rgba(108,92,231,0.3), rgba(0,206,201,0.15))', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }, scroll: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0.05, end: 0.45 } },
+                { id: 'imgr-frame', tag: 'div', text: '', style: { position: 'absolute', top: '12%', left: '8%', width: '84%', height: '70%', borderRadius: '20px', background: 'linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)' }, scroll: { clipPath: ['inset(0 0 100% 0)', 'inset(0 0 0% 0)'], start: 0.05, end: 0.45 } },
                 { id: 'imgr-title', tag: 'h2', text: 'Project Name', style: { fontSize: '3.5vw', fontWeight: '700', color: '#ffffff', position: 'absolute', bottom: '10%', left: '8%' }, scroll: { opacity: [0, 1], y: [40, 0], blur: [8, 0], start: 0.35, end: 0.6 } },
                 { id: 'imgr-cat', tag: 'span', text: 'Branding — 2024', style: { fontSize: '0.8rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', position: 'absolute', bottom: '6%', left: '8%' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.4, end: 0.65 } }
             ]
@@ -119,43 +126,43 @@ window.ArbelCinematicCompiler = (function () {
         testimonial: {
             label: 'Testimonial',
             desc: 'Customer quote with cinematic entrance',
+            bg3dType: 'mesh-gradient',
             elements: [
-                { id: 'tst-bg', tag: 'div', text: '', style: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.15), transparent 70%)', filter: 'blur(60px)' }, scroll: { opacity: [0, 0.6], scale: [0.6, 1.2], start: 0, end: 0.6 } },
-                { id: 'tst-quote', tag: 'h2', text: '"This product completely transformed our workflow and exceeded every expectation."', style: { fontSize: '2.8vw', fontWeight: '300', fontStyle: 'italic', color: '#ffffff', position: 'absolute', top: '25%', left: '15%', width: '70%', textAlign: 'center', lineHeight: '1.5' }, scroll: { opacity: [0, 1], blur: [20, 0], start: 0, end: 0.4 }, splitText: true },
-                { id: 'tst-divider', tag: 'div', text: '', style: { position: 'absolute', top: '62%', left: '50%', transform: 'translateX(-50%)', width: '60px', height: '2px', background: 'rgba(255,255,255,0.3)' }, scroll: { opacity: [0, 1], scale: [0, 1], start: 0.25, end: 0.5 } },
-                { id: 'tst-author', tag: 'p', text: 'Jane Smith', style: { fontSize: '1rem', fontWeight: '600', color: 'rgba(255,255,255,0.8)', position: 'absolute', top: '68%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.35, end: 0.55 } },
-                { id: 'tst-role', tag: 'span', text: 'CEO, Company Name', style: { fontSize: '0.8rem', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '74%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [15, 0], start: 0.4, end: 0.6 } }
+                { id: 'tst-quote-mark', tag: 'div', text: '\u201c', style: { fontSize: '12vw', fontWeight: '200', color: 'rgba(255,255,255,0.04)', position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', lineHeight: '1' }, scroll: { opacity: [0, 0.6], scale: [0.8, 1], start: 0, end: 0.3 } },
+                { id: 'tst-quote', tag: 'h2', text: '\u201cThis product completely transformed our workflow and exceeded every expectation.\u201d', style: { fontSize: '2.5vw', fontWeight: '300', fontStyle: 'italic', color: 'rgba(255,255,255,0.85)', position: 'absolute', top: '28%', left: '15%', width: '70%', textAlign: 'center', lineHeight: '1.6' }, scroll: { opacity: [0, 1], blur: [15, 0], start: 0, end: 0.35 }, splitText: true },
+                { id: 'tst-divider', tag: 'div', text: '', style: { position: 'absolute', top: '62%', left: '50%', transform: 'translateX(-50%)', width: '40px', height: '1px', background: 'rgba(255,255,255,0.2)' }, scroll: { opacity: [0, 1], scale: [0, 1], start: 0.25, end: 0.45 } },
+                { id: 'tst-author', tag: 'p', text: 'Jane Smith', style: { fontSize: '0.95rem', fontWeight: '600', color: 'rgba(255,255,255,0.7)', position: 'absolute', top: '68%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', letterSpacing: '0.05em' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.3, end: 0.5 } },
+                { id: 'tst-role', tag: 'span', text: 'CEO, Company Name', style: { fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', position: 'absolute', top: '74%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [15, 0], start: 0.35, end: 0.55 } }
             ]
         },
         ctaSection: {
             label: 'Call to Action',
             desc: 'CTA with button and gradient glow',
+            bg3dType: 'aurora',
             elements: [
-                { id: 'cta-glow', tag: 'div', text: '', style: { position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.3), transparent 70%)', filter: 'blur(60px)' }, scroll: { opacity: [0, 0.8], scale: [0.5, 1.2], start: 0, end: 0.5 } },
-                { id: 'cta-heading', tag: 'h2', text: 'Ready to get started?', style: { fontSize: '4vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%' }, scroll: { opacity: [0, 1], y: [40, 0], blur: [10, 0], start: 0.05, end: 0.35 } },
-                { id: 'cta-sub', tag: 'p', text: 'Join thousands of creators building the future', style: { fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '48%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '60%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.15, end: 0.4 } },
-                { id: 'cta-btn', tag: 'div', text: 'Get Started \u2192', style: { fontSize: '1rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '60%', left: '50%', transform: 'translateX(-50%)', padding: '16px 40px', borderRadius: '50px', background: 'linear-gradient(135deg, #6C5CE7, #a855f7)', cursor: 'pointer', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [20, 0], scale: [0.9, 1], start: 0.25, end: 0.5 } }
+                { id: 'cta-heading', tag: 'h2', text: 'Ready to get started?', style: { fontSize: '4.5vw', fontWeight: '700', color: '#ffffff', position: 'absolute', top: '30%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', width: '80%', letterSpacing: '-0.03em' }, scroll: { opacity: [0, 1], y: [50, 0], blur: [8, 0], start: 0.05, end: 0.3 } },
+                { id: 'cta-sub', tag: 'p', text: 'Join thousands of creators building the future', style: { fontSize: '1.15rem', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '48%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '50%', fontWeight: '300' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.12, end: 0.35 } },
+                { id: 'cta-btn', tag: 'div', text: 'Start Building \u2192', style: { fontSize: '0.9rem', fontWeight: '500', letterSpacing: '0.04em', color: '#ffffff', position: 'absolute', top: '62%', left: '50%', transform: 'translateX(-50%)', padding: '16px 44px', borderRadius: '50px', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', cursor: 'pointer', textAlign: 'center' }, scroll: { opacity: [0, 1], y: [20, 0], scale: [0.9, 1], start: 0.2, end: 0.42 } }
             ]
         },
         bigText: {
             label: 'Big Text',
             desc: 'Oversized cinematic typography',
             elements: [
-                { id: 'bt-word1', tag: 'h1', text: 'THINK', style: { fontSize: '12vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '15%', left: '10%', opacity: '0.1', letterSpacing: '-0.04em' }, scroll: { opacity: [0, 0.15], x: [-200, 0], start: 0, end: 0.3 } },
-                { id: 'bt-word2', tag: 'h1', text: 'BUILD', style: { fontSize: '12vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '35%', right: '10%', opacity: '0.1', letterSpacing: '-0.04em', textAlign: 'right', width: '80%' }, scroll: { opacity: [0, 0.15], x: [200, 0], start: 0.1, end: 0.4 } },
-                { id: 'bt-word3', tag: 'h1', text: 'SHIP', style: { fontSize: '12vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '55%', left: '10%', opacity: '0.1', letterSpacing: '-0.04em' }, scroll: { opacity: [0, 0.15], x: [-200, 0], start: 0.2, end: 0.5 } },
-                { id: 'bt-overlay', tag: 'h2', text: 'We help you ship faster', style: { fontSize: '2.5vw', fontWeight: '500', color: '#ffffff', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', zIndex: '2' }, scroll: { opacity: [0, 1], blur: [20, 0], start: 0.3, end: 0.6 } }
+                { id: 'bt-word1', tag: 'h1', text: 'THINK', style: { fontSize: '14vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '12%', left: '8%', opacity: '0.06', letterSpacing: '-0.05em' }, scroll: { opacity: [0, 0.1], x: [-300, 0], start: 0, end: 0.3 } },
+                { id: 'bt-word2', tag: 'h1', text: 'BUILD', style: { fontSize: '14vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '35%', right: '8%', opacity: '0.06', letterSpacing: '-0.05em', textAlign: 'right', width: '80%' }, scroll: { opacity: [0, 0.1], x: [300, 0], start: 0.1, end: 0.4 } },
+                { id: 'bt-word3', tag: 'h1', text: 'SHIP', style: { fontSize: '14vw', fontWeight: '900', color: '#ffffff', position: 'absolute', top: '58%', left: '8%', opacity: '0.06', letterSpacing: '-0.05em' }, scroll: { opacity: [0, 0.1], x: [-300, 0], start: 0.2, end: 0.5 } },
+                { id: 'bt-overlay', tag: 'h2', text: 'We help you ship faster', style: { fontSize: '2.5vw', fontWeight: '400', color: '#ffffff', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', zIndex: '2', letterSpacing: '-0.01em' }, scroll: { opacity: [0, 1], blur: [25, 0], start: 0.25, end: 0.55 } }
             ]
         },
         gradientHero: {
             label: 'Gradient Hero',
             desc: 'Hero with animated gradient orbs',
+            bg3dType: 'gradient-orbs',
             elements: [
-                { id: 'gh-grad1', tag: 'div', text: '', style: { position: 'absolute', top: '10%', left: '-10%', width: '50vw', height: '50vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.4), transparent 70%)', filter: 'blur(80px)' }, scroll: { x: [0, 200], y: [0, -100], start: 0, end: 1 } },
-                { id: 'gh-grad2', tag: 'div', text: '', style: { position: 'absolute', bottom: '0', right: '-10%', width: '40vw', height: '40vw', borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,206,201,0.3), transparent 70%)', filter: 'blur(80px)' }, scroll: { x: [0, -150], y: [0, 100], start: 0, end: 1 } },
-                { id: 'gh-tag', tag: 'span', text: 'INTRODUCING', style: { fontSize: '0.75rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '28%', left: '50%', transform: 'translateX(-50%)' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0, end: 0.2 } },
-                { id: 'gh-title', tag: 'h1', text: 'The Next Generation', style: { fontSize: '6vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '35%', left: '50%', transform: 'translate(-50%,0)', textAlign: 'center', width: '80%', letterSpacing: '-0.03em' }, scroll: { opacity: [0, 1], y: [60, 0], clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], start: 0.05, end: 0.35 } },
-                { id: 'gh-sub', tag: 'p', text: 'Beautiful, fast, and built for the modern web', style: { fontSize: '1.3rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '55%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '50%' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.15, end: 0.4 } }
+                { id: 'gh-tag', tag: 'span', text: 'INTRODUCING', style: { fontSize: '0.65rem', letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)', position: 'absolute', top: '28%', left: '50%', transform: 'translateX(-50%)' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0, end: 0.18 } },
+                { id: 'gh-title', tag: 'h1', text: 'The Next Generation', style: { fontSize: '6.5vw', fontWeight: '800', color: '#ffffff', position: 'absolute', top: '36%', left: '50%', transform: 'translate(-50%,0)', textAlign: 'center', width: '80%', letterSpacing: '-0.04em', lineHeight: '1.05' }, scroll: { opacity: [0, 1], y: [60, 0], clipPath: ['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], start: 0.05, end: 0.3 } },
+                { id: 'gh-sub', tag: 'p', text: 'Beautiful, fast, and built for the modern web', style: { fontSize: '1.2rem', color: 'rgba(255,255,255,0.4)', position: 'absolute', top: '55%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '42%', fontWeight: '300', lineHeight: '1.7' }, scroll: { opacity: [0, 1], y: [30, 0], start: 0.12, end: 0.35 } }
             ]
         },
         cardStack: {
@@ -164,7 +171,7 @@ window.ArbelCinematicCompiler = (function () {
             elements: [
                 { id: 'cs-card3', tag: 'div', text: '', style: { position: 'absolute', top: '21%', left: '19%', width: '62%', height: '60%', borderRadius: '20px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.03)', zIndex: '1' }, scroll: { y: [60, -16], opacity: [0, 0.4], scale: [0.9, 0.92], start: 0.2, end: 0.6 } },
                 { id: 'cs-card2', tag: 'div', text: '', style: { position: 'absolute', top: '18%', left: '22%', width: '56%', height: '60%', borderRadius: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.04)', zIndex: '2' }, scroll: { y: [80, -8], opacity: [0, 0.7], scale: [0.95, 0.96], start: 0.1, end: 0.5 } },
-                { id: 'cs-card1', tag: 'div', text: '', style: { position: 'absolute', top: '15%', left: '25%', width: '50%', height: '60%', borderRadius: '20px', background: 'linear-gradient(180deg, rgba(108,92,231,0.15), rgba(0,0,0,0.3))', border: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(20px)', zIndex: '3' }, scroll: { y: [100, 0], opacity: [0, 1], rotation: [-3, 0], start: 0, end: 0.4 } },
+                { id: 'cs-card1', tag: 'div', text: '', style: { position: 'absolute', top: '15%', left: '25%', width: '50%', height: '60%', borderRadius: '20px', background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.2))', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', zIndex: '3' }, scroll: { y: [100, 0], opacity: [0, 1], rotation: [-3, 0], start: 0, end: 0.4 } },
                 { id: 'cs-title', tag: 'h2', text: 'Our Work', style: { fontSize: '2rem', fontWeight: '600', color: '#ffffff', position: 'absolute', top: '25%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: '4' }, scroll: { opacity: [0, 1], y: [30, 0], blur: [10, 0], start: 0.15, end: 0.45 } },
                 { id: 'cs-desc', tag: 'p', text: 'Scroll to explore our latest projects', style: { fontSize: '1rem', color: 'rgba(255,255,255,0.5)', position: 'absolute', top: '35%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', zIndex: '4', width: '40%' }, scroll: { opacity: [0, 1], y: [20, 0], start: 0.2, end: 0.5 } }
             ]
@@ -336,6 +343,7 @@ window.ArbelCinematicCompiler = (function () {
             pin: true,
             bgColor: '',
             bgImage: '',
+            bg3dType: tpl.bg3dType || '',
             elements: elems
         };
     }
@@ -815,7 +823,17 @@ window.ArbelCinematicCompiler = (function () {
                 var splitAttr = el.splitText ? ' data-split-text="true"' : '';
                 var parallaxAttr = el.parallax && el.parallax !== 1 ? ' data-parallax="' + parseFloat(el.parallax) + '"' : '';
 
-                html += '    <' + tag + ' class="cne-element"';
+                // Responsive layout class
+                var rCls = '';
+                var s = el.style || {};
+                var hasTransCenter = (s.transform || '').indexOf('-50%') >= 0;
+                var leftVal = parseFloat(s.left) || 0;
+                var widthVal = parseFloat(s.width) || 100;
+                if (hasTransCenter) { rCls = ' cne-r-center'; }
+                else if (s.right && !s.left) { rCls = ' cne-r-right'; }
+                else if (leftVal < 45 && widthVal < 55) { rCls = ' cne-r-left'; }
+
+                html += '    <' + tag + ' class="cne-element' + rCls + '"';
                 html += ' data-arbel-id="' + esc(el.id) + '"';
                 if (!el.svgContent && !el.embedUrl && !el.lottieUrl && tag !== 'form') {
                     html += ' data-arbel-edit="text"';
@@ -1094,17 +1112,25 @@ window.ArbelCinematicCompiler = (function () {
         // NOTE: Must NOT animate 'transform' — it would override GSAP xPercent/yPercent centering
         css += '@keyframes cne-hero-entrance { 0% { opacity: 0; filter: blur(8px); } 100% { opacity: 1; filter: blur(0); } }\n\n';
 
-        // Responsive — generic layout
+        // Responsive — tablet
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
         css += '  .cne-nav-links { display: none; }\n';
-        css += '  .cne-element { font-size: 0.85em; }\n';
-        css += '  .cne-scene { min-height: 80vh; }\n';
+        css += '  .cne-scene { min-height: 100vh; }\n';
+        css += '  .cne-element { font-size: 0.9em; }\n';
+        css += '  .cne-r-center { width: 85% !important; }\n';
+        css += '  .cne-r-left, .cne-r-right {\n';
+        css += '    left: 0 !important; right: 0 !important;\n';
+        css += '    margin-left: auto !important; margin-right: auto !important;\n';
+        css += '    width: 80% !important; text-align: center !important;\n';
+        css += '  }\n';
         css += '}\n';
+        // Responsive — mobile
         css += '@media (max-width: 480px) {\n';
-        css += '  .cne-element { font-size: 0.78em; }\n';
-        css += '  .cne-scene { min-height: 75vh; }\n';
+        css += '  .cne-element { font-size: 0.82em; }\n';
         css += '  .cne-nav-logo { font-size: 1rem; }\n';
+        css += '  .cne-r-center { width: 92% !important; }\n';
+        css += '  .cne-r-left, .cne-r-right { width: 90% !important; }\n';
         css += '}\n\n';
 
         // Form element styles
