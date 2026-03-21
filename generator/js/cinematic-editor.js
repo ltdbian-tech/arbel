@@ -311,6 +311,15 @@ window.ArbelCinematicEditor = (function () {
                         if (_designTokens.hasOwnProperty(k)) _designTokens[k] = saved.designTokens[k];
                     });
                 }
+                // Migrate: move SVG from .text to .svgContent for old elements
+                _scenes.forEach(function (sc) {
+                    sc.elements.forEach(function (el) {
+                        if (el.text && el.text.indexOf('<svg') >= 0 && !el.svgContent) {
+                            el.svgContent = el.text;
+                            el.text = '';
+                        }
+                    });
+                });
             }
         }
 
