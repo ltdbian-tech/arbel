@@ -1498,23 +1498,52 @@ window.ArbelCinematicEditor = (function () {
         overlay.className = 'arbel-dialog-overlay';
 
         var dialog = document.createElement('div');
-        dialog.className = 'arbel-dialog';
+        dialog.className = 'arbel-dialog arbel-dialog--add-el';
 
+        // ── Header ──
+        var header = document.createElement('div');
+        header.className = 'aed-header';
         var title = document.createElement('h3');
         title.className = 'arbel-dialog-title';
         title.textContent = 'Add Element';
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'aed-close';
+        closeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+        closeBtn.addEventListener('click', function () { document.body.removeChild(overlay); });
+        header.appendChild(title);
+        header.appendChild(closeBtn);
 
+        // ── Search ──
+        var searchWrap = document.createElement('div');
+        searchWrap.className = 'aed-search-wrap';
+        searchWrap.innerHTML = '<svg class="aed-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>';
+        var searchInput = document.createElement('input');
+        searchInput.className = 'aed-search';
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search elements...';
+        searchWrap.appendChild(searchInput);
+
+        // ── Category Tabs ──
+        var catOrder = ['All', 'Text', 'Media', 'Layout', 'Shapes', 'Frames', 'Decorative', 'Interactive', '3D Effects'];
+        var tabBar = document.createElement('div');
+        tabBar.className = 'aed-tabs';
+        var activeCat = 'All';
+
+        // ── Element Type Definitions ──
         var types = [
-            { tag: 'h1', label: 'Heading 1', text: 'Heading', cat: 'Text' },
-            { tag: 'h2', label: 'Heading 2', text: 'Subheading', cat: 'Text' },
-            { tag: 'h3', label: 'Heading 3', text: 'Section Title', cat: 'Text' },
-            { tag: 'p', label: 'Paragraph', text: 'Your text here', cat: 'Text' },
-            { tag: 'span', label: 'Label / Tag', text: 'LABEL', cat: 'Text' },
-            { tag: 'a', label: 'Link', text: 'Learn More', cat: 'Text' },
-            { tag: 'img', label: 'Image', text: '', cat: 'Media' },
-            { tag: 'video', label: 'Video', text: '', cat: 'Media' },
-            { tag: 'div', label: 'Box / Container', text: '', cat: 'Layout' },
-            { tag: 'div', label: 'Glass Card', text: '', variant: 'glass', cat: 'Layout' },
+            { tag: 'h1', label: 'Heading 1', text: 'Heading', cat: 'Text', icon: 'H1' },
+            { tag: 'h2', label: 'Heading 2', text: 'Subheading', cat: 'Text', icon: 'H2' },
+            { tag: 'h3', label: 'Heading 3', text: 'Section Title', cat: 'Text', icon: 'H3' },
+            { tag: 'p', label: 'Paragraph', text: 'Your text here', cat: 'Text', icon: 'P' },
+            { tag: 'span', label: 'Label / Tag', text: 'LABEL', cat: 'Text', icon: 'Aa' },
+            { tag: 'a', label: 'Link', text: 'Learn More', cat: 'Text', icon: 'link' },
+            { tag: 'img', label: 'Image', text: '', cat: 'Media', icon: 'image' },
+            { tag: 'video', label: 'Video', text: '', cat: 'Media', icon: 'video' },
+            { tag: 'div', label: 'Lottie Animation', text: '', variant: 'lottie', cat: 'Media', icon: 'lottie' },
+            { tag: 'div', label: 'SVG Illustration', text: '', variant: 'svg', cat: 'Media', icon: 'svg' },
+            { tag: 'div', label: 'Embed / iFrame', text: '', variant: 'embed', cat: 'Media', icon: 'embed' },
+            { tag: 'div', label: 'Box / Container', text: '', cat: 'Layout', icon: 'box' },
+            { tag: 'div', label: 'Glass Card', text: '', variant: 'glass', cat: 'Layout', icon: 'glass' },
             { tag: 'div', label: 'Circle', text: '', variant: 'shape', shapeName: 'circle', cat: 'Shapes' },
             { tag: 'div', label: 'Square', text: '', variant: 'shape', shapeName: 'square', cat: 'Shapes' },
             { tag: 'div', label: 'Rounded Square', text: '', variant: 'shape', shapeName: 'rounded-square', cat: 'Shapes' },
@@ -1543,75 +1572,175 @@ window.ArbelCinematicEditor = (function () {
             { tag: 'div', label: 'Pentagon Frame', text: '', variant: 'frame', frameName: 'pentagon', cat: 'Frames' },
             { tag: 'div', label: 'Arch Frame', text: '', variant: 'frame', frameName: 'arch', cat: 'Frames' },
             { tag: 'div', label: 'Cross Frame', text: '', variant: 'frame', frameName: 'cross', cat: 'Frames' },
-            { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb', cat: 'Decorative' },
-            { tag: 'div', label: 'Divider Line', text: '', variant: 'divider', cat: 'Decorative' },
-            { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive' },
-            { tag: 'form', label: 'Contact Form', text: '', variant: 'form', cat: 'Interactive' },
-            { tag: 'div', label: '3D Card Flip', text: '', variant: '3d-card', cat: '3D Effects' },
-            { tag: 'div', label: '3D Rotate Box', text: '', variant: '3d-rotate', cat: '3D Effects' },
-            { tag: 'div', label: '3D Float Layer', text: '', variant: '3d-float', cat: '3D Effects' },
-            { tag: 'div', label: '3D Tilt Plane', text: '', variant: '3d-tilt', cat: '3D Effects' },
-            { tag: 'canvas', label: 'WebGL Canvas', text: '', variant: 'webgl', cat: '3D Effects' },
-            { tag: 'div', label: 'Lottie Animation', text: '', variant: 'lottie', cat: 'Media' },
-            { tag: 'div', label: 'SVG Illustration', text: '', variant: 'svg', cat: 'Media' },
-            { tag: 'div', label: 'Embed / iFrame', text: '', variant: 'embed', cat: 'Media' }
+            { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb', cat: 'Decorative', icon: 'orb' },
+            { tag: 'div', label: 'Divider Line', text: '', variant: 'divider', cat: 'Decorative', icon: 'divider' },
+            { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive', icon: 'button' },
+            { tag: 'form', label: 'Contact Form', text: '', variant: 'form', cat: 'Interactive', icon: 'form' },
+            { tag: 'div', label: '3D Card Flip', text: '', variant: '3d-card', cat: '3D Effects', icon: '3d' },
+            { tag: 'div', label: '3D Rotate Box', text: '', variant: '3d-rotate', cat: '3D Effects', icon: '3d' },
+            { tag: 'div', label: '3D Float Layer', text: '', variant: '3d-float', cat: '3D Effects', icon: '3d' },
+            { tag: 'div', label: '3D Tilt Plane', text: '', variant: '3d-tilt', cat: '3D Effects', icon: '3d' },
+            { tag: 'canvas', label: 'WebGL Canvas', text: '', variant: 'webgl', cat: '3D Effects', icon: 'webgl' }
         ];
 
-        var list = document.createElement('div');
-        list.className = 'cne-el-type-list';
+        // SVG icons for non-shape element types
+        var ICONS = {
+            'H1':      '<svg viewBox="0 0 40 40"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-weight="800" font-size="22">H1</text></svg>',
+            'H2':      '<svg viewBox="0 0 40 40"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-weight="800" font-size="22">H2</text></svg>',
+            'H3':      '<svg viewBox="0 0 40 40"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-weight="800" font-size="22">H3</text></svg>',
+            'P':       '<svg viewBox="0 0 40 40"><rect x="4" y="8" width="32" height="3" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="4" y="15" width="28" height="3" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="4" y="22" width="32" height="3" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="4" y="29" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.3"/></svg>',
+            'Aa':      '<svg viewBox="0 0 40 40"><rect x="4" y="10" width="32" height="20" rx="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">TAG</text></svg>',
+            'link':    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 21a5 5 0 007 0l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M25 19a5 5 0 00-7 0l-3 3a5 5 0 007 7l1.5-1.5"/></svg>',
+            'image':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="7" width="30" height="26" rx="3"/><circle cx="14" cy="16" r="3"/><path d="M5 28l8-8 5 5 4-4 13 10" stroke-linejoin="round"/></svg>',
+            'video':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="9" width="24" height="22" rx="3"/><path d="M28 16l8-5v18l-8-5V16z" fill="currentColor" opacity="0.3" stroke="currentColor"/></svg>',
+            'lottie':  '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="20" cy="20" r="14"/><path d="M14 20c2-6 4-6 6 0s4 6 6 0" stroke-linecap="round"/></svg>',
+            'svg':     '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6l14 10-14 10L6 16z"/><circle cx="20" cy="16" r="4" fill="currentColor" opacity="0.3"/></svg>',
+            'embed':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 12l-8 8 8 8M26 12l8 8-8 8"/></svg>',
+            'box':     '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="30" height="30" rx="4" stroke-dasharray="4 3"/></svg>',
+            'glass':   '<svg viewBox="0 0 40 40"><rect x="5" y="5" width="30" height="30" rx="6" fill="currentColor" opacity="0.08" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="12" height="3" rx="1.5" fill="currentColor" opacity="0.3"/><rect x="9" y="15" width="22" height="2" rx="1" fill="currentColor" opacity="0.15"/><rect x="9" y="20" width="18" height="2" rx="1" fill="currentColor" opacity="0.15"/></svg>',
+            'orb':     '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="url(#aed-orb)"/><defs><radialGradient id="aed-orb"><stop offset="0%" stop-color="#a78bfa" stop-opacity="0.6"/><stop offset="100%" stop-color="#6C5CE7" stop-opacity="0"/></radialGradient></defs></svg>',
+            'divider': '<svg viewBox="0 0 40 40"><rect x="4" y="19" width="32" height="2" rx="1" fill="currentColor" opacity="0.4"/></svg>',
+            'button':  '<svg viewBox="0 0 40 40"><rect x="4" y="12" width="32" height="16" rx="8" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.5"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">BTN</text></svg>',
+            'form':    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="28" height="28" rx="4"/><rect x="10" y="11" width="20" height="5" rx="2"/><rect x="10" y="20" width="20" height="5" rx="2"/><rect x="14" y="28" width="12" height="4" rx="2" fill="currentColor" opacity="0.3"/></svg>',
+            '3d':      '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 14l12-7 12 7v12l-12 7-12-7z"/><path d="M8 14l12 7 12-7M20 21v13" opacity="0.4"/></svg>',
+            'webgl':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><polygon points="20,4 36,30 4,30"/><circle cx="20" cy="22" r="5" fill="currentColor" opacity="0.2"/></svg>'
+        };
 
-        // Group by category
-        var categories = {};
-        types.forEach(function (t) {
-            if (!categories[t.cat]) categories[t.cat] = [];
-            categories[t.cat].push(t);
-        });
+        // ── Build element icon HTML ──
+        function makeIcon(t) {
+            var shapKey = t.shapeName || t.frameName;
+            if (shapKey && SHAPE_PATHS[shapKey]) {
+                var sDef = SHAPE_PATHS[shapKey];
+                var sFill = t.variant === 'frame' ? 'none' : (sDef.isStroke ? 'none' : 'currentColor');
+                var sStroke = t.variant === 'frame' || sDef.isStroke ? 'currentColor' : 'none';
+                return '<svg viewBox="0 0 100 100">' + sDef.svg.replace('/>', ' fill="' + sFill + '" stroke="' + sStroke + '" stroke-width="4"/>') + '</svg>';
+            }
+            return ICONS[t.icon] || ICONS['box'];
+        }
 
-        Object.keys(categories).forEach(function (cat) {
-            var catLabel = document.createElement('div');
-            catLabel.className = 'cne-el-type-cat';
-            catLabel.textContent = cat;
-            list.appendChild(catLabel);
+        // ── Render grid ──
+        var grid = document.createElement('div');
+        grid.className = 'aed-grid';
 
-            categories[cat].forEach(function (t) {
-                var btn = document.createElement('button');
-                btn.className = 'cne-el-type-btn';
-                var icon = '';
-                var shapKey = t.shapeName || t.frameName;
-                if (shapKey && SHAPE_PATHS[shapKey]) {
-                    var sDef = SHAPE_PATHS[shapKey];
-                    var sFill = t.variant === 'frame' ? 'none' : (sDef.isStroke ? 'none' : '#a78bfa');
-                    var sStroke = t.variant === 'frame' || sDef.isStroke ? '#a78bfa' : 'none';
-                    icon = '<svg viewBox="0 0 100 100" width="20" height="20" style="vertical-align:middle;margin-right:6px">' + sDef.svg.replace('/>', ' fill="' + sFill + '" stroke="' + sStroke + '" stroke-width="3"/>') + '</svg>';
-                    btn.innerHTML = icon + t.label;
-                } else {
-                    icon = t.tag === 'img' ? '&#128247;' : t.tag === 'video' ? '&#127909;' : t.tag === 'a' ? '&#128279;' : '';
-                    btn.innerHTML = (icon ? '<span>' + icon + '</span> ' : '<span class="mono">&lt;' + t.tag + '&gt;</span> ') + t.label;
-                }
-                btn.addEventListener('click', function () {
-                    _addElementFromType(t);
-                    document.body.removeChild(overlay);
-                });
-                list.appendChild(btn);
+        function renderItems(filter, query) {
+            grid.innerHTML = '';
+            var matchingCats = {};
+            types.forEach(function (t) {
+                if (filter !== 'All' && t.cat !== filter) return;
+                if (query && t.label.toLowerCase().indexOf(query) === -1 && t.cat.toLowerCase().indexOf(query) === -1) return;
+                if (!matchingCats[t.cat]) matchingCats[t.cat] = [];
+                matchingCats[t.cat].push(t);
             });
+
+            var catKeys = Object.keys(matchingCats);
+            if (catKeys.length === 0) {
+                var empty = document.createElement('div');
+                empty.className = 'aed-empty';
+                empty.textContent = 'No elements found';
+                grid.appendChild(empty);
+                return;
+            }
+
+            catKeys.forEach(function (cat) {
+                // Category header (only in "All" tab or search)
+                if (filter === 'All' || query) {
+                    var catHead = document.createElement('div');
+                    catHead.className = 'aed-cat-head';
+                    catHead.textContent = cat;
+                    grid.appendChild(catHead);
+                }
+
+                var isVisual = (cat === 'Shapes' || cat === 'Frames');
+                var section = document.createElement('div');
+                section.className = isVisual ? 'aed-section aed-section--grid' : 'aed-section aed-section--list';
+
+                matchingCats[cat].forEach(function (t) {
+                    var card = document.createElement('button');
+                    card.className = isVisual ? 'aed-card aed-card--visual' : 'aed-card aed-card--row';
+                    card.title = t.label;
+
+                    var iconEl = document.createElement('div');
+                    iconEl.className = 'aed-card-icon';
+                    iconEl.innerHTML = makeIcon(t);
+
+                    var labelEl = document.createElement('span');
+                    labelEl.className = 'aed-card-label';
+                    labelEl.textContent = t.label;
+
+                    if (isVisual) {
+                        card.appendChild(iconEl);
+                        card.appendChild(labelEl);
+                    } else {
+                        card.appendChild(iconEl);
+                        var info = document.createElement('div');
+                        info.className = 'aed-card-info';
+                        var mainLabel = document.createElement('span');
+                        mainLabel.className = 'aed-card-label';
+                        mainLabel.textContent = t.label;
+                        var subLabel = document.createElement('span');
+                        subLabel.className = 'aed-card-sub';
+                        subLabel.textContent = t.variant ? t.variant : '<' + t.tag + '>';
+                        info.appendChild(mainLabel);
+                        info.appendChild(subLabel);
+                        card.appendChild(info);
+                    }
+
+                    card.addEventListener('click', function () {
+                        _addElementFromType(t);
+                        document.body.removeChild(overlay);
+                    });
+                    section.appendChild(card);
+                });
+                grid.appendChild(section);
+            });
+        }
+
+        // ── Build tabs ──
+        function buildTabs() {
+            tabBar.innerHTML = '';
+            catOrder.forEach(function (cat) {
+                if (cat !== 'All') {
+                    var hasItems = types.some(function (t) { return t.cat === cat; });
+                    if (!hasItems) return;
+                }
+                var tab = document.createElement('button');
+                tab.className = 'aed-tab' + (cat === activeCat ? ' aed-tab--active' : '');
+                tab.textContent = cat;
+                tab.addEventListener('click', function () {
+                    activeCat = cat;
+                    buildTabs();
+                    renderItems(activeCat, searchInput.value.toLowerCase().trim());
+                });
+                tabBar.appendChild(tab);
+            });
+        }
+        buildTabs();
+        renderItems('All', '');
+
+        // ── Search listener ──
+        searchInput.addEventListener('input', function () {
+            var q = searchInput.value.toLowerCase().trim();
+            if (q) { activeCat = 'All'; buildTabs(); }
+            renderItems(activeCat, q);
         });
 
-        var cancelBtn = document.createElement('button');
-        cancelBtn.className = 'gen-btn';
-        cancelBtn.style.marginTop = '12px';
-        cancelBtn.textContent = 'Cancel';
-        cancelBtn.addEventListener('click', function () {
-            document.body.removeChild(overlay);
-        });
-
-        dialog.appendChild(title);
-        dialog.appendChild(list);
-        dialog.appendChild(cancelBtn);
+        // ── Assemble dialog ──
+        dialog.appendChild(header);
+        dialog.appendChild(searchWrap);
+        dialog.appendChild(tabBar);
+        dialog.appendChild(grid);
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
+        // Focus search
+        setTimeout(function () { searchInput.focus(); }, 60);
+
+        // Keyboard close
+        function onKey(e) { if (e.key === 'Escape') { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); } }
+        document.addEventListener('keydown', onKey);
+
         overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) document.body.removeChild(overlay);
+            if (e.target === overlay) { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); }
         });
     }
 
