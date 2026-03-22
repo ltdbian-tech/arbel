@@ -1266,11 +1266,20 @@
         ArbelEditor.destroy();
         ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
             state.editorOverrides = overrides;
+            try { localStorage.setItem('arbel_editor_overrides', JSON.stringify(overrides)); } catch (e) {}
         });
         if (state.editorOverrides) {
             ArbelEditor.setOverrides(state.editorOverrides);
         }
     }
+
+    // Restore overrides from localStorage on load
+    (function () {
+        try {
+            var saved = localStorage.getItem('arbel_editor_overrides');
+            if (saved) state.editorOverrides = JSON.parse(saved);
+        } catch (e) {}
+    })();
 
     /** Reload preview iframe without recompiling — re-renders compiled files and restores editor */
     function reloadPreview() {
@@ -1281,6 +1290,7 @@
         ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
         ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
             state.editorOverrides = overrides;
+            try { localStorage.setItem('arbel_editor_overrides', JSON.stringify(overrides)); } catch (e) {}
         });
         if (savedOverrides) {
             ArbelEditor.setOverrides(savedOverrides);
