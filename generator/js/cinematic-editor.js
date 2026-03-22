@@ -456,6 +456,9 @@ window.ArbelCinematicEditor = (function () {
                 }
             }
             _updatePropertiesPanel(d);
+            // Auto-switch to Style tab when selecting an element
+            var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+            if (styleTab) styleTab.click();
         }
         if (d.type === 'arbel-text-update' && d.id) {
             // Snapshot BEFORE the first inline text mutation from iframe
@@ -1054,6 +1057,9 @@ window.ArbelCinematicEditor = (function () {
                 if (_selectedElementIds.length === 1) {
                     _updatePropertiesFromScene(el);
                     _updateTimeline();
+                    // Auto-switch to Style tab
+                    var stTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+                    if (stTab) stTab.click();
                 } else {
                     _updateMultiSelectPanel();
                 }
