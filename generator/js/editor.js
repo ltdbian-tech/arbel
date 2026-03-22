@@ -21,6 +21,7 @@ window.ArbelEditor = (function () {
     var _zoom = 100;
     var _lastTree = [];
     var _keydownHandler = null;
+    var _activeDevice = 'desktop'; // 'desktop' | 'tablet' | 'mobile'
 
     /* ─── Undo / Redo state ─── */
     var _MAX_UNDO = 40;
@@ -779,6 +780,19 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-set-src"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute("src",d.src)}
   if(d.type==="arbel-set-attr"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute(d.attr,d.value)}
   if(d.type==="arbel-deselect-all"){desel()}
+  if(d.type==="arbel-inject-responsive"){
+    var old=document.getElementById("arbel-responsive-css");
+    if(old)old.parentNode.removeChild(old);
+    if(d.css){
+      var rs=document.createElement("style");rs.id="arbel-responsive-css";
+      rs.textContent=d.css;document.head.appendChild(rs);
+    }
+  }
+  if(d.type==="arbel-set-viewport-meta"){
+    var vm=document.querySelector('meta[name="viewport"]');
+    if(!vm){vm=document.createElement("meta");vm.name="viewport";document.head.appendChild(vm)}
+    vm.setAttribute("content",d.content);
+  }
   if(d.type==="arbel-clone-element"){
     var el=document.querySelector('[data-arbel-id="'+d.id+'"]');
     if(el){
@@ -1121,11 +1135,15 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             btn.addEventListener('click', function () {
                 _container.querySelectorAll('.device-btn').forEach(function (b) { b.classList.remove('active'); });
                 btn.classList.add('active');
+                var device = btn.getAttribute('data-device');
+                _activeDevice = device || 'desktop';
                 var frame = _container.querySelector('.preview-frame');
                 if (frame) {
                     frame.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
-                    frame.classList.add('preview-' + btn.getAttribute('data-device'));
+                    frame.classList.add('preview-' + _activeDevice);
                 }
+                // Inject responsive CSS + viewport into iframe
+                _applyDeviceResponsive();
             });
         });
         var zoomVal = _qs('#zoomVal');
@@ -1140,6 +1158,78 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _applyZoom() {
         var frame = _container ? _container.querySelector('.preview-frame') : null;
         if (frame) { frame.style.transform = 'scale(' + (_zoom / 100) + ')'; frame.style.transformOrigin = 'top center'; }
+    }
+
+    /* ─── Device Responsive ─── */
+    function _applyDeviceResponsive() {
+        if (_activeDevice === 'desktop') {
+            _postIframe('arbel-inject-responsive', { css: '' });
+            _postIframe('arbel-set-viewport-meta', { content: 'width=device-width, initial-scale=1' });
+            return;
+        }
+        var isMobile = _activeDevice === 'mobile';
+        var vw = isMobile ? 390 : 768;
+        // Set viewport meta so content thinks it's on that device width
+        _postIframe('arbel-set-viewport-meta', { content: 'width=' + vw + ', initial-scale=1' });
+
+        var css = '';
+        // Generic responsive rules
+        css += '/* Arbel responsive override */\n';
+        css += 'html { overflow-x: hidden; }\n';
+        css += 'body { overflow-x: hidden; }\n';
+        css += 'img, video, iframe, embed, object, svg { max-width: 100%; height: auto; }\n';
+        css += 'pre, code, table { max-width: 100%; overflow-x: auto; }\n';
+
+        if (isMobile) {
+            css += '* { max-width: 100vw !important; box-sizing: border-box; }\n';
+            css += 'body { font-size: 14px !important; }\n';
+            // Stack flex/grid containers vertically
+            css += '[style*="display: flex"], [style*="display:flex"] { flex-wrap: wrap !important; }\n';
+            css += 'section { padding-left: 12px !important; padding-right: 12px !important; }\n';
+            // Auto-adjust elements with fixed widths wider than viewport
+            css += '[style*="width:"] { max-width: 100% !important; }\n';
+            // Scale down headings
+            css += 'h1 { font-size: clamp(1.5rem, 8vw, 3rem) !important; }\n';
+            css += 'h2 { font-size: clamp(1.25rem, 6vw, 2.25rem) !important; }\n';
+            css += 'h3 { font-size: clamp(1.1rem, 5vw, 1.75rem) !important; }\n';
+            // Nav: collapse horizontal navs
+            css += 'nav ul, nav ol { flex-direction: column !important; gap: 8px !important; }\n';
+            // Grid: single column on mobile
+            css += '[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }\n';
+        } else {
+            // Tablet
+            css += 'body { font-size: 15px !important; }\n';
+            css += '[style*="display: flex"], [style*="display:flex"] { flex-wrap: wrap !important; }\n';
+            css += 'h1 { font-size: clamp(1.75rem, 5vw, 3.5rem) !important; }\n';
+            css += 'h2 { font-size: clamp(1.5rem, 4vw, 2.5rem) !important; }\n';
+            // Grid: 2 columns max on tablet
+            css += '[style*="grid-template-columns"] { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important; }\n';
+        }
+
+        // Per-element overrides for elements with responsive data
+        var ids = Object.keys(_overrides);
+        ids.forEach(function (id) {
+            var ov = _overrides[id];
+            if (!ov) return;
+            var deviceKey = isMobile ? '_mobile' : '_tablet';
+            var rsp = ov[deviceKey];
+            if (rsp) {
+                css += '[data-arbel-id="' + id.replace(/["\\]/g, '') + '"] {';
+                Object.keys(rsp).forEach(function (prop) {
+                    var val = String(rsp[prop]).replace(/[<>"'`]/g, '');
+                    if (!/javascript\s*:/i.test(val) && !/expression\s*\(/i.test(val)) {
+                        css += ' ' + _camelToDash(prop) + ': ' + val + ' !important;';
+                    }
+                });
+                css += ' }\n';
+            }
+        });
+
+        _postIframe('arbel-inject-responsive', { css: css });
+    }
+
+    function _camelToDash(str) {
+        return str.replace(/([A-Z])/g, '-$1').toLowerCase();
     }
 
     /* ─── Style listeners ─── */
