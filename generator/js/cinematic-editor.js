@@ -114,6 +114,17 @@ window.ArbelCinematicEditor = (function () {
         'arch':           { svg: '<path d="M2,98 L2,50 A48,48,0,0,1,98,50 L98,98Z"/>', clip: 'polygon(0% 100%, 0% 50%, 5% 35%, 15% 20%, 28% 9%, 43% 3%, 57% 3%, 72% 9%, 85% 20%, 95% 35%, 100% 50%, 100% 100%)' }
     };
 
+    /** Build SVG markup for a named shape with given colors. */
+    function _buildShapeSvg(shapeName, fillColor, strokeColor, strokeWidth) {
+        var def = SHAPE_PATHS[shapeName] || SHAPE_PATHS['circle'];
+        var fc = fillColor || 'none';
+        var sc = strokeColor || 'none';
+        var sw = parseFloat(strokeWidth) || 0;
+        var attrs = ' fill="' + fc + '"';
+        if (sc !== 'none' && sw > 0) attrs += ' stroke="' + sc + '" stroke-width="' + sw + '"';
+        return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' + def.svg.replace('/>', attrs + '/>') + '</svg>';
+    }
+
     /* ─── DOM Shorthand ─── */
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
     function _qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
@@ -1805,11 +1816,16 @@ window.ArbelCinematicEditor = (function () {
             };
         } else if (t.tag === 'div' && t.variant === 'shape') {
             var shapeDef = SHAPE_PATHS[t.shapeName] || SHAPE_PATHS['circle'];
-            var fill = '#ffffff';
-            var strokeAttr = shapeDef.isStroke ? ' stroke="' + fill + '"' : ' fill="' + fill + '"';
-            var extraFill = shapeDef.isStroke ? ' fill="none"' : '';
-            newEl.svgContent = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' + shapeDef.svg.replace('/>', strokeAttr + extraFill + ' />') + '</svg>';
             newEl.shapeName = t.shapeName;
+            newEl.shapeColor = '#ffffff';
+            newEl.shapeStroke = 'none';
+            newEl.shapeStrokeWidth = 0;
+            if (shapeDef.isStroke) {
+                newEl.shapeColor = 'none';
+                newEl.shapeStroke = '#ffffff';
+                newEl.shapeStrokeWidth = 8;
+            }
+            newEl.svgContent = _buildShapeSvg(newEl.shapeName, newEl.shapeColor, newEl.shapeStroke, newEl.shapeStrokeWidth);
             newEl.style = {
                 position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
                 width: '200px', height: '200px'
@@ -2111,6 +2127,29 @@ window.ArbelCinematicEditor = (function () {
                 }
             });
         }
+
+        // ─── Shape color controls ───
+        function _onShapeColorChange() {
+            var el = _getSelectedElement();
+            if (!el || !el.shapeName) return;
+            _pushUndo();
+            var scFill = _qs('#cneShapeColor');
+            var scStroke = _qs('#cneShapeStroke');
+            var scSW = _qs('#cneShapeStrokeWidth');
+            el.shapeColor = scFill ? scFill.value : (el.shapeColor || '#ffffff');
+            el.shapeStroke = scStroke ? scStroke.value : (el.shapeStroke || 'none');
+            el.shapeStrokeWidth = scSW ? parseFloat(scSW.value) || 0 : (el.shapeStrokeWidth || 0);
+            el.svgContent = _buildShapeSvg(el.shapeName, el.shapeColor, el.shapeStroke, el.shapeStrokeWidth);
+            var svgInput = _qs('#cneSvgContent');
+            if (svgInput) svgInput.value = el.svgContent;
+            _notifyUpdate(true);
+        }
+        var shapeColorInput = _qs('#cneShapeColor');
+        if (shapeColorInput) shapeColorInput.addEventListener('input', _onShapeColorChange);
+        var shapeStrokeInput = _qs('#cneShapeStroke');
+        if (shapeStrokeInput) shapeStrokeInput.addEventListener('input', _onShapeColorChange);
+        var shapeStrokeWidth = _qs('#cneShapeStrokeWidth');
+        if (shapeStrokeWidth) shapeStrokeWidth.addEventListener('input', _onShapeColorChange);
 
         // Embed URL
         var embedUrl = _qs('#cneEmbedUrl');
@@ -5077,7 +5116,9 @@ window.ArbelCinematicEditor = (function () {
             var lottieRow = _qs('#cneLottieRow');
             if (lottieRow) lottieRow.style.display = isLottie ? '' : 'none';
             var svgRow = _qs('#cneSvgRow');
-            if (svgRow) svgRow.style.display = isSvg ? '' : 'none';
+            if (svgRow) svgRow.style.display = (isSvg && !el.shapeName) ? '' : 'none';
+            var shapeColorRow = _qs('#cneShapeColorRow');
+            if (shapeColorRow) shapeColorRow.style.display = el.shapeName ? '' : 'none';
             var embedRow = _qs('#cneEmbedRow');
             if (embedRow) embedRow.style.display = isEmbed ? '' : 'none';
         }
@@ -5102,6 +5143,11 @@ window.ArbelCinematicEditor = (function () {
         if (el.svgContent !== undefined) {
             var svgInput = _qs('#cneSvgContent');
             if (svgInput) svgInput.value = el.svgContent || '';
+        }
+        if (el.shapeName) {
+            var scFill = _qs('#cneShapeColor'); if (scFill) scFill.value = el.shapeColor === 'none' ? '#000000' : (el.shapeColor || '#ffffff');
+            var scStroke = _qs('#cneShapeStroke'); if (scStroke) scStroke.value = el.shapeStroke === 'none' ? '#000000' : (el.shapeStroke || '#ffffff');
+            var scSW = _qs('#cneShapeStrokeWidth'); if (scSW) scSW.value = el.shapeStrokeWidth || 0;
         }
         if (el.embedUrl !== undefined) {
             var embedInput = _qs('#cneEmbedUrl');
