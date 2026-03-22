@@ -2339,6 +2339,125 @@ a:hover { text-decoration: underline; }
 }
 
 
+/* ─── Add Element Dialog ─── */
+.aed-overlay {
+    position: fixed; inset: 0; z-index: 100000;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    animation: aed-fadein 0.15s ease;
+}
+@keyframes aed-fadein { from { opacity: 0; } }
+.aed-dialog {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    width: 560px;
+    max-width: 94vw;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+}
+.aed-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px 0;
+}
+.aed-title {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg);
+    margin: 0;
+}
+.aed-close {
+    background: none; border: none; color: var(--fg3); font-size: 1.4rem;
+    cursor: pointer; line-height: 1; padding: 0 4px;
+    transition: color 0.15s;
+}
+.aed-close:hover { color: var(--fg); }
+.aed-search {
+    margin: 14px 22px 0;
+    font-size: 0.85rem !important;
+}
+.aed-cats {
+    display: flex; gap: 6px; padding: 12px 22px 0;
+    flex-wrap: wrap;
+}
+.aed-cat {
+    padding: 5px 14px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    background: transparent;
+    color: var(--fg3);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.aed-cat:hover { border-color: var(--accent); color: var(--fg2); }
+.aed-cat.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.aed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+    padding: 14px 22px 22px;
+    overflow-y: auto;
+    max-height: 50vh;
+}
+.aed-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px;
+    padding: 16px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+.aed-card:hover {
+    border-color: var(--accent);
+    background: rgba(100,108,255,0.06);
+    transform: translateY(-2px);
+}
+.aed-card-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+}
+.aed-card-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.04em;
+    color: var(--fg2);
+    text-transform: uppercase;
+}
+.aed-shape-preview {
+    width: 40px; height: 40px;
+}
+.aed-shape-preview svg { width: 100%; height: 100%; }
+
+/* ─── Layer Bottom Actions ─── */
+.layer-bottom-actions {
+    display: flex; gap: 6px;
+    padding: 8px 10px;
+    border-top: 1px solid var(--border);
+}
+.layer-bottom-actions .bfs-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 0.7rem;
+    gap: 4px;
+}
+
+
 /* ─── Print: Hide non-essential ─── */
 @media print {
     .gen-header, .gen-progress, .gen-steps-nav, .gen-footer,

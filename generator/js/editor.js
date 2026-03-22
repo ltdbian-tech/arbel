@@ -34,8 +34,37 @@ window.ArbelEditor = (function () {
     var _iframeTextUndoPushed = false; // guard for inline iframe text edits
     var _resizeUndoPushed = false; // guard for iframe resize
     var _clipboard = null;           // copy/paste styles: { overrides, tag }
+    var _addedCount = 0;             // counter for dynamically added elements
+    var _addedElements = [];         // track added element IDs for export
 
-    /* ─── Overlay script injected into iframe ─── */
+    /* ─── SHAPE_PATHS constant (shared with cinematic) ─── */
+    var SHAPE_PATHS = {
+        circle:    { svg: '<circle cx="50" cy="50" r="48" />', clip: 'circle(50% at 50% 50%)' },
+        square:    { svg: '<rect x="2" y="2" width="96" height="96" />', clip: 'inset(0)' },
+        triangle:  { svg: '<polygon points="50,2 98,98 2,98" />', clip: 'polygon(50% 0%, 100% 100%, 0% 100%)' },
+        diamond:   { svg: '<polygon points="50,2 98,50 50,98 2,50" />', clip: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
+        pentagon:  { svg: '<polygon points="50,2 97,36 79,97 21,97 3,36" />', clip: 'polygon(50% 0%, 100% 38%, 81% 100%, 19% 100%, 0% 38%)' },
+        hexagon:   { svg: '<polygon points="50,2 93,25 93,75 50,98 7,75 7,25" />', clip: 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)' },
+        star:      { svg: '<polygon points="50,2 63,38 98,38 70,60 80,96 50,74 20,96 30,60 2,38 37,38" />', clip: 'polygon(50% 0%, 63% 38%, 100% 38%, 70% 60%, 80% 98%, 50% 74%, 20% 98%, 30% 60%, 0% 38%, 37% 38%)' },
+        heart:     { svg: '<path d="M50 88C25 70 2 50 2 30 2 14 14 2 30 2c10 0 17 5 20 12C53 7 60 2 70 2c16 0 28 12 28 28 0 20-23 40-48 58z" />', clip: 'polygon(50% 15%, 60% 2%, 78% 0%, 95% 10%, 100% 30%, 90% 55%, 50% 88%, 10% 55%, 0% 30%, 5% 10%, 22% 0%, 40% 2%)' },
+        cross:     { svg: '<polygon points="36,2 64,2 64,36 98,36 98,64 64,64 64,98 36,98 36,64 2,64 2,36 36,36" />', clip: 'polygon(36% 0%, 64% 0%, 64% 36%, 100% 36%, 100% 64%, 64% 64%, 64% 100%, 36% 100%, 36% 64%, 0% 64%, 0% 36%, 36% 36%)' },
+        arrow:     { svg: '<polygon points="50,2 98,50 72,50 72,98 28,98 28,50 2,50" />', clip: 'polygon(50% 0%, 100% 50%, 72% 50%, 72% 100%, 28% 100%, 28% 50%, 0% 50%)' },
+        octagon:   { svg: '<polygon points="30,2 70,2 98,30 98,70 70,98 30,98 2,70 2,30" />', clip: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)' },
+        parallelogram: { svg: '<polygon points="25,2 98,2 75,98 2,98" />', clip: 'polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)' },
+        rhombus:   { svg: '<polygon points="50,2 98,50 50,98 2,50" />', clip: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
+        trapezoid: { svg: '<polygon points="20,2 80,2 98,98 2,98" />', clip: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' },
+        semicircle:{ svg: '<path d="M2 98 A48 48 0 0 1 98 98 Z" />', clip: 'ellipse(50% 50% at 50% 100%)' },
+        badge:     { svg: '<polygon points="50,0 61,18 82,10 76,32 98,38 82,54 94,74 72,72 62,94 50,76 38,94 28,72 6,74 18,54 2,38 24,32 18,10 39,18" />', clip: 'polygon(50% 0%,61% 18%,82% 10%,76% 32%,100% 38%,82% 54%,94% 74%,72% 72%,62% 94%,50% 76%,38% 94%,28% 72%,6% 74%,18% 54%,0% 38%,24% 32%,18% 10%,39% 18%)' }
+    };
+
+    function _buildShapeSvg(shapeName, fill, stroke, strokeWidth) {
+        var def = SHAPE_PATHS[shapeName];
+        if (!def) return '';
+        fill = fill || '#ffffff';
+        stroke = stroke || 'none';
+        strokeWidth = strokeWidth || 0;
+        return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%"><g fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '">' + def.svg + '</g></svg>';
+    }
     function _getOverlayScript() {
         return `(function(){
 var selected=null,editing=false,resize=null;
@@ -67,6 +96,12 @@ border-radius:1px;z-index:100000;display:none;box-sizing:border-box}
 @keyframes arbel-swing{0%,100%{transform:rotate(0)}25%{transform:rotate(5deg)}75%{transform:rotate(-5deg)}}
 @keyframes arbel-breathe{0%,100%{opacity:1}50%{opacity:.6}}
 @keyframes arbel-glow-pulse{0%,100%{box-shadow:0 0 5px rgba(100,108,255,.3)}50%{box-shadow:0 0 25px rgba(100,108,255,.6)}}
+@keyframes arbel-wobble{0%{transform:rotate(0)}15%{transform:rotate(-5deg)}30%{transform:rotate(3deg)}45%{transform:rotate(-3deg)}60%{transform:rotate(2deg)}75%{transform:rotate(-1deg)}100%{transform:rotate(0)}}
+@keyframes arbel-flash{0%,50%,100%{opacity:1}25%,75%{opacity:0}}
+@keyframes arbel-headShake{0%{transform:translateX(0)}6.5%{transform:translateX(-6px) rotateY(-9deg)}18.5%{transform:translateX(5px) rotateY(7deg)}31.5%{transform:translateX(-3px) rotateY(-5deg)}43.5%{transform:translateX(2px) rotateY(3deg)}50%{transform:translateX(0)}}
+@keyframes arbel-wave-text{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes arbel-drift{0%{transform:translate(0,0)}25%{transform:translate(10px,-5px)}50%{transform:translate(-5px,10px)}75%{transform:translate(-10px,-5px)}100%{transform:translate(0,0)}}
+@keyframes arbel-sway{0%,100%{transform:rotate(0) translateX(0)}25%{transform:rotate(2deg) translateX(6px)}75%{transform:rotate(-2deg) translateX(-6px)}}
 \`;document.head.appendChild(s);
 
 var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);
@@ -205,23 +240,59 @@ var ANIMS={
   fadeIn:{from:"opacity:0",to:"opacity:1"},
   fadeInUp:{from:"opacity:0;transform:translateY(30px)",to:"opacity:1;transform:translateY(0)"},
   fadeInDown:{from:"opacity:0;transform:translateY(-30px)",to:"opacity:1;transform:translateY(0)"},
+  fadeInLeft:{from:"opacity:0;transform:translateX(-30px)",to:"opacity:1;transform:translateX(0)"},
+  fadeInRight:{from:"opacity:0;transform:translateX(30px)",to:"opacity:1;transform:translateX(0)"},
+  fadeOut:{from:"opacity:1",to:"opacity:0"},
+  fadeOutUp:{from:"opacity:1;transform:translateY(0)",to:"opacity:0;transform:translateY(-30px)"},
+  fadeOutDown:{from:"opacity:1;transform:translateY(0)",to:"opacity:0;transform:translateY(30px)"},
   slideUp:{from:"opacity:0;transform:translateY(60px)",to:"opacity:1;transform:translateY(0)"},
   slideDown:{from:"opacity:0;transform:translateY(-60px)",to:"opacity:1;transform:translateY(0)"},
   slideLeft:{from:"opacity:0;transform:translateX(60px)",to:"opacity:1;transform:translateX(0)"},
   slideRight:{from:"opacity:0;transform:translateX(-60px)",to:"opacity:1;transform:translateX(0)"},
   scaleUp:{from:"opacity:0;transform:scale(0.7)",to:"opacity:1;transform:scale(1)"},
   scaleDown:{from:"opacity:0;transform:scale(1.3)",to:"opacity:1;transform:scale(1)"},
+  scaleOut:{from:"opacity:1;transform:scale(1)",to:"opacity:0;transform:scale(0.5)"},
+  zoomIn:{from:"opacity:0;transform:scale(0.3)",to:"opacity:1;transform:scale(1)"},
+  zoomOut:{from:"opacity:1;transform:scale(1)",to:"opacity:0;transform:scale(0.3)"},
   bounceIn:{from:"opacity:0;transform:scale(0.3)",to:"opacity:1;transform:scale(1)"},
+  bounceInUp:{from:"opacity:0;transform:translateY(50px) scale(0.9)",to:"opacity:1;transform:translateY(0) scale(1)"},
+  bounceInDown:{from:"opacity:0;transform:translateY(-50px) scale(0.9)",to:"opacity:1;transform:translateY(0) scale(1)"},
+  bounceInLeft:{from:"opacity:0;transform:translateX(-50px) scale(0.9)",to:"opacity:1;transform:translateX(0) scale(1)"},
+  bounceInRight:{from:"opacity:0;transform:translateX(50px) scale(0.9)",to:"opacity:1;transform:translateX(0) scale(1)"},
   elasticIn:{from:"opacity:0;transform:scale(0.5)",to:"opacity:1;transform:scale(1)"},
   rotateIn:{from:"opacity:0;transform:rotate(-15deg) scale(0.9)",to:"opacity:1;transform:rotate(0) scale(1)"},
   rotateInLeft:{from:"opacity:0;transform:rotate(-90deg)",to:"opacity:1;transform:rotate(0)"},
+  rotateInRight:{from:"opacity:0;transform:rotate(90deg)",to:"opacity:1;transform:rotate(0)"},
   flipIn:{from:"opacity:0;transform:perspective(400px) rotateX(90deg)",to:"opacity:1;transform:perspective(400px) rotateX(0)"},
   flipInY:{from:"opacity:0;transform:perspective(400px) rotateY(90deg)",to:"opacity:1;transform:perspective(400px) rotateY(0)"},
+  flipOutX:{from:"opacity:1;transform:perspective(400px) rotateX(0)",to:"opacity:0;transform:perspective(400px) rotateX(90deg)"},
+  flipOutY:{from:"opacity:1;transform:perspective(400px) rotateY(0)",to:"opacity:0;transform:perspective(400px) rotateY(90deg)"},
   blurIn:{from:"opacity:0;filter:blur(12px)",to:"opacity:1;filter:blur(0)"},
+  blurInUp:{from:"opacity:0;filter:blur(12px);transform:translateY(20px)",to:"opacity:1;filter:blur(0);transform:translateY(0)"},
+  blurOut:{from:"opacity:1;filter:blur(0)",to:"opacity:0;filter:blur(12px)"},
   glitchIn:{from:"opacity:0;transform:skewX(-20deg) translateX(-30px)",to:"opacity:1;transform:skewX(0) translateX(0)"},
   clipIn:{from:"clip-path:inset(0 100% 0 0);opacity:0",to:"clip-path:inset(0 0 0 0);opacity:1"},
+  clipRevealUp:{from:"clip-path:inset(100% 0 0 0);opacity:0",to:"clip-path:inset(0 0 0 0);opacity:1"},
+  clipRevealDown:{from:"clip-path:inset(0 0 100% 0);opacity:0",to:"clip-path:inset(0 0 0 0);opacity:1"},
+  clipRevealLeft:{from:"clip-path:inset(0 100% 0 0);opacity:0",to:"clip-path:inset(0 0 0 0);opacity:1"},
+  clipRevealRight:{from:"clip-path:inset(0 0 0 100%);opacity:0",to:"clip-path:inset(0 0 0 0);opacity:1"},
   dropIn:{from:"opacity:0;transform:translateY(-100px)",to:"opacity:1;transform:translateY(0)"},
-  unfold:{from:"opacity:0;transform:scaleY(0);transform-origin:top",to:"opacity:1;transform:scaleY(1)"}
+  unfold:{from:"opacity:0;transform:scaleY(0);transform-origin:top",to:"opacity:1;transform:scaleY(1)"},
+  backInUp:{from:"opacity:0;transform:translateY(100px) scale(0.7)",to:"opacity:1;transform:translateY(0) scale(1)"},
+  backInDown:{from:"opacity:0;transform:translateY(-100px) scale(0.7)",to:"opacity:1;transform:translateY(0) scale(1)"},
+  backInLeft:{from:"opacity:0;transform:translateX(-100px) scale(0.7)",to:"opacity:1;transform:translateX(0) scale(1)"},
+  backInRight:{from:"opacity:0;transform:translateX(100px) scale(0.7)",to:"opacity:1;transform:translateX(0) scale(1)"},
+  rollIn:{from:"opacity:0;transform:translateX(-100%) rotate(-120deg)",to:"opacity:1;transform:translateX(0) rotate(0)"},
+  jackInTheBox:{from:"opacity:0;transform:scale(0.1) rotate(30deg);transform-origin:center bottom",to:"opacity:1;transform:scale(1) rotate(0)"},
+  swingIn:{from:"opacity:0;transform:rotateX(-90deg);transform-origin:top center",to:"opacity:1;transform:rotateX(0)"},
+  doorOpen:{from:"opacity:0;transform:perspective(400px) rotateY(-90deg);transform-origin:left center",to:"opacity:1;transform:perspective(400px) rotateY(0)"},
+  hinge:{from:"opacity:1;transform-origin:top left",to:"opacity:0;transform:rotate(80deg) translateY(100px)"},
+  lightSpeedIn:{from:"opacity:0;transform:translateX(100%) skewX(-30deg)",to:"opacity:1;transform:translateX(0) skewX(0)"},
+  lightSpeedOut:{from:"opacity:1;transform:translateX(0) skewX(0)",to:"opacity:0;transform:translateX(100%) skewX(30deg)"},
+  rubberBand:{from:"transform:scaleX(1)",to:"transform:scaleX(1.25) scaleY(0.75)"},
+  tada:{from:"transform:scale(1) rotate(0)",to:"transform:scale(1.1) rotate(3deg)"},
+  jello:{from:"transform:skewX(0) skewY(0)",to:"transform:skewX(-12.5deg) skewY(-12.5deg)"},
+  perspectiveIn:{from:"opacity:0;transform:perspective(800px) translateZ(-200px)",to:"opacity:1;transform:perspective(800px) translateZ(0)"}
 };
 
 function prevAnim(el,name){
@@ -245,7 +316,13 @@ function applyContinuous(el,name){
     shake:"arbel-shake 0.5s ease-in-out infinite",
     swing:"arbel-swing 2s ease-in-out infinite",
     breathe:"arbel-breathe 3s ease-in-out infinite",
-    "glow-pulse":"arbel-glow-pulse 2s ease-in-out infinite"
+    "glow-pulse":"arbel-glow-pulse 2s ease-in-out infinite",
+    wobble:"arbel-wobble 1s ease-in-out infinite",
+    flash:"arbel-flash 2s ease-in-out infinite",
+    headShake:"arbel-headShake 2s ease-in-out infinite",
+    "wave-text":"arbel-wave-text 1.5s ease-in-out infinite",
+    drift:"arbel-drift 6s ease-in-out infinite",
+    sway:"arbel-sway 3s ease-in-out infinite"
   };
   if(map[name])el.style.animation=map[name];
 }
@@ -492,6 +569,65 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-remove-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.removeAttribute("href");else{var a=el.closest("a");if(a)a.removeAttribute("href")}}}
   if(d.type==="arbel-set-filter"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.style.filter=d.value}
   if(d.type==="arbel-edit-text"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el&&el.hasAttribute("data-arbel-edit"))startEdit(el)}
+  if(d.type==="arbel-add-element"){
+    var tag=d.tag||"div";var newEl=document.createElement(tag);
+    newEl.setAttribute("data-arbel-id",d.id);
+    if(d.editable)newEl.setAttribute("data-arbel-edit","text");
+    if(d.text)newEl.textContent=d.text;
+    if(d.html)newEl.innerHTML=d.html;
+    if(d.src)newEl.setAttribute("src",d.src);
+    if(d.style){for(var sk in d.style)newEl.style[sk]=d.style[sk]}
+    if(d.attrs){for(var ak in d.attrs)newEl.setAttribute(ak,d.attrs[ak])}
+    var anchor=document.querySelector("main")||document.querySelector("section")||document.body;
+    anchor.appendChild(newEl);
+    sel(newEl);
+    // Rebuild tree
+    var tree2=[];
+    document.querySelectorAll("[data-arbel-id]").forEach(function(el2){
+      var cs3=getComputedStyle(el2);
+      tree2.push({id:el2.getAttribute("data-arbel-id"),tag:el2.tagName.toLowerCase(),
+        editable:el2.hasAttribute("data-arbel-edit"),
+        text:el2.getAttribute("data-arbel-edit")==="text"?el2.textContent.substring(0,50):null,
+        visible:cs3.visibility!=="hidden",locked:false,
+        zIndex:cs3.zIndex==="auto"?0:parseInt(cs3.zIndex)||0});
+    });
+    window.parent.postMessage({type:"arbel-tree",tree:tree2},"*");
+  }
+  if(d.type==="arbel-delete-element"){
+    var el=document.querySelector('[data-arbel-id="'+d.id+'"]');
+    if(el){if(selected===el)desel();el.parentNode.removeChild(el);
+    var tree3=[];document.querySelectorAll("[data-arbel-id]").forEach(function(el3){
+      var cs4=getComputedStyle(el3);
+      tree3.push({id:el3.getAttribute("data-arbel-id"),tag:el3.tagName.toLowerCase(),
+        editable:el3.hasAttribute("data-arbel-edit"),
+        text:el3.getAttribute("data-arbel-edit")==="text"?el3.textContent.substring(0,50):null,
+        visible:cs4.visibility!=="hidden",locked:false,
+        zIndex:cs4.zIndex==="auto"?0:parseInt(cs4.zIndex)||0});
+    });window.parent.postMessage({type:"arbel-tree",tree:tree3},"*")}
+  }
+  if(d.type==="arbel-set-hover-custom"){
+    var el=document.querySelector('[data-arbel-id="'+d.id+'"]');
+    if(el){
+      el.setAttribute("data-arbel-hover","custom");
+      el.onmouseenter=null;el.onmouseleave=null;
+      var dur=d.duration||0.3;
+      el.style.transition="all "+dur+"s ease";
+      el.onmouseenter=function(){
+        el._ph=el.style.cssText;
+        if(d.props.opacity!==undefined)el.style.opacity=d.props.opacity/100;
+        if(d.props.scale!==undefined)el.style.transform="scale("+d.props.scale+")";
+        if(d.props.translateY!==undefined)el.style.transform=(el.style.transform||"")+" translateY("+d.props.translateY+"px)";
+        if(d.props.rotate!==undefined)el.style.transform=(el.style.transform||"")+" rotate("+d.props.rotate+"deg)";
+        if(d.props.color)el.style.color=d.props.color;
+        if(d.props.background)el.style.backgroundColor=d.props.background;
+        if(d.props.shadow){var shm={sm:"0 2px 8px rgba(0,0,0,.15)",md:"0 4px 16px rgba(0,0,0,.2)",lg:"0 8px 32px rgba(0,0,0,.25)",xl:"0 16px 64px rgba(0,0,0,.3)",glow:"0 0 30px rgba(100,108,255,.4)",neon:"0 0 10px #646cff,0 0 40px rgba(100,108,255,.3)"};el.style.boxShadow=shm[d.props.shadow]||""}
+      };
+      el.onmouseleave=function(){if(el._ph!==undefined)el.style.cssText=el._ph};
+    }
+  }
+  if(d.type==="arbel-set-html"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.innerHTML=d.html}
+  if(d.type==="arbel-set-src"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute("src",d.src)}
+  if(d.type==="arbel-set-attr"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute(d.attr,d.value)}
 });
 
 var tree=[];
@@ -533,6 +669,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _setupTemplates();
         _setupLayerSearch();
         _setupUndoRedo();
+        _setupNewFeatures();
         window.addEventListener('message', _handleMessage);
     }
 
@@ -966,7 +1103,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _on('.editor-anim-select', 'change', function () { if (_selectedId) { _postIframe('arbel-set-animation', { id: _selectedId, animation: this.value }); _setOvB(_selectedId, 'animation', this.value, 'anim'); } });
         _on('.editor-preview-anim', 'click', function () { if (_selectedId) { var sel = _qs('.editor-anim-select'); _postIframe('arbel-preview-animation', { id: _selectedId, animation: sel ? sel.value : 'none' }); } });
         _on('#editorContinuous', 'change', function () { if (_selectedId) { _postIframe('arbel-set-continuous', { id: _selectedId, animation: this.value }); _setOvB(_selectedId, 'continuous', this.value, 'anim'); } });
-        _on('.editor-hover-select', 'change', function () { if (_selectedId) { _postIframe('arbel-set-hover', { id: _selectedId, hover: this.value }); _setOvB(_selectedId, 'hover', this.value, 'anim'); } });
+        // Hover is handled by _setupHoverControls
     }
 
     /* ─── Effect listeners ─── */
@@ -2562,6 +2699,264 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         return '#' + ((1 << 24) + (parseInt(m[0]) << 16) + (parseInt(m[1]) << 8) + parseInt(m[2])).toString(16).slice(1);
     }
 
+    /* ═══════════════════════════════════════════════════
+       ADD ELEMENT DIALOG
+       ═══════════════════════════════════════════════════ */
+    var _ADD_ELEMENTS = [
+        { cat: 'text',    label: 'Heading',       icon: 'H',   tag: 'h2', editable: true, text: 'New Heading', style: { fontSize: '2.5rem', fontWeight: '700', color: '#ffffff', margin: '20px 0' } },
+        { cat: 'text',    label: 'Paragraph',     icon: 'P',   tag: 'p',  editable: true, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', style: { fontSize: '1rem', lineHeight: '1.7', color: '#ffffffcc', margin: '10px 0' } },
+        { cat: 'text',    label: 'Small Text',    icon: 'Sm',  tag: 'span', editable: true, text: 'Small label text', style: { fontSize: '0.85rem', color: '#ffffff99', display: 'inline-block' } },
+        { cat: 'text',    label: 'Quote',         icon: '"',   tag: 'blockquote', editable: true, text: '"Design is intelligence made visible."', style: { fontSize: '1.2rem', fontStyle: 'italic', borderLeft: '3px solid #646cff', paddingLeft: '16px', margin: '20px 0', color: '#ffffffcc' } },
+        { cat: 'media',   label: 'Image',         icon: '🖼',  tag: 'img', src: 'https://placehold.co/600x400/1a1a2e/646cff?text=Image', style: { width: '100%', maxWidth: '500px', borderRadius: '12px' } },
+        { cat: 'media',   label: 'Video',         icon: '▶',   tag: 'video', src: '', style: { width: '100%', maxWidth: '640px', borderRadius: '12px' }, attrs: { controls: '', autoplay: '', muted: '', loop: '' } },
+        { cat: 'media',   label: 'iFrame Embed',  icon: '⧉',   tag: 'iframe', src: 'about:blank', style: { width: '100%', maxWidth: '640px', height: '400px', border: 'none', borderRadius: '12px' }, attrs: { loading: 'lazy' } },
+        { cat: 'layout',  label: 'Container',     icon: '☐',   tag: 'div', style: { width: '100%', maxWidth: '800px', padding: '40px', margin: '20px auto', borderRadius: '16px' } },
+        { cat: 'layout',  label: 'Glass Card',    icon: '◻',   tag: 'div', style: { padding: '32px', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', margin: '20px 0' } },
+        { cat: 'layout',  label: 'Divider',       icon: '—',   tag: 'hr', style: { border: 'none', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', margin: '32px 0', width: '100%' } },
+        { cat: 'layout',  label: 'Spacer',        icon: '↕',   tag: 'div', style: { height: '60px', width: '100%' } },
+        { cat: 'buttons', label: 'Button',        icon: 'Btn', tag: 'a', editable: true, text: 'Click Me', style: { display: 'inline-block', padding: '14px 32px', background: '#646cff', color: '#ffffff', borderRadius: '8px', fontWeight: '600', textDecoration: 'none', cursor: 'pointer', fontSize: '1rem' } },
+        { cat: 'buttons', label: 'Outline Button',icon: '◯',   tag: 'a', editable: true, text: 'Learn More', style: { display: 'inline-block', padding: '14px 32px', background: 'transparent', color: '#646cff', border: '2px solid #646cff', borderRadius: '8px', fontWeight: '600', textDecoration: 'none', cursor: 'pointer', fontSize: '1rem' } },
+        { cat: 'buttons', label: 'Pill Button',   icon: '💊',  tag: 'a', editable: true, text: 'Get Started', style: { display: 'inline-block', padding: '14px 36px', background: 'linear-gradient(135deg,#646cff,#5b4bd4)', color: '#ffffff', borderRadius: '50px', fontWeight: '600', textDecoration: 'none', cursor: 'pointer', fontSize: '1rem' } },
+        { cat: 'decorative', label: 'Glow Orb',   icon: '●',   tag: 'div', style: { width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,108,255,0.4), transparent 70%)', filter: 'blur(40px)', position: 'absolute', pointerEvents: 'none' } },
+        { cat: 'decorative', label: 'Gradient Blob', icon: '◎', tag: 'div', style: { width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,108,255,0.3) 0%, rgba(139,92,246,0.2) 40%, transparent 70%)', filter: 'blur(60px)', position: 'absolute', pointerEvents: 'none' } },
+        { cat: 'decorative', label: 'Accent Line', icon: '━',  tag: 'div', style: { width: '60px', height: '3px', background: '#646cff', borderRadius: '2px', margin: '16px 0' } },
+        { cat: 'decorative', label: 'Badge',       icon: '◆',  tag: 'span', editable: true, text: 'NEW', style: { display: 'inline-block', padding: '4px 12px', fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.1em', background: '#646cff', color: '#fff', borderRadius: '50px', textTransform: 'uppercase' } }
+    ];
+
+    // Add shape entries dynamically
+    Object.keys(SHAPE_PATHS).forEach(function (name) {
+        _ADD_ELEMENTS.push({
+            cat: 'shapes', label: name.charAt(0).toUpperCase() + name.slice(1), icon: '◇',
+            tag: 'div', isShape: true, shapeName: name,
+            style: { width: '120px', height: '120px', display: 'inline-block' }
+        });
+    });
+
+    function _showAddElementDialog() {
+        // Remove existing dialog
+        var existing = document.querySelector('.aed-overlay');
+        if (existing) existing.remove();
+
+        var overlay = document.createElement('div');
+        overlay.className = 'aed-overlay';
+
+        var cats = [
+            { id: 'all', label: 'All' },
+            { id: 'text', label: 'Text' },
+            { id: 'media', label: 'Media' },
+            { id: 'layout', label: 'Layout' },
+            { id: 'buttons', label: 'Buttons' },
+            { id: 'shapes', label: 'Shapes' },
+            { id: 'decorative', label: 'Decorative' }
+        ];
+
+        var catBtns = cats.map(function (c) {
+            return '<button class="aed-cat' + (c.id === 'all' ? ' active' : '') + '" data-cat="' + c.id + '">' + c.label + '</button>';
+        }).join('');
+
+        overlay.innerHTML =
+            '<div class="aed-dialog">' +
+                '<div class="aed-header">' +
+                    '<h3 class="aed-title">Add Element</h3>' +
+                    '<button class="aed-close">&times;</button>' +
+                '</div>' +
+                '<input class="aed-search gen-input" placeholder="Search elements..." type="text">' +
+                '<div class="aed-cats">' + catBtns + '</div>' +
+                '<div class="aed-grid"></div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+
+        var dialog = overlay.querySelector('.aed-dialog');
+        var grid = overlay.querySelector('.aed-grid');
+        var search = overlay.querySelector('.aed-search');
+        var activeCat = 'all';
+
+        function renderGrid() {
+            var q = search.value.toLowerCase();
+            grid.innerHTML = '';
+            _ADD_ELEMENTS.forEach(function (el) {
+                if (activeCat !== 'all' && el.cat !== activeCat) return;
+                if (q && el.label.toLowerCase().indexOf(q) < 0 && el.cat.toLowerCase().indexOf(q) < 0) return;
+
+                var card = document.createElement('div');
+                card.className = 'aed-card';
+                if (el.isShape) {
+                    card.innerHTML = '<div class="aed-shape-preview">' + _buildShapeSvg(el.shapeName, '#646cff', 'none', 0) + '</div><span class="aed-card-label">' + el.label + '</span>';
+                } else {
+                    card.innerHTML = '<span class="aed-card-icon">' + el.icon + '</span><span class="aed-card-label">' + el.label + '</span>';
+                }
+                card.addEventListener('click', function () {
+                    _addElement(el);
+                    overlay.remove();
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        renderGrid();
+
+        search.addEventListener('input', renderGrid);
+        overlay.querySelectorAll('.aed-cat').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                overlay.querySelectorAll('.aed-cat').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                activeCat = btn.getAttribute('data-cat');
+                renderGrid();
+            });
+        });
+        overlay.querySelector('.aed-close').addEventListener('click', function () { overlay.remove(); });
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+    }
+
+    function _addElement(def) {
+        _pushUndo();
+        _addedCount++;
+        var id = 'added-' + def.cat + '-' + _addedCount;
+        _addedElements.push(id);
+        var msg = {
+            id: id,
+            tag: def.tag || 'div',
+            style: def.style || {},
+            editable: def.editable || false,
+            text: def.text || '',
+            attrs: def.attrs || {}
+        };
+        if (def.src) msg.src = def.src;
+        if (def.isShape) {
+            msg.html = _buildShapeSvg(def.shapeName, '#ffffff', 'none', 0);
+            msg.style.overflow = 'hidden';
+        }
+        _postIframe('arbel-add-element', msg);
+        // Store in overrides
+        if (!_overrides[id]) _overrides[id] = {};
+        _overrides[id]._added = true;
+        _overrides[id]._def = { tag: def.tag, cat: def.cat, label: def.label, isShape: def.isShape, shapeName: def.shapeName };
+        if (def.text) _overrides[id].text = def.text;
+        if (def.src) _overrides[id].src = def.src;
+        if (_onUpdate) _onUpdate(_overrides);
+    }
+
+    function _deleteElement() {
+        if (!_selectedId) return;
+        _pushUndo();
+        _postIframe('arbel-delete-element', { id: _selectedId });
+        if (_overrides[_selectedId]) delete _overrides[_selectedId];
+        _addedElements = _addedElements.filter(function (id) { return id !== _selectedId; });
+        _selectedId = null;
+        if (_onUpdate) _onUpdate(_overrides);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       GRANULAR HOVER CONTROLS
+       ═══════════════════════════════════════════════════ */
+    function _setupHoverControls() {
+        if (!_container) return;
+        // When switching from preset to "custom", show granular controls
+        _on('.editor-hover-select', 'change', function () {
+            if (!_selectedId) return;
+            var val = this.value;
+            var granular = _qs('#editorHoverGranular');
+            if (val === 'custom') {
+                if (granular) granular.style.display = '';
+                _applyGranularHover();
+            } else {
+                if (granular) granular.style.display = 'none';
+                _postIframe('arbel-set-hover', { id: _selectedId, hover: val });
+                _setOvB(_selectedId, 'hover', val, 'anim');
+            }
+        });
+
+        // Wire all granular inputs
+        var hoverInputs = ['#hoverOpacity','#hoverScale','#hoverTranslateY','#hoverRotate','#hoverDuration'];
+        var hoverColors = ['#hoverColor','#hoverBg'];
+        var hoverSel = ['#hoverShadow'];
+
+        hoverInputs.concat(hoverColors).concat(hoverSel).forEach(function (sel) {
+            _on(sel, 'input', function () { _applyGranularHover(); });
+            _on(sel, 'change', function () { _applyGranularHover(); });
+        });
+    }
+
+    function _applyGranularHover() {
+        if (!_selectedId) return;
+        var props = {};
+        var op = _qs('#hoverOpacity'); if (op && op.value !== '100') props.opacity = parseInt(op.value);
+        var sc = _qs('#hoverScale'); if (sc && sc.value !== '1') props.scale = parseFloat(sc.value);
+        var ty = _qs('#hoverTranslateY'); if (ty && ty.value !== '0') props.translateY = parseInt(ty.value);
+        var ro = _qs('#hoverRotate'); if (ro && ro.value !== '0') props.rotate = parseInt(ro.value);
+        var co = _qs('#hoverColor'); if (co && co.value !== '#ffffff') props.color = co.value;
+        var bg = _qs('#hoverBg'); if (bg && bg.value !== '#000000') props.background = bg.value;
+        var sh = _qs('#hoverShadow'); if (sh && sh.value !== 'none') props.shadow = sh.value;
+        var dur = _qs('#hoverDuration'); var duration = dur ? parseFloat(dur.value) || 0.3 : 0.3;
+
+        _postIframe('arbel-set-hover-custom', { id: _selectedId, props: props, duration: duration });
+        _setOvB(_selectedId, 'hover', 'custom', 'anim');
+        _setOv(_selectedId, 'hoverProps', props);
+        _setOv(_selectedId, 'hoverDuration', duration);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       IMPORT / EXPORT JSON
+       ═══════════════════════════════════════════════════ */
+    function _exportJSON() {
+        var data = {
+            version: 1,
+            overrides: _overrides,
+            pages: _pages,
+            videoConfig: _videoConfig,
+            addedElements: _addedElements
+        };
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'arbel-project-' + new Date().toISOString().slice(0, 10) + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    function _importJSON() {
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.addEventListener('change', function () {
+            var file = input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    var data = JSON.parse(e.target.result);
+                    if (!data || !data.overrides) throw new Error('Invalid project file');
+                    _pushUndo();
+                    _overrides = data.overrides;
+                    if (data.pages) _pages = data.pages;
+                    if (data.videoConfig) _videoConfig = data.videoConfig;
+                    if (data.addedElements) _addedElements = data.addedElements;
+                    if (_onUpdate) _onUpdate(_overrides);
+                } catch (err) {
+                    alert('Failed to import: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+        input.click();
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SETUP NEW FEATURES
+       ═══════════════════════════════════════════════════ */
+    function _setupNewFeatures() {
+        // Add Element button
+        _on('#addElementBtn', 'click', _showAddElementDialog);
+        // Delete Element button
+        _on('#deleteElementBtn', 'click', _deleteElement);
+        // Import / Export
+        _on('#editorExport', 'click', _exportJSON);
+        _on('#editorImport', 'click', _importJSON);
+        // Granular hover
+        _setupHoverControls();
+    }
+
     /* ─── Public API ─── */
     return {
         init: init,
@@ -2570,6 +2965,10 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         setOverrides: function (o) { _overrides = o || {}; },
         getVideoConfig: function () { return { frames: _videoFrames, config: _videoConfig }; },
         getPages: function () { return _pages; },
+        exportJSON: _exportJSON,
+        importJSON: _importJSON,
+        showAddElement: _showAddElementDialog,
+        deleteElement: _deleteElement,
         destroy: function () { _active = false; _selectedId = null; window.removeEventListener('message', _handleMessage); if (_keydownHandler) { document.removeEventListener('keydown', _keydownHandler); _keydownHandler = null; } }
     };
 })();

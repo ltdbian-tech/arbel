@@ -688,6 +688,13 @@
                         </div>
                     </div>
                     <div class="bfs-toolbar-right">
+                        <button class="bfs-btn bfs-btn--sm" id="editorImport" title="Import Project JSON">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </button>
+                        <button class="bfs-btn bfs-btn--sm" id="editorExport" title="Export Project JSON">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        </button>
+                        <div class="bfs-divider"></div>
                         <button class="bfs-btn bfs-btn--accent" id="bfsFullscreen" title="Toggle Fullscreen">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
                         </button>
@@ -742,6 +749,15 @@
                                 </div>
                             </div>
                             <div class="editor-tree" id="editorTree"></div>
+                            <div class="layer-bottom-actions">
+                                <button class="bfs-btn bfs-btn--sm bfs-btn--accent" id="addElementBtn" title="Add Element">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                                    Add
+                                </button>
+                                <button class="bfs-btn bfs-btn--sm" id="deleteElementBtn" title="Delete Selected Element">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Templates Panel -->
@@ -1098,6 +1114,11 @@
                                         <option value="fadeIn">Fade In</option>
                                         <option value="fadeInUp">Fade In Up</option>
                                         <option value="fadeInDown">Fade In Down</option>
+                                        <option value="fadeInLeft">Fade In Left</option>
+                                        <option value="fadeInRight">Fade In Right</option>
+                                        <option value="fadeOut">Fade Out</option>
+                                        <option value="fadeOutUp">Fade Out Up</option>
+                                        <option value="fadeOutDown">Fade Out Down</option>
                                     </optgroup>
                                     <optgroup label="Slide">
                                         <option value="slideUp">Slide Up</option>
@@ -1105,25 +1126,64 @@
                                         <option value="slideLeft">Slide Left</option>
                                         <option value="slideRight">Slide Right</option>
                                     </optgroup>
+                                    <optgroup label="Bounce">
+                                        <option value="bounceIn">Bounce In</option>
+                                        <option value="bounceInUp">Bounce In Up</option>
+                                        <option value="bounceInDown">Bounce In Down</option>
+                                        <option value="bounceInLeft">Bounce In Left</option>
+                                        <option value="bounceInRight">Bounce In Right</option>
+                                    </optgroup>
                                     <optgroup label="Scale">
                                         <option value="scaleUp">Scale Up</option>
                                         <option value="scaleDown">Scale Down</option>
-                                        <option value="bounceIn">Bounce In</option>
+                                        <option value="scaleOut">Scale Out</option>
+                                        <option value="zoomIn">Zoom In</option>
+                                        <option value="zoomOut">Zoom Out</option>
                                         <option value="elasticIn">Elastic In</option>
                                     </optgroup>
                                     <optgroup label="Rotate">
                                         <option value="rotateIn">Rotate In</option>
                                         <option value="rotateInLeft">Rotate In Left</option>
-                                        <option value="flipIn">Flip In</option>
+                                        <option value="rotateInRight">Rotate In Right</option>
+                                        <option value="flipIn">Flip In X</option>
                                         <option value="flipInY">Flip In Y</option>
+                                        <option value="flipOutX">Flip Out X</option>
+                                        <option value="flipOutY">Flip Out Y</option>
+                                    </optgroup>
+                                    <optgroup label="Blur">
+                                        <option value="blurIn">Blur In</option>
+                                        <option value="blurInUp">Blur In Up</option>
+                                        <option value="blurOut">Blur Out</option>
+                                    </optgroup>
+                                    <optgroup label="Clip Reveal">
+                                        <option value="clipIn">Clip In</option>
+                                        <option value="clipRevealUp">Clip Reveal Up</option>
+                                        <option value="clipRevealDown">Clip Reveal Down</option>
+                                        <option value="clipRevealLeft">Clip Reveal Left</option>
+                                        <option value="clipRevealRight">Clip Reveal Right</option>
+                                    </optgroup>
+                                    <optgroup label="Back">
+                                        <option value="backInUp">Back In Up</option>
+                                        <option value="backInDown">Back In Down</option>
+                                        <option value="backInLeft">Back In Left</option>
+                                        <option value="backInRight">Back In Right</option>
                                     </optgroup>
                                     <optgroup label="Special">
-                                        <option value="blurIn">Blur In</option>
                                         <option value="glitchIn">Glitch In</option>
                                         <option value="typewriter">Typewriter</option>
-                                        <option value="clipIn">Clip In</option>
                                         <option value="dropIn">Drop In</option>
                                         <option value="unfold">Unfold</option>
+                                        <option value="rollIn">Roll In</option>
+                                        <option value="jackInTheBox">Jack in the Box</option>
+                                        <option value="swingIn">Swing In</option>
+                                        <option value="doorOpen">Door Open</option>
+                                        <option value="hinge">Hinge</option>
+                                        <option value="lightSpeedIn">Light Speed In</option>
+                                        <option value="lightSpeedOut">Light Speed Out</option>
+                                        <option value="rubberBand">Rubber Band</option>
+                                        <option value="tada">Tada</option>
+                                        <option value="jello">Jello</option>
+                                        <option value="perspectiveIn">Perspective In</option>
                                     </optgroup>
                                 </select>
                                 <button class="editor-preview-anim bfs-btn bfs-btn--sm" title="Preview">&#9654;</button>
@@ -1140,7 +1200,12 @@
                                 <option value="swing">Swing</option>
                                 <option value="breathe">Breathe</option>
                                 <option value="glow-pulse">Glow Pulse</option>
+                                <option value="wobble">Wobble</option>
+                                <option value="flash">Flash</option>
+                                <option value="headShake">Head Shake</option>
                                 <option value="wave-text">Wave Text</option>
+                                <option value="drift">Drift</option>
+                                <option value="sway">Sway</option>
                             </select>
 
                             <div class="editor-section-label mono" style="margin-top:12px">HOVER EFFECT</div>
@@ -1154,7 +1219,59 @@
                                 <option value="border-glow">Border Glow</option>
                                 <option value="brightness">Brighten</option>
                                 <option value="color-shift">Color Shift</option>
+                                <option value="custom">✦ Custom...</option>
                             </select>
+
+                            <!-- Granular hover controls (shown when "Custom" selected) -->
+                            <div id="editorHoverGranular" style="display:none; margin-top:8px">
+                                <div class="editor-row" style="gap:6px">
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Opacity %</span>
+                                        <input type="range" class="gen-range" id="hoverOpacity" min="0" max="100" value="100">
+                                    </div>
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Scale</span>
+                                        <input type="number" class="gen-input" id="hoverScale" min="0.5" max="2" step="0.05" value="1" style="width:64px">
+                                    </div>
+                                </div>
+                                <div class="editor-row" style="gap:6px; margin-top:4px">
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Move Y (px)</span>
+                                        <input type="number" class="gen-input" id="hoverTranslateY" min="-50" max="50" value="0" style="width:64px">
+                                    </div>
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Rotate °</span>
+                                        <input type="number" class="gen-input" id="hoverRotate" min="-30" max="30" value="0" style="width:64px">
+                                    </div>
+                                </div>
+                                <div class="editor-row" style="gap:6px; margin-top:4px">
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Color</span>
+                                        <input type="color" class="gen-color" id="hoverColor" value="#ffffff">
+                                    </div>
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Background</span>
+                                        <input type="color" class="gen-color" id="hoverBg" value="#000000">
+                                    </div>
+                                </div>
+                                <div class="editor-row" style="gap:6px; margin-top:4px">
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Shadow</span>
+                                        <select class="gen-select" id="hoverShadow" style="font-size:0.75rem">
+                                            <option value="none">None</option>
+                                            <option value="sm">Small</option>
+                                            <option value="md">Medium</option>
+                                            <option value="lg">Large</option>
+                                            <option value="glow">Glow</option>
+                                            <option value="neon">Neon</option>
+                                        </select>
+                                    </div>
+                                    <div class="editor-col">
+                                        <span class="editor-hint mono">Duration (s)</span>
+                                        <input type="number" class="gen-input" id="hoverDuration" min="0.1" max="3" step="0.1" value="0.3" style="width:64px">
+                                    </div>
+                                </div>
+                            </div>
 
                             <div class="editor-section-label mono" style="margin-top:12px">SCROLL BEHAVIOR</div>
                             <select class="editor-scroll-select gen-select" id="editorScroll">
