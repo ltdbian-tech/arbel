@@ -1182,6 +1182,7 @@
             style: state.style,
             accent: els.accentColor.value,
             bgColor: els.bgColor.value,
+            menuBgColor: window.ArbelEditor && window.ArbelEditor.getMenuBgColor() || '',
             contactEmail: els.contactEmail.value.trim(),
             industry: els.industry.value,
             sections: getActiveSections(),

@@ -16,6 +16,7 @@ window.ArbelEditor = (function () {
     var _onUpdate = null;
     var _videoFrames = [];
     var _videoConfig = { fps: 24, speed: 1, loop: false, active: false, preset: null };
+    var _menuBgColor = '';
     var _pages = [{ id: 'home', name: 'Home', path: '/', isHome: true, showInNav: false }];
     var _currentPage = 'home';
     var _zoom = 100;
@@ -711,6 +712,7 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-set-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.setAttribute("href",d.href);else{var a=el.closest("a");if(a)a.setAttribute("href",d.href)}}}
   if(d.type==="arbel-remove-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.removeAttribute("href");else{var a=el.closest("a");if(a)a.removeAttribute("href")}}}
   if(d.type==="arbel-set-filter"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.style.filter=d.value}
+  if(d.type==="arbel-set-menu-bg"){var nav=document.getElementById("nav");if(nav)nav.style.setProperty("--menu-bg",d.value)}
   if(d.type==="arbel-edit-text"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el&&el.hasAttribute("data-arbel-edit"))startEdit(el)}
   if(d.type==="arbel-add-element"){
     var tag=d.tag||"div";var newEl=document.createElement(tag);
@@ -1261,6 +1263,16 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     /* ─── Style listeners ─── */
     function _setupStyleListeners() {
         if (!_container) return;
+        /* Menu overlay background */
+        var _menuBgPicker = _qs('#editorMenuBgColor');
+        if (_menuBgPicker) {
+            var cfgBg = document.getElementById('bgColor');
+            if (cfgBg) { _menuBgPicker.value = cfgBg.value; _menuBgColor = cfgBg.value; }
+            _menuBgPicker.addEventListener('input', function () {
+                _menuBgColor = this.value;
+                _postIframe('arbel-set-menu-bg', { value: this.value });
+            });
+        }
         _on('.editor-text-input', 'input', function () {
             if (!_selectedId) return;
             _postIframe('arbel-set-text', { id: _selectedId, text: this.value });
@@ -3740,6 +3752,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         getOverlayScript: function () { return _getOverlayScript(); },
         getOverrides: function () { return _overrides; },
         setOverrides: function (o) { _overrides = o || {}; },
+        getMenuBgColor: function () { return _menuBgColor; },
         getVideoConfig: function () { return { frames: _videoFrames, config: _videoConfig }; },
         getPages: function () { return _pages; },
         exportJSON: _exportJSON,
