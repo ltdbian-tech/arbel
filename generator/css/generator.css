@@ -1623,6 +1623,21 @@ a:hover { text-decoration: underline; }
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
 }
+/* Background Upload Buttons */
+.editor-upload-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg2);
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.editor-upload-btn:hover { background: var(--surface3); border-color: var(--accent); color: var(--fg); }
+.editor-upload-btn.editor-bg-remove { border-color: var(--danger, #e74c3c); color: var(--danger, #e74c3c); }
+.editor-upload-btn.editor-bg-remove:hover { background: rgba(231,76,60,.12); }
 
 /* Animation Row */
 .editor-anim-row {

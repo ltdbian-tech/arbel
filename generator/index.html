@@ -972,6 +972,46 @@
                                 </div>
                             </div>
 
+                            <!-- Background Image / Video -->
+                            <div class="editor-section-label mono" style="margin-top:10px">BACKGROUND</div>
+                            <div class="editor-row" style="gap:6px;flex-wrap:wrap">
+                                <label class="editor-upload-btn" id="editorBgImgLabel" title="Upload background image">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                                    <span>Image</span>
+                                    <input type="file" id="editorBgImgUpload" accept="image/*" style="display:none">
+                                </label>
+                                <label class="editor-upload-btn" id="editorBgVidLabel" title="Upload background video">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>
+                                    <span>Video</span>
+                                    <input type="file" id="editorBgVidUpload" accept="video/mp4,video/webm,video/ogg" style="display:none">
+                                </label>
+                                <button class="editor-upload-btn editor-bg-remove" id="editorBgRemove" title="Remove background" style="display:none">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                    <span>Remove</span>
+                                </button>
+                            </div>
+                            <span class="editor-hint mono" id="editorBgStatus" style="margin-top:4px;display:none"></span>
+                            <div class="editor-row" id="editorBgSizeRow" style="display:none;margin-top:6px">
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Size</span>
+                                    <select class="gen-select" id="editorBgSize">
+                                        <option value="cover">Cover</option>
+                                        <option value="contain">Contain</option>
+                                        <option value="auto">Auto</option>
+                                    </select>
+                                </div>
+                                <div class="editor-col">
+                                    <span class="editor-hint mono">Position</span>
+                                    <select class="gen-select" id="editorBgPosition">
+                                        <option value="center">Center</option>
+                                        <option value="top">Top</option>
+                                        <option value="bottom">Bottom</option>
+                                        <option value="left">Left</option>
+                                        <option value="right">Right</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <!-- Spacing -->
                             <div class="editor-section-label mono" style="margin-top:10px">SPACING</div>
                             <div class="editor-spacing-grid">

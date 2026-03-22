@@ -1645,10 +1645,11 @@ window.ArbelCompiler = (function () {
 
             // Collect inline style overrides
             var styleProps = ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing',
-                'textAlign', 'textDecoration', 'textTransform', 'color', 'backgroundColor',
+                'textAlign', 'textDecoration', 'textTransform', 'color', 'backgroundColor', 'background',
+                'backgroundImage', 'backgroundSize', 'backgroundPosition',
                 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
                 'border', 'borderRadius', 'opacity', 'zIndex', 'transform',
-                'filter', 'objectFit', 'visibility'];
+                'filter', 'objectFit', 'visibility', 'position', 'left', 'top', 'width', 'height'];
             var styleParts = [];
             styleProps.forEach(function (prop) {
                 if (o[prop] !== undefined && o[prop] !== '') {
@@ -1679,6 +1680,27 @@ window.ArbelCompiler = (function () {
                 html = html.replace(existingStyle, '$1style="$2;' + styleVal + '"');
             } else {
                 html = html.replace('data-arbel-id="' + id + '"', 'data-arbel-id="' + id + '" style="' + styleVal + '"');
+            }
+        });
+
+        // Inject background video elements
+        ids.forEach(function (id) {
+            var o = overrides[id];
+            if (o.bgVideo) {
+                var escapedId = id.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+                var vidTag = '<video autoplay loop muted playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none"><source src="' + esc(o.bgVideo) + '"></video>';
+                var openTagRe = new RegExp('(<\\w+\\s[^>]*data-arbel-id="' + escapedId + '"[^>]*>)');
+                html = html.replace(openTagRe, function (match, openTag) {
+                    // Ensure parent has position:relative and overflow:hidden
+                    if (!/position\s*:/.test(openTag)) {
+                        if (/style="/.test(openTag)) {
+                            openTag = openTag.replace(/style="/, 'style="position:relative;overflow:hidden;');
+                        } else {
+                            openTag = openTag.replace(/>$/, ' style="position:relative;overflow:hidden">');
+                        }
+                    }
+                    return openTag + vidTag;
+                });
             }
         });
 
