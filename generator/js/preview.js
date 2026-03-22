@@ -87,6 +87,13 @@ window.ArbelPreview = (function () {
     function render(iframe, files, editorScript) {
         if (!iframe) return;
         _iframe = iframe;
+
+        // Save scroll position before re-render
+        var savedScrollY = 0;
+        try {
+            if (iframe.contentWindow) savedScrollY = iframe.contentWindow.scrollY || 0;
+        } catch (e) { /* cross-origin or blank — ignore */ }
+
         _cleanup();
 
         var inlinedHTML = _buildInlineHTML(files);
@@ -105,6 +112,18 @@ window.ArbelPreview = (function () {
         var blob = new Blob([inlinedHTML], { type: 'text/html' });
         var url = URL.createObjectURL(blob);
         _blobUrls.push(url);
+
+        // Restore scroll position after iframe loads
+        var onLoad = function () {
+            iframe.removeEventListener('load', onLoad);
+            if (savedScrollY > 0) {
+                // Small delay to let GSAP/ScrollTrigger initialize before restoring
+                setTimeout(function () {
+                    try { iframe.contentWindow.scrollTo(0, savedScrollY); } catch (e) {}
+                }, 80);
+            }
+        };
+        iframe.addEventListener('load', onLoad);
 
         iframe.src = url;
     }
