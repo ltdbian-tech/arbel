@@ -1270,6 +1270,27 @@
         }
     }
 
+    /** Reload preview iframe without recompiling — re-renders compiled files and restores editor */
+    function reloadPreview() {
+        if (!state.compiledFiles) return;
+        var editorScript = ArbelEditor.getOverlayScript();
+        var savedOverrides = ArbelEditor.getOverrides();
+        ArbelEditor.destroy();
+        ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
+        ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
+            state.editorOverrides = overrides;
+        });
+        if (savedOverrides) {
+            ArbelEditor.setOverrides(savedOverrides);
+        }
+    }
+
+    // Reload preview button
+    var reloadBtn = $('editorReload');
+    if (reloadBtn) {
+        reloadBtn.addEventListener('click', function () { reloadPreview(); });
+    }
+
     /* ─── DEPLOY ─── */
     function sanitizeRepoName(name) {
         var sanitized = name.toLowerCase().replace(/[^a-z0-9\-_.]/g, '-').replace(/-+/g, '-').replace(/^[-.]|[-.]$/g, '');

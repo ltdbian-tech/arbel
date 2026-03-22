@@ -299,6 +299,9 @@ document.addEventListener("mousedown",function(e){
 document.addEventListener("click",function(e){
   if(editing)return;
   if(didDrag){didDrag=false;return}
+  /* Block link navigation (mailto, external, anchors) */
+  var a=e.target.closest("a");
+  if(a)e.preventDefault();
   var el=e.target.closest("[data-arbel-id]");
   if(!el){desel();return}
 },true);
