@@ -37,33 +37,35 @@ window.ArbelEditor = (function () {
     var _addedCount = 0;             // counter for dynamically added elements
     var _addedElements = [];         // track added element IDs for export
 
-    /* ─── SHAPE_PATHS constant (shared with cinematic) ─── */
+    /* ─── Shape & Frame Definitions (matches cinematic) ─── */
     var SHAPE_PATHS = {
-        circle:    { svg: '<circle cx="50" cy="50" r="48" />', clip: 'circle(50% at 50% 50%)' },
-        square:    { svg: '<rect x="2" y="2" width="96" height="96" />', clip: 'inset(0)' },
-        triangle:  { svg: '<polygon points="50,2 98,98 2,98" />', clip: 'polygon(50% 0%, 100% 100%, 0% 100%)' },
-        diamond:   { svg: '<polygon points="50,2 98,50 50,98 2,50" />', clip: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
-        pentagon:  { svg: '<polygon points="50,2 97,36 79,97 21,97 3,36" />', clip: 'polygon(50% 0%, 100% 38%, 81% 100%, 19% 100%, 0% 38%)' },
-        hexagon:   { svg: '<polygon points="50,2 93,25 93,75 50,98 7,75 7,25" />', clip: 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)' },
-        star:      { svg: '<polygon points="50,2 63,38 98,38 70,60 80,96 50,74 20,96 30,60 2,38 37,38" />', clip: 'polygon(50% 0%, 63% 38%, 100% 38%, 70% 60%, 80% 98%, 50% 74%, 20% 98%, 30% 60%, 0% 38%, 37% 38%)' },
-        heart:     { svg: '<path d="M50 88C25 70 2 50 2 30 2 14 14 2 30 2c10 0 17 5 20 12C53 7 60 2 70 2c16 0 28 12 28 28 0 20-23 40-48 58z" />', clip: 'polygon(50% 15%, 60% 2%, 78% 0%, 95% 10%, 100% 30%, 90% 55%, 50% 88%, 10% 55%, 0% 30%, 5% 10%, 22% 0%, 40% 2%)' },
-        cross:     { svg: '<polygon points="36,2 64,2 64,36 98,36 98,64 64,64 64,98 36,98 36,64 2,64 2,36 36,36" />', clip: 'polygon(36% 0%, 64% 0%, 64% 36%, 100% 36%, 100% 64%, 64% 64%, 64% 100%, 36% 100%, 36% 64%, 0% 64%, 0% 36%, 36% 36%)' },
-        arrow:     { svg: '<polygon points="50,2 98,50 72,50 72,98 28,98 28,50 2,50" />', clip: 'polygon(50% 0%, 100% 50%, 72% 50%, 72% 100%, 28% 100%, 28% 50%, 0% 50%)' },
-        octagon:   { svg: '<polygon points="30,2 70,2 98,30 98,70 70,98 30,98 2,70 2,30" />', clip: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)' },
-        parallelogram: { svg: '<polygon points="25,2 98,2 75,98 2,98" />', clip: 'polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)' },
-        rhombus:   { svg: '<polygon points="50,2 98,50 50,98 2,50" />', clip: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
-        trapezoid: { svg: '<polygon points="20,2 80,2 98,98 2,98" />', clip: 'polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)' },
-        semicircle:{ svg: '<path d="M2 98 A48 48 0 0 1 98 98 Z" />', clip: 'ellipse(50% 50% at 50% 100%)' },
-        badge:     { svg: '<polygon points="50,0 61,18 82,10 76,32 98,38 82,54 94,74 72,72 62,94 50,76 38,94 28,72 6,74 18,54 2,38 24,32 18,10 39,18" />', clip: 'polygon(50% 0%,61% 18%,82% 10%,76% 32%,100% 38%,82% 54%,94% 74%,72% 72%,62% 94%,50% 76%,38% 94%,28% 72%,6% 74%,18% 54%,0% 38%,24% 32%,18% 10%,39% 18%)' }
+        'circle':         { svg: '<ellipse cx="50" cy="50" rx="48" ry="48"/>', clip: 'circle(50% at 50% 50%)' },
+        'square':         { svg: '<rect x="2" y="2" width="96" height="96"/>', clip: 'inset(0)' },
+        'rounded-square': { svg: '<rect x="2" y="2" width="96" height="96" rx="16"/>', clip: 'inset(0 round 16%)' },
+        'triangle':       { svg: '<polygon points="50,2 98,98 2,98"/>', clip: 'polygon(50% 0%, 100% 100%, 0% 100%)' },
+        'diamond':        { svg: '<polygon points="50,2 98,50 50,98 2,50"/>', clip: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' },
+        'pentagon':       { svg: '<polygon points="50,2 97,36 79,96 21,96 3,36"/>', clip: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)' },
+        'hexagon':        { svg: '<polygon points="50,2 93,27 93,73 50,98 7,73 7,27"/>', clip: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' },
+        'octagon':        { svg: '<polygon points="30,2 70,2 98,30 98,70 70,98 30,98 2,70 2,30"/>', clip: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)' },
+        'star':           { svg: '<polygon points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38"/>', clip: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' },
+        'heart':          { svg: '<path d="M50,90 C20,60 2,40 2,25 A22,22,0,0,1,50,20 A22,22,0,0,1,98,25 C98,40 80,60 50,90Z"/>', clip: 'polygon(50% 0%, 61% 0%, 72% 4%, 81% 12%, 88% 22%, 93% 34%, 95% 46%, 93% 58%, 86% 70%, 75% 80%, 60% 90%, 50% 100%, 40% 90%, 25% 80%, 14% 70%, 7% 58%, 5% 46%, 7% 34%, 12% 22%, 19% 12%, 28% 4%, 39% 0%)' },
+        'cross':          { svg: '<polygon points="35,2 65,2 65,35 98,35 98,65 65,65 65,98 35,98 35,65 2,65 2,35 35,35"/>', clip: 'polygon(35% 0%, 65% 0%, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0% 65%, 0% 35%, 35% 35%)' },
+        'arrow-right':    { svg: '<polygon points="2,20 65,20 65,2 98,50 65,98 65,80 2,80"/>', clip: 'polygon(0% 20%, 65% 20%, 65% 0%, 100% 50%, 65% 100%, 65% 80%, 0% 80%)' },
+        'ring':           { svg: '<circle cx="50" cy="50" r="46" stroke-width="8" fill="none"/>', clip: null, isStroke: true },
+        'semicircle':     { svg: '<path d="M2,98 A48,48,0,0,1,98,98Z"/>', clip: 'ellipse(50% 50% at 50% 100%)' },
+        'pill':           { svg: '<rect x="2" y="20" width="96" height="60" rx="30"/>', clip: 'inset(20% 0 20% 0 round 50%)' },
+        'parallelogram':  { svg: '<polygon points="20,2 98,2 80,98 2,98"/>', clip: 'polygon(20% 0%, 100% 0%, 80% 100%, 0% 100%)' },
+        'arch':           { svg: '<path d="M2,98 L2,50 A48,48,0,0,1,98,50 L98,98Z"/>', clip: 'polygon(0% 100%, 0% 50%, 5% 35%, 15% 20%, 28% 9%, 43% 3%, 57% 3%, 72% 9%, 85% 20%, 95% 35%, 100% 50%, 100% 100%)' }
     };
 
-    function _buildShapeSvg(shapeName, fill, stroke, strokeWidth) {
-        var def = SHAPE_PATHS[shapeName];
-        if (!def) return '';
-        fill = fill || '#ffffff';
-        stroke = stroke || 'none';
-        strokeWidth = strokeWidth || 0;
-        return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%"><g fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '">' + def.svg + '</g></svg>';
+    function _buildShapeSvg(shapeName, fillColor, strokeColor, strokeWidth) {
+        var def = SHAPE_PATHS[shapeName] || SHAPE_PATHS['circle'];
+        var fc = fillColor || 'none';
+        var sc = strokeColor || 'none';
+        var sw = parseFloat(strokeWidth) || 0;
+        var attrs = ' fill="' + fc + '"';
+        if (sc !== 'none' && sw > 0) attrs += ' stroke="' + sc + '" stroke-width="' + sw + '"';
+        return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' + def.svg.replace('/>', attrs + '/>') + '</svg>';
     }
     function _getOverlayScript() {
         return `(function(){
@@ -2700,140 +2702,448 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     }
 
     /* ═══════════════════════════════════════════════════
-       ADD ELEMENT DIALOG
+       ADD ELEMENT DIALOG  (matches cinematic mode)
        ═══════════════════════════════════════════════════ */
-    var _ADD_ELEMENTS = [
-        { cat: 'text',    label: 'Heading',       icon: 'H',   tag: 'h2', editable: true, text: 'New Heading', style: { fontSize: '2.5rem', fontWeight: '700', color: '#ffffff', margin: '20px 0' } },
-        { cat: 'text',    label: 'Paragraph',     icon: 'P',   tag: 'p',  editable: true, text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.', style: { fontSize: '1rem', lineHeight: '1.7', color: '#ffffffcc', margin: '10px 0' } },
-        { cat: 'text',    label: 'Small Text',    icon: 'Sm',  tag: 'span', editable: true, text: 'Small label text', style: { fontSize: '0.85rem', color: '#ffffff99', display: 'inline-block' } },
-        { cat: 'text',    label: 'Quote',         icon: '"',   tag: 'blockquote', editable: true, text: '"Design is intelligence made visible."', style: { fontSize: '1.2rem', fontStyle: 'italic', borderLeft: '3px solid #646cff', paddingLeft: '16px', margin: '20px 0', color: '#ffffffcc' } },
-        { cat: 'media',   label: 'Image',         icon: '🖼',  tag: 'img', src: 'https://placehold.co/600x400/1a1a2e/646cff?text=Image', style: { width: '100%', maxWidth: '500px', borderRadius: '12px' } },
-        { cat: 'media',   label: 'Video',         icon: '▶',   tag: 'video', src: '', style: { width: '100%', maxWidth: '640px', borderRadius: '12px' }, attrs: { controls: '', autoplay: '', muted: '', loop: '' } },
-        { cat: 'media',   label: 'iFrame Embed',  icon: '⧉',   tag: 'iframe', src: 'about:blank', style: { width: '100%', maxWidth: '640px', height: '400px', border: 'none', borderRadius: '12px' }, attrs: { loading: 'lazy' } },
-        { cat: 'layout',  label: 'Container',     icon: '☐',   tag: 'div', style: { width: '100%', maxWidth: '800px', padding: '40px', margin: '20px auto', borderRadius: '16px' } },
-        { cat: 'layout',  label: 'Glass Card',    icon: '◻',   tag: 'div', style: { padding: '32px', background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', margin: '20px 0' } },
-        { cat: 'layout',  label: 'Divider',       icon: '—',   tag: 'hr', style: { border: 'none', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', margin: '32px 0', width: '100%' } },
-        { cat: 'layout',  label: 'Spacer',        icon: '↕',   tag: 'div', style: { height: '60px', width: '100%' } },
-        { cat: 'buttons', label: 'Button',        icon: 'Btn', tag: 'a', editable: true, text: 'Click Me', style: { display: 'inline-block', padding: '14px 32px', background: '#646cff', color: '#ffffff', borderRadius: '8px', fontWeight: '600', textDecoration: 'none', cursor: 'pointer', fontSize: '1rem' } },
-        { cat: 'buttons', label: 'Outline Button',icon: '◯',   tag: 'a', editable: true, text: 'Learn More', style: { display: 'inline-block', padding: '14px 32px', background: 'transparent', color: '#646cff', border: '2px solid #646cff', borderRadius: '8px', fontWeight: '600', textDecoration: 'none', cursor: 'pointer', fontSize: '1rem' } },
-        { cat: 'buttons', label: 'Pill Button',   icon: '💊',  tag: 'a', editable: true, text: 'Get Started', style: { display: 'inline-block', padding: '14px 36px', background: 'linear-gradient(135deg,#646cff,#5b4bd4)', color: '#ffffff', borderRadius: '50px', fontWeight: '600', textDecoration: 'none', cursor: 'pointer', fontSize: '1rem' } },
-        { cat: 'decorative', label: 'Glow Orb',   icon: '●',   tag: 'div', style: { width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,108,255,0.4), transparent 70%)', filter: 'blur(40px)', position: 'absolute', pointerEvents: 'none' } },
-        { cat: 'decorative', label: 'Gradient Blob', icon: '◎', tag: 'div', style: { width: '300px', height: '300px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(100,108,255,0.3) 0%, rgba(139,92,246,0.2) 40%, transparent 70%)', filter: 'blur(60px)', position: 'absolute', pointerEvents: 'none' } },
-        { cat: 'decorative', label: 'Accent Line', icon: '━',  tag: 'div', style: { width: '60px', height: '3px', background: '#646cff', borderRadius: '2px', margin: '16px 0' } },
-        { cat: 'decorative', label: 'Badge',       icon: '◆',  tag: 'span', editable: true, text: 'NEW', style: { display: 'inline-block', padding: '4px 12px', fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.1em', background: '#646cff', color: '#fff', borderRadius: '50px', textTransform: 'uppercase' } }
-    ];
-
-    // Add shape entries dynamically
-    Object.keys(SHAPE_PATHS).forEach(function (name) {
-        _ADD_ELEMENTS.push({
-            cat: 'shapes', label: name.charAt(0).toUpperCase() + name.slice(1), icon: '◇',
-            tag: 'div', isShape: true, shapeName: name,
-            style: { width: '120px', height: '120px', display: 'inline-block' }
-        });
-    });
 
     function _showAddElementDialog() {
-        // Remove existing dialog
-        var existing = document.querySelector('.aed-overlay');
-        if (existing) existing.remove();
-
         var overlay = document.createElement('div');
-        overlay.className = 'aed-overlay';
+        overlay.className = 'arbel-dialog-overlay aed-overlay';
 
-        var cats = [
-            { id: 'all', label: 'All' },
-            { id: 'text', label: 'Text' },
-            { id: 'media', label: 'Media' },
-            { id: 'layout', label: 'Layout' },
-            { id: 'buttons', label: 'Buttons' },
-            { id: 'shapes', label: 'Shapes' },
-            { id: 'decorative', label: 'Decorative' }
+        var dialog = document.createElement('div');
+        dialog.className = 'arbel-dialog arbel-dialog--add-el aed-dialog';
+
+        // ── Header ──
+        var header = document.createElement('div');
+        header.className = 'aed-header';
+        var title = document.createElement('h3');
+        title.className = 'arbel-dialog-title aed-title';
+        title.textContent = 'Add Element';
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'aed-close';
+        closeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+        closeBtn.addEventListener('click', function () { document.body.removeChild(overlay); });
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+
+        // ── Search ──
+        var searchWrap = document.createElement('div');
+        searchWrap.className = 'aed-search-wrap';
+        searchWrap.innerHTML = '<svg class="aed-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>';
+        var searchInput = document.createElement('input');
+        searchInput.className = 'aed-search';
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search elements...';
+        searchWrap.appendChild(searchInput);
+
+        // ── Category Tabs ──
+        var catOrder = ['All', 'Text', 'Media', 'Layout', 'Shapes', 'Frames', 'Decorative', 'Interactive', '3D Effects'];
+        var tabBar = document.createElement('div');
+        tabBar.className = 'aed-tabs';
+        var activeCat = 'All';
+
+        // ── Element Type Definitions ──
+        var types = [
+            { tag: 'h1', label: 'Heading 1', text: 'Heading', cat: 'Text', icon: 'H1' },
+            { tag: 'h2', label: 'Heading 2', text: 'Subheading', cat: 'Text', icon: 'H2' },
+            { tag: 'h3', label: 'Heading 3', text: 'Section Title', cat: 'Text', icon: 'H3' },
+            { tag: 'p', label: 'Paragraph', text: 'Your text here', cat: 'Text', icon: 'P' },
+            { tag: 'span', label: 'Label / Tag', text: 'LABEL', cat: 'Text', icon: 'Aa' },
+            { tag: 'a', label: 'Link', text: 'Learn More', cat: 'Text', icon: 'link' },
+            { tag: 'img', label: 'Image', text: '', cat: 'Media', icon: 'image' },
+            { tag: 'video', label: 'Video', text: '', cat: 'Media', icon: 'video' },
+            { tag: 'div', label: 'Lottie Animation', text: '', variant: 'lottie', cat: 'Media', icon: 'lottie' },
+            { tag: 'div', label: 'SVG Illustration', text: '', variant: 'svg', cat: 'Media', icon: 'svg' },
+            { tag: 'div', label: 'Embed / iFrame', text: '', variant: 'embed', cat: 'Media', icon: 'embed' },
+            { tag: 'div', label: 'Box / Container', text: '', cat: 'Layout', icon: 'box' },
+            { tag: 'div', label: 'Glass Card', text: '', variant: 'glass', cat: 'Layout', icon: 'glass' },
+            { tag: 'div', label: 'Circle', text: '', variant: 'shape', shapeName: 'circle', cat: 'Shapes' },
+            { tag: 'div', label: 'Square', text: '', variant: 'shape', shapeName: 'square', cat: 'Shapes' },
+            { tag: 'div', label: 'Rounded Square', text: '', variant: 'shape', shapeName: 'rounded-square', cat: 'Shapes' },
+            { tag: 'div', label: 'Triangle', text: '', variant: 'shape', shapeName: 'triangle', cat: 'Shapes' },
+            { tag: 'div', label: 'Diamond', text: '', variant: 'shape', shapeName: 'diamond', cat: 'Shapes' },
+            { tag: 'div', label: 'Pentagon', text: '', variant: 'shape', shapeName: 'pentagon', cat: 'Shapes' },
+            { tag: 'div', label: 'Hexagon', text: '', variant: 'shape', shapeName: 'hexagon', cat: 'Shapes' },
+            { tag: 'div', label: 'Octagon', text: '', variant: 'shape', shapeName: 'octagon', cat: 'Shapes' },
+            { tag: 'div', label: 'Star', text: '', variant: 'shape', shapeName: 'star', cat: 'Shapes' },
+            { tag: 'div', label: 'Heart', text: '', variant: 'shape', shapeName: 'heart', cat: 'Shapes' },
+            { tag: 'div', label: 'Cross', text: '', variant: 'shape', shapeName: 'cross', cat: 'Shapes' },
+            { tag: 'div', label: 'Arrow Right', text: '', variant: 'shape', shapeName: 'arrow-right', cat: 'Shapes' },
+            { tag: 'div', label: 'Ring', text: '', variant: 'shape', shapeName: 'ring', cat: 'Shapes' },
+            { tag: 'div', label: 'Semicircle', text: '', variant: 'shape', shapeName: 'semicircle', cat: 'Shapes' },
+            { tag: 'div', label: 'Pill', text: '', variant: 'shape', shapeName: 'pill', cat: 'Shapes' },
+            { tag: 'div', label: 'Parallelogram', text: '', variant: 'shape', shapeName: 'parallelogram', cat: 'Shapes' },
+            { tag: 'div', label: 'Circle Frame', text: '', variant: 'frame', frameName: 'circle', cat: 'Frames' },
+            { tag: 'div', label: 'Square Frame', text: '', variant: 'frame', frameName: 'square', cat: 'Frames' },
+            { tag: 'div', label: 'Rounded Frame', text: '', variant: 'frame', frameName: 'rounded-square', cat: 'Frames' },
+            { tag: 'div', label: 'Triangle Frame', text: '', variant: 'frame', frameName: 'triangle', cat: 'Frames' },
+            { tag: 'div', label: 'Diamond Frame', text: '', variant: 'frame', frameName: 'diamond', cat: 'Frames' },
+            { tag: 'div', label: 'Hexagon Frame', text: '', variant: 'frame', frameName: 'hexagon', cat: 'Frames' },
+            { tag: 'div', label: 'Star Frame', text: '', variant: 'frame', frameName: 'star', cat: 'Frames' },
+            { tag: 'div', label: 'Heart Frame', text: '', variant: 'frame', frameName: 'heart', cat: 'Frames' },
+            { tag: 'div', label: 'Octagon Frame', text: '', variant: 'frame', frameName: 'octagon', cat: 'Frames' },
+            { tag: 'div', label: 'Pentagon Frame', text: '', variant: 'frame', frameName: 'pentagon', cat: 'Frames' },
+            { tag: 'div', label: 'Arch Frame', text: '', variant: 'frame', frameName: 'arch', cat: 'Frames' },
+            { tag: 'div', label: 'Cross Frame', text: '', variant: 'frame', frameName: 'cross', cat: 'Frames' },
+            { tag: 'div', label: 'Gradient Orb', text: '', variant: 'orb', cat: 'Decorative', icon: 'orb' },
+            { tag: 'div', label: 'Divider Line', text: '', variant: 'divider', cat: 'Decorative', icon: 'divider' },
+            { tag: 'div', label: 'Button', text: 'Click Me', variant: 'button', cat: 'Interactive', icon: 'button' },
+            { tag: 'form', label: 'Contact Form', text: '', variant: 'form', cat: 'Interactive', icon: 'form' },
+            { tag: 'div', label: '3D Card Flip', text: '', variant: '3d-card', cat: '3D Effects', icon: '3d' },
+            { tag: 'div', label: '3D Rotate Box', text: '', variant: '3d-rotate', cat: '3D Effects', icon: '3d' },
+            { tag: 'div', label: '3D Float Layer', text: '', variant: '3d-float', cat: '3D Effects', icon: '3d' },
+            { tag: 'div', label: '3D Tilt Plane', text: '', variant: '3d-tilt', cat: '3D Effects', icon: '3d' },
+            { tag: 'canvas', label: 'WebGL Canvas', text: '', variant: 'webgl', cat: '3D Effects', icon: 'webgl' }
         ];
 
-        var catBtns = cats.map(function (c) {
-            return '<button class="aed-cat' + (c.id === 'all' ? ' active' : '') + '" data-cat="' + c.id + '">' + c.label + '</button>';
-        }).join('');
+        // SVG icons for non-shape element types
+        var ICONS = {
+            'H1':      '<svg viewBox="0 0 40 40"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-weight="800" font-size="22">H1</text></svg>',
+            'H2':      '<svg viewBox="0 0 40 40"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-weight="800" font-size="22">H2</text></svg>',
+            'H3':      '<svg viewBox="0 0 40 40"><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-weight="800" font-size="22">H3</text></svg>',
+            'P':       '<svg viewBox="0 0 40 40"><rect x="4" y="8" width="32" height="3" rx="1.5" fill="currentColor" opacity="0.9"/><rect x="4" y="15" width="28" height="3" rx="1.5" fill="currentColor" opacity="0.6"/><rect x="4" y="22" width="32" height="3" rx="1.5" fill="currentColor" opacity="0.4"/><rect x="4" y="29" width="18" height="3" rx="1.5" fill="currentColor" opacity="0.3"/></svg>',
+            'Aa':      '<svg viewBox="0 0 40 40"><rect x="4" y="10" width="32" height="20" rx="10" fill="none" stroke="currentColor" stroke-width="2"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-size="12" font-weight="600">TAG</text></svg>',
+            'link':    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 21a5 5 0 007 0l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M25 19a5 5 0 00-7 0l-3 3a5 5 0 007 7l1.5-1.5"/></svg>',
+            'image':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="7" width="30" height="26" rx="3"/><circle cx="14" cy="16" r="3"/><path d="M5 28l8-8 5 5 4-4 13 10" stroke-linejoin="round"/></svg>',
+            'video':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="9" width="24" height="22" rx="3"/><path d="M28 16l8-5v18l-8-5V16z" fill="currentColor" opacity="0.3" stroke="currentColor"/></svg>',
+            'lottie':  '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="20" cy="20" r="14"/><path d="M14 20c2-6 4-6 6 0s4 6 6 0" stroke-linecap="round"/></svg>',
+            'svg':     '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6l14 10-14 10L6 16z"/><circle cx="20" cy="16" r="4" fill="currentColor" opacity="0.3"/></svg>',
+            'embed':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 12l-8 8 8 8M26 12l8 8-8 8"/></svg>',
+            'box':     '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="30" height="30" rx="4" stroke-dasharray="4 3"/></svg>',
+            'glass':   '<svg viewBox="0 0 40 40"><rect x="5" y="5" width="30" height="30" rx="6" fill="currentColor" opacity="0.08" stroke="currentColor" stroke-width="1.5"/><rect x="9" y="9" width="12" height="3" rx="1.5" fill="currentColor" opacity="0.3"/><rect x="9" y="15" width="22" height="2" rx="1" fill="currentColor" opacity="0.15"/><rect x="9" y="20" width="18" height="2" rx="1" fill="currentColor" opacity="0.15"/></svg>',
+            'orb':     '<svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="url(#aed-orb)"/><defs><radialGradient id="aed-orb"><stop offset="0%" stop-color="#a78bfa" stop-opacity="0.6"/><stop offset="100%" stop-color="#6C5CE7" stop-opacity="0"/></radialGradient></defs></svg>',
+            'divider': '<svg viewBox="0 0 40 40"><rect x="4" y="19" width="32" height="2" rx="1" fill="currentColor" opacity="0.4"/></svg>',
+            'button':  '<svg viewBox="0 0 40 40"><rect x="4" y="12" width="32" height="16" rx="8" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.5"/><text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="currentColor" font-size="9" font-weight="600">BTN</text></svg>',
+            'form':    '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="28" height="28" rx="4"/><rect x="10" y="11" width="20" height="5" rx="2"/><rect x="10" y="20" width="20" height="5" rx="2"/><rect x="14" y="28" width="12" height="4" rx="2" fill="currentColor" opacity="0.3"/></svg>',
+            '3d':      '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 14l12-7 12 7v12l-12 7-12-7z"/><path d="M8 14l12 7 12-7M20 21v13" opacity="0.4"/></svg>',
+            'webgl':   '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><polygon points="20,4 36,30 4,30"/><circle cx="20" cy="22" r="5" fill="currentColor" opacity="0.2"/></svg>'
+        };
 
-        overlay.innerHTML =
-            '<div class="aed-dialog">' +
-                '<div class="aed-header">' +
-                    '<h3 class="aed-title">Add Element</h3>' +
-                    '<button class="aed-close">&times;</button>' +
-                '</div>' +
-                '<input class="aed-search gen-input" placeholder="Search elements..." type="text">' +
-                '<div class="aed-cats">' + catBtns + '</div>' +
-                '<div class="aed-grid"></div>' +
-            '</div>';
+        // ── Build element icon HTML ──
+        function makeIcon(t) {
+            var shapKey = t.shapeName || t.frameName;
+            if (shapKey && SHAPE_PATHS[shapKey]) {
+                var sDef = SHAPE_PATHS[shapKey];
+                var sFill = t.variant === 'frame' ? 'none' : (sDef.isStroke ? 'none' : 'currentColor');
+                var sStroke = t.variant === 'frame' || sDef.isStroke ? 'currentColor' : 'none';
+                return '<svg viewBox="0 0 100 100">' + sDef.svg.replace('/>', ' fill="' + sFill + '" stroke="' + sStroke + '" stroke-width="4"/>') + '</svg>';
+            }
+            return ICONS[t.icon] || ICONS['box'];
+        }
 
+        // ── Render grid ──
+        var grid = document.createElement('div');
+        grid.className = 'aed-grid';
+
+        function renderItems(filter, query) {
+            grid.innerHTML = '';
+            var matchingCats = {};
+            types.forEach(function (t) {
+                if (filter !== 'All' && t.cat !== filter) return;
+                if (query && t.label.toLowerCase().indexOf(query) === -1 && t.cat.toLowerCase().indexOf(query) === -1) return;
+                if (!matchingCats[t.cat]) matchingCats[t.cat] = [];
+                matchingCats[t.cat].push(t);
+            });
+
+            var catKeys = Object.keys(matchingCats);
+            if (catKeys.length === 0) {
+                var empty = document.createElement('div');
+                empty.className = 'aed-empty';
+                empty.textContent = 'No elements found';
+                grid.appendChild(empty);
+                return;
+            }
+
+            catKeys.forEach(function (cat) {
+                if (filter === 'All' || query) {
+                    var catHead = document.createElement('div');
+                    catHead.className = 'aed-cat-head';
+                    catHead.textContent = cat;
+                    grid.appendChild(catHead);
+                }
+
+                var isVisual = (cat === 'Shapes' || cat === 'Frames');
+                var section = document.createElement('div');
+                section.className = isVisual ? 'aed-section aed-section--grid' : 'aed-section aed-section--list';
+
+                matchingCats[cat].forEach(function (t) {
+                    var card = document.createElement('button');
+                    card.className = isVisual ? 'aed-card aed-card--visual' : 'aed-card aed-card--row';
+                    card.title = t.label;
+
+                    var iconEl = document.createElement('div');
+                    iconEl.className = 'aed-card-icon';
+                    iconEl.innerHTML = makeIcon(t);
+
+                    var labelEl = document.createElement('span');
+                    labelEl.className = 'aed-card-label';
+                    labelEl.textContent = t.label;
+
+                    if (isVisual) {
+                        card.appendChild(iconEl);
+                        card.appendChild(labelEl);
+                    } else {
+                        card.appendChild(iconEl);
+                        var info = document.createElement('div');
+                        info.className = 'aed-card-info';
+                        var mainLabel = document.createElement('span');
+                        mainLabel.className = 'aed-card-label';
+                        mainLabel.textContent = t.label;
+                        var subLabel = document.createElement('span');
+                        subLabel.className = 'aed-card-sub';
+                        subLabel.textContent = t.variant ? t.variant : '<' + t.tag + '>';
+                        info.appendChild(mainLabel);
+                        info.appendChild(subLabel);
+                        card.appendChild(info);
+                    }
+
+                    card.addEventListener('click', function () {
+                        _addElementFromType(t);
+                        document.body.removeChild(overlay);
+                    });
+                    section.appendChild(card);
+                });
+                grid.appendChild(section);
+            });
+        }
+
+        // ── Build tabs ──
+        function buildTabs() {
+            tabBar.innerHTML = '';
+            catOrder.forEach(function (cat) {
+                if (cat !== 'All') {
+                    var hasItems = types.some(function (t) { return t.cat === cat; });
+                    if (!hasItems) return;
+                }
+                var tab = document.createElement('button');
+                tab.className = 'aed-tab' + (cat === activeCat ? ' aed-tab--active' : '');
+                tab.textContent = cat;
+                tab.addEventListener('click', function () {
+                    activeCat = cat;
+                    buildTabs();
+                    renderItems(activeCat, searchInput.value.toLowerCase().trim());
+                });
+                tabBar.appendChild(tab);
+            });
+        }
+        buildTabs();
+        renderItems('All', '');
+
+        // ── Search listener ──
+        searchInput.addEventListener('input', function () {
+            var q = searchInput.value.toLowerCase().trim();
+            if (q) { activeCat = 'All'; buildTabs(); }
+            renderItems(activeCat, q);
+        });
+
+        // ── Assemble dialog ──
+        dialog.appendChild(header);
+        dialog.appendChild(searchWrap);
+        dialog.appendChild(tabBar);
+        dialog.appendChild(grid);
+        overlay.appendChild(dialog);
         document.body.appendChild(overlay);
 
-        var dialog = overlay.querySelector('.aed-dialog');
-        var grid = overlay.querySelector('.aed-grid');
-        var search = overlay.querySelector('.aed-search');
-        var activeCat = 'all';
+        setTimeout(function () { searchInput.focus(); }, 60);
 
-        function renderGrid() {
-            var q = search.value.toLowerCase();
-            grid.innerHTML = '';
-            _ADD_ELEMENTS.forEach(function (el) {
-                if (activeCat !== 'all' && el.cat !== activeCat) return;
-                if (q && el.label.toLowerCase().indexOf(q) < 0 && el.cat.toLowerCase().indexOf(q) < 0) return;
+        function onKey(e) { if (e.key === 'Escape') { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); } }
+        document.addEventListener('keydown', onKey);
 
-                var card = document.createElement('div');
-                card.className = 'aed-card';
-                if (el.isShape) {
-                    card.innerHTML = '<div class="aed-shape-preview">' + _buildShapeSvg(el.shapeName, '#646cff', 'none', 0) + '</div><span class="aed-card-label">' + el.label + '</span>';
-                } else {
-                    card.innerHTML = '<span class="aed-card-icon">' + el.icon + '</span><span class="aed-card-label">' + el.label + '</span>';
-                }
-                card.addEventListener('click', function () {
-                    _addElement(el);
-                    overlay.remove();
-                });
-                grid.appendChild(card);
-            });
-        }
-
-        renderGrid();
-
-        search.addEventListener('input', renderGrid);
-        overlay.querySelectorAll('.aed-cat').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                overlay.querySelectorAll('.aed-cat').forEach(function (b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-                activeCat = btn.getAttribute('data-cat');
-                renderGrid();
-            });
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); }
         });
-        overlay.querySelector('.aed-close').addEventListener('click', function () { overlay.remove(); });
-        overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
     }
 
-    function _addElement(def) {
+    /* ─── File upload helper: returns base64 dataURL ─── */
+    function _promptFileUpload(accept, cb) {
+        var inp = document.createElement('input');
+        inp.type = 'file';
+        inp.accept = accept;
+        inp.style.display = 'none';
+        document.body.appendChild(inp);
+        inp.addEventListener('change', function () {
+            var file = inp.files && inp.files[0];
+            if (!file) { document.body.removeChild(inp); return; }
+            var reader = new FileReader();
+            reader.onload = function () { cb(reader.result); document.body.removeChild(inp); };
+            reader.readAsDataURL(file);
+        });
+        inp.click();
+    }
+
+    function _addElementFromType(t) {
         _pushUndo();
         _addedCount++;
-        var id = 'added-' + def.cat + '-' + _addedCount;
+        var id = t.tag + '-' + Date.now().toString(36) + '-' + _addedCount;
         _addedElements.push(id);
+
+        var fontSize = t.tag === 'h1' ? '5vw' : t.tag === 'h2' ? '3vw' : t.tag === 'h3' ? '2vw' : t.tag === 'span' ? '0.75rem' : '1.1rem';
+        var fontWeight = (t.tag === 'h1' || t.tag === 'h2' || t.tag === 'h3') ? '700' : '400';
+
         var msg = {
             id: id,
-            tag: def.tag || 'div',
-            style: def.style || {},
-            editable: def.editable || false,
-            text: def.text || '',
-            attrs: def.attrs || {}
+            tag: t.tag,
+            editable: !!(t.text),
+            text: t.text || '',
+            style: {
+                fontSize: fontSize,
+                fontWeight: fontWeight,
+                color: '#ffffff'
+            },
+            attrs: {}
         };
-        if (def.src) msg.src = def.src;
-        if (def.isShape) {
-            msg.html = _buildShapeSvg(def.shapeName, '#ffffff', 'none', 0);
-            msg.style.overflow = 'hidden';
+
+        // Variant‑specific style overrides
+        if (t.tag === 'span') {
+            msg.style.letterSpacing = '0.2em';
+            msg.style.textTransform = 'uppercase';
+            msg.style.color = 'rgba(255,255,255,0.4)';
+            msg.style.display = 'inline-block';
         }
+
+        if (t.tag === 'img') {
+            msg.style = { width: '100%', maxWidth: '500px', borderRadius: '12px', objectFit: 'cover' };
+            msg.editable = false;
+            // Prompt file upload
+            _promptFileUpload('image/*', function (dataUrl) {
+                _postIframe('arbel-set-src', { id: id, src: dataUrl });
+                if (!_overrides[id]) _overrides[id] = {};
+                _overrides[id].src = dataUrl;
+                if (_onUpdate) _onUpdate(_overrides);
+            });
+        } else if (t.tag === 'video') {
+            msg.style = { width: '100%', maxWidth: '640px', borderRadius: '12px', objectFit: 'cover' };
+            msg.attrs = { controls: '', autoplay: '', muted: '', loop: '' };
+            msg.editable = false;
+            _promptFileUpload('video/*', function (dataUrl) {
+                _postIframe('arbel-set-src', { id: id, src: dataUrl });
+                if (!_overrides[id]) _overrides[id] = {};
+                _overrides[id].src = dataUrl;
+                if (_onUpdate) _onUpdate(_overrides);
+            });
+        } else if (t.tag === 'a' && !t.variant) {
+            msg.style.color = '#a78bfa';
+            msg.style.textDecoration = 'underline';
+            msg.attrs = { href: '#', target: '_blank' };
+        } else if (t.tag === 'div' && t.variant === 'glass') {
+            msg.style = {
+                width: '300px', height: '200px', padding: '32px',
+                borderRadius: '16px', background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)'
+            };
+        } else if (t.tag === 'div' && t.variant === 'shape') {
+            var shapeDef = SHAPE_PATHS[t.shapeName] || SHAPE_PATHS['circle'];
+            var shapeColor = '#ffffff';
+            var shapeStroke = 'none';
+            var shapeSW = 0;
+            if (shapeDef.isStroke) { shapeColor = 'none'; shapeStroke = '#ffffff'; shapeSW = 8; }
+            msg.html = _buildShapeSvg(t.shapeName, shapeColor, shapeStroke, shapeSW);
+            msg.style = {
+                width: '200px', height: '200px', overflow: 'hidden'
+            };
+            if (shapeDef.clip) msg.style.clipPath = shapeDef.clip;
+        } else if (t.tag === 'div' && t.variant === 'frame') {
+            var frameDef = SHAPE_PATHS[t.frameName] || SHAPE_PATHS['circle'];
+            msg.style = {
+                width: '300px', height: '300px', overflow: 'hidden',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)'
+            };
+            if (frameDef.clip) msg.style.clipPath = frameDef.clip;
+            // Prompt file upload for frame media
+            _promptFileUpload('image/*,video/*', function (dataUrl) {
+                var isVideo = dataUrl.indexOf('data:video') === 0;
+                var innerHtml = isVideo
+                    ? '<video src="' + dataUrl + '" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover"></video>'
+                    : '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover" />';
+                _postIframe('arbel-set-html', { id: id, html: innerHtml });
+                if (!_overrides[id]) _overrides[id] = {};
+                _overrides[id]._frameHtml = innerHtml;
+                if (_onUpdate) _onUpdate(_overrides);
+            });
+        } else if (t.tag === 'div' && t.variant === 'orb') {
+            msg.style = {
+                width: '300px', height: '300px',
+                borderRadius: '50%', background: 'radial-gradient(circle, rgba(108,92,231,0.4), transparent 70%)',
+                filter: 'blur(60px)', pointerEvents: 'none'
+            };
+        } else if (t.tag === 'div' && t.variant === 'divider') {
+            msg.tag = 'hr';
+            msg.style = {
+                border: 'none', height: '2px', width: '80px',
+                background: 'rgba(255,255,255,0.2)', margin: '32px auto'
+            };
+        } else if (t.tag === 'div' && t.variant === 'button') {
+            msg.tag = 'a';
+            msg.editable = true;
+            msg.text = t.text || 'Click Me';
+            msg.attrs = { href: '#' };
+            msg.style = {
+                display: 'inline-block', padding: '14px 36px', borderRadius: '50px',
+                background: 'linear-gradient(135deg, #6C5CE7, #a855f7)',
+                fontSize: '1rem', fontWeight: '600', color: '#ffffff',
+                cursor: 'pointer', textDecoration: 'none', textAlign: 'center'
+            };
+        } else if (t.tag === 'div' && t.variant === '3d-card') {
+            msg.style = {
+                width: '280px', height: '360px', borderRadius: '16px',
+                background: 'linear-gradient(145deg, rgba(108,92,231,0.15), rgba(0,0,0,0.3))',
+                border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)',
+                transformStyle: 'preserve-3d', perspective: '800px'
+            };
+        } else if (t.tag === 'div' && t.variant === '3d-rotate') {
+            msg.style = {
+                width: '200px', height: '200px', borderRadius: '12px',
+                background: 'linear-gradient(135deg, #6C5CE7, #a855f7)',
+                transformStyle: 'preserve-3d', perspective: '600px'
+            };
+        } else if (t.tag === 'div' && t.variant === '3d-float') {
+            msg.style = {
+                width: '320px', height: '220px', borderRadius: '20px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(16px)', transformStyle: 'preserve-3d', perspective: '1000px'
+            };
+        } else if (t.tag === 'div' && t.variant === '3d-tilt') {
+            msg.style = {
+                width: '400px', height: '300px', borderRadius: '8px',
+                background: 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
+                border: '1px solid rgba(255,255,255,0.06)',
+                transformStyle: 'preserve-3d', perspective: '800px'
+            };
+        } else if (t.tag === 'canvas' && t.variant === 'webgl') {
+            msg.style = {
+                width: '600px', height: '400px', borderRadius: '12px', background: '#0a0a0f'
+            };
+        } else if (t.tag === 'div' && t.variant === 'lottie') {
+            msg.style = { width: '300px', height: '300px' };
+            msg.html = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:0.85rem">Lottie placeholder</div>';
+        } else if (t.tag === 'div' && t.variant === 'svg') {
+            msg.html = '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" stroke="#6C5CE7" stroke-width="3" fill="none"/></svg>';
+            msg.style = { width: '200px', height: '200px' };
+        } else if (t.tag === 'div' && t.variant === 'embed') {
+            msg.html = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.3);font-size:0.85rem;border:1px dashed rgba(255,255,255,0.15);border-radius:12px">Embed / iFrame</div>';
+            msg.style = { width: '560px', height: '315px', borderRadius: '12px', overflow: 'hidden' };
+        } else if (t.tag === 'form' && t.variant === 'form') {
+            msg.html = '<div style="display:flex;flex-direction:column;gap:12px;padding:32px"><input placeholder="Your name" style="padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem"><input placeholder="your@email.com" style="padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem"><textarea placeholder="Your message..." style="padding:10px 14px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#fff;font-size:0.9rem;min-height:80px;resize:vertical"></textarea><button style="padding:12px 24px;background:linear-gradient(135deg,#6C5CE7,#a855f7);color:#fff;border:none;border-radius:50px;font-weight:600;cursor:pointer">Send Message</button></div>';
+            msg.style = {
+                width: '400px', borderRadius: '16px',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                backdropFilter: 'blur(20px)'
+            };
+            msg.editable = false;
+        } else if (t.tag === 'div' && !t.variant) {
+            msg.style = {
+                width: '300px', height: '200px', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)'
+            };
+        }
+
         _postIframe('arbel-add-element', msg);
+
         // Store in overrides
         if (!_overrides[id]) _overrides[id] = {};
         _overrides[id]._added = true;
-        _overrides[id]._def = { tag: def.tag, cat: def.cat, label: def.label, isShape: def.isShape, shapeName: def.shapeName };
-        if (def.text) _overrides[id].text = def.text;
-        if (def.src) _overrides[id].src = def.src;
+        _overrides[id]._def = { tag: msg.tag, cat: t.cat, label: t.label, variant: t.variant, shapeName: t.shapeName, frameName: t.frameName };
+        if (msg.text) _overrides[id].text = msg.text;
+        if (msg.html) _overrides[id]._html = msg.html;
         if (_onUpdate) _onUpdate(_overrides);
     }
 
@@ -2842,7 +3152,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _pushUndo();
         _postIframe('arbel-delete-element', { id: _selectedId });
         if (_overrides[_selectedId]) delete _overrides[_selectedId];
-        _addedElements = _addedElements.filter(function (id) { return id !== _selectedId; });
+        _addedElements = _addedElements.filter(function (aid) { return aid !== _selectedId; });
         _selectedId = null;
         if (_onUpdate) _onUpdate(_overrides);
     }
