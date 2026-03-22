@@ -1183,6 +1183,7 @@
             accent: els.accentColor.value,
             bgColor: els.bgColor.value,
             menuBgColor: window.ArbelEditor && window.ArbelEditor.getMenuBgColor() || '',
+            menuBgEnabled: window.ArbelEditor ? window.ArbelEditor.getMenuBgEnabled() : true,
             contactEmail: els.contactEmail.value.trim(),
             industry: els.industry.value,
             sections: getActiveSections(),

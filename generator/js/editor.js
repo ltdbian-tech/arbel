@@ -17,6 +17,7 @@ window.ArbelEditor = (function () {
     var _videoFrames = [];
     var _videoConfig = { fps: 24, speed: 1, loop: false, active: false, preset: null };
     var _menuBgColor = '';
+    var _menuBgEnabled = true;
     var _pages = [{ id: 'home', name: 'Home', path: '/', isHome: true, showInNav: false }];
     var _currentPage = 'home';
     var _zoom = 100;
@@ -712,7 +713,8 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-set-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.setAttribute("href",d.href);else{var a=el.closest("a");if(a)a.setAttribute("href",d.href)}}}
   if(d.type==="arbel-remove-link"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){if(el.tagName==="A")el.removeAttribute("href");else{var a=el.closest("a");if(a)a.removeAttribute("href")}}}
   if(d.type==="arbel-set-filter"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.style.filter=d.value}
-  if(d.type==="arbel-set-menu-bg"){var nav=document.getElementById("nav");if(nav)nav.style.background=d.value}
+  if(d.type==="arbel-set-menu-bg"){document.documentElement.style.setProperty("--menu-bg",d.value)}
+  if(d.type==="arbel-toggle-menu-bg"){var nav=document.querySelector(".nav")||document.getElementById("nav");if(nav){if(d.enabled){nav.style.removeProperty("background")}else{nav.style.setProperty("background","none","important")}}}
   if(d.type==="arbel-edit-text"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el&&el.hasAttribute("data-arbel-edit"))startEdit(el)}
   if(d.type==="arbel-add-element"){
     var tag=d.tag||"div";var newEl=document.createElement(tag);
@@ -1265,12 +1267,21 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (!_container) return;
         /* Menu overlay background */
         var _menuBgPicker = _qs('#editorMenuBgColor');
+        var _menuBgToggle = _qs('#editorMenuBgEnabled');
+        var _menuBgRow = _qs('#editorMenuBgRow');
         if (_menuBgPicker) {
             var cfgBg = document.getElementById('bgColor');
             if (cfgBg) { _menuBgPicker.value = cfgBg.value; _menuBgColor = cfgBg.value; }
             _menuBgPicker.addEventListener('input', function () {
                 _menuBgColor = this.value;
                 _postIframe('arbel-set-menu-bg', { value: this.value });
+            });
+        }
+        if (_menuBgToggle) {
+            _menuBgToggle.addEventListener('change', function () {
+                _menuBgEnabled = this.checked;
+                if (_menuBgRow) _menuBgRow.style.display = this.checked ? '' : 'none';
+                _postIframe('arbel-toggle-menu-bg', { enabled: this.checked });
             });
         }
         _on('.editor-text-input', 'input', function () {
@@ -3753,6 +3764,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         getOverrides: function () { return _overrides; },
         setOverrides: function (o) { _overrides = o || {}; },
         getMenuBgColor: function () { return _menuBgColor; },
+        getMenuBgEnabled: function () { return _menuBgEnabled; },
         getVideoConfig: function () { return { frames: _videoFrames, config: _videoConfig }; },
         getPages: function () { return _pages; },
         exportJSON: _exportJSON,

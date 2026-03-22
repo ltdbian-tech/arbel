@@ -1124,10 +1124,10 @@ window.ArbelCompiler = (function () {
             '.menu-btn span:first-child { top: 0; }\n' +
             '.menu-btn span:last-child { bottom: 0; }\n' +
             '@media (max-width: 768px) {\n' +
-            '  .nav { display: none; position: fixed; inset: 0; background: var(--menu-bg); flex-direction: column; justify-content: center; align-items: center; gap: 2rem; z-index: 99; }\n' +
+            '  .nav { display: none; position: fixed; inset: 0; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg); ' : '') + 'flex-direction: column; justify-content: center; align-items: center; gap: 2rem; z-index: 9999; }\n' +
             '  .nav.open { display: flex; }\n' +
             '  .nav-link { font-size: 1.5rem; }\n' +
-            '  .menu-btn { display: block; z-index: 101; }\n' +
+            '  .menu-btn { display: block; z-index: 10000; }\n' +
             '  .menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg); }\n' +
             '  .menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg); }\n' +
             '  body.nav-open { overflow: hidden; }\n' +
