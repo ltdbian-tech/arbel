@@ -901,7 +901,7 @@ window.ArbelCinematicCompiler = (function () {
                         var safeLottie = escHref(el.lottieUrl);
                         html += '>' + elBgVidHtml + '<dotlottie-player src="' + safeLottie + '" background="transparent" speed="1" loop autoplay style="width:100%;height:100%"></dotlottie-player></' + tag + '>\n';
                     // Frame element (image or video inside shaped clip)
-                    } else if (el.frameShape) {
+                    } else if (el.frameShape || (el.shapeName && el.frameSrc)) {
                         var frameFit = esc(el.frameObjectFit || 'cover');
                         var frameInner = '';
                         if (el.frameSrc) {
@@ -915,7 +915,7 @@ window.ArbelCinematicCompiler = (function () {
                             frameInner = '<div style="width:100%;height:100%;background:rgba(255,255,255,0.06)"></div>';
                         }
                         html += '>' + elBgVidHtml + frameInner + '</' + tag + '>\n';
-                    // SVG illustration
+                    // SVG illustration (shapes without media)
                     } else if (el.svgContent) {
                         // Sanitize SVG: strip scripts and event handlers
                         var safeSvg = el.svgContent

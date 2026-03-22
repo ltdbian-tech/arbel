@@ -1826,10 +1826,16 @@ window.ArbelCinematicEditor = (function () {
                 newEl.shapeStrokeWidth = 8;
             }
             newEl.svgContent = _buildShapeSvg(newEl.shapeName, newEl.shapeColor, newEl.shapeStroke, newEl.shapeStrokeWidth);
+            newEl.frameSrc = '';
+            newEl.frameMediaType = 'image';
+            newEl.frameObjectFit = 'cover';
             newEl.style = {
                 position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)',
-                width: '200px', height: '200px'
+                width: '200px', height: '200px', overflow: 'hidden'
             };
+            if (shapeDef.clip) {
+                newEl.style.clipPath = shapeDef.clip;
+            }
         } else if (t.tag === 'div' && t.variant === 'frame') {
             var frameDef = SHAPE_PATHS[t.frameName] || SHAPE_PATHS['circle'];
             newEl.frameShape = t.frameName;
@@ -2165,12 +2171,13 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
-        // ─── Frame controls ───
+        // ─── Frame controls (also used by shapes with media) ───
+        function _isFrameOrShape(el) { return el && (el.frameShape || el.shapeName); }
         var frameMediaType = _qs('#cneFrameMediaType');
         if (frameMediaType) {
             frameMediaType.addEventListener('change', function () {
                 var el = _getSelectedElement();
-                if (el && el.frameShape) {
+                if (_isFrameOrShape(el)) {
                     _pushUndo();
                     el.frameMediaType = frameMediaType.value;
                     el.frameSrc = '';
@@ -2184,7 +2191,7 @@ window.ArbelCinematicEditor = (function () {
         if (frameSrcInput) {
             frameSrcInput.addEventListener('input', function () {
                 var el = _getSelectedElement();
-                if (el && el.frameShape) {
+                if (_isFrameOrShape(el)) {
                     _beginBurst('frameSrc');
                     el.frameSrc = frameSrcInput.value;
                     _commitBurst('frameSrc', 600);
@@ -2196,7 +2203,7 @@ window.ArbelCinematicEditor = (function () {
         if (frameVideoSrc) {
             frameVideoSrc.addEventListener('input', function () {
                 var el = _getSelectedElement();
-                if (el && el.frameShape) {
+                if (_isFrameOrShape(el)) {
                     _beginBurst('frameVid');
                     el.frameSrc = frameVideoSrc.value;
                     _commitBurst('frameVid', 600);
@@ -2208,7 +2215,7 @@ window.ArbelCinematicEditor = (function () {
         if (frameUpload) {
             frameUpload.addEventListener('change', function () {
                 var el = _getSelectedElement();
-                if (!el || !el.frameShape || !frameUpload.files || !frameUpload.files[0]) return;
+                if (!_isFrameOrShape(el) || !frameUpload.files || !frameUpload.files[0]) return;
                 var file = frameUpload.files[0];
                 var isVid = /^video\//.test(file.type);
                 var maxSize = isVid ? 10 * 1024 * 1024 : 2 * 1024 * 1024;
@@ -2230,7 +2237,7 @@ window.ArbelCinematicEditor = (function () {
         if (frameFit) {
             frameFit.addEventListener('change', function () {
                 var el = _getSelectedElement();
-                if (el && el.frameShape) {
+                if (_isFrameOrShape(el)) {
                     _pushUndo();
                     el.frameObjectFit = frameFit.value;
                     _notifyUpdate(true);
@@ -5165,19 +5172,26 @@ window.ArbelCinematicEditor = (function () {
             }
         }
 
-        // Show/hide frame section
+        // Show/hide frame section (for frames AND shapes with media)
         var frameSection = _qs('#cneFrameSection');
         if (frameSection) {
             var isFrame = !!el.frameShape;
-            frameSection.style.display = isFrame ? '' : 'none';
-            if (isFrame) {
+            var isShapeWithMedia = !!el.shapeName;
+            var showFrameUI = isFrame || isShapeWithMedia;
+            frameSection.style.display = showFrameUI ? '' : 'none';
+            if (showFrameUI) {
                 var fmType = _qs('#cneFrameMediaType'); if (fmType) fmType.value = el.frameMediaType || 'image';
                 var fmSrc = _qs('#cneFrameSrc');
                 if (fmSrc) fmSrc.value = (el.frameSrc && el.frameSrc.indexOf('data:') === 0) ? '(uploaded)' : (el.frameSrc || '');
+                var fmVidSrc = _qs('#cneFrameVideoSrc');
+                if (fmVidSrc) fmVidSrc.value = (el.frameMediaType === 'video' && el.frameSrc && el.frameSrc.indexOf('data:') === 0) ? '(uploaded)' : (el.frameMediaType === 'video' ? (el.frameSrc || '') : '');
                 var fmFit = _qs('#cneFrameFit'); if (fmFit) fmFit.value = el.frameObjectFit || 'cover';
-                var fmShape = _qs('#cneFrameShape'); if (fmShape) fmShape.value = el.frameShape || 'circle';
+                var fmShape = _qs('#cneFrameShape'); if (fmShape) fmShape.value = el.frameShape || el.shapeName || 'circle';
                 var fmImgRow = _qs('#cneFrameImgRow'); if (fmImgRow) fmImgRow.style.display = (el.frameMediaType !== 'video') ? '' : 'none';
                 var fmVideoRow = _qs('#cneFrameVideoRow'); if (fmVideoRow) fmVideoRow.style.display = (el.frameMediaType === 'video') ? '' : 'none';
+                // Hide Frame Shape selector for shapes (shape is already set)
+                var fmShapeRow = _qs('#cneFrameShapeRow');
+                if (fmShapeRow) fmShapeRow.style.display = isShapeWithMedia && !isFrame ? 'none' : '';
             }
         }
 
