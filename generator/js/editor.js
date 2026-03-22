@@ -778,6 +778,38 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-set-html"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.innerHTML=d.html}
   if(d.type==="arbel-set-src"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute("src",d.src)}
   if(d.type==="arbel-set-attr"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute(d.attr,d.value)}
+  if(d.type==="arbel-deselect-all"){desel()}
+  if(d.type==="arbel-clone-element"){
+    var el=document.querySelector('[data-arbel-id="'+d.id+'"]');
+    if(el){
+      var clone=el.cloneNode(true);
+      clone.setAttribute("data-arbel-id",d.newId);
+      if(clone.hasAttribute("data-arbel-edit"))clone.setAttribute("data-arbel-edit","text");
+      clone.style.position=clone.style.position||"relative";
+      clone.style.left=(parseInt(clone.style.left)||0)+20+"px";
+      clone.style.top=(parseInt(clone.style.top)||0)+20+"px";
+      el.parentNode.insertBefore(clone,el.nextSibling);
+      desel();sel(clone);
+      /* rebuild tree */
+      var tree4=[];document.querySelectorAll("[data-arbel-id]").forEach(function(el4){
+        var cs5=getComputedStyle(el4);
+        tree4.push({id:el4.getAttribute("data-arbel-id"),tag:el4.tagName.toLowerCase(),
+          editable:el4.hasAttribute("data-arbel-edit"),
+          text:el4.getAttribute("data-arbel-edit")==="text"?el4.textContent.substring(0,50):null,
+          visible:cs5.visibility!=="hidden",locked:false,
+          zIndex:cs5.zIndex==="auto"?0:parseInt(cs5.zIndex)||0});
+      });window.parent.postMessage({type:"arbel-tree",tree:tree4},"*")
+    }
+  }
+});
+
+/* ── Keyboard forwarding ── */
+document.addEventListener("keydown",function(e){
+  if(editing)return;
+  var k=e.key;var ctrl=e.ctrlKey||e.metaKey;
+  if(k==="Delete"||k==="Backspace"||k==="Escape"||(ctrl&&(k==="z"||k==="y"||k==="c"||k==="v"||k==="d"||k==="a"))){e.preventDefault();
+    window.parent.postMessage({type:"arbel-key",key:k,ctrl:!!ctrl,shift:!!e.shiftKey,alt:!!e.altKey},"*");
+  }
 });
 
 var tree=[];
@@ -858,6 +890,25 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _copyStyles();
     }
 
+    /* ─── Duplicate Element (clone in iframe) ─── */
+    function _duplicateElement() {
+        if (!_selectedId) return;
+        _pushUndo();
+        _addedCount++;
+        var newId = 'dup-' + Date.now().toString(36) + '-' + _addedCount;
+        // Clone overrides from source
+        if (_overrides[_selectedId]) {
+            _overrides[newId] = JSON.parse(JSON.stringify(_overrides[_selectedId]));
+        } else {
+            _overrides[newId] = {};
+        }
+        _overrides[newId]._added = true;
+        _addedElements.push(newId);
+        _postIframe('arbel-clone-element', { id: _selectedId, newId: newId });
+        _selectedId = newId;
+        if (_onUpdate) _onUpdate(_overrides);
+    }
+
     /* ─── Context Menu ─── */
     var _ctxMenu = null;
 
@@ -884,7 +935,19 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         addItem('Copy Styles', 'Ctrl+C', _selectedId ? _copyStyles : null);
         addItem('Paste Styles', 'Ctrl+V', _clipboard ? _pasteStyles : null);
         addSep();
+        addItem('Duplicate', 'Ctrl+D', _selectedId ? _duplicateElement : null);
+        addSep();
         if (data.editable) { addItem('Edit Text', 'Dbl-click', function () { _postIframe('arbel-edit-text', { id: data.id }); }); }
+        addItem('Bring to Front', '', _selectedId ? function () { _pushUndo(); _postIframe('arbel-set-zindex', { id: data.id, value: 9999 }); _setOv(data.id, 'zIndex', 9999); } : null);
+        addItem('Send to Back', '', _selectedId ? function () { _pushUndo(); _postIframe('arbel-set-zindex', { id: data.id, value: -1 }); _setOv(data.id, 'zIndex', -1); } : null);
+        addSep();
+        var isLocked = _overrides[data.id] && _overrides[data.id].locked;
+        addItem(isLocked ? 'Unlock' : 'Lock', '', _selectedId ? function () {
+            _setOvB(data.id, 'locked', !isLocked, 'layer');
+            _postIframe('arbel-set-pointer-events', { id: data.id, value: !isLocked ? 'none' : '' });
+        } : null);
+        addSep();
+        addItem('Delete', 'Del', _selectedId ? _deleteElement : null, 'arbel-ctx-danger');
 
         // Position on-screen
         menu.style.left = x + 'px';
@@ -922,15 +985,18 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _on('#editorRedo', 'click', function () { _redo(); });
         _keydownHandler = function (e) {
             if (!_active) return;
-            var tag = document.activeElement.tagName;
-            var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
+            var tag = document.activeElement ? document.activeElement.tagName : '';
+            var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable);
             if ((e.ctrlKey || e.metaKey) && !e.altKey) {
                 if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
                 if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
                 if (e.key === 'y') { e.preventDefault(); _redo(); }
                 if (e.key === 'c' && !inInput && _selectedId) { e.preventDefault(); _copyStyles(); }
                 if (e.key === 'v' && !inInput && _clipboard) { e.preventDefault(); _pasteStyles(); }
-                if (e.key === 'd' && _selectedId) { e.preventDefault(); _duplicateStyles(); }
+                if (e.key === 'd' && _selectedId) { e.preventDefault(); _duplicateElement(); }
+            }
+            if ((e.key === 'Delete' || e.key === 'Backspace') && _selectedId && !inInput) {
+                e.preventDefault(); _deleteElement();
             }
         };
         document.addEventListener('keydown', _keydownHandler);
@@ -1006,6 +1072,25 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         if (d.type === 'arbel-contextmenu') {
             _showContextMenu(d.x, d.y, d);
+        }
+        /* ── Keyboard forwarded from iframe ── */
+        if (d.type === 'arbel-key') {
+            if ((d.key === 'Delete' || d.key === 'Backspace') && _selectedId) {
+                _deleteElement();
+                return;
+            }
+            if (d.key === 'Escape') {
+                _selectedId = null;
+                _hidePanel();
+                _updateStatus(null);
+                _postIframe('arbel-deselect-all', {});
+                return;
+            }
+            // Forward to parent keyboard handler for Ctrl+shortcuts
+            if (_keydownHandler) {
+                _keydownHandler({ key: d.key, ctrlKey: !!d.ctrl, metaKey: !!d.ctrl, shiftKey: !!d.shift, altKey: !!d.alt, preventDefault: function () {} });
+            }
+            return;
         }
     }
 
