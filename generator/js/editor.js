@@ -352,6 +352,19 @@ document.addEventListener("mousedown",function(e){
   if(e.target.classList&&(e.target.classList.contains("arbel-rh")||e.target.classList.contains("arbel-rot")))return;
   var el=e.target.closest("[data-arbel-id]");
   if(!el){return}
+  /* Special: clicking menu-btn toggles the nav overlay open/close */
+  var menuBtnEl=e.target.closest('.menu-btn')||((el.classList&&el.classList.contains('menu-btn'))?el:null);
+  if(menuBtnEl){
+    var navEl=document.getElementById('nav');
+    if(navEl){
+      var isOpen=navEl.classList.toggle('open');
+      menuBtnEl.classList.toggle('is-active');
+      document.body.classList.toggle('nav-open',isOpen);
+    }
+    e.preventDefault();e.stopPropagation();
+    sel(el);
+    return; /* don't start drag on menu button, just toggle + select */
+  }
   e.preventDefault();e.stopPropagation();
   if(selected!==el)sel(el);
   initDrag(el,e);
@@ -1318,7 +1331,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         // So when nav is open, we expand the header itself to cover the viewport and drop its backdrop-filter.
         var _navBg = (_menuBgEnabled && _menuBgColor) ? _menuBgColor : 'rgba(10,10,15,0.95)';
         css += '.nav { display: none !important; }\n';
-        css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; width: 100% !important; padding: 2rem 0 !important; }\n';
+        css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; flex: 1 !important; width: 100% !important; padding: 2rem 0 !important; }\n';
         css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
         css += '.nav a:hover, .nav-link:hover { opacity: 0.7 !important; }\n';
         css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
@@ -1326,8 +1339,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
         css += 'body.nav-open { overflow: hidden !important; }\n';
         // When nav is open, expand the header to be a full-page overlay
-        css += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBg + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; padding-top: 1rem !important; overflow-y: auto !important; }\n';
-        css += 'body.nav-open .header-inner { flex-shrink: 0 !important; }\n';
+        css += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBg + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; padding: 1rem 2rem !important; overflow-y: auto !important; }\n';
+        css += 'body.nav-open .header-inner { flex-shrink: 0 !important; width: 100% !important; }\n';
 
         // Per-element overrides for elements with responsive data
         var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
