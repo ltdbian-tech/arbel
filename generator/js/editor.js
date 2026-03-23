@@ -1310,6 +1310,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             else document.exitFullscreen();
         });
 
+        // Recalculate desktop scale on container resize
+        window.addEventListener('resize', function () { if (_activeDevice === 'desktop') _applyZoom(); });
+
         /* Brand name rename — click to edit inline */
         var _brandEl = _qs('#bfsBrand');
         if (_brandEl) {
@@ -1352,25 +1355,58 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
     function _applyZoom() {
         var frame = _container ? _container.querySelector('.preview-frame') : null;
-        if (frame) { frame.style.transform = 'scale(' + (_zoom / 100) + ')'; frame.style.transformOrigin = 'top center'; }
+        if (!frame) return;
+        if (_activeDevice === 'desktop' && _iframe) {
+            // Desktop: iframe renders at 1280px, scale to fit container
+            var frameW = frame.clientWidth || frame.offsetWidth || 800;
+            var baseScale = frameW / 1280;
+            var combined = baseScale * (_zoom / 100);
+            _iframe.style.width = '1280px';
+            _iframe.style.height = (1 / baseScale * 100) + '%';
+            _iframe.style.transformOrigin = 'top left';
+            _iframe.style.transform = 'scale(' + combined + ')';
+            frame.style.transform = '';
+        } else {
+            // Tablet / Mobile: iframe fills frame naturally
+            if (_iframe) {
+                _iframe.style.width = '100%';
+                _iframe.style.height = '100%';
+                _iframe.style.transform = '';
+            }
+            frame.style.transform = 'scale(' + (_zoom / 100) + ')';
+            frame.style.transformOrigin = 'top center';
+        }
     }
 
     /* ─── Device Responsive ─── */
     function _applyDeviceResponsive() {
         var devMode = _navMode[_activeDevice] || 'links';
+        // Apply iframe sizing for the active device
+        _applyZoom();
         if (_activeDevice === 'desktop') {
             _navOpenState = false;
             _postIframe('arbel-close-nav', {});
+            // iframe is 1280px wide — compiled media queries behave correctly.
+            // Only need nav-extra hidden and hamburger mode override if chosen.
             var dCss = '.nav-extra { display: none !important; }\n';
-            if (devMode === 'links') {
-                // Force desktop inline-links layout (iframe <768px triggers compiled media query)
-                dCss += '.menu-btn { display: none !important; }\n';
-                dCss += '.nav, .nav.open { display: flex !important; flex-direction: row !important; gap: 2rem !important; align-items: center !important; margin: 0 !important; width: auto !important; padding: 0 !important; }\n';
-                dCss += '.nav a, .nav-link { color: var(--fg2) !important; font-size: 0.85rem !important; padding: 0 !important; }\n';
+            if (devMode === 'hamburger') {
+                // User chose hamburger for desktop — at 1280px width the compiled @media rules don't fire,
+                // so inject full hamburger overlay CSS manually
+                var _navBgD = (_menuBgEnabled && _menuBgColor) ? _menuBgColor : 'rgba(10,10,15,0.95)';
+                dCss += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
+                dCss += '.nav { display: none !important; }\n';
+                dCss += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; margin: auto 0 !important; width: 100% !important; padding: 2rem 0 !important; }\n';
+                dCss += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; }\n';
+                dCss += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
+                dCss += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
+                dCss += 'body.nav-open { overflow: hidden !important; }\n';
+                dCss += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBgD + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; padding: 1rem 2rem !important; overflow-y: auto !important; }\n';
+                dCss += 'body.nav-open .header-inner { flex: 1 !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; max-width: none !important; position: relative !important; }\n';
+                dCss += 'body.nav-open .logo { align-self: flex-start !important; }\n';
+                dCss += 'body.nav-open .menu-btn { position: absolute !important; top: 0 !important; right: 0 !important; }\n';
+                dCss += 'body.nav-open .nav-extra { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; padding: 1rem 2rem !important; width: 100% !important; flex-shrink: 0 !important; }\n';
             }
-            // else hamburger — let compiled @media rules handle it naturally
             _postIframe('arbel-inject-responsive', { css: dCss });
-            _postIframe('arbel-set-viewport-meta', { content: 'width=1280, initial-scale=1' });
             return;
         }
         var isMobile = _activeDevice === 'mobile';
