@@ -1036,6 +1036,7 @@ window.ArbelCompiler = (function () {
             '  <div class="cursor" id="cursor"><div class="cursor-dot"></div><div class="cursor-ring"></div></div>\n\n' +
             '  <!-- Noise overlay -->\n' +
             '  <div class="noise-bg"></div>\n\n' +
+            (cfg.navEnabled !== false ?
             '  <!-- Header -->\n' +
             '  <header class="header" id="header">\n' +
             '    <div class="header-inner">\n' +
@@ -1045,7 +1046,7 @@ window.ArbelCompiler = (function () {
             '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n' +
-            '  </header>\n\n' +
+            '  </header>\n\n' : '') +
             '  <main>\n' + sectionsHTML + '  </main>\n\n' +
             '  <footer class="footer">\n' +
             '    <div class="footer-inner">\n' +
@@ -1113,6 +1114,7 @@ window.ArbelCompiler = (function () {
             '@media (pointer: coarse) { .cursor { display: none; } }\n\n' +
             '/* ═══ NOISE ═══ */\n' +
             '.noise-bg { position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: 0.035; background: url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E"); }\n\n' +
+            (cfg.navEnabled !== false ?
             '/* ═══ HEADER ═══ */\n' +
             '.header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 1rem 2rem; background: rgba(10,10,15,0.8); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }\n' +
             '.header-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }\n' +
@@ -1142,7 +1144,7 @@ window.ArbelCompiler = (function () {
             '  body.nav-open .menu-btn { position: absolute; top: 0; right: 0; }\n' +
             '  .nav-extra { display: none; width: 100%; }\n' +
             '  body.nav-open .nav-extra { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 2rem; flex-shrink: 0; }\n' +
-            '}\n\n' +
+            '}\n\n' : '') +
             '/* ═══ HERO ═══ */\n' +
             '.hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }\n' +
             '.hero-bg { position: absolute; inset: 0; }\n' +
@@ -1337,6 +1339,7 @@ window.ArbelCompiler = (function () {
             '    btn.style.transition="transform 0.4s cubic-bezier(0.16,1,0.3,1)";\n' +
             '  });\n' +
             '});\n\n' +
+            (cfg.navEnabled !== false ?
             '// Mobile menu\n' +
             'var menuBtn=document.getElementById("menuBtn");\n' +
             'var nav=document.getElementById("nav");\n' +
@@ -1345,7 +1348,7 @@ window.ArbelCompiler = (function () {
             '  nav.querySelectorAll(".nav-link").forEach(function(link){\n' +
             '    link.addEventListener("click",function(){nav.classList.remove("open");menuBtn.classList.remove("is-active");document.body.classList.remove("nav-open");});\n' +
             '  });\n' +
-            '}\n\n' +
+            '}\n\n' : '') +
             '// Smooth anchor scroll\n' +
             'document.querySelectorAll(\'a[href^="#"]\').forEach(function(a){\n' +
             '  a.addEventListener("click",function(e){\n' +
@@ -1495,12 +1498,13 @@ window.ArbelCompiler = (function () {
             '</head>\n<body>\n\n' +
             '  <div class="cursor" id="cursor"><div class="cursor-dot"></div><div class="cursor-ring"></div></div>\n' +
             '  <div class="noise-bg"></div>\n\n' +
+            (cfg.navEnabled !== false ?
             '  <header class="header" id="header">\n    <div class="header-inner">\n' +
             '      <a href="' + prefix + '" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks2 + '      </nav>\n' +
             '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
-            '    </div>\n  </header>\n\n' +
+            '    </div>\n  </header>\n\n' : '') +
             (function () {
                 var nameLower = (page.name || '').toLowerCase();
                 var isContact = nameLower.indexOf('contact') >= 0 || (page.id || '').indexOf('contact') >= 0;

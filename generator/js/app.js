@@ -88,6 +88,7 @@
         seoOgImage: $('seoOgImage'),
         seoFavicon: $('seoFavicon'),
         seoIndex: $('seoIndex'),
+        navToggle: $('navToggle'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -1186,6 +1187,7 @@
             menuBgEnabled: window.ArbelEditor ? window.ArbelEditor.getMenuBgEnabled() : true,
             contactEmail: els.contactEmail.value.trim(),
             industry: els.industry.value,
+            navEnabled: els.navToggle ? els.navToggle.checked : true,
             sections: getActiveSections(),
             content: content,
             seo: _collectSeo()
@@ -1509,6 +1511,7 @@
                 accent: els.accentColor.value,
                 bgColor: els.bgColor.value,
                 sections: sections,
+                navEnabled: els.navToggle ? els.navToggle.checked : true,
                 content: content,
                 templateContent: state.templateContent || null,
                 seo: _collectSeo(),
@@ -1612,6 +1615,9 @@
         // Show/hide particle config
         var cat = ArbelCompiler.getAnimCategory(state.style);
         els.particleConfig.style.display = (cat === 'particle') ? '' : 'none';
+
+        // Nav toggle
+        if (c.navEnabled !== undefined && els.navToggle) els.navToggle.checked = c.navEnabled;
 
         // Builder state
         if (c.styleMode === 'builder' && c.builderState) {
@@ -1883,6 +1889,7 @@
     els.bgColor.addEventListener('input', _markDirty);
     // Checkboxes
     if (els.seoIndex) els.seoIndex.addEventListener('change', _markDirty);
+    if (els.navToggle) els.navToggle.addEventListener('change', _markDirty);
     els.particleConnect.addEventListener('change', _markDirty);
     els.particleInteract.addEventListener('change', _markDirty);
     // Ranges

@@ -894,6 +894,12 @@ a:hover { text-decoration: underline; }
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 4px;
 }
+.toggle-divider {
+    grid-column: 1 / -1;
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
 
 /* Stat Rows */
 .stat-row {
