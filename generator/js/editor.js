@@ -1313,19 +1313,21 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             css += '[style*="grid-template-columns"]' + NOT_OV + ' { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important; }\n';
         }
 
-        // Menu overlay background — full-page overlay like arbel.live
-        if (_menuBgEnabled && _menuBgColor) {
-            css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: ' + _menuBgColor + ' !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
-        } else {
-            css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: rgba(10,10,15,0.95) !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
-        }
-        css += '.nav.open { display: flex !important; }\n';
+        // Menu overlay background — full-page overlay
+        // The .header has backdrop-filter which creates a containing block for position:fixed children.
+        // So when nav is open, we expand the header itself to cover the viewport and drop its backdrop-filter.
+        var _navBg = (_menuBgEnabled && _menuBgColor) ? _menuBgColor : 'rgba(10,10,15,0.95)';
+        css += '.nav { display: none !important; }\n';
+        css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; width: 100% !important; padding: 2rem 0 !important; }\n';
         css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
         css += '.nav a:hover, .nav-link:hover { opacity: 0.7 !important; }\n';
         css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
         css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
         css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
         css += 'body.nav-open { overflow: hidden !important; }\n';
+        // When nav is open, expand the header to be a full-page overlay
+        css += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBg + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; justify-content: flex-start !important; padding-top: 1rem !important; overflow-y: auto !important; }\n';
+        css += 'body.nav-open .header-inner { flex-shrink: 0 !important; }\n';
 
         // Per-element overrides for elements with responsive data
         var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };

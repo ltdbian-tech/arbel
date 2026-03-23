@@ -1124,14 +1124,16 @@ window.ArbelCompiler = (function () {
             '.menu-btn span:first-child { top: 0; }\n' +
             '.menu-btn span:last-child { bottom: 0; }\n' +
             '@media (max-width: 768px) {\n' +
-            '  .nav { display: none; position: fixed; inset: 0; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'flex-direction: column; justify-content: center; align-items: center; gap: 2rem; z-index: 9999; }\n' +
-            '  .nav.open { display: flex; }\n' +
+            '  .nav { display: none; }\n' +
+            '  .nav.open { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; width: 100%; padding: 2rem 0; }\n' +
             '  .nav a, .nav-link { color: #fff; font-size: 1.5rem; text-decoration: none; padding: 0.5rem 1rem; transition: opacity 0.2s; }\n' +
             '  .nav a:hover, .nav-link:hover { opacity: 0.7; }\n' +
             '  .menu-btn { display: block; z-index: 10000; }\n' +
             '  .menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg); }\n' +
             '  .menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg); }\n' +
             '  body.nav-open { overflow: hidden; }\n' +
+            '  body.nav-open .header { position: fixed; inset: 0; z-index: 9999; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'backdrop-filter: none; border-bottom: none; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 1rem; overflow-y: auto; }\n' +
+            '  body.nav-open .header-inner { flex-shrink: 0; }\n' +
             '}\n\n' +
             '/* ═══ HERO ═══ */\n' +
             '.hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }\n' +
