@@ -90,6 +90,11 @@
         seoIndex: $('seoIndex'),
         navToggle: $('navToggle'),
         editorNavToggle: $('editorNavToggle'),
+        navDropdown: $('navDropdown'),
+        editorNavEnabled: $('editorNavEnabled'),
+        navModeDesktop: $('navModeDesktop'),
+        navModeTablet: $('navModeTablet'),
+        navModeMobile: $('navModeMobile'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -1189,6 +1194,11 @@
             contactEmail: els.contactEmail.value.trim(),
             industry: els.industry.value,
             navEnabled: els.navToggle ? els.navToggle.checked : true,
+            navMode: {
+                desktop: els.navModeDesktop ? els.navModeDesktop.value : 'links',
+                tablet: els.navModeTablet ? els.navModeTablet.value : 'hamburger',
+                mobile: els.navModeMobile ? els.navModeMobile.value : 'hamburger'
+            },
             sections: getActiveSections(),
             content: content,
             seo: _collectSeo()
@@ -1280,6 +1290,11 @@
         if (state.editorOverrides) {
             ArbelEditor.setOverrides(state.editorOverrides);
         }
+        ArbelEditor.setNavMode({
+            desktop: els.navModeDesktop ? els.navModeDesktop.value : 'links',
+            tablet: els.navModeTablet ? els.navModeTablet.value : 'hamburger',
+            mobile: els.navModeMobile ? els.navModeMobile.value : 'hamburger'
+        });
 
         // Set brand name in classic editor toolbar
         var bfsBrand = $('bfsBrand');
@@ -1319,6 +1334,11 @@
         if (savedOverrides) {
             ArbelEditor.setOverrides(savedOverrides);
         }
+        ArbelEditor.setNavMode({
+            desktop: els.navModeDesktop ? els.navModeDesktop.value : 'links',
+            tablet: els.navModeTablet ? els.navModeTablet.value : 'hamburger',
+            mobile: els.navModeMobile ? els.navModeMobile.value : 'hamburger'
+        });
     }
 
     // Reload preview button
@@ -1518,6 +1538,11 @@
                 bgColor: els.bgColor.value,
                 sections: sections,
                 navEnabled: els.navToggle ? els.navToggle.checked : true,
+                navMode: {
+                    desktop: els.navModeDesktop ? els.navModeDesktop.value : 'links',
+                    tablet: els.navModeTablet ? els.navModeTablet.value : 'hamburger',
+                    mobile: els.navModeMobile ? els.navModeMobile.value : 'hamburger'
+                },
                 content: content,
                 templateContent: state.templateContent || null,
                 seo: _collectSeo(),
@@ -1625,6 +1650,14 @@
         // Nav toggle
         if (c.navEnabled !== undefined && els.navToggle) els.navToggle.checked = c.navEnabled;
         if (els.editorNavToggle) els.editorNavToggle.classList.toggle('active', els.navToggle ? els.navToggle.checked : true);
+        if (els.editorNavEnabled) els.editorNavEnabled.checked = els.navToggle ? els.navToggle.checked : true;
+        // Nav mode per device
+        if (c.navMode) {
+            if (els.navModeDesktop) els.navModeDesktop.value = c.navMode.desktop || 'links';
+            if (els.navModeTablet) els.navModeTablet.value = c.navMode.tablet || 'hamburger';
+            if (els.navModeMobile) els.navModeMobile.value = c.navMode.mobile || 'hamburger';
+            if (window.ArbelEditor) ArbelEditor.setNavMode(c.navMode);
+        }
 
         // Builder state
         if (c.styleMode === 'builder' && c.builderState) {
@@ -1898,19 +1931,48 @@
     if (els.seoIndex) els.seoIndex.addEventListener('change', _markDirty);
     if (els.navToggle) els.navToggle.addEventListener('change', function () {
         _markDirty();
-        // Sync builder toolbar button state
-        if (els.editorNavToggle) els.editorNavToggle.classList.toggle('active', els.navToggle.checked);
+        // Sync builder toolbar button + dropdown state
+        var isOn = els.navToggle.checked;
+        if (els.editorNavToggle) els.editorNavToggle.classList.toggle('active', isOn);
+        if (els.editorNavEnabled) els.editorNavEnabled.checked = isOn;
         if (state.step >= 3) generatePreview();
     });
-    // Builder toolbar nav toggle button
-    if (els.editorNavToggle) els.editorNavToggle.addEventListener('click', function () {
-        if (els.navToggle) {
-            els.navToggle.checked = !els.navToggle.checked;
-            els.editorNavToggle.classList.toggle('active', els.navToggle.checked);
-            _markDirty();
-            if (state.step >= 3) generatePreview();
+    // Builder toolbar nav toggle — opens dropdown
+    if (els.editorNavToggle) els.editorNavToggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (els.navDropdown) {
+            var vis = els.navDropdown.style.display !== 'none';
+            els.navDropdown.style.display = vis ? 'none' : '';
         }
     });
+    // Close dropdown on outside click
+    document.addEventListener('click', function (e) {
+        if (els.navDropdown && els.navDropdown.style.display !== 'none') {
+            if (!e.target.closest('.bfs-nav-wrap')) els.navDropdown.style.display = 'none';
+        }
+    });
+    // Nav enable/disable toggle inside dropdown
+    if (els.editorNavEnabled) els.editorNavEnabled.addEventListener('change', function () {
+        if (els.navToggle) els.navToggle.checked = this.checked;
+        if (els.editorNavToggle) els.editorNavToggle.classList.toggle('active', this.checked);
+        _markDirty();
+        if (state.step >= 3) generatePreview();
+    });
+    // Nav mode selectors
+    function _onNavModeChange() {
+        _markDirty();
+        if (window.ArbelEditor) {
+            ArbelEditor.setNavMode({
+                desktop: els.navModeDesktop ? els.navModeDesktop.value : 'links',
+                tablet: els.navModeTablet ? els.navModeTablet.value : 'hamburger',
+                mobile: els.navModeMobile ? els.navModeMobile.value : 'hamburger'
+            });
+        }
+        if (state.step >= 3) generatePreview();
+    }
+    if (els.navModeDesktop) els.navModeDesktop.addEventListener('change', _onNavModeChange);
+    if (els.navModeTablet) els.navModeTablet.addEventListener('change', _onNavModeChange);
+    if (els.navModeMobile) els.navModeMobile.addEventListener('change', _onNavModeChange);
     els.particleConnect.addEventListener('change', _markDirty);
     els.particleInteract.addEventListener('change', _markDirty);
     // Ranges

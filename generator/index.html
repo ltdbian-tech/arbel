@@ -692,9 +692,53 @@
                             </button>
                         </div>
                         <div class="bfs-divider"></div>
-                        <button class="bfs-btn bfs-btn--sm bfs-nav-toggle active" id="editorNavToggle" title="Toggle Navigation Bar">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-                        </button>
+                        <div class="bfs-nav-wrap" style="position:relative">
+                            <button class="bfs-btn bfs-btn--sm bfs-nav-toggle active" id="editorNavToggle" title="Navigation Settings">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px"><path d="M6 9l6 6 6-6"/></svg>
+                            </button>
+                            <div class="bfs-nav-dropdown" id="navDropdown" style="display:none">
+                                <div class="bfs-nav-dd-row bfs-nav-dd-header">
+                                    <span class="mono" style="font-size:10px;color:var(--fg3)">NAVIGATION</span>
+                                    <label class="bfs-toggle-sm">
+                                        <input type="checkbox" id="editorNavEnabled" checked>
+                                        <span class="bfs-toggle-track"><span class="bfs-toggle-thumb"></span></span>
+                                    </label>
+                                </div>
+                                <div id="navDdBody">
+                                    <div class="bfs-nav-dd-row">
+                                        <span class="bfs-nav-dd-device">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                                            Desktop
+                                        </span>
+                                        <select id="navModeDesktop" class="bfs-nav-dd-select">
+                                            <option value="links">Inline Links</option>
+                                            <option value="hamburger">Menu Button</option>
+                                        </select>
+                                    </div>
+                                    <div class="bfs-nav-dd-row">
+                                        <span class="bfs-nav-dd-device">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                                            Tablet
+                                        </span>
+                                        <select id="navModeTablet" class="bfs-nav-dd-select">
+                                            <option value="links">Inline Links</option>
+                                            <option value="hamburger" selected>Menu Button</option>
+                                        </select>
+                                    </div>
+                                    <div class="bfs-nav-dd-row">
+                                        <span class="bfs-nav-dd-device">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                                            Mobile
+                                        </span>
+                                        <select id="navModeMobile" class="bfs-nav-dd-select">
+                                            <option value="links">Inline Links</option>
+                                            <option value="hamburger" selected>Menu Button</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <button class="bfs-btn bfs-btn--sm" id="editorReload" title="Reload Preview">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                         </button>

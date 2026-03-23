@@ -26,6 +26,7 @@ window.ArbelEditor = (function () {
     var _keydownHandler = null;
     var _activeDevice = 'desktop'; // 'desktop' | 'tablet' | 'mobile'
     var _navOpenState = false; // tracked via iframe message
+    var _navMode = { desktop: 'links', tablet: 'hamburger', mobile: 'hamburger' };
 
     /* ─── Undo / Redo state ─── */
     var _MAX_UNDO = 40;
@@ -1356,12 +1357,19 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
     /* ─── Device Responsive ─── */
     function _applyDeviceResponsive() {
+        var devMode = _navMode[_activeDevice] || 'links';
         if (_activeDevice === 'desktop') {
             _navOpenState = false;
-            // Set viewport to real desktop width so compiled media queries
-            // don't fire in the narrow builder iframe.  Minimal CSS override.
             _postIframe('arbel-close-nav', {});
-            _postIframe('arbel-inject-responsive', { css: '.nav-extra { display: none !important; }' });
+            var dCss = '.nav-extra { display: none !important; }\n';
+            if (devMode === 'links') {
+                // Force desktop inline-links layout (iframe <768px triggers compiled media query)
+                dCss += '.menu-btn { display: none !important; }\n';
+                dCss += '.nav, .nav.open { display: flex !important; flex-direction: row !important; gap: 2rem !important; align-items: center !important; margin: 0 !important; width: auto !important; padding: 0 !important; }\n';
+                dCss += '.nav a, .nav-link { color: var(--fg2) !important; font-size: 0.85rem !important; padding: 0 !important; }\n';
+            }
+            // else hamburger — let compiled @media rules handle it naturally
+            _postIframe('arbel-inject-responsive', { css: dCss });
             _postIframe('arbel-set-viewport-meta', { content: 'width=1280, initial-scale=1' });
             return;
         }
@@ -1409,24 +1417,33 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         // The .header has backdrop-filter which creates a containing block for position:fixed children.
         // So when nav is open, we expand the header itself to cover the viewport and drop its backdrop-filter.
         var _navBg = (_menuBgEnabled && _menuBgColor) ? _menuBgColor : 'rgba(10,10,15,0.95)';
-        // Ensure header layout stays correct on mobile (logo left, hamburger right)
-        css += '.header-inner { display: flex !important; align-items: center !important; justify-content: space-between !important; }\n';
-        css += '.logo { display: block !important; color: inherit !important; }\n';
-        css += '.nav { display: none !important; }\n';
-        css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; margin: auto 0 !important; width: 100% !important; padding: 2rem 0 !important; }\n';
-        css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
-        css += '.nav a:hover, .nav-link:hover { opacity: 0.7 !important; }\n';
-        css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
-        css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
-        css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
-        css += 'body.nav-open { overflow: hidden !important; }\n';
-        // When nav is open, expand the header to be a full-page overlay
-        css += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBg + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; padding: 1rem 2rem !important; overflow-y: auto !important; }\n';
-        css += 'body.nav-open .header-inner { flex: 1 !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; max-width: none !important; position: relative !important; }\n';
-        css += 'body.nav-open .logo { align-self: flex-start !important; }\n';
-        css += 'body.nav-open .menu-btn { position: absolute !important; top: 0 !important; right: 0 !important; }\n';
-        css += '.nav-extra { display: none !important; }\n';
-        css += 'body.nav-open .nav-extra { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; padding: 1rem 2rem !important; width: 100% !important; flex-shrink: 0 !important; }\n';
+
+        if (devMode === 'links') {
+            // Inline links mode for this device — force desktop-like nav layout
+            css += '.menu-btn { display: none !important; }\n';
+            css += '.nav, .nav.open { display: flex !important; flex-direction: row !important; gap: 1.5rem !important; align-items: center !important; margin: 0 !important; width: auto !important; padding: 0 !important; }\n';
+            css += '.nav a, .nav-link { color: var(--fg2) !important; font-size: ' + (isMobile ? '0.75rem' : '0.85rem') + ' !important; padding: 0 !important; }\n';
+            css += '.nav-extra { display: none !important; }\n';
+        } else {
+            // Hamburger mode — show menu button, hide inline nav
+            css += '.header-inner { display: flex !important; align-items: center !important; justify-content: space-between !important; }\n';
+            css += '.logo { display: block !important; color: inherit !important; }\n';
+            css += '.nav { display: none !important; }\n';
+            css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; margin: auto 0 !important; width: 100% !important; padding: 2rem 0 !important; }\n';
+            css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
+            css += '.nav a:hover, .nav-link:hover { opacity: 0.7 !important; }\n';
+            css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
+            css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
+            css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
+            css += 'body.nav-open { overflow: hidden !important; }\n';
+            // When nav is open, expand the header to be a full-page overlay
+            css += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBg + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; padding: 1rem 2rem !important; overflow-y: auto !important; }\n';
+            css += 'body.nav-open .header-inner { flex: 1 !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; max-width: none !important; position: relative !important; }\n';
+            css += 'body.nav-open .logo { align-self: flex-start !important; }\n';
+            css += 'body.nav-open .menu-btn { position: absolute !important; top: 0 !important; right: 0 !important; }\n';
+            css += '.nav-extra { display: none !important; }\n';
+            css += 'body.nav-open .nav-extra { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; padding: 1rem 2rem !important; width: 100% !important; flex-shrink: 0 !important; }\n';
+        }
 
         // Per-element overrides for elements with responsive data
         var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
@@ -4097,6 +4114,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         setVideoConfig: function (vc) { if (vc) { _videoConfig = vc.config || _videoConfig; _videoFrames = vc.frames || _videoFrames; } },
         getPages: function () { return _pages; },
         setPages: function (p) { if (Array.isArray(p)) _pages = p; },
+        getNavMode: function () { return _navMode; },
+        setNavMode: function (m) { if (m) { _navMode = { desktop: m.desktop || 'links', tablet: m.tablet || 'hamburger', mobile: m.mobile || 'hamburger' }; } },
         getAddedElements: function () { return _addedElements; },
         setAddedElements: function (a) { if (Array.isArray(a)) _addedElements = a; },
         exportJSON: _exportJSON,

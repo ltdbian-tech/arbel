@@ -1127,24 +1127,33 @@ window.ArbelCompiler = (function () {
             '.menu-btn span { display: block; width: 100%; height: 2px; background: var(--fg); position: absolute; left: 0; transition: all 0.3s; }\n' +
             '.menu-btn span:first-child { top: 0; }\n' +
             '.menu-btn span:last-child { bottom: 0; }\n' +
-            '@media (max-width: 768px) {\n' +
-            '  .header-inner { display: flex; align-items: center; justify-content: space-between; }\n' +
-            '  .logo { display: block; color: inherit; }\n' +
-            '  .nav { display: none; }\n' +
-            '  .nav.open { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; margin: auto 0; width: 100%; padding: 2rem 0; }\n' +
-            '  .nav a, .nav-link { color: #fff; font-size: 1.5rem; text-decoration: none; padding: 0.5rem 1rem; transition: opacity 0.2s; }\n' +
-            '  .nav a:hover, .nav-link:hover { opacity: 0.7; }\n' +
-            '  .menu-btn { display: block; z-index: 10000; }\n' +
-            '  .menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg); }\n' +
-            '  .menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg); }\n' +
-            '  body.nav-open { overflow: hidden; }\n' +
-            '  body.nav-open .header { position: fixed; inset: 0; z-index: 9999; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'backdrop-filter: none; border-bottom: none; display: flex; flex-direction: column; padding: 1rem 2rem; overflow-y: auto; }\n' +
-            '  body.nav-open .header-inner { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; max-width: none; position: relative; }\n' +
-            '  body.nav-open .logo { align-self: flex-start; }\n' +
-            '  body.nav-open .menu-btn { position: absolute; top: 0; right: 0; }\n' +
-            '  .nav-extra { display: none; width: 100%; }\n' +
-            '  body.nav-open .nav-extra { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 2rem; flex-shrink: 0; }\n' +
-            '}\n\n' : '') +
+            (function () {
+                var nm = cfg.navMode || {};
+                var dsk = nm.desktop || 'links', tab = nm.tablet || 'hamburger', mob = nm.mobile || 'hamburger';
+                // Determine if/where hamburger CSS starts
+                var needHamburger = dsk === 'hamburger' || tab === 'hamburger' || mob === 'hamburger';
+                if (!needHamburger) return '';
+                var bp = dsk === 'hamburger' ? null : (tab === 'hamburger' ? 1024 : 768);
+                var hamburgerCSS =
+                    '  .header-inner { display: flex; align-items: center; justify-content: space-between; }\n' +
+                    '  .logo { display: block; color: inherit; }\n' +
+                    '  .nav { display: none; }\n' +
+                    '  .nav.open { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; margin: auto 0; width: 100%; padding: 2rem 0; }\n' +
+                    '  .nav a, .nav-link { color: #fff; font-size: 1.5rem; text-decoration: none; padding: 0.5rem 1rem; transition: opacity 0.2s; }\n' +
+                    '  .nav a:hover, .nav-link:hover { opacity: 0.7; }\n' +
+                    '  .menu-btn { display: block; z-index: 10000; }\n' +
+                    '  .menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg); }\n' +
+                    '  .menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg); }\n' +
+                    '  body.nav-open { overflow: hidden; }\n' +
+                    '  body.nav-open .header { position: fixed; inset: 0; z-index: 9999; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'backdrop-filter: none; border-bottom: none; display: flex; flex-direction: column; padding: 1rem 2rem; overflow-y: auto; }\n' +
+                    '  body.nav-open .header-inner { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; max-width: none; position: relative; }\n' +
+                    '  body.nav-open .logo { align-self: flex-start; }\n' +
+                    '  body.nav-open .menu-btn { position: absolute; top: 0; right: 0; }\n' +
+                    '  .nav-extra { display: none; width: 100%; }\n' +
+                    '  body.nav-open .nav-extra { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 2rem; flex-shrink: 0; }\n';
+                if (bp) return '@media (max-width: ' + bp + 'px) {\n' + hamburgerCSS + '}\n\n';
+                return hamburgerCSS + '\n';
+            })() : '') +
             '/* ═══ HERO ═══ */\n' +
             '.hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }\n' +
             '.hero-bg { position: absolute; inset: 0; }\n' +
