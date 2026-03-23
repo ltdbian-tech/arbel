@@ -98,10 +98,14 @@ z-index:100001;cursor:grab;display:none;box-sizing:border-box;transform:translat
 .arbel-rot:hover{background:#8b5cf6}
 .arbel-rot-line{position:fixed;width:1px;background:rgba(100,108,255,.5);z-index:100000;display:none;pointer-events:none}
 .arbel-dragging{outline:2px solid #ff6b35!important;outline-offset:3px!important}
-.arbel-snap-h{position:fixed;left:0;height:2px;width:100%;background:#ff6b35;z-index:99998;display:none;pointer-events:none;box-shadow:0 0 6px rgba(255,107,53,.6)}
-.arbel-snap-v{position:fixed;top:0;width:2px;height:100%;background:#ff6b35;z-index:99998;display:none;pointer-events:none;box-shadow:0 0 6px rgba(255,107,53,.6)}
-.arbel-guide-h{position:fixed;left:0;height:1px;width:100%;border-top:1px dashed rgba(100,108,255,.6);z-index:99997;display:none;pointer-events:none}
-.arbel-guide-v{position:fixed;top:0;width:1px;height:100%;border-left:1px dashed rgba(100,108,255,.6);z-index:99997;display:none;pointer-events:none}
+.arbel-grid-active{background-image:linear-gradient(rgba(100,108,255,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(100,108,255,0.06) 1px,transparent 1px)!important;background-size:20px 20px!important;background-position:0 0!important}
+.arbel-snap-line{position:fixed;z-index:99998;display:none;pointer-events:none}
+.arbel-snap-line-h{left:0;height:1px;width:100%;background:linear-gradient(90deg,transparent,#ff6b35 10%,#ff6b35 90%,transparent)}
+.arbel-snap-line-v{top:0;width:1px;height:100%;background:linear-gradient(transparent,#ff6b35 10%,#ff6b35 90%,transparent)}
+.arbel-guide-line{position:fixed;z-index:99997;display:none;pointer-events:none}
+.arbel-guide-line-h{left:0;height:1px;width:100%;border-top:1px dashed rgba(100,108,255,.5)}
+.arbel-guide-line-v{top:0;width:1px;height:100%;border-left:1px dashed rgba(100,108,255,.5)}
+.arbel-dist-lbl{position:fixed;z-index:99999;background:#ff6b35;color:#fff;font-family:monospace;font-size:9px;padding:1px 4px;border-radius:2px;pointer-events:none;display:none;white-space:nowrap}
 .arbel-pos-lbl{position:fixed;bottom:8px;left:8px;z-index:99999;background:rgba(0,0,0,.75);color:#fff;
 font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;
 opacity:0;transition:opacity .15s}.arbel-pos-lbl.vis{opacity:1}
@@ -132,11 +136,29 @@ var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";docume
 var rotHandle=document.createElement("div");rotHandle.className="arbel-rot";document.body.appendChild(rotHandle);
 var rotLine=document.createElement("div");rotLine.className="arbel-rot-line";document.body.appendChild(rotLine);
 
-/* ── Snap guide lines ── */
-var snapH=document.createElement("div");snapH.className="arbel-snap-h";document.body.appendChild(snapH);
-var snapV=document.createElement("div");snapV.className="arbel-snap-v";document.body.appendChild(snapV);
-var guideH=document.createElement("div");guideH.className="arbel-guide-h";document.body.appendChild(guideH);
-var guideV=document.createElement("div");guideV.className="arbel-guide-v";document.body.appendChild(guideV);
+/* ── Snap guide lines (multiple) ── */
+var GUIDE_POOL_H=[],GUIDE_POOL_V=[],SNAP_POOL_H=[],SNAP_POOL_V=[],DIST_POOL=[];
+function mkLine(cls,pool,n){for(var i=0;i<n;i++){var d=document.createElement('div');d.className=cls;document.body.appendChild(d);pool.push(d)}}
+mkLine('arbel-guide-line arbel-guide-line-h',GUIDE_POOL_H,3);
+mkLine('arbel-guide-line arbel-guide-line-v',GUIDE_POOL_V,3);
+mkLine('arbel-snap-line arbel-snap-line-h',SNAP_POOL_H,4);
+mkLine('arbel-snap-line arbel-snap-line-v',SNAP_POOL_V,4);
+for(var _di=0;_di<4;_di++){var dl=document.createElement('div');dl.className='arbel-dist-lbl';document.body.appendChild(dl);DIST_POOL.push(dl)}
+var _guideHUsed=0,_guideVUsed=0,_snapHUsed=0,_snapVUsed=0,_distUsed=0;
+function resetGuides(){_guideHUsed=0;_guideVUsed=0;_snapHUsed=0;_snapVUsed=0;_distUsed=0}
+function showGuideH(y){if(_guideHUsed<GUIDE_POOL_H.length){var g=GUIDE_POOL_H[_guideHUsed++];g.style.top=y+'px';g.style.display=''}}
+function showGuideV(x){if(_guideVUsed<GUIDE_POOL_V.length){var g=GUIDE_POOL_V[_guideVUsed++];g.style.left=x+'px';g.style.display=''}}
+function showSnapH(y){if(_snapHUsed<SNAP_POOL_H.length){var s=SNAP_POOL_H[_snapHUsed++];s.style.top=y+'px';s.style.display=''}}
+function showSnapV(x){if(_snapVUsed<SNAP_POOL_V.length){var s=SNAP_POOL_V[_snapVUsed++];s.style.left=x+'px';s.style.display=''}}
+function showDist(x,y,text){if(_distUsed<DIST_POOL.length){var d=DIST_POOL[_distUsed++];d.style.left=x+'px';d.style.top=y+'px';d.textContent=text;d.style.display=''}}
+function hideAllGuides(){
+GUIDE_POOL_H.forEach(function(g){g.style.display='none'});
+GUIDE_POOL_V.forEach(function(g){g.style.display='none'});
+SNAP_POOL_H.forEach(function(s){s.style.display='none'});
+SNAP_POOL_V.forEach(function(s){s.style.display='none'});
+DIST_POOL.forEach(function(d){d.style.display='none'});
+document.body.classList.remove('arbel-grid-active');
+}
 
 /* ── Resize handles ── */
 var rHandles=[];
@@ -191,33 +213,61 @@ document.addEventListener("mouseup",function(e){
 window.addEventListener("scroll",function(){if(selected&&!resize&&!drag&&!rotating)posHandles(selected)},true);
 window.addEventListener("resize",function(){if(selected)posHandles(selected)});
 
-/* ── Snap guide computation ── */
-var SNAP_DIST=6;
-function hideSnap(){snapH.style.display="none";snapV.style.display="none";guideH.style.display="none";guideV.style.display="none"}
+/* ── Snap guide computation (Canva-style) ── */
+var SNAP_DIST=12;
+function hideSnap(){hideAllGuides()}
 function computeSnap(elRect){
+  resetGuides();
   var sx=null,sy=null;
   var vw=window.innerWidth,vh=window.innerHeight;
   var cx=elRect.left+elRect.width/2,cy=elRect.top+elRect.height/2;
   /* viewport center */
-  if(Math.abs(cx-vw/2)<SNAP_DIST){sx=vw/2-elRect.width/2;guideV.style.left=(vw/2)+"px";guideV.style.display=""}else{guideV.style.display="none"}
-  if(Math.abs(cy-vh/2)<SNAP_DIST){sy=vh/2-elRect.height/2;guideH.style.top=(vh/2)+"px";guideH.style.display=""}else{guideH.style.display="none"}
+  if(Math.abs(cx-vw/2)<SNAP_DIST){sx=vw/2-elRect.width/2;showGuideV(vw/2)}
+  if(Math.abs(cy-vh/2)<SNAP_DIST){sy=vh/2-elRect.height/2;showGuideH(vh/2)}
+  /* viewport thirds */
+  if(sx===null&&Math.abs(cx-vw/3)<SNAP_DIST){sx=vw/3-elRect.width/2;showGuideV(Math.round(vw/3))}
+  if(sx===null&&Math.abs(cx-vw*2/3)<SNAP_DIST){sx=vw*2/3-elRect.width/2;showGuideV(Math.round(vw*2/3))}
+  /* parent section alignment */
+  var parent=selected?selected.closest('section'):null;
+  if(parent){
+    var pr=parent.getBoundingClientRect();
+    var pcx=pr.left+pr.width/2,pcy=pr.top+pr.height/2;
+    /* section center */
+    if(sx===null&&Math.abs(cx-pcx)<SNAP_DIST){sx=pcx-elRect.width/2;showGuideV(Math.round(pcx))}
+    if(sy===null&&Math.abs(cy-pcy)<SNAP_DIST){sy=pcy-elRect.height/2;showGuideH(Math.round(pcy))}
+    /* section edges (with padding) */
+    var pad=16;
+    if(sx===null&&Math.abs(elRect.left-(pr.left+pad))<SNAP_DIST){sx=pr.left+pad;showSnapV(Math.round(pr.left+pad));showDist(pr.left+pad+4,elRect.top-14,pad+'px')}
+    if(sx===null&&Math.abs(elRect.right-(pr.right-pad))<SNAP_DIST){sx=pr.right-pad-elRect.width;showSnapV(Math.round(pr.right-pad));showDist(pr.right-pad+4,elRect.top-14,pad+'px')}
+    if(sy===null&&Math.abs(elRect.top-(pr.top+pad))<SNAP_DIST){sy=pr.top+pad;showSnapH(Math.round(pr.top+pad));showDist(elRect.left-28,pr.top+pad+2,pad+'px')}
+    if(sy===null&&Math.abs(elRect.bottom-(pr.bottom-pad))<SNAP_DIST){sy=pr.bottom-pad-elRect.height;showSnapH(Math.round(pr.bottom-pad));showDist(elRect.left-28,pr.bottom-pad+2,pad+'px')}
+  }
   /* other elements */
-  var others=document.querySelectorAll("[data-arbel-id]");
+  var others=document.querySelectorAll('[data-arbel-id]');
   others.forEach(function(o){
     if(o===selected)return;
     var or=o.getBoundingClientRect();
     var ocx=or.left+or.width/2,ocy=or.top+or.height/2;
-    /* horizontal alignment */
-    if(sy===null&&Math.abs(cy-ocy)<SNAP_DIST){sy=ocy-elRect.height/2;snapH.style.top=ocy+"px";snapH.style.display=""}
-    if(sy===null&&Math.abs(elRect.top-or.top)<SNAP_DIST){sy=or.top;snapH.style.top=or.top+"px";snapH.style.display=""}
-    if(sy===null&&Math.abs(elRect.bottom-or.bottom)<SNAP_DIST){sy=or.bottom-elRect.height;snapH.style.top=or.bottom+"px";snapH.style.display=""}
-    /* vertical alignment */
-    if(sx===null&&Math.abs(cx-ocx)<SNAP_DIST){sx=ocx-elRect.width/2;snapV.style.left=ocx+"px";snapV.style.display=""}
-    if(sx===null&&Math.abs(elRect.left-or.left)<SNAP_DIST){sx=or.left;snapV.style.left=or.left+"px";snapV.style.display=""}
-    if(sx===null&&Math.abs(elRect.right-or.right)<SNAP_DIST){sx=or.right-elRect.width;snapV.style.left=or.right+"px";snapV.style.display=""}
+    /* horizontal alignment (center, top-top, bottom-bottom, top-bottom, bottom-top) */
+    if(sy===null&&Math.abs(cy-ocy)<SNAP_DIST){sy=ocy-elRect.height/2;showSnapH(Math.round(ocy))}
+    if(sy===null&&Math.abs(elRect.top-or.top)<SNAP_DIST){sy=or.top;showSnapH(Math.round(or.top))}
+    if(sy===null&&Math.abs(elRect.bottom-or.bottom)<SNAP_DIST){sy=or.bottom-elRect.height;showSnapH(Math.round(or.bottom))}
+    if(sy===null&&Math.abs(elRect.top-or.bottom)<SNAP_DIST){sy=or.bottom;showSnapH(Math.round(or.bottom));showDist(Math.max(elRect.left,or.left),or.bottom+2,'0px')}
+    if(sy===null&&Math.abs(elRect.bottom-or.top)<SNAP_DIST){sy=or.top-elRect.height;showSnapH(Math.round(or.top));showDist(Math.max(elRect.left,or.left),or.top+2,'0px')}
+    /* vertical alignment (center, left-left, right-right, left-right, right-left) */
+    if(sx===null&&Math.abs(cx-ocx)<SNAP_DIST){sx=ocx-elRect.width/2;showSnapV(Math.round(ocx))}
+    if(sx===null&&Math.abs(elRect.left-or.left)<SNAP_DIST){sx=or.left;showSnapV(Math.round(or.left))}
+    if(sx===null&&Math.abs(elRect.right-or.right)<SNAP_DIST){sx=or.right-elRect.width;showSnapV(Math.round(or.right))}
+    if(sx===null&&Math.abs(elRect.left-or.right)<SNAP_DIST){sx=or.right;showSnapV(Math.round(or.right));showDist(or.right+2,Math.max(elRect.top,or.top),'0px')}
+    if(sx===null&&Math.abs(elRect.right-or.left)<SNAP_DIST){sx=or.left-elRect.width;showSnapV(Math.round(or.left));showDist(or.left+2,Math.max(elRect.top,or.top),'0px')}
+    /* Show distance when vertically aligned but not snapped */
+    if(sx!==null&&Math.abs(cx-ocx)<SNAP_DIST){
+      var gap=0;
+      if(elRect.bottom<or.top)gap=Math.round(or.top-elRect.bottom);
+      else if(elRect.top>or.bottom)gap=Math.round(elRect.top-or.bottom);
+      if(gap>0)showDist(Math.round(cx),Math.round(Math.min(elRect.bottom,or.bottom)+gap/2-6),gap+'px');
+    }
   });
-  if(sx===null)snapV.style.display="none";
-  if(sy===null)snapH.style.display="none";
   return{x:sx,y:sy}
 }
 
@@ -234,7 +284,7 @@ function initDrag(el,e){
 document.addEventListener("mousemove",function(e){
   if(drag&&!resize&&!rotating){
     var dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
-    if(!drag.started){if(Math.abs(dx)<dragThreshold&&Math.abs(dy)<dragThreshold)return;drag.started=true;drag.el.classList.add("arbel-dragging")}
+    if(!drag.started){if(Math.abs(dx)<dragThreshold&&Math.abs(dy)<dragThreshold)return;drag.started=true;drag.el.classList.add('arbel-dragging');document.body.classList.add('arbel-grid-active')}
     var newLeft=drag.origLeft+dx,newTop=drag.origTop+dy;
     drag.el.style.setProperty('left',newLeft+'px','important');drag.el.style.setProperty('top',newTop+'px','important');
     posHandles(drag.el);
