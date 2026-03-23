@@ -1125,6 +1125,9 @@ a:hover { text-decoration: underline; }
 .bfs-btn--accent:hover {
     background: rgba(108,92,231,0.1);
 }
+.bfs-nav-toggle { transition: opacity 0.2s, color 0.2s; }
+.bfs-nav-toggle.active { color: var(--accent); }
+.bfs-nav-toggle:not(.active) { opacity: 0.4; }
 
 /* Device Toggle */
 .device-toggle {

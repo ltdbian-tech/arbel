@@ -89,6 +89,7 @@
         seoFavicon: $('seoFavicon'),
         seoIndex: $('seoIndex'),
         navToggle: $('navToggle'),
+        editorNavToggle: $('editorNavToggle'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -1623,6 +1624,7 @@
 
         // Nav toggle
         if (c.navEnabled !== undefined && els.navToggle) els.navToggle.checked = c.navEnabled;
+        if (els.editorNavToggle) els.editorNavToggle.classList.toggle('active', els.navToggle ? els.navToggle.checked : true);
 
         // Builder state
         if (c.styleMode === 'builder' && c.builderState) {
@@ -1896,7 +1898,18 @@
     if (els.seoIndex) els.seoIndex.addEventListener('change', _markDirty);
     if (els.navToggle) els.navToggle.addEventListener('change', function () {
         _markDirty();
+        // Sync builder toolbar button state
+        if (els.editorNavToggle) els.editorNavToggle.classList.toggle('active', els.navToggle.checked);
         if (state.step >= 3) generatePreview();
+    });
+    // Builder toolbar nav toggle button
+    if (els.editorNavToggle) els.editorNavToggle.addEventListener('click', function () {
+        if (els.navToggle) {
+            els.navToggle.checked = !els.navToggle.checked;
+            els.editorNavToggle.classList.toggle('active', els.navToggle.checked);
+            _markDirty();
+            if (state.step >= 3) generatePreview();
+        }
     });
     els.particleConnect.addEventListener('change', _markDirty);
     els.particleInteract.addEventListener('change', _markDirty);

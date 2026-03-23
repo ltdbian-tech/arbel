@@ -1349,7 +1349,15 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _applyDeviceResponsive() {
         if (_activeDevice === 'desktop') {
             _navOpenState = false;
-            _postIframe('arbel-inject-responsive', { css: '.nav-extra { display: none !important; }' });
+            // Force desktop nav layout — iframe may be narrower than 768px
+            // so the compiled @media(max-width:768px) would wrongly trigger.
+            var dCss = '.menu-btn { display: none !important; }\n';
+            dCss += '.nav { display: flex !important; gap: 2rem !important; align-items: center !important; }\n';
+            dCss += '.nav-extra { display: none !important; }\n';
+            dCss += '.header-inner { display: flex !important; align-items: center !important; justify-content: space-between !important; }\n';
+            dCss += 'body.nav-open { overflow: auto !important; }\n';
+            dCss += 'body.nav-open .header { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important; }\n';
+            _postIframe('arbel-inject-responsive', { css: dCss });
             _postIframe('arbel-set-viewport-meta', { content: 'width=device-width, initial-scale=1' });
             return;
         }
