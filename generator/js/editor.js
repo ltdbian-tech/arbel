@@ -365,6 +365,8 @@ document.addEventListener("mousedown",function(e){
       window.parent.postMessage({type:'arbel-nav-state',isOpen:isOpen},'*');
     }
     e.preventDefault();e.stopPropagation();
+    /* Swallow the subsequent click so the compiled main.js handler doesn't double-toggle */
+    document.addEventListener('click',function _eatClick(ce){ce.stopImmediatePropagation();ce.preventDefault();document.removeEventListener('click',_eatClick,true)},true);
     sel(mbEl);
     return;
   }
