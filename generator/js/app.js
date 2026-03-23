@@ -1942,7 +1942,16 @@
         e.stopPropagation();
         if (els.navDropdown) {
             var vis = els.navDropdown.style.display !== 'none';
-            els.navDropdown.style.display = vis ? 'none' : '';
+            if (vis) {
+                els.navDropdown.style.display = 'none';
+            } else {
+                // Position fixed dropdown below the toggle button
+                var btnRect = els.editorNavToggle.getBoundingClientRect();
+                els.navDropdown.style.top = (btnRect.bottom + 6) + 'px';
+                els.navDropdown.style.left = (btnRect.left + btnRect.width / 2) + 'px';
+                els.navDropdown.style.transform = 'translateX(-50%)';
+                els.navDropdown.style.display = '';
+            }
         }
     });
     // Close dropdown on outside click
