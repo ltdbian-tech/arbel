@@ -844,6 +844,12 @@ window.addEventListener("message",function(e){
   if(d.type==="arbel-set-src"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute("src",d.src)}
   if(d.type==="arbel-set-attr"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.setAttribute(d.attr,d.value)}
   if(d.type==="arbel-deselect-all"){desel()}
+  if(d.type==="arbel-clear-inlines"){
+    var _clrProps=['left','top','width','height','transform','position','maxWidth','minWidth','maxHeight','minHeight','fontSize','padding','paddingLeft','paddingRight','paddingTop','paddingBottom','margin','marginLeft','marginRight','marginTop','marginBottom','borderRadius','opacity','gap','flexDirection','alignItems','justifyContent','textAlign','lineHeight','letterSpacing','color','backgroundColor','border','borderWidth','borderColor','borderStyle','backgroundSize','backgroundPosition','display','flexWrap','gridTemplateColumns'];
+    document.querySelectorAll('[data-arbel-id]').forEach(function(el){
+      _clrProps.forEach(function(p){el.style.removeProperty(p);el.style.removeProperty(p.replace(/[A-Z]/g,function(m){return '-'+m.toLowerCase()}))});
+    });
+  }
   if(d.type==="arbel-inject-responsive"){
     var old=document.getElementById("arbel-responsive-css");
     if(old)old.parentNode.removeChild(old);
@@ -1236,9 +1242,11 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                     frame.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
                     frame.classList.add('preview-' + _activeDevice);
                 }
+                // Clear inline styles from previous device to prevent cross-device contamination
+                _postIframe('arbel-clear-inlines', {});
                 // Inject responsive CSS + viewport into iframe
                 _applyDeviceResponsive();
-                // On desktop switch, restore inline styles that mobile/tablet may have overwritten
+                // On desktop switch, restore inline styles
                 if (_activeDevice === 'desktop') _restoreDesktopInlines();
                 // Refresh the panel to show device-appropriate values
                 if (_selectedId && _iframe) _postIframe('arbel-select-by-id', { id: _selectedId });
