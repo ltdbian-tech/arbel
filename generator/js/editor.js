@@ -145,12 +145,19 @@ mkLine('arbel-snap-line arbel-snap-line-h',SNAP_POOL_H,4);
 mkLine('arbel-snap-line arbel-snap-line-v',SNAP_POOL_V,4);
 for(var _di=0;_di<4;_di++){var dl=document.createElement('div');dl.className='arbel-dist-lbl';document.body.appendChild(dl);DIST_POOL.push(dl)}
 var _guideHUsed=0,_guideVUsed=0,_snapHUsed=0,_snapVUsed=0,_distUsed=0;
-function resetGuides(){_guideHUsed=0;_guideVUsed=0;_snapHUsed=0;_snapVUsed=0;_distUsed=0}
-function showGuideH(y){if(_guideHUsed<GUIDE_POOL_H.length){var g=GUIDE_POOL_H[_guideHUsed++];g.style.top=y+'px';g.style.display=''}}
-function showGuideV(x){if(_guideVUsed<GUIDE_POOL_V.length){var g=GUIDE_POOL_V[_guideVUsed++];g.style.left=x+'px';g.style.display=''}}
-function showSnapH(y){if(_snapHUsed<SNAP_POOL_H.length){var s=SNAP_POOL_H[_snapHUsed++];s.style.top=y+'px';s.style.display=''}}
-function showSnapV(x){if(_snapVUsed<SNAP_POOL_V.length){var s=SNAP_POOL_V[_snapVUsed++];s.style.left=x+'px';s.style.display=''}}
-function showDist(x,y,text){if(_distUsed<DIST_POOL.length){var d=DIST_POOL[_distUsed++];d.style.left=x+'px';d.style.top=y+'px';d.textContent=text;d.style.display=''}}
+function resetGuides(){
+_guideHUsed=0;_guideVUsed=0;_snapHUsed=0;_snapVUsed=0;_distUsed=0;
+GUIDE_POOL_H.forEach(function(g){g.style.display='none'});
+GUIDE_POOL_V.forEach(function(g){g.style.display='none'});
+SNAP_POOL_H.forEach(function(s){s.style.display='none'});
+SNAP_POOL_V.forEach(function(s){s.style.display='none'});
+DIST_POOL.forEach(function(d){d.style.display='none'});
+}
+function showGuideH(y){if(_guideHUsed<GUIDE_POOL_H.length){var g=GUIDE_POOL_H[_guideHUsed++];g.style.top=y+'px';g.style.display='block'}}
+function showGuideV(x){if(_guideVUsed<GUIDE_POOL_V.length){var g=GUIDE_POOL_V[_guideVUsed++];g.style.left=x+'px';g.style.display='block'}}
+function showSnapH(y){if(_snapHUsed<SNAP_POOL_H.length){var s=SNAP_POOL_H[_snapHUsed++];s.style.top=y+'px';s.style.display='block'}}
+function showSnapV(x){if(_snapVUsed<SNAP_POOL_V.length){var s=SNAP_POOL_V[_snapVUsed++];s.style.left=x+'px';s.style.display='block'}}
+function showDist(x,y,text){if(_distUsed<DIST_POOL.length){var d=DIST_POOL[_distUsed++];d.style.left=x+'px';d.style.top=y+'px';d.textContent=text;d.style.display='block'}}
 function hideAllGuides(){
 GUIDE_POOL_H.forEach(function(g){g.style.display='none'});
 GUIDE_POOL_V.forEach(function(g){g.style.display='none'});
