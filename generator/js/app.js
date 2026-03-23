@@ -1257,7 +1257,12 @@
     /* ─── PREVIEW ─── */
     function generatePreview() {
         var config = buildConfig();
-        state.compiledFiles = ArbelCompiler.compile(config);
+        try {
+            state.compiledFiles = ArbelCompiler.compile(config);
+        } catch (compileErr) {
+            console.error('Arbel compile error:', compileErr);
+            return;
+        }
         var editorScript = ArbelEditor.getOverlayScript();
         ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
 

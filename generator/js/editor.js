@@ -75,14 +75,15 @@ window.ArbelEditor = (function () {
         return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">' + def.svg.replace('/>', attrs + '/>') + '</svg>';
     }
     function _getOverlayScript() {
-        return `(function(){
-/* Dismiss preloader & reveal hidden content so editor is interactive immediately */
-var _pre=document.getElementById("preloader");if(_pre)_pre.classList.add("done");
-document.querySelectorAll(".line-inner").forEach(function(el){el.style.transform="translateY(0)";});
-document.querySelectorAll(".hero-sub,.hero-actions,.reveal-up").forEach(function(el){el.style.opacity="1";el.style.transform="translateY(0)";});
+        return `(function(){try{
 var selected=null,editing=false,resize=null;
 var s=document.createElement("style");
 s.textContent=\`
+/* Editor: force preloader off & all content visible (overrides GSAP inline styles) */
+.preloader{display:none!important}
+.line-inner{transform:none!important}
+.hero-sub,.hero-actions{opacity:1!important;transform:none!important}
+.reveal-up{opacity:1!important;transform:none!important}
 [data-arbel-id]{cursor:pointer;transition:outline .15s,outline-offset .15s}
 [data-arbel-id]:hover:not(.arbel-sel){outline:2px dashed rgba(100,108,255,.5);outline-offset:2px}
 .arbel-sel{outline:2px solid #646cff!important;outline-offset:3px!important}
@@ -959,6 +960,7 @@ document.querySelectorAll("[data-arbel-id]").forEach(function(el){
   });
 });
 window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
+}catch(_err){console.error("Arbel overlay error:",_err);window.parent.postMessage({type:"arbel-tree",tree:[]},"*");}
 })();`;
     }
 
