@@ -768,6 +768,7 @@ window.addEventListener("message",function(e){
   var d=e.data;if(!d||!d.type)return;
   if(d.type==="arbel-set-text"){var _sy=window.scrollY;var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.textContent=d.text;window.scrollTo(0,_sy)}
   if(d.type==="arbel-set-style"){var _sy=window.scrollY;var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el&&d.prop){el.style[d.prop]=d.value;if(selected===el)posHandles(el)};window.scrollTo(0,_sy)}
+  if(d.type==="arbel-set-text"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el)el.textContent=d.text}
   if(d.type==="arbel-set-animation"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){el.setAttribute("data-arbel-anim",d.animation);prevAnim(el,d.animation)}}
   if(d.type==="arbel-set-continuous"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){el.setAttribute("data-arbel-continuous",d.animation);applyContinuous(el,d.animation)}}
   if(d.type==="arbel-set-hover"){var el=document.querySelector('[data-arbel-id="'+d.id+'"]');if(el){el.setAttribute("data-arbel-hover",d.hover);applyHover(el,d.hover)}}
@@ -1272,6 +1273,45 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             if (!document.fullscreenElement) _container.requestFullscreen().catch(function () {});
             else document.exitFullscreen();
         });
+
+        /* Brand name rename — click to edit inline */
+        var _brandEl = _qs('#bfsBrand');
+        if (_brandEl) {
+            _brandEl.title = 'Click to rename site';
+            _brandEl.style.cursor = 'pointer';
+            _brandEl.addEventListener('click', function () {
+                if (_brandEl.contentEditable === 'true') return;
+                _brandEl.contentEditable = 'true';
+                _brandEl.style.outline = '1px solid #646cff';
+                _brandEl.style.borderRadius = '4px';
+                _brandEl.style.padding = '2px 6px';
+                _brandEl.focus();
+                // Select all text
+                var range = document.createRange();
+                range.selectNodeContents(_brandEl);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+            function _commitBrandRename() {
+                if (_brandEl.contentEditable !== 'true') return;
+                _brandEl.contentEditable = 'false';
+                _brandEl.style.outline = '';
+                _brandEl.style.padding = '';
+                var newName = _brandEl.textContent.trim() || 'My Site';
+                _brandEl.textContent = newName;
+                // Update the config input so recompile picks it up
+                var cfgInput = document.getElementById('brandName');
+                if (cfgInput) cfgInput.value = newName;
+                // Update logo text in the iframe
+                _postIframe('arbel-set-text', { id: 'site-logo', text: newName });
+            }
+            _brandEl.addEventListener('blur', _commitBrandRename);
+            _brandEl.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') { e.preventDefault(); _commitBrandRename(); _brandEl.blur(); }
+                if (e.key === 'Escape') { _brandEl.contentEditable = 'false'; _brandEl.style.outline = ''; _brandEl.style.padding = ''; }
+            });
+        }
     }
 
     function _applyZoom() {

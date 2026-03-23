@@ -1271,6 +1271,10 @@
         if (state.editorOverrides) {
             ArbelEditor.setOverrides(state.editorOverrides);
         }
+
+        // Set brand name in classic editor toolbar
+        var bfsBrand = $('bfsBrand');
+        if (bfsBrand) bfsBrand.textContent = els.brandName.value.trim() || 'My Site';
     }
 
     // Restore overrides from localStorage on load
