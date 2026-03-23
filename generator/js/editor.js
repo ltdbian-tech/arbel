@@ -919,6 +919,16 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _postIframe('arbel-set-style', { id: _selectedId, prop: k, value: src[k] });
             }
         }
+        // Also copy device-specific sub-objects
+        ['_mobile', '_tablet'].forEach(function (dk) {
+            if (src[dk]) {
+                if (!_overrides[_selectedId][dk]) _overrides[_selectedId][dk] = {};
+                Object.keys(src[dk]).forEach(function (k) {
+                    _overrides[_selectedId][dk][k] = src[dk][k];
+                });
+            }
+        });
+        _applyDeviceResponsive();
     }
 
     function _duplicateStyles() {
@@ -1077,8 +1087,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         if (d.type === 'arbel-resize' && d.id) {
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            _setOv(d.id, 'width', d.width);
-            _setOv(d.id, 'height', d.height);
+            _setOvBatch(d.id, { width: d.width, height: d.height });
         }
         if (d.type === 'arbel-resize-end') {
             _resizeUndoPushed = false;
@@ -1089,9 +1098,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _moveUndoPushed = true;
             }
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            _setOv(d.id, 'left', d.left);
-            _setOv(d.id, 'top', d.top);
-            _setOv(d.id, 'position', 'relative');
+            _setOvBatch(d.id, { left: d.left, top: d.top, position: 'relative' });
         }
         if (d.type === 'arbel-move-end') {
             _moveUndoPushed = false;
@@ -1413,8 +1420,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _postIframe('arbel-set-style', { id: selId, prop: 'backgroundSize', value: 'cover' });
                 _postIframe('arbel-set-style', { id: selId, prop: 'backgroundPosition', value: 'center' });
                 _setOvB(selId, 'backgroundImage', 'url(' + dataUrl + ')', 'style');
-                _setOv(selId, 'backgroundSize', 'cover');
-                _setOv(selId, 'backgroundPosition', 'center');
+                _setOvB(selId, 'backgroundSize', 'cover', 'style');
+                _setOvB(selId, 'backgroundPosition', 'center', 'style');
                 var sz = _qs('#editorBgSize'); if (sz) sz.value = 'cover';
                 var pos = _qs('#editorBgPosition'); if (pos) pos.value = 'center';
                 _updateBgUI();
@@ -3134,6 +3141,25 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         return _overrides[id][k];
     }
+
+    /** Set multiple properties at once, single _applyDeviceResponsive call */
+    function _setOvBatch(id, pairs) {
+        if (!_overrides[id]) _overrides[id] = {};
+        var needResponsive = false;
+        Object.keys(pairs).forEach(function (k) {
+            var v = pairs[k];
+            if (_activeDevice === 'desktop' || _GLOBAL_PROPS[k]) {
+                _overrides[id][k] = v;
+            } else {
+                var dk = '_' + _activeDevice;
+                if (!_overrides[id][dk]) _overrides[id][dk] = {};
+                _overrides[id][dk][k] = v;
+                needResponsive = true;
+            }
+        });
+        if (needResponsive) _applyDeviceResponsive();
+        if (_onUpdate) _onUpdate(_overrides);
+    }
     /** _setOv + auto burst snapshot in one call. Category determines debounce grouping. */
     function _setOvB(id, k, v, category) {
         _beginBurst(category);
@@ -3214,6 +3240,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _updatePageSelect();
         _renderPageList();
         _updateUndoButtons();
+        _applyDeviceResponsive();
+        if (_lastTree.length) _renderElementTree(_lastTree);
+        if (_selectedId && _iframe) _postIframe('arbel-select-by-id', { id: _selectedId });
     }
     function _redo() {
         if (_redoStack.length === 0) return;
@@ -3229,6 +3258,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _updatePageSelect();
         _renderPageList();
         _updateUndoButtons();
+        _applyDeviceResponsive();
+        if (_lastTree.length) _renderElementTree(_lastTree);
+        if (_selectedId && _iframe) _postIframe('arbel-select-by-id', { id: _selectedId });
     }
     function _updateUndoButtons() {
         var undoBtn = _qs('#editorUndo');
