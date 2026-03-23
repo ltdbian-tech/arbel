@@ -18,6 +18,7 @@ window.ArbelEditor = (function () {
     var _videoConfig = { fps: 24, speed: 1, loop: false, active: false, preset: null };
     var _menuBgColor = '';
     var _menuBgEnabled = true;
+    var _draggingId = null;  // element being dragged/resized — skip responsive during drag
     var _pages = [{ id: 'home', name: 'Home', path: '/', isHome: true, showInNav: false }];
     var _currentPage = 'home';
     var _zoom = 100;
@@ -97,10 +98,10 @@ z-index:100001;cursor:grab;display:none;box-sizing:border-box;transform:translat
 .arbel-rot:hover{background:#8b5cf6}
 .arbel-rot-line{position:fixed;width:1px;background:rgba(100,108,255,.5);z-index:100000;display:none;pointer-events:none}
 .arbel-dragging{outline:2px solid #ff6b35!important;outline-offset:3px!important}
-.arbel-snap-h{position:fixed;left:0;height:1px;width:100%;background:#ff6b35;z-index:99998;display:none;pointer-events:none}
-.arbel-snap-v{position:fixed;top:0;width:1px;height:100%;background:#ff6b35;z-index:99998;display:none;pointer-events:none}
-.arbel-guide-h{position:fixed;left:0;height:1px;width:100%;border-top:1px dashed rgba(100,108,255,.35);z-index:99997;display:none;pointer-events:none}
-.arbel-guide-v{position:fixed;top:0;width:1px;height:100%;border-left:1px dashed rgba(100,108,255,.35);z-index:99997;display:none;pointer-events:none}
+.arbel-snap-h{position:fixed;left:0;height:2px;width:100%;background:#ff6b35;z-index:99998;display:none;pointer-events:none;box-shadow:0 0 6px rgba(255,107,53,.6)}
+.arbel-snap-v{position:fixed;top:0;width:2px;height:100%;background:#ff6b35;z-index:99998;display:none;pointer-events:none;box-shadow:0 0 6px rgba(255,107,53,.6)}
+.arbel-guide-h{position:fixed;left:0;height:1px;width:100%;border-top:1px dashed rgba(100,108,255,.6);z-index:99997;display:none;pointer-events:none}
+.arbel-guide-v{position:fixed;top:0;width:1px;height:100%;border-left:1px dashed rgba(100,108,255,.6);z-index:99997;display:none;pointer-events:none}
 .arbel-pos-lbl{position:fixed;bottom:8px;left:8px;z-index:99999;background:rgba(0,0,0,.75);color:#fff;
 font-family:monospace;font-size:11px;padding:4px 8px;border-radius:4px;pointer-events:none;
 opacity:0;transition:opacity .15s}.arbel-pos-lbl.vis{opacity:1}
@@ -174,7 +175,7 @@ document.addEventListener("mousemove",function(e){
   if(h.indexOf("w")>=0)nw=Math.max(20,resize.origW-dx);
   if(h.indexOf("s")>=0)nh=Math.max(20,resize.origH+dy);
   if(h.indexOf("n")>=0)nh=Math.max(20,resize.origH-dy);
-  resize.el.style.width=nw+"px";resize.el.style.height=nh+"px";
+  resize.el.style.setProperty('width',nw+'px','important');resize.el.style.setProperty('height',nh+'px','important');
   posHandles(resize.el);
   szLbl.textContent=nw+" \\u00D7 "+nh;szLbl.classList.add("vis");
   window.parent.postMessage({type:"arbel-resize",
@@ -235,13 +236,13 @@ document.addEventListener("mousemove",function(e){
     var dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;
     if(!drag.started){if(Math.abs(dx)<dragThreshold&&Math.abs(dy)<dragThreshold)return;drag.started=true;drag.el.classList.add("arbel-dragging")}
     var newLeft=drag.origLeft+dx,newTop=drag.origTop+dy;
-    drag.el.style.left=newLeft+"px";drag.el.style.top=newTop+"px";
+    drag.el.style.setProperty('left',newLeft+'px','important');drag.el.style.setProperty('top',newTop+'px','important');
     posHandles(drag.el);
     /* snap */
     var r2=drag.el.getBoundingClientRect();
     var snap=computeSnap(r2);
-    if(snap.x!==null){var snapDx=snap.x-r2.left;drag.el.style.left=(newLeft+snapDx)+"px"}
-    if(snap.y!==null){var snapDy=snap.y-r2.top;drag.el.style.top=(newTop+snapDy)+"px"}
+    if(snap.x!==null){var snapDx=snap.x-r2.left;drag.el.style.setProperty('left',(newLeft+snapDx)+'px','important')}
+    if(snap.y!==null){var snapDy=snap.y-r2.top;drag.el.style.setProperty('top',(newTop+snapDy)+'px','important')}
     if(snap.x!==null||snap.y!==null)posHandles(drag.el);
     posLbl.textContent="x:"+parseInt(drag.el.style.left)+" y:"+parseInt(drag.el.style.top);posLbl.classList.add("vis");
     window.parent.postMessage({type:"arbel-move",id:drag.el.getAttribute("data-arbel-id"),
@@ -1087,10 +1088,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         if (d.type === 'arbel-resize' && d.id) {
             if (!_overrides[d.id]) _overrides[d.id] = {};
+            _draggingId = d.id;
             _setOvBatch(d.id, { width: d.width, height: d.height });
         }
         if (d.type === 'arbel-resize-end') {
+            _draggingId = null;
             _resizeUndoPushed = false;
+            _applyDeviceResponsive();
         }
         if (d.type === 'arbel-move' && d.id) {
             if (!_moveUndoPushed && !_undoLocked) {
@@ -1098,10 +1102,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _moveUndoPushed = true;
             }
             if (!_overrides[d.id]) _overrides[d.id] = {};
+            _draggingId = d.id;
             _setOvBatch(d.id, { left: d.left, top: d.top, position: 'relative' });
         }
         if (d.type === 'arbel-move-end') {
+            _draggingId = null;
             _moveUndoPushed = false;
+            _applyDeviceResponsive();
         }
         if (d.type === 'arbel-rotate' && d.id) {
             if (!_rotateUndoPushed && !_undoLocked) {
@@ -1244,21 +1251,16 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         // Menu overlay background — full-page overlay like arbel.live
         if (_menuBgEnabled && _menuBgColor) {
             css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: ' + _menuBgColor + ' !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
-            css += '.nav.open { display: flex !important; }\n';
-            css += '.nav-link { font-size: 1.5rem !important; }\n';
-            css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
-            css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
-            css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
-            css += 'body.nav-open { overflow: hidden !important; }\n';
         } else {
-            css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: transparent !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
-            css += '.nav.open { display: flex !important; }\n';
-            css += '.nav-link { font-size: 1.5rem !important; }\n';
-            css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
-            css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
-            css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
-            css += 'body.nav-open { overflow: hidden !important; }\n';
+            css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: rgba(10,10,15,0.95) !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
         }
+        css += '.nav.open { display: flex !important; }\n';
+        css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
+        css += '.nav a:hover, .nav-link:hover { opacity: 0.7 !important; }\n';
+        css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
+        css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
+        css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
+        css += 'body.nav-open { overflow: hidden !important; }\n';
 
         // Per-element overrides for elements with responsive data
         var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
@@ -3202,7 +3204,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 needResponsive = true;
             }
         });
-        if (needResponsive) _applyDeviceResponsive();
+        // Skip expensive CSS re-injection during active drag/resize
+        if (needResponsive && !_draggingId) _applyDeviceResponsive();
         if (_onUpdate) _onUpdate(_overrides);
     }
     /** _setOv + auto burst snapshot in one call. Category determines debounce grouping. */
