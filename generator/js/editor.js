@@ -25,6 +25,7 @@ window.ArbelEditor = (function () {
     var _lastTree = [];
     var _keydownHandler = null;
     var _activeDevice = 'desktop'; // 'desktop' | 'tablet' | 'mobile'
+    var _navOpenState = false; // tracked via iframe message
 
     /* ─── Undo / Redo state ─── */
     var _MAX_UNDO = 40;
@@ -360,6 +361,7 @@ document.addEventListener("mousedown",function(e){
       var isOpen=navEl.classList.toggle('open');
       menuBtnEl.classList.toggle('is-active');
       document.body.classList.toggle('nav-open',isOpen);
+      window.parent.postMessage({type:'arbel-nav-state',isOpen:isOpen},'*');
     }
     e.preventDefault();e.stopPropagation();
     sel(el);
@@ -796,14 +798,19 @@ window.addEventListener("message",function(e){
     if(d.src)newEl.setAttribute("src",d.src);
     if(d.style){for(var sk in d.style)newEl.style[sk]=d.style[sk]}
     if(d.attrs){for(var ak in d.attrs)newEl.setAttribute(ak,d.attrs[ak])}
-    /* Place in the section currently visible in viewport */
+    /* Place: if nav overlay is open, place inside .nav-extra; otherwise in nearest section */
     var anchor=null;
-    var secs=document.querySelectorAll("section");
-    if(secs.length>0){
-      var viewMid=window.innerHeight/2;var bestDist=Infinity;
-      secs.forEach(function(sec){var sr=sec.getBoundingClientRect();
-        var secMid=sr.top+sr.height/2;var dist=Math.abs(secMid-viewMid);
-        if(dist<bestDist){bestDist=dist;anchor=sec}});
+    if(d.navOverlay){
+      anchor=document.querySelector('.nav-extra');
+    }
+    if(!anchor){
+      var secs=document.querySelectorAll("section");
+      if(secs.length>0){
+        var viewMid=window.innerHeight/2;var bestDist=Infinity;
+        secs.forEach(function(sec){var sr=sec.getBoundingClientRect();
+          var secMid=sr.top+sr.height/2;var dist=Math.abs(secMid-viewMid);
+          if(dist<bestDist){bestDist=dist;anchor=sec}});
+      }
     }
     if(!anchor)anchor=document.querySelector("main")||document.body;
     /* Ensure added element is positionable */
@@ -1201,6 +1208,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (d.type === 'arbel-contextmenu') {
             _showContextMenu(d.x, d.y, d);
         }
+        if (d.type === 'arbel-nav-state') {
+            _navOpenState = !!d.isOpen;
+        }
         /* ── Keyboard forwarded from iframe ── */
         if (d.type === 'arbel-key') {
             if ((d.key === 'Delete' || d.key === 'Backspace') && _selectedId) {
@@ -1322,6 +1332,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     /* ─── Device Responsive ─── */
     function _applyDeviceResponsive() {
         if (_activeDevice === 'desktop') {
+            _navOpenState = false;
             _postIframe('arbel-inject-responsive', { css: '' });
             _postIframe('arbel-set-viewport-meta', { content: 'width=device-width, initial-scale=1' });
             return;
@@ -1380,7 +1391,11 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         css += 'body.nav-open { overflow: hidden !important; }\n';
         // When nav is open, expand the header to be a full-page overlay
         css += 'body.nav-open .header { position: fixed !important; inset: 0 !important; z-index: 9999 !important; background: ' + _navBg + ' !important; backdrop-filter: none !important; border-bottom: none !important; display: flex !important; flex-direction: column !important; padding: 1rem 2rem !important; overflow-y: auto !important; }\n';
-        css += 'body.nav-open .header-inner { flex-shrink: 0 !important; width: 100% !important; }\n';
+        css += 'body.nav-open .header-inner { flex: 1 !important; width: 100% !important; display: flex !important; flex-direction: column !important; align-items: center !important; max-width: none !important; position: relative !important; }\n';
+        css += 'body.nav-open .logo { align-self: flex-start !important; }\n';
+        css += 'body.nav-open .menu-btn { position: absolute !important; top: 0 !important; right: 0 !important; }\n';
+        css += '.nav-extra { display: none !important; }\n';
+        css += 'body.nav-open .nav-extra { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; padding: 1rem 2rem !important; width: 100% !important; }\n';
 
         // Per-element overrides for elements with responsive data
         var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
@@ -1408,6 +1423,14 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                     }
                 });
                 css += ' }\n';
+            }
+
+            // Hide nav overlay elements that belong to a different device
+            if (ov._navOverlay && ov._navDevice) {
+                var currentDevice = isMobile ? 'mobile' : 'tablet';
+                if (ov._navDevice !== currentDevice) {
+                    css += '[data-arbel-id="' + id.replace(/["\\]/g, '') + '"] { display: none !important; }\n';
+                }
             }
         });
 
@@ -3879,12 +3902,24 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             };
         }
 
+        // Check if nav overlay is open — use tracked state from iframe message
+        if (_navOpenState) msg.navOverlay = true;
+
         _postIframe('arbel-add-element', msg);
 
         // Store in overrides
         if (!_overrides[id]) _overrides[id] = {};
         _overrides[id]._added = true;
         _overrides[id]._def = { tag: msg.tag, cat: t.cat, label: t.label, variant: t.variant, shapeName: t.shapeName, frameName: t.frameName };
+        if (_navOpenState) {
+            _overrides[id]._navOverlay = true;
+            // Per-device: store which device this overlay element belongs to
+            if (_activeDevice !== 'desktop') {
+                _overrides[id]._navDevice = _activeDevice;
+            }
+        }
+        if (msg.style) _overrides[id]._initStyle = msg.style;
+        if (msg.attrs) _overrides[id]._attrs = msg.attrs;
         if (msg.text) _overrides[id].text = msg.text;
         if (msg.html) _overrides[id]._html = msg.html;
         if (_onUpdate) _onUpdate(_overrides);

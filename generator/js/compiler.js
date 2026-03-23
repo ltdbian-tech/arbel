@@ -1042,6 +1042,7 @@ window.ArbelCompiler = (function () {
             '      <a href="#" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks +
             '      </nav>\n' +
+            '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n' +
             '  </header>\n\n' +
@@ -1119,6 +1120,7 @@ window.ArbelCompiler = (function () {
             '.nav { display: flex; gap: 2rem; align-items: center; }\n' +
             '.nav-link { font-size: 0.85rem; color: var(--fg2); transition: color 0.3s; }\n' +
             '.nav-link:hover { color: var(--fg); }\n' +
+            '.nav-extra { display: none; }\n' +
             '.menu-btn { display: none; background: none; border: none; cursor: pointer; width: 28px; height: 20px; position: relative; }\n' +
             '.menu-btn span { display: block; width: 100%; height: 2px; background: var(--fg); position: absolute; left: 0; transition: all 0.3s; }\n' +
             '.menu-btn span:first-child { top: 0; }\n' +
@@ -1133,7 +1135,11 @@ window.ArbelCompiler = (function () {
             '  .menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg); }\n' +
             '  body.nav-open { overflow: hidden; }\n' +
             '  body.nav-open .header { position: fixed; inset: 0; z-index: 9999; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'backdrop-filter: none; border-bottom: none; display: flex; flex-direction: column; padding: 1rem 2rem; overflow-y: auto; }\n' +
-            '  body.nav-open .header-inner { flex-shrink: 0; width: 100%; }\n' +
+            '  body.nav-open .header-inner { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; max-width: none; position: relative; }\n' +
+            '  body.nav-open .logo { align-self: flex-start; }\n' +
+            '  body.nav-open .menu-btn { position: absolute; top: 0; right: 0; }\n' +
+            '  .nav-extra { display: none; width: 100%; }\n' +
+            '  body.nav-open .nav-extra { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 2rem; }\n' +
             '}\n\n' +
             '/* ═══ HERO ═══ */\n' +
             '.hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }\n' +
@@ -1490,6 +1496,7 @@ window.ArbelCompiler = (function () {
             '  <header class="header" id="header">\n    <div class="header-inner">\n' +
             '      <a href="' + prefix + '" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks2 + '      </nav>\n' +
+            '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n  </header>\n\n' +
             (function () {
@@ -1590,6 +1597,60 @@ window.ArbelCompiler = (function () {
     function _applyOverrides(html, overrides, accentColor) {
         var ids = Object.keys(overrides);
         if (!ids.length) return html;
+
+        // Build and inject added overlay elements into nav-extra container
+        var navExtraContent = '';
+        var navDeviceCss = '';
+        ids.forEach(function (id) {
+            var o = overrides[id];
+            if (!o._added || !o._navOverlay) return;
+            var def = o._def || {};
+            var tag = def.tag || 'div';
+            var safeId = id.replace(/[<>"'`\\]/g, '');
+            var elHtml = '<' + tag + ' data-arbel-id="' + safeId + '"';
+            if (o.text && tag !== 'img' && tag !== 'video') elHtml += ' data-arbel-edit="text"';
+            // Build initial style string from _initStyle
+            var initParts = [];
+            if (o._initStyle) {
+                Object.keys(o._initStyle).forEach(function (k) {
+                    var cssProp = k.replace(/([A-Z])/g, '-$1').toLowerCase();
+                    initParts.push(cssProp + ':' + o._initStyle[k]);
+                });
+            }
+            if (initParts.length) elHtml += ' style="' + initParts.join(';') + '"';
+            // Attributes
+            if (o._attrs) {
+                Object.keys(o._attrs).forEach(function (ak) {
+                    var safeK = ak.replace(/[<>"'`\\]/g, '');
+                    var safeV = String(o._attrs[ak]).replace(/[<>"'`\\]/g, '');
+                    elHtml += ' ' + safeK + '="' + safeV + '"';
+                });
+            }
+            elHtml += '>';
+            // Content
+            if (o._html) elHtml += o._html;
+            else if (o.text) elHtml += esc(o.text);
+            // Close tag (void elements self-close)
+            if (tag !== 'img' && tag !== 'hr' && tag !== 'br') elHtml += '</' + tag + '>';
+            navExtraContent += '        ' + elHtml + '\n';
+            // Per-device visibility CSS
+            if (o._navDevice === 'mobile') {
+                navDeviceCss += '[data-arbel-id="' + safeId + '"]{display:none !important}\n';
+                navDeviceCss += '@media(max-width:480px){body.nav-open [data-arbel-id="' + safeId + '"]{display:block !important}}\n';
+            } else if (o._navDevice === 'tablet') {
+                navDeviceCss += '[data-arbel-id="' + safeId + '"]{display:none !important}\n';
+                navDeviceCss += '@media(max-width:768px){body.nav-open [data-arbel-id="' + safeId + '"]{display:block !important}}\n';
+            }
+        });
+        if (navExtraContent) {
+            html = html.replace(
+                /<div class="nav-extra"([^>]*)><\/div>/g,
+                '<div class="nav-extra"$1>\n' + navExtraContent + '      </div>'
+            );
+        }
+        if (navDeviceCss) {
+            html = html.replace('</head>', '<style>' + navDeviceCss + '</style>\n</head>');
+        }
 
         var hasEffects = false;
         var hasAnimOrHover = false;
