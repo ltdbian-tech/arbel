@@ -1052,6 +1052,17 @@ a:hover { text-decoration: underline; }
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.bfs-unsaved-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    animation: bfs-pulse 2s ease-in-out infinite;
+}
+@keyframes bfs-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.bfs-file-menu {
+    display: flex; align-items: center; gap: 2px;
+}
 .bfs-divider {
     width: 1px; height: 24px;
     background: var(--border);
@@ -2254,6 +2265,8 @@ a:hover { text-decoration: underline; }
         padding: 0 8px;
     }
     .bfs-brand { display: none; }
+    .bfs-unsaved-dot { display: none; }
+    .bfs-file-menu { gap: 0; }
 
     .dns-records { font-size: 0.6rem; }
     .dns-record-header, .dns-record {

@@ -1267,6 +1267,7 @@
         ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
             state.editorOverrides = overrides;
             try { localStorage.setItem('arbel_editor_overrides', JSON.stringify(overrides)); } catch (e) {}
+            _markDirty();
         });
         if (state.editorOverrides) {
             ArbelEditor.setOverrides(state.editorOverrides);
@@ -1280,6 +1281,16 @@
     // Restore overrides from localStorage on load
     (function () {
         try {
+            // Try full project restore first
+            var projStr = localStorage.getItem('arbel_project');
+            if (projStr) {
+                var proj = JSON.parse(projStr);
+                if (proj && proj.config) {
+                    _restoreFullState(proj);
+                    return;
+                }
+            }
+            // Fallback: legacy overrides-only
             var saved = localStorage.getItem('arbel_editor_overrides');
             if (saved) state.editorOverrides = JSON.parse(saved);
         } catch (e) {}
@@ -1295,6 +1306,7 @@
         ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
             state.editorOverrides = overrides;
             try { localStorage.setItem('arbel_editor_overrides', JSON.stringify(overrides)); } catch (e) {}
+            _markDirty();
         });
         if (savedOverrides) {
             ArbelEditor.setOverrides(savedOverrides);
@@ -1449,6 +1461,483 @@
             domainToggle.classList.toggle('open', !isOpen);
         });
     }
+
+    /* ═══════════════════════════════════════════
+       PROJECT SAVE / OPEN SYSTEM
+       ═══════════════════════════════════════════ */
+
+    var _fileHandle = null;       // File System Access API handle (persistent Save target)
+    var _projectDirty = false;    // unsaved changes flag
+    var _autoSaveTimer = null;
+    var _PROJECT_KEY = 'arbel_project';
+
+    /** Collect entire project state into a serializable object */
+    function _collectFullState() {
+        // Gather content inputs
+        var content = {};
+        if (state.templateContent) {
+            Object.keys(state.templateContent).forEach(function (k) {
+                content[k] = state.templateContent[k];
+            });
+        }
+        $$('.content-input').forEach(function (el) {
+            var key = el.dataset.key;
+            if (key && el.value.trim()) content[key] = el.value.trim();
+        });
+
+        // Gather active sections
+        var sections = [];
+        $$('[data-section]').forEach(function (cb) {
+            if (cb.checked || cb.disabled) sections.push(cb.dataset.section);
+        });
+
+        // Build project data
+        var proj = {
+            version: 2,
+            meta: {
+                name: els.brandName.value.trim() || 'My Site',
+                savedAt: new Date().toISOString()
+            },
+            config: {
+                brandName: els.brandName.value.trim() || '',
+                tagline: els.tagline.value.trim() || '',
+                industry: els.industry.value || '',
+                contactEmail: els.contactEmail.value.trim() || '',
+                style: state.style,
+                styleMode: styleMode,
+                mode: state.mode,
+                accent: els.accentColor.value,
+                bgColor: els.bgColor.value,
+                sections: sections,
+                content: content,
+                templateContent: state.templateContent || null,
+                seo: _collectSeo(),
+                particles: {
+                    count: parseInt(els.particleCount.value, 10),
+                    speed: parseFloat(els.particleSpeed.value),
+                    glow: parseFloat(els.particleGlow.value),
+                    interact: els.particleInteract.checked,
+                    connect: els.particleConnect.checked
+                }
+            },
+            editor: {
+                overrides: (window.ArbelEditor && ArbelEditor.getOverrides()) || state.editorOverrides || {},
+                pages: (window.ArbelEditor && ArbelEditor.getPages()) || [],
+                videoConfig: (window.ArbelEditor && ArbelEditor.getVideoConfig()) || null,
+                addedElements: (window.ArbelEditor && ArbelEditor.getAddedElements()) || [],
+                menuBgColor: (window.ArbelEditor && ArbelEditor.getMenuBgColor()) || '',
+                menuBgEnabled: (window.ArbelEditor) ? ArbelEditor.getMenuBgEnabled() : true
+            }
+        };
+
+        // Builder state (if using custom builder)
+        if (styleMode === 'builder') {
+            proj.config.builderState = {
+                cat: builderState.cat,
+                params: Object.assign({}, builderState.params),
+                colors: builderState.colors.slice()
+            };
+        }
+
+        return proj;
+    }
+
+    /** Restore project state from a saved object */
+    function _restoreFullState(proj) {
+        if (!proj || !proj.config) return;
+        var c = proj.config;
+        var ed = proj.editor || {};
+
+        // Config form inputs
+        if (c.brandName !== undefined) els.brandName.value = c.brandName;
+        if (c.tagline !== undefined) els.tagline.value = c.tagline;
+        if (c.industry !== undefined) els.industry.value = c.industry;
+        if (c.contactEmail !== undefined) els.contactEmail.value = c.contactEmail;
+
+        // Style
+        if (c.style) state.style = c.style;
+        if (c.mode) state.mode = c.mode;
+
+        // Mode selector cards
+        $$('.mode-card').forEach(function (card) {
+            card.classList.toggle('selected', card.dataset.mode === state.mode);
+        });
+
+        // Colors
+        if (c.accent) { els.accentColor.value = c.accent; els.accentVal.textContent = c.accent; }
+        if (c.bgColor) { els.bgColor.value = c.bgColor; els.bgVal.textContent = c.bgColor; }
+
+        // Sections
+        if (c.sections && c.sections.length) {
+            $$('[data-section]').forEach(function (cb) {
+                if (cb.disabled) return; // hero & contact locked
+                cb.checked = c.sections.indexOf(cb.dataset.section) !== -1;
+                // Toggle content visibility
+                var contentEl = document.querySelector('.content-section[data-for="' + cb.dataset.section + '"]');
+                if (contentEl) contentEl.style.display = cb.checked ? '' : 'none';
+            });
+        }
+
+        // Content inputs
+        if (c.templateContent) state.templateContent = c.templateContent;
+        if (c.content) {
+            $$('.content-input').forEach(function (el) {
+                var key = el.dataset.key;
+                if (key && c.content[key] !== undefined) el.value = c.content[key];
+            });
+        }
+
+        // SEO
+        if (c.seo) {
+            if (els.seoTitle && c.seo.title !== undefined) els.seoTitle.value = c.seo.title;
+            if (els.seoDescription && c.seo.description !== undefined) els.seoDescription.value = c.seo.description;
+            if (els.seoCanonical && c.seo.canonical !== undefined) els.seoCanonical.value = c.seo.canonical;
+            if (els.seoOgImage && c.seo.ogImage !== undefined) els.seoOgImage.value = c.seo.ogImage;
+            if (els.seoFavicon && c.seo.favicon !== undefined) els.seoFavicon.value = c.seo.favicon;
+            if (els.seoIndex && c.seo.index !== undefined) els.seoIndex.checked = c.seo.index;
+        }
+
+        // Particles
+        if (c.particles) {
+            els.particleCount.value = c.particles.count || 80;
+            els.particleCountVal.textContent = c.particles.count || 80;
+            els.particleSpeed.value = c.particles.speed || 1;
+            els.particleSpeedVal.textContent = parseFloat(c.particles.speed || 1).toFixed(1);
+            els.particleGlow.value = c.particles.glow || 0.6;
+            els.particleGlowVal.textContent = parseFloat(c.particles.glow || 0.6).toFixed(2);
+            if (c.particles.interact !== undefined) els.particleInteract.checked = c.particles.interact;
+            if (c.particles.connect !== undefined) els.particleConnect.checked = c.particles.connect;
+        }
+
+        // Show/hide particle config
+        var cat = ArbelCompiler.getAnimCategory(state.style);
+        els.particleConfig.style.display = (cat === 'particle') ? '' : 'none';
+
+        // Builder state
+        if (c.styleMode === 'builder' && c.builderState) {
+            styleMode = 'builder';
+            builderState.cat = c.builderState.cat || 'particle';
+            if (c.builderState.params) Object.assign(builderState.params, c.builderState.params);
+            if (c.builderState.colors) builderState.colors = c.builderState.colors.slice();
+        }
+
+        // Editor overrides
+        if (ed.overrides && Object.keys(ed.overrides).length) {
+            state.editorOverrides = ed.overrides;
+            if (window.ArbelEditor) ArbelEditor.setOverrides(ed.overrides);
+        }
+        if (ed.pages && ed.pages.length) {
+            if (window.ArbelEditor && ArbelEditor.setPages) ArbelEditor.setPages(ed.pages);
+        }
+        if (ed.videoConfig) {
+            if (window.ArbelEditor && ArbelEditor.setVideoConfig) ArbelEditor.setVideoConfig(ed.videoConfig);
+        }
+        if (ed.addedElements && ed.addedElements.length) {
+            if (window.ArbelEditor && ArbelEditor.setAddedElements) ArbelEditor.setAddedElements(ed.addedElements);
+        }
+        if (ed.menuBgColor !== undefined) {
+            if (window.ArbelEditor && ArbelEditor.setMenuBgColor) ArbelEditor.setMenuBgColor(ed.menuBgColor);
+        }
+        if (ed.menuBgEnabled !== undefined) {
+            if (window.ArbelEditor && ArbelEditor.setMenuBgEnabled) ArbelEditor.setMenuBgEnabled(ed.menuBgEnabled);
+        }
+
+        _projectDirty = false;
+        _updateUnsavedIndicator();
+    }
+
+    /** Mark project as having unsaved changes */
+    function _markDirty() {
+        if (!_projectDirty) {
+            _projectDirty = true;
+            _updateUnsavedIndicator();
+        }
+        _scheduleAutoSave();
+    }
+
+    /** Update the visual unsaved indicator */
+    function _updateUnsavedIndicator() {
+        var dot = $('unsavedDot');
+        if (dot) dot.style.display = _projectDirty ? '' : 'none';
+        var bfsBrand = $('bfsBrand');
+        if (bfsBrand) {
+            var name = els.brandName.value.trim() || 'My Site';
+            bfsBrand.textContent = _projectDirty ? name + ' •' : name;
+        }
+    }
+
+    /** Auto-save to localStorage (debounced) */
+    function _scheduleAutoSave() {
+        clearTimeout(_autoSaveTimer);
+        _autoSaveTimer = setTimeout(function () {
+            try {
+                var proj = _collectFullState();
+                localStorage.setItem(_PROJECT_KEY, JSON.stringify(proj));
+            } catch (e) { /* quota exceeded — ignore */ }
+        }, 2000);
+    }
+
+    /** Save to current file handle (or trigger Save As) */
+    function _saveProject() {
+        if (_fileHandle) {
+            _writeToHandle(_fileHandle);
+        } else {
+            _saveProjectAs();
+        }
+    }
+
+    /** Save As — always prompts for new file location */
+    function _saveProjectAs() {
+        var proj = _collectFullState();
+        var json = JSON.stringify(proj, null, 2);
+        var name = (proj.meta.name || 'my-site').replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
+
+        if (window.showSaveFilePicker) {
+            window.showSaveFilePicker({
+                suggestedName: name + '.arbel',
+                types: [{
+                    description: 'Arbel Project',
+                    accept: { 'application/json': ['.arbel'] }
+                }]
+            }).then(function (handle) {
+                _fileHandle = handle;
+                return _writeToHandle(handle);
+            }).catch(function () { /* user cancelled */ });
+        } else {
+            // Fallback: download
+            var blob = new Blob([json], { type: 'application/json' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name + '.arbel';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            _projectDirty = false;
+            _updateUnsavedIndicator();
+        }
+    }
+
+    /** Write project data to a file handle */
+    function _writeToHandle(handle) {
+        var proj = _collectFullState();
+        var json = JSON.stringify(proj, null, 2);
+        return handle.createWritable().then(function (writable) {
+            return writable.write(json).then(function () {
+                return writable.close();
+            });
+        }).then(function () {
+            _projectDirty = false;
+            _updateUnsavedIndicator();
+        });
+    }
+
+    /** Open project from file */
+    function _openProject() {
+        if (window.showOpenFilePicker) {
+            window.showOpenFilePicker({
+                types: [{
+                    description: 'Arbel Project',
+                    accept: { 'application/json': ['.arbel', '.json'] }
+                }],
+                multiple: false
+            }).then(function (handles) {
+                _fileHandle = handles[0];
+                return _fileHandle.getFile();
+            }).then(function (file) {
+                return file.text();
+            }).then(function (text) {
+                var proj = JSON.parse(text);
+                if (!proj || (!proj.config && !proj.overrides)) throw new Error('Invalid project file');
+                _loadProjectData(proj);
+            }).catch(function (err) {
+                if (err.name !== 'AbortError') alert('Failed to open: ' + err.message);
+            });
+        } else {
+            // Fallback: file input
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.arbel,.json';
+            input.addEventListener('change', function () {
+                var file = input.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        var proj = JSON.parse(e.target.result);
+                        if (!proj || (!proj.config && !proj.overrides)) throw new Error('Invalid project file');
+                        _fileHandle = null;
+                        _loadProjectData(proj);
+                    } catch (err) {
+                        alert('Failed to open: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            input.click();
+        }
+    }
+
+    /** Handle loading a project (either v1 editor-only or v2 full state) */
+    function _loadProjectData(proj) {
+        if (proj.version === 1 || (!proj.config && proj.overrides)) {
+            // Legacy v1 format — editor overrides only
+            state.editorOverrides = proj.overrides || {};
+            if (window.ArbelEditor) {
+                ArbelEditor.setOverrides(proj.overrides || {});
+                if (proj.pages && ArbelEditor.setPages) ArbelEditor.setPages(proj.pages);
+                if (proj.videoConfig && ArbelEditor.setVideoConfig) ArbelEditor.setVideoConfig(proj.videoConfig);
+                if (proj.addedElements && ArbelEditor.setAddedElements) ArbelEditor.setAddedElements(proj.addedElements);
+            }
+            _projectDirty = false;
+            _updateUnsavedIndicator();
+            // Re-generate preview if on step 3
+            if (state.step >= 3) generatePreview();
+        } else {
+            // v2 full project
+            _restoreFullState(proj);
+            // Re-generate preview if on step 3
+            if (state.step >= 3) generatePreview();
+        }
+    }
+
+    /** Start a brand new project */
+    function _newProject() {
+        if (_projectDirty) {
+            if (!confirm('You have unsaved changes. Start a new project anyway?')) return;
+        }
+        _fileHandle = null;
+        _projectDirty = false;
+
+        // Reset form inputs
+        els.brandName.value = '';
+        els.tagline.value = '';
+        els.industry.value = '';
+        els.contactEmail.value = '';
+
+        // Reset colors to default style
+        var defaultStyle = allStyles.find(function (s) { return s.id === 'obsidian'; });
+        if (defaultStyle) {
+            els.accentColor.value = defaultStyle.colors.accent;
+            els.accentVal.textContent = defaultStyle.colors.accent;
+            els.bgColor.value = defaultStyle.colors.bg;
+            els.bgVal.textContent = defaultStyle.colors.bg;
+        }
+
+        // Reset style
+        state.style = 'obsidian';
+        state.styleMode = 'preset';
+        state.mode = 'classic';
+        state.editorOverrides = null;
+        state.templateContent = null;
+
+        // Reset sections to default
+        $$('[data-section]').forEach(function (cb) {
+            if (!cb.disabled) cb.checked = true;
+            var contentEl = document.querySelector('.content-section[data-for="' + cb.dataset.section + '"]');
+            if (contentEl) contentEl.style.display = '';
+        });
+
+        // Clear content inputs
+        $$('.content-input').forEach(function (el) { el.value = ''; });
+
+        // Clear SEO
+        if (els.seoTitle) els.seoTitle.value = '';
+        if (els.seoDescription) els.seoDescription.value = '';
+        if (els.seoCanonical) els.seoCanonical.value = '';
+        if (els.seoOgImage) els.seoOgImage.value = '';
+        if (els.seoFavicon) els.seoFavicon.value = '';
+        if (els.seoIndex) els.seoIndex.checked = true;
+
+        // Reset particles
+        els.particleCount.value = 80;
+        els.particleCountVal.textContent = '80';
+        els.particleSpeed.value = 1;
+        els.particleSpeedVal.textContent = '1.0';
+        els.particleGlow.value = 0.6;
+        els.particleGlowVal.textContent = '0.60';
+        els.particleInteract.checked = true;
+        els.particleConnect.checked = true;
+
+        // Reset editor
+        if (window.ArbelEditor) {
+            ArbelEditor.setOverrides({});
+            if (ArbelEditor.setPages) ArbelEditor.setPages([]);
+            if (ArbelEditor.setAddedElements) ArbelEditor.setAddedElements([]);
+        }
+
+        // Clear auto-save
+        try { localStorage.removeItem(_PROJECT_KEY); } catch (e) {}
+
+        _updateUnsavedIndicator();
+    }
+
+    /* ─── Wire dirty tracking to form inputs ─── */
+    // Text inputs
+    ['brandName', 'tagline', 'contactEmail', 'seoTitle', 'seoDescription', 'seoCanonical', 'seoOgImage', 'seoFavicon'].forEach(function (id) {
+        var el = els[id];
+        if (el) el.addEventListener('input', _markDirty);
+    });
+    // Selects
+    if (els.industry) els.industry.addEventListener('change', _markDirty);
+    // Color pickers
+    els.accentColor.addEventListener('input', _markDirty);
+    els.bgColor.addEventListener('input', _markDirty);
+    // Checkboxes
+    if (els.seoIndex) els.seoIndex.addEventListener('change', _markDirty);
+    els.particleConnect.addEventListener('change', _markDirty);
+    els.particleInteract.addEventListener('change', _markDirty);
+    // Ranges
+    els.particleCount.addEventListener('input', _markDirty);
+    els.particleSpeed.addEventListener('input', _markDirty);
+    els.particleGlow.addEventListener('input', _markDirty);
+    // Section toggles
+    els.sectionToggles.addEventListener('change', _markDirty);
+    // Content inputs (delegated)
+    if (els.contentEditor) els.contentEditor.addEventListener('input', function (e) {
+        if (e.target.classList.contains('content-input')) _markDirty();
+    });
+
+    /* ─── Keyboard Shortcuts ─── */
+    document.addEventListener('keydown', function (e) {
+        var isCtrl = e.ctrlKey || e.metaKey;
+        if (!isCtrl) return;
+
+        if (e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            if (e.shiftKey) {
+                _saveProjectAs();
+            } else {
+                _saveProject();
+            }
+        } else if (e.key === 'o' || e.key === 'O') {
+            if (!e.shiftKey) {
+                e.preventDefault();
+                _openProject();
+            }
+        } else if (e.key === 'n' || e.key === 'N') {
+            if (!e.shiftKey) {
+                e.preventDefault();
+                _newProject();
+            }
+        }
+    });
+
+    /* ─── Wire file menu buttons ─── */
+    var _fileNewBtn = $('fileNew');
+    var _fileOpenBtn = $('fileOpen');
+    var _fileSaveBtn = $('fileSave');
+    var _fileSaveAsBtn = $('fileSaveAs');
+    if (_fileNewBtn) _fileNewBtn.addEventListener('click', _newProject);
+    if (_fileOpenBtn) _fileOpenBtn.addEventListener('click', _openProject);
+    if (_fileSaveBtn) _fileSaveBtn.addEventListener('click', _saveProject);
+    if (_fileSaveAsBtn) _fileSaveAsBtn.addEventListener('click', _saveProjectAs);
+
+    /* ─── Warn on unsaved changes ─── */
+    window.addEventListener('beforeunload', function (e) {
+        if (_projectDirty) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
 
     /* ─── INIT ─── */
     // Check for existing session
