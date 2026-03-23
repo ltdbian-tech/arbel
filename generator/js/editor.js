@@ -1151,6 +1151,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (!d || !d.type || !_active) return;
         if (d.type === 'arbel-tree') {
             _renderElementTree(d.tree);
+            // Re-apply device responsive CSS after iframe reload (ensures nav-extra hidden on desktop etc.)
+            _applyDeviceResponsive();
             // Re-apply video layer after iframe reload
             if (_videoConfig.active && _videoFrames.length && _iframe) {
                 _postIframe('arbel-set-video-layer', { frames: _videoFrames, config: _videoConfig });
