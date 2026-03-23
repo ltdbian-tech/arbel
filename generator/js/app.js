@@ -1894,7 +1894,10 @@
     els.bgColor.addEventListener('input', _markDirty);
     // Checkboxes
     if (els.seoIndex) els.seoIndex.addEventListener('change', _markDirty);
-    if (els.navToggle) els.navToggle.addEventListener('change', _markDirty);
+    if (els.navToggle) els.navToggle.addEventListener('change', function () {
+        _markDirty();
+        if (state.step >= 3) generatePreview();
+    });
     els.particleConnect.addEventListener('change', _markDirty);
     els.particleInteract.addEventListener('change', _markDirty);
     // Ranges

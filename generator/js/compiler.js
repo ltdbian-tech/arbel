@@ -1355,7 +1355,8 @@ window.ArbelCompiler = (function () {
             '// Smooth anchor scroll\n' +
             'document.querySelectorAll(\'a[href^="#"]\').forEach(function(a){\n' +
             '  a.addEventListener("click",function(e){\n' +
-            '    var target=document.querySelector(a.getAttribute("href"));\n' +
+            '    var h=a.getAttribute("href");if(!h||h==="#")return;\n' +
+            '    var target=document.querySelector(h);\n' +
             '    if(target){e.preventDefault();target.scrollIntoView({behavior:"smooth"});}\n' +
             '  });\n' +
             '});\n\n' +
