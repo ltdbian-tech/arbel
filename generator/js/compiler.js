@@ -1126,6 +1126,8 @@ window.ArbelCompiler = (function () {
             '.menu-btn span:first-child { top: 0; }\n' +
             '.menu-btn span:last-child { bottom: 0; }\n' +
             '@media (max-width: 768px) {\n' +
+            '  .header-inner { display: flex; align-items: center; justify-content: space-between; }\n' +
+            '  .logo { display: block; color: inherit; }\n' +
             '  .nav { display: none; }\n' +
             '  .nav.open { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; margin: auto 0; width: 100%; padding: 2rem 0; }\n' +
             '  .nav a, .nav-link { color: #fff; font-size: 1.5rem; text-decoration: none; padding: 0.5rem 1rem; transition: opacity 0.2s; }\n' +

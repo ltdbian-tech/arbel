@@ -1389,6 +1389,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         // The .header has backdrop-filter which creates a containing block for position:fixed children.
         // So when nav is open, we expand the header itself to cover the viewport and drop its backdrop-filter.
         var _navBg = (_menuBgEnabled && _menuBgColor) ? _menuBgColor : 'rgba(10,10,15,0.95)';
+        // Ensure header layout stays correct on mobile (logo left, hamburger right)
+        css += '.header-inner { display: flex !important; align-items: center !important; justify-content: space-between !important; }\n';
+        css += '.logo { display: block !important; color: inherit !important; }\n';
         css += '.nav { display: none !important; }\n';
         css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; margin: auto 0 !important; width: 100% !important; padding: 2rem 0 !important; }\n';
         css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
