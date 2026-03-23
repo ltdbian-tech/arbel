@@ -822,7 +822,6 @@ window.addEventListener("message",function(e){
     /* Ensure added element is positionable */
     if(!d.style||(!d.style.position)){newEl.style.position="relative"}
     anchor.appendChild(newEl);
-    if(d.navOverlay)newEl.scrollIntoView({behavior:'smooth',block:'center'});
     sel(newEl);
     // Rebuild tree
     var tree2=[];
@@ -1389,7 +1388,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         // So when nav is open, we expand the header itself to cover the viewport and drop its backdrop-filter.
         var _navBg = (_menuBgEnabled && _menuBgColor) ? _menuBgColor : 'rgba(10,10,15,0.95)';
         css += '.nav { display: none !important; }\n';
-        css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; width: 100% !important; padding: 2rem 0 !important; margin: auto 0 !important; }\n';
+        css += '.nav.open { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; flex: 1 !important; width: 100% !important; padding: 2rem 0 !important; }\n';
         css += '.nav a, .nav-link { color: #fff !important; font-size: 1.5rem !important; text-decoration: none !important; padding: 0.5rem 1rem !important; transition: opacity 0.2s !important; }\n';
         css += '.nav a:hover, .nav-link:hover { opacity: 0.7 !important; }\n';
         css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
@@ -1402,7 +1401,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         css += 'body.nav-open .logo { align-self: flex-start !important; }\n';
         css += 'body.nav-open .menu-btn { position: absolute !important; top: 0 !important; right: 0 !important; }\n';
         css += '.nav-extra { display: none !important; }\n';
-        css += 'body.nav-open .nav-extra { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; padding: 1rem 2rem !important; width: 100% !important; flex-shrink: 0 !important; }\n';
+        css += 'body.nav-open .nav-extra { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 1rem !important; padding: 1rem 2rem !important; width: 100% !important; }\n';
 
         // Per-element overrides for elements with responsive data
         var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
