@@ -1358,20 +1358,11 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _applyDeviceResponsive() {
         if (_activeDevice === 'desktop') {
             _navOpenState = false;
-            // Force desktop nav layout — iframe may be narrower than 768px
-            // so the compiled @media(max-width:768px) would wrongly trigger.
-            var dCss = '.menu-btn { display: none !important; }\n';
-            dCss += '.nav { display: flex !important; flex-direction: row !important; gap: 2rem !important; align-items: center !important; }\n';
-            dCss += '.nav.open { display: flex !important; flex-direction: row !important; gap: 2rem !important; align-items: center !important; justify-content: initial !important; margin: 0 !important; width: auto !important; padding: 0 !important; }\n';
-            dCss += '.nav a, .nav-link { color: var(--fg2) !important; font-size: 0.85rem !important; padding: 0 !important; }\n';
-            dCss += '.nav-extra { display: none !important; }\n';
-            dCss += '.header { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important; z-index: 100 !important; padding: 1rem 2rem !important; display: block !important; flex-direction: initial !important; overflow: visible !important; }\n';
-            dCss += '.header-inner { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; max-width: 1200px !important; margin: 0 auto !important; position: static !important; width: auto !important; }\n';
-            dCss += '.logo { align-self: auto !important; }\n';
-            // Close any leftover nav-open state in DOM
+            // Set viewport to real desktop width so compiled media queries
+            // don't fire in the narrow builder iframe.  Minimal CSS override.
             _postIframe('arbel-close-nav', {});
-            _postIframe('arbel-inject-responsive', { css: dCss });
-            _postIframe('arbel-set-viewport-meta', { content: 'width=device-width, initial-scale=1' });
+            _postIframe('arbel-inject-responsive', { css: '.nav-extra { display: none !important; }' });
+            _postIframe('arbel-set-viewport-meta', { content: 'width=1280, initial-scale=1' });
             return;
         }
         var isMobile = _activeDevice === 'mobile';
