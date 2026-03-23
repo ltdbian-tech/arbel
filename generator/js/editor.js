@@ -1087,6 +1087,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
                 _overrides[d.id][_dk].width = d.width;
                 _overrides[d.id][_dk].height = d.height;
+                _applyDeviceResponsive();
             }
             if (_onUpdate) _onUpdate(_overrides);
         }
@@ -1109,6 +1110,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _overrides[d.id][_dk].left = d.left;
                 _overrides[d.id][_dk].top = d.top;
                 _overrides[d.id][_dk].position = 'relative';
+                _applyDeviceResponsive();
             }
             if (_onUpdate) _onUpdate(_overrides);
         }
@@ -1127,6 +1129,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 var _dk = '_' + _activeDevice;
                 if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
                 _overrides[d.id][_dk].transform = d.transform;
+                _applyDeviceResponsive();
             }
             if (_onUpdate) _onUpdate(_overrides);
         }
@@ -1258,12 +1261,21 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
         // Menu overlay background — full-page overlay like arbel.live
         if (_menuBgEnabled && _menuBgColor) {
-            css += '.nav { position: fixed !important; inset: 0 !important; background: ' + _menuBgColor + ' !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
+            css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: ' + _menuBgColor + ' !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
             css += '.nav.open { display: flex !important; }\n';
-            css += '.menu-btn { z-index: 10000 !important; position: relative !important; }\n';
+            css += '.nav-link { font-size: 1.5rem !important; }\n';
+            css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
+            css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
+            css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
             css += 'body.nav-open { overflow: hidden !important; }\n';
         } else if (!_menuBgEnabled) {
-            css += '.nav { background: transparent !important; }\n';
+            css += '.nav { display: none !important; position: fixed !important; inset: 0 !important; background: transparent !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
+            css += '.nav.open { display: flex !important; }\n';
+            css += '.nav-link { font-size: 1.5rem !important; }\n';
+            css += '.menu-btn { display: block !important; z-index: 10000 !important; }\n';
+            css += '.menu-btn.is-active span:first-child { transform: translateY(9px) rotate(45deg) !important; }\n';
+            css += '.menu-btn.is-active span:last-child { transform: translateY(-9px) rotate(-45deg) !important; }\n';
+            css += 'body.nav-open { overflow: hidden !important; }\n';
         }
 
         // Per-element overrides for elements with responsive data
