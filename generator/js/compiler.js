@@ -1309,7 +1309,7 @@ window.ArbelCompiler = (function () {
     }
 
     /* ─── Main JS (cursor, magnetic, tilt, menu) ─── */
-    function _buildMainJS() {
+    function _buildMainJS(cfg) {
         return '/* Main Interactions */\n' +
             '(function(){\n' +
             '"use strict";\n\n' +
@@ -1557,7 +1557,7 @@ window.ArbelCompiler = (function () {
             'index.html': _buildHTML(cfg),
             'css/style.css': _buildCSS(cfg),
             'js/animations.js': _buildAnimationsJS(),
-            'js/main.js': _buildMainJS(),
+            'js/main.js': _buildMainJS(cfg),
             'README.md': _buildReadme(cfg),
             'arbel.config.json': _buildConfig(cfg)
         };
