@@ -350,23 +350,27 @@ document.addEventListener("mouseup",function(e){
 /* ── Click: select element ── */
 document.addEventListener("mousedown",function(e){
   if(editing)return;
-  if(e.target.classList&&(e.target.classList.contains("arbel-rh")||e.target.classList.contains("arbel-rot")))return;
-  var el=e.target.closest("[data-arbel-id]");
-  if(!el){return}
-  /* Special: clicking menu-btn toggles the nav overlay open/close */
-  var menuBtnEl=e.target.closest('.menu-btn')||((el.classList&&el.classList.contains('menu-btn'))?el:null);
-  if(menuBtnEl){
+  /* Check menu-btn FIRST — before resize handle guard, so handles don't block toggle */
+  var mbEl=e.target.closest('.menu-btn');
+  if(!mbEl){
+    var arbelEl=e.target.closest('[data-arbel-id="menu-btn"]');
+    if(arbelEl&&arbelEl.classList.contains('menu-btn'))mbEl=arbelEl;
+  }
+  if(mbEl){
     var navEl=document.getElementById('nav');
     if(navEl){
       var isOpen=navEl.classList.toggle('open');
-      menuBtnEl.classList.toggle('is-active');
+      mbEl.classList.toggle('is-active');
       document.body.classList.toggle('nav-open',isOpen);
       window.parent.postMessage({type:'arbel-nav-state',isOpen:isOpen},'*');
     }
     e.preventDefault();e.stopPropagation();
-    sel(el);
-    return; /* don't start drag on menu button, just toggle + select */
+    sel(mbEl);
+    return;
   }
+  if(e.target.classList&&(e.target.classList.contains("arbel-rh")||e.target.classList.contains("arbel-rot")))return;
+  var el=e.target.closest("[data-arbel-id]");
+  if(!el){return}
   e.preventDefault();e.stopPropagation();
   if(selected!==el)sel(el);
   initDrag(el,e);
@@ -393,7 +397,9 @@ document.addEventListener("mouseover",function(e){
 document.addEventListener("mouseout",function(){lbl.classList.remove("vis")});\n\n/* ── Right-click context menu ── */\ndocument.addEventListener("contextmenu",function(e){\n  var el=e.target.closest("[data-arbel-id]");\n  if(!el)return;e.preventDefault();\n  if(selected!==el)sel(el);\n  var fr=window.frameElement?window.frameElement.getBoundingClientRect():{top:0,left:0};\n  window.parent.postMessage({type:"arbel-contextmenu",\n    id:el.getAttribute("data-arbel-id"),\n    tag:el.tagName.toLowerCase(),\n    editable:el.hasAttribute("data-arbel-edit"),\n    parentId:(el.parentElement?el.parentElement.closest("[data-arbel-id]"):null)?(el.parentElement.closest("[data-arbel-id]")).getAttribute("data-arbel-id"):null,\n    x:e.clientX+fr.left,y:e.clientY+fr.top},"*");\n});
 
 function sel(el){
-  desel();selected=el;el.classList.add("arbel-sel");posHandles(el);
+  desel();selected=el;el.classList.add("arbel-sel");
+  /* Skip resize handles for menu-btn — element is too small, handles overlap and block toggle */
+  if(el.classList&&el.classList.contains('menu-btn')){posHandles(null)}else{posHandles(el)}
   var r=el.getBoundingClientRect();
   var cs=getComputedStyle(el);
   window.parent.postMessage({type:"arbel-select",id:el.getAttribute("data-arbel-id"),
@@ -3902,8 +3908,15 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             };
         }
 
-        // Check if nav overlay is open — use tracked state from iframe message
-        if (_navOpenState) msg.navOverlay = true;
+        // Check if nav overlay is open — dual detection: message state + direct iframe check
+        var _isNavOpen = _navOpenState;
+        if (!_isNavOpen && _activeDevice !== 'desktop' && _iframe) {
+            try {
+                var _ifrDoc = _iframe.contentDocument || (_iframe.contentWindow && _iframe.contentWindow.document);
+                if (_ifrDoc && _ifrDoc.body) _isNavOpen = _ifrDoc.body.classList.contains('nav-open');
+            } catch (e) {}
+        }
+        if (_isNavOpen) msg.navOverlay = true;
 
         _postIframe('arbel-add-element', msg);
 
@@ -3911,7 +3924,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (!_overrides[id]) _overrides[id] = {};
         _overrides[id]._added = true;
         _overrides[id]._def = { tag: msg.tag, cat: t.cat, label: t.label, variant: t.variant, shapeName: t.shapeName, frameName: t.frameName };
-        if (_navOpenState) {
+        if (_isNavOpen) {
             _overrides[id]._navOverlay = true;
             // Per-device: store which device this overlay element belongs to
             if (_activeDevice !== 'desktop') {
