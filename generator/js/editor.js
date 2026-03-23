@@ -76,6 +76,10 @@ window.ArbelEditor = (function () {
     }
     function _getOverlayScript() {
         return `(function(){
+/* Dismiss preloader & reveal hidden content so editor is interactive immediately */
+var _pre=document.getElementById("preloader");if(_pre)_pre.classList.add("done");
+document.querySelectorAll(".line-inner").forEach(function(el){el.style.transform="translateY(0)";});
+document.querySelectorAll(".hero-sub,.hero-actions,.reveal-up").forEach(function(el){el.style.opacity="1";el.style.transform="translateY(0)";});
 var selected=null,editing=false,resize=null;
 var s=document.createElement("style");
 s.textContent=\`

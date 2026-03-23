@@ -1254,8 +1254,11 @@ window.ArbelCompiler = (function () {
         return '/* Scroll Animations */\n' +
             '(function(){\n' +
             '"use strict";\n' +
+            '// Safety: dismiss preloader after 5s even if GSAP fails to load\n' +
+            'var _safetyTimer=setTimeout(function(){var p=document.getElementById("preloader");if(p&&!p.classList.contains("done"))p.classList.add("done");},5000);\n' +
             'function init(){\n' +
             '  if(typeof gsap==="undefined"||typeof ScrollTrigger==="undefined"){setTimeout(init,100);return;}\n' +
+            '  clearTimeout(_safetyTimer);\n' +
             '  gsap.registerPlugin(ScrollTrigger);\n\n' +
             '  // Preloader\n' +
             '  var fill=document.getElementById("preloaderFill");\n' +
