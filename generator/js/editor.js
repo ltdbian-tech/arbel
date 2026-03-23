@@ -1079,8 +1079,15 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         if (d.type === 'arbel-resize' && d.id) {
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            _overrides[d.id].width = d.width;
-            _overrides[d.id].height = d.height;
+            if (_activeDevice === 'desktop') {
+                _overrides[d.id].width = d.width;
+                _overrides[d.id].height = d.height;
+            } else {
+                var _dk = '_' + _activeDevice;
+                if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
+                _overrides[d.id][_dk].width = d.width;
+                _overrides[d.id][_dk].height = d.height;
+            }
             if (_onUpdate) _onUpdate(_overrides);
         }
         if (d.type === 'arbel-resize-end') {
@@ -1092,9 +1099,17 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _moveUndoPushed = true;
             }
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            _overrides[d.id].left = d.left;
-            _overrides[d.id].top = d.top;
-            _overrides[d.id].position = 'relative';
+            if (_activeDevice === 'desktop') {
+                _overrides[d.id].left = d.left;
+                _overrides[d.id].top = d.top;
+                _overrides[d.id].position = 'relative';
+            } else {
+                var _dk = '_' + _activeDevice;
+                if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
+                _overrides[d.id][_dk].left = d.left;
+                _overrides[d.id][_dk].top = d.top;
+                _overrides[d.id][_dk].position = 'relative';
+            }
             if (_onUpdate) _onUpdate(_overrides);
         }
         if (d.type === 'arbel-move-end') {
@@ -1106,7 +1121,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _rotateUndoPushed = true;
             }
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            _overrides[d.id].transform = d.transform;
+            if (_activeDevice === 'desktop') {
+                _overrides[d.id].transform = d.transform;
+            } else {
+                var _dk = '_' + _activeDevice;
+                if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
+                _overrides[d.id][_dk].transform = d.transform;
+            }
             if (_onUpdate) _onUpdate(_overrides);
         }
         if (d.type === 'arbel-rotate-end') {
@@ -1235,10 +1256,12 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             css += '[style*="grid-template-columns"]' + NOT_OV + ' { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important; }\n';
         }
 
-        // Menu overlay background
+        // Menu overlay background — full-page overlay like arbel.live
         if (_menuBgEnabled && _menuBgColor) {
-            css += '.nav { background: ' + _menuBgColor + ' !important; z-index: 9999 !important; }\n';
-            css += '.menu-btn { z-index: 10000 !important; }\n';
+            css += '.nav { position: fixed !important; inset: 0 !important; background: ' + _menuBgColor + ' !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 2rem !important; z-index: 9999 !important; }\n';
+            css += '.nav.open { display: flex !important; }\n';
+            css += '.menu-btn { z-index: 10000 !important; position: relative !important; }\n';
+            css += 'body.nav-open { overflow: hidden !important; }\n';
         } else if (!_menuBgEnabled) {
             css += '.nav { background: transparent !important; }\n';
         }

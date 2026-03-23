@@ -1719,6 +1719,33 @@ window.ArbelCompiler = (function () {
             html = html.replace('</head>', fontLink + '\n</head>');
         }
 
+        // Inject per-device responsive overrides as @media queries
+        var _deviceCss = { tablet: '', mobile: '' };
+        var _camelToDash = function (s) { return s.replace(/([A-Z])/g, '-$1').toLowerCase(); };
+        ids.forEach(function (id) {
+            var o = overrides[id];
+            ['_tablet', '_mobile'].forEach(function (dk) {
+                var rsp = o[dk];
+                if (!rsp) return;
+                var device = dk.substring(1); // 'tablet' or 'mobile'
+                var safeId = id.replace(/["\\]/g, '');
+                var rules = '';
+                Object.keys(rsp).forEach(function (prop) {
+                    var val = String(rsp[prop]).replace(/[<>"'`]/g, '');
+                    if (!/javascript\s*:/i.test(val) && !/expression\s*\(/i.test(val)) {
+                        rules += _camelToDash(prop) + ':' + val + ' !important;';
+                    }
+                });
+                if (rules) _deviceCss[device] += '[data-arbel-id="' + safeId + '"]{' + rules + '}\n';
+            });
+        });
+        var responsiveStyle = '';
+        if (_deviceCss.tablet) responsiveStyle += '@media (max-width:768px){\n' + _deviceCss.tablet + '}\n';
+        if (_deviceCss.mobile) responsiveStyle += '@media (max-width:480px){\n' + _deviceCss.mobile + '}\n';
+        if (responsiveStyle) {
+            html = html.replace('</head>', '<style>' + responsiveStyle + '</style>\n</head>');
+        }
+
         // Inject runtime JS
         var overrideJS = _buildOverrideJS(overrides, hasEffects, hasAnimOrHover, accentColor);
         if (overrideJS) {
