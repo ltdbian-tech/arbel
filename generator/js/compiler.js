@@ -1054,6 +1054,7 @@ window.ArbelCompiler = (function () {
             '      <span class="mono">&copy; <script>document.write(new Date().getFullYear())<\/script> All rights reserved.</span>\n' +
             '    </div>\n' +
             '  </footer>\n\n' +
+            '  <div class="arbel-badge">built with <a href="https://arbel.live" target="_blank" rel="noopener">arbel.live</a></div>\n\n' +
             (cat === 'shader' ? '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' : '') +
             '  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>\n' +
             '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n' +
@@ -1243,6 +1244,10 @@ window.ArbelCompiler = (function () {
             '.footer-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }\n' +
             '.footer .logo { font-size: 1rem; }\n' +
             '.footer .mono { color: var(--fg2); }\n\n' +
+            '/* ═══ ARBEL BADGE ═══ */\n' +
+            '.arbel-badge { text-align: center; padding: 10px 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.03em; user-select: none; -webkit-user-select: none; }\n' +
+            '.arbel-badge a { color: rgba(255,255,255,0.45); text-decoration: none; transition: color 0.2s; }\n' +
+            '.arbel-badge a:hover { color: rgba(255,255,255,0.7); }\n\n' +
             '/* ═══ REVEAL ANIMATIONS ═══ */\n' +
             '.reveal-up { will-change: transform, opacity; }\n' +
             '.line-inner { display: inline-block; will-change: transform; }\n\n' +
@@ -1549,6 +1554,7 @@ window.ArbelCompiler = (function () {
             '  <footer class="footer">\n    <div class="footer-inner">\n' +
             '      <p class="footer-copy">&copy; <script>document.write(new Date().getFullYear())<\/script> ' + esc(cfg.brandName) + '</p>\n' +
             '    </div>\n  </footer>\n\n' +
+            '  <div class="arbel-badge">built with <a href="https://arbel.live" target="_blank" rel="noopener">arbel.live</a></div>\n\n' +
             (cat === 'shader' ? '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' : '') +
             '  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>\n' +
             '  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\/script>\n' +
