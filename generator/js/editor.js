@@ -915,12 +915,10 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         for (var i = 0; i < styleKeys.length; i++) {
             var k = styleKeys[i];
             if (src[k] !== undefined) {
-                _overrides[_selectedId][k] = src[k];
-                // Also push to iframe live
+                _setOv(_selectedId, k, src[k]);
                 _postIframe('arbel-set-style', { id: _selectedId, prop: k, value: src[k] });
             }
         }
-        if (_onUpdate) _onUpdate(_overrides);
     }
 
     function _duplicateStyles() {
@@ -1079,17 +1077,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
         if (d.type === 'arbel-resize' && d.id) {
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            if (_activeDevice === 'desktop') {
-                _overrides[d.id].width = d.width;
-                _overrides[d.id].height = d.height;
-            } else {
-                var _dk = '_' + _activeDevice;
-                if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
-                _overrides[d.id][_dk].width = d.width;
-                _overrides[d.id][_dk].height = d.height;
-                _applyDeviceResponsive();
-            }
-            if (_onUpdate) _onUpdate(_overrides);
+            _setOv(d.id, 'width', d.width);
+            _setOv(d.id, 'height', d.height);
         }
         if (d.type === 'arbel-resize-end') {
             _resizeUndoPushed = false;
@@ -1100,19 +1089,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _moveUndoPushed = true;
             }
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            if (_activeDevice === 'desktop') {
-                _overrides[d.id].left = d.left;
-                _overrides[d.id].top = d.top;
-                _overrides[d.id].position = 'relative';
-            } else {
-                var _dk = '_' + _activeDevice;
-                if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
-                _overrides[d.id][_dk].left = d.left;
-                _overrides[d.id][_dk].top = d.top;
-                _overrides[d.id][_dk].position = 'relative';
-                _applyDeviceResponsive();
-            }
-            if (_onUpdate) _onUpdate(_overrides);
+            _setOv(d.id, 'left', d.left);
+            _setOv(d.id, 'top', d.top);
+            _setOv(d.id, 'position', 'relative');
         }
         if (d.type === 'arbel-move-end') {
             _moveUndoPushed = false;
@@ -1123,15 +1102,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _rotateUndoPushed = true;
             }
             if (!_overrides[d.id]) _overrides[d.id] = {};
-            if (_activeDevice === 'desktop') {
-                _overrides[d.id].transform = d.transform;
-            } else {
-                var _dk = '_' + _activeDevice;
-                if (!_overrides[d.id][_dk]) _overrides[d.id][_dk] = {};
-                _overrides[d.id][_dk].transform = d.transform;
-                _applyDeviceResponsive();
-            }
-            if (_onUpdate) _onUpdate(_overrides);
+            _setOv(d.id, 'transform', d.transform);
         }
         if (d.type === 'arbel-rotate-end') {
             _rotateUndoPushed = false;
@@ -1279,6 +1250,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         }
 
         // Per-element overrides for elements with responsive data
+        var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
+        var _shMap = { sm: '0 2px 8px rgba(0,0,0,.15)', md: '0 4px 16px rgba(0,0,0,.2)', lg: '0 8px 32px rgba(0,0,0,.25)', xl: '0 16px 64px rgba(0,0,0,.3)', glow: '0 0 30px rgba(100,108,255,.4)', neon: '0 0 10px #646cff,0 0 40px rgba(100,108,255,.3)', inner: 'inset 0 2px 10px rgba(0,0,0,.3)' };
         var ids = Object.keys(_overrides);
         ids.forEach(function (id) {
             var ov = _overrides[id];
@@ -1290,7 +1263,15 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 Object.keys(rsp).forEach(function (prop) {
                     var val = String(rsp[prop]).replace(/[<>"'`]/g, '');
                     if (!/javascript\s*:/i.test(val) && !/expression\s*\(/i.test(val)) {
-                        css += ' ' + _camelToDash(prop) + ': ' + val + ' !important;';
+                        if (prop === 'backdrop' && val !== 'none' && _bdMap[val]) {
+                            css += ' backdrop-filter: ' + _bdMap[val] + ' !important;';
+                        } else if (prop === 'shadow' && val !== 'none' && _shMap[val]) {
+                            css += ' box-shadow: ' + _shMap[val] + ' !important;';
+                        } else if (prop === 'zIndex') {
+                            css += ' z-index: ' + val + ' !important; position: relative !important;';
+                        } else if (prop !== 'backdrop' && prop !== 'shadow') {
+                            css += ' ' + _camelToDash(prop) + ': ' + val + ' !important;';
+                        }
                     }
                 });
                 css += ' }\n';
@@ -3122,7 +3103,37 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _qs(sel) { return _container ? _container.querySelector(sel) : document.querySelector(sel); }
     function _on(sel, evt, fn) { var el = typeof sel === 'string' ? _qs(sel) : sel; if (el) el.addEventListener(evt, fn); }
     function _postIframe(type, data) { if (_iframe && _iframe.contentWindow) { data.type = type; _iframe.contentWindow.postMessage(data, '*'); } }
-    function _setOv(id, k, v) { if (!_overrides[id]) _overrides[id] = {}; _overrides[id][k] = v; if (_onUpdate) _onUpdate(_overrides); }
+
+    /* Properties that are always stored on the root override (same across all devices) */
+    var _GLOBAL_PROPS = { text: 1, animation: 1, hover: 1, continuous: 1, effect: 1,
+        visibility: 1, locked: 1, zIndex: 1, href: 1, bgVideo: 1,
+        backgroundImage: 1, backgroundSize: 1, backgroundPosition: 1,
+        shape: 1, shapeFill: 1, shapeStroke: 1, shapeSvg: 1, shapeStrokeWidth: 1 };
+
+    function _setOv(id, k, v) {
+        if (!_overrides[id]) _overrides[id] = {};
+        if (_activeDevice === 'desktop' || _GLOBAL_PROPS[k]) {
+            _overrides[id][k] = v;
+        } else {
+            var dk = '_' + _activeDevice;
+            if (!_overrides[id][dk]) _overrides[id][dk] = {};
+            _overrides[id][dk][k] = v;
+            _applyDeviceResponsive();
+        }
+        if (_onUpdate) _onUpdate(_overrides);
+    }
+
+    /** Read an override value, checking device sub-object first, then root */
+    function _getOv(id, k) {
+        if (!_overrides[id]) return undefined;
+        if (_activeDevice !== 'desktop' && !_GLOBAL_PROPS[k]) {
+            var dk = '_' + _activeDevice;
+            if (_overrides[id][dk] && _overrides[id][dk][k] !== undefined) {
+                return _overrides[id][dk][k];
+            }
+        }
+        return _overrides[id][k];
+    }
     /** _setOv + auto burst snapshot in one call. Category determines debounce grouping. */
     function _setOvB(id, k, v, category) {
         _beginBurst(category);

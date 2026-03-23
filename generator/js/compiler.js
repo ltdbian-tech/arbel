@@ -1722,18 +1722,28 @@ window.ArbelCompiler = (function () {
         // Inject per-device responsive overrides as @media queries
         var _deviceCss = { tablet: '', mobile: '' };
         var _camelToDash = function (s) { return s.replace(/([A-Z])/g, '-$1').toLowerCase(); };
+        var _bdMap = { 'blur-sm': 'blur(4px)', 'blur-md': 'blur(8px)', 'blur-lg': 'blur(16px)', saturate: 'saturate(2)', grayscale: 'grayscale(1)', sepia: 'sepia(1)' };
+        var _shMap = { sm: '0 2px 8px rgba(0,0,0,.15)', md: '0 4px 16px rgba(0,0,0,.2)', lg: '0 8px 32px rgba(0,0,0,.25)', xl: '0 16px 64px rgba(0,0,0,.3)', glow: '0 0 30px rgba(100,108,255,.4)', neon: '0 0 10px #646cff,0 0 40px rgba(100,108,255,.3)', inner: 'inset 0 2px 10px rgba(0,0,0,.3)' };
         ids.forEach(function (id) {
             var o = overrides[id];
             ['_tablet', '_mobile'].forEach(function (dk) {
                 var rsp = o[dk];
                 if (!rsp) return;
-                var device = dk.substring(1); // 'tablet' or 'mobile'
+                var device = dk.substring(1);
                 var safeId = id.replace(/["\\]/g, '');
                 var rules = '';
                 Object.keys(rsp).forEach(function (prop) {
                     var val = String(rsp[prop]).replace(/[<>"'`]/g, '');
                     if (!/javascript\s*:/i.test(val) && !/expression\s*\(/i.test(val)) {
-                        rules += _camelToDash(prop) + ':' + val + ' !important;';
+                        if (prop === 'backdrop' && val !== 'none' && _bdMap[val]) {
+                            rules += 'backdrop-filter:' + _bdMap[val] + ' !important;';
+                        } else if (prop === 'shadow' && val !== 'none' && _shMap[val]) {
+                            rules += 'box-shadow:' + _shMap[val] + ' !important;';
+                        } else if (prop === 'zIndex') {
+                            rules += 'z-index:' + val + ' !important;position:relative !important;';
+                        } else if (prop !== 'backdrop' && prop !== 'shadow') {
+                            rules += _camelToDash(prop) + ':' + val + ' !important;';
+                        }
                     }
                 });
                 if (rules) _deviceCss[device] += '[data-arbel-id="' + safeId + '"]{' + rules + '}\n';
