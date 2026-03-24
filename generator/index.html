@@ -3103,6 +3103,59 @@
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                             Add Nav Link
                         </button>
+
+                        <div class="cne-section-label" style="margin-top:16px">MENU OVERLAY</div>
+                        <div class="cne-scroll-toggle">
+                            <label>Hamburger menu (mobile + optional desktop)</label>
+                            <input type="checkbox" class="cne-toggle" id="cneMenuEnabled" checked>
+                        </div>
+                        <div id="cneMenuSection">
+                            <p class="cne-hint" style="margin:6px 0 4px">A full-screen overlay triggered by a menu button. Design the overlay like any scene.</p>
+
+                            <!-- Trigger Icon -->
+                            <span class="cne-hint mono" style="margin-top:8px;display:block">Trigger Icon</span>
+                            <div style="display:flex;gap:4px;margin:4px 0">
+                                <select class="gen-input" id="cneMenuTriggerType" style="font-size:0.7rem;flex:1">
+                                    <option value="bars">☰ Three Bars</option>
+                                    <option value="dots">⋮ Dots</option>
+                                    <option value="plus">＋ Plus</option>
+                                    <option value="svg">Custom SVG</option>
+                                    <option value="image">Custom Image</option>
+                                    <option value="video">Custom Video</option>
+                                </select>
+                            </div>
+                            <div id="cneMenuTriggerCustom" style="display:none">
+                                <textarea class="gen-input" id="cneMenuTriggerSvg" rows="3" placeholder='<svg viewBox="0 0 24 24">...</svg> or upload below' style="font-family:var(--font-mono);font-size:0.65rem;resize:vertical;display:none"></textarea>
+                                <button class="cne-upload-btn" id="cneMenuTriggerUpload" style="margin-top:4px;width:100%;justify-content:center;display:none">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                    Upload Media
+                                </button>
+                                <input type="file" id="cneMenuTriggerFile" accept="image/*,video/*" style="display:none">
+                            </div>
+
+                            <!-- Trigger style -->
+                            <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+                                <span class="cne-hint mono" style="white-space:nowrap">Color</span>
+                                <input type="color" id="cneMenuTriggerColor" value="#ffffff" style="width:28px;height:22px;border:none;background:none;cursor:pointer">
+                                <span class="cne-hint mono" style="white-space:nowrap">Size</span>
+                                <input type="range" id="cneMenuTriggerSize" min="16" max="60" value="28" style="flex:1">
+                                <span id="cneMenuTriggerSizeVal" class="cne-hint mono" style="min-width:24px;text-align:right">28</span>
+                            </div>
+
+                            <!-- Overlay background -->
+                            <span class="cne-hint mono" style="margin-top:10px;display:block">Overlay Background</span>
+                            <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+                                <input type="color" id="cneMenuOverlayBg" value="#0a0a0f" style="width:28px;height:22px;border:none;background:none;cursor:pointer">
+                                <input type="range" id="cneMenuOverlayOpacity" min="50" max="100" value="95" style="flex:1">
+                                <span id="cneMenuOverlayOpacityVal" class="cne-hint mono" style="min-width:28px;text-align:right">95%</span>
+                            </div>
+
+                            <!-- Edit overlay button -->
+                            <button class="cne-upload-btn" id="cneEditMenuOverlay" style="margin-top:10px;width:100%;justify-content:center;padding:8px;font-size:0.75rem;background:rgba(108,92,231,0.15);border-color:rgba(108,92,231,0.3)">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+                                Design Menu Overlay
+                            </button>
+                        </div>
                     </div>
 
                     <div class="cne-section-label">CUSTOM CODE</div>

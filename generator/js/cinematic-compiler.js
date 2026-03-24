@@ -353,6 +353,11 @@ window.ArbelCinematicCompiler = (function () {
         var files = {};
         var c = _defaults(cfg);
 
+        // Filter out the virtual overlay scene (used by editor only)
+        if (c.scenes) {
+            c.scenes = c.scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+        }
+
         // L8: Validate scenes — ensure each has elements array and reasonable duration
         (c.scenes || []).forEach(function (scene) {
             if (!Array.isArray(scene.elements)) scene.elements = [];
@@ -611,6 +616,17 @@ window.ArbelCinematicCompiler = (function () {
             sceneSlugMap[(scene.name || '').toLowerCase()] = slug;
         });
 
+        // Merge navLinks from editor overrides into cfg.nav.links
+        var ov = cfg.editorOverrides || {};
+        if (ov.navLinks && ov.navLinks.length && cfg.nav) {
+            cfg.nav.links = ov.navLinks;
+        }
+
+        // Menu overlay settings
+        var menuEnabled = ov.menuEnabled !== false;
+        var menuTrigger = ov.menuTrigger || { type: 'bars', color: '#ffffff', size: 28, svg: '', mediaSrc: '' };
+        var menuOverlay = ov.menuOverlay || { bgColor: '#0a0a0f', bgOpacity: 95, elements: [] };
+
         // Navigation
         if (!cfg.nav || cfg.nav.show !== false) {
             html += '<nav class="cne-nav" data-arbel-id="site-nav">\n';
@@ -629,8 +645,86 @@ window.ArbelCinematicCompiler = (function () {
                 });
             }
             html += '  </div>\n';
+
+            // Hamburger trigger button
+            if (menuEnabled) {
+                html += '  <button class="cne-menu-btn" aria-label="Menu" type="button">\n';
+                var trigType = menuTrigger.type || 'bars';
+                var trigSize = parseInt(menuTrigger.size) || 28;
+                var trigColor = esc(menuTrigger.color || '#ffffff');
+                if (trigType === 'bars') {
+                    html += '    <svg width="' + trigSize + '" height="' + trigSize + '" viewBox="0 0 24 24" fill="none" stroke="' + trigColor + '" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>\n';
+                } else if (trigType === 'dots') {
+                    html += '    <svg width="' + trigSize + '" height="' + trigSize + '" viewBox="0 0 24 24" fill="' + trigColor + '"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>\n';
+                } else if (trigType === 'plus') {
+                    html += '    <svg width="' + trigSize + '" height="' + trigSize + '" viewBox="0 0 24 24" fill="none" stroke="' + trigColor + '" stroke-width="2" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>\n';
+                } else if (trigType === 'svg' && menuTrigger.svg) {
+                    html += '    ' + menuTrigger.svg + '\n';
+                } else if ((trigType === 'image' || trigType === 'video') && menuTrigger.mediaSrc) {
+                    var safeSrc = menuTrigger.mediaSrc.replace(/[\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
+                    if (/^(https?:\/\/|data:)/i.test(safeSrc)) {
+                        if (trigType === 'image') {
+                            html += '    <img src="' + esc(safeSrc) + '" alt="Menu" width="' + trigSize + '" height="' + trigSize + '" style="object-fit:contain">\n';
+                        } else {
+                            html += '    <video src="' + esc(safeSrc) + '" width="' + trigSize + '" height="' + trigSize + '" autoplay loop muted playsinline style="object-fit:contain"></video>\n';
+                        }
+                    }
+                } else {
+                    // Fallback to bars
+                    html += '    <svg width="' + trigSize + '" height="' + trigSize + '" viewBox="0 0 24 24" fill="none" stroke="' + trigColor + '" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>\n';
+                }
+                html += '  </button>\n';
+            }
+
             html += '  <div class="cne-scroll-progress"><div class="cne-scroll-progress-fill" id="scrollProgress"></div></div>\n';
             html += '</nav>\n\n';
+
+            // Full-screen menu overlay
+            if (menuEnabled) {
+                var ovBg = esc(menuOverlay.bgColor || '#0a0a0f');
+                var ovOp = Math.min(100, Math.max(0, parseInt(menuOverlay.bgOpacity) || 95)) / 100;
+                html += '<div class="cne-menu-overlay" id="cneMenuOverlay">\n';
+                html += '  <div class="cne-menu-overlay-bg" style="background:' + ovBg + ';opacity:' + ovOp + '"></div>\n';
+                html += '  <button class="cne-menu-close" aria-label="Close menu" type="button">\n';
+                html += '    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\n';
+                html += '  </button>\n';
+                html += '  <div class="cne-menu-overlay-content">\n';
+                // Render overlay elements (designed by user in the overlay editor)
+                (menuOverlay.elements || []).forEach(function (el) {
+                    if (el.visible === false) return;
+                    var tag = el.tag || 'div';
+                    // Sanitise tag
+                    if (!/^[a-z][a-z0-9]*$/i.test(tag)) tag = 'div';
+                    var style = '';
+                    if (el.style) {
+                        Object.keys(el.style).forEach(function (k) {
+                            style += k.replace(/([A-Z])/g, '-$1').toLowerCase() + ':' + esc(el.style[k]) + ';';
+                        });
+                    }
+                    var cls = 'cne-menu-el';
+                    // If the element has an href, render as a link
+                    if (el.href) {
+                        html += '    <a href="' + escHref(el.href) + '" class="' + cls + '" style="' + style + '" data-arbel-id="' + esc(el.id) + '">' + esc(el.text || '') + '</a>\n';
+                    } else {
+                        html += '    <' + tag + ' class="' + cls + '" style="' + style + '" data-arbel-id="' + esc(el.id) + '">' + esc(el.text || '') + '</' + tag + '>\n';
+                    }
+                });
+                // Nav links duplicated inside overlay for mobile access
+                if (cfg.nav && cfg.nav.links && cfg.nav.links.length) {
+                    html += '    <div class="cne-menu-nav-links">\n';
+                    cfg.nav.links.forEach(function (link) {
+                        var href = link.href || '#';
+                        var lowerHref = href.replace(/^#/, '');
+                        if (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]) {
+                            href = '#' + (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]);
+                        }
+                        html += '      <a href="' + escHref(href) + '" class="cne-menu-nav-link">' + esc(link.text) + '</a>\n';
+                    });
+                    html += '    </div>\n';
+                }
+                html += '  </div>\n';
+                html += '</div>\n\n';
+            }
         }
 
         // P1: Shader styles use a WebGL canvas; non-shader styles use a plain div targeted by classic animation JS
@@ -960,6 +1054,9 @@ window.ArbelCinematicCompiler = (function () {
         html += '  <span class="mono">' + esc(cfg.brandName) + ' &copy; ' + new Date().getFullYear() + '</span>\n';
         html += '</footer>\n\n';
 
+        // Arbel watermark badge
+        html += '<div class="arbel-badge">built with <a href="https://arbel.live" target="_blank" rel="noopener">arbel.live</a></div>\n\n';
+
         // Scripts
         // Check if any Lottie elements exist
         var hasLottie = false;
@@ -1059,6 +1156,21 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-scroll-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: transparent; }\n';
         css += '.cne-scroll-progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.1s linear; }\n\n';
 
+        // Hamburger menu button & overlay
+        css += '.cne-menu-btn { display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; position: relative; transition: opacity 0.3s; }\n';
+        css += '.cne-menu-btn:hover { opacity: 0.7; }\n';
+        css += '.cne-menu-btn img, .cne-menu-btn video { display: block; border-radius: 2px; }\n';
+        css += '.cne-menu-overlay { position: fixed; inset: 0; z-index: 9990; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), visibility 0.5s; }\n';
+        css += '.cne-menu-overlay.open { opacity: 1; visibility: visible; }\n';
+        css += '.cne-menu-overlay-bg { position: absolute; inset: 0; z-index: 0; }\n';
+        css += '.cne-menu-overlay-content { position: relative; z-index: 1; width: 100%; height: 100%; }\n';
+        css += '.cne-menu-close { position: absolute; top: 20px; right: 24px; z-index: 2; background: none; border: none; cursor: pointer; padding: 8px; transition: transform 0.3s; }\n';
+        css += '.cne-menu-close:hover { transform: rotate(90deg); }\n';
+        css += '.cne-menu-el { display: block; text-decoration: none; color: inherit; }\n';
+        css += '.cne-menu-nav-links { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; margin-top: 2rem; }\n';
+        css += '.cne-menu-nav-link { font-size: 1.4rem; color: rgba(255,255,255,0.85); text-decoration: none; letter-spacing: 0.04em; transition: color 0.3s, transform 0.3s; }\n';
+        css += '.cne-menu-nav-link:hover { color: var(--accent); transform: translateX(6px); }\n\n';
+
         // Background canvas
         css += '.cne-bg-canvas { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; pointer-events: none; }\n\n';
 
@@ -1077,6 +1189,11 @@ window.ArbelCinematicCompiler = (function () {
 
         // Footer
         css += '.cne-footer { padding: calc(var(--token-space-unit) * 4) calc(var(--token-space-unit) * 3); text-align: center; color: var(--fg2); font-size: 0.8rem; letter-spacing: 0.1em; border-top: 1px solid var(--border); }\n\n';
+
+        // Arbel watermark badge
+        css += '.arbel-badge { position: fixed; bottom: 12px; right: 16px; z-index: 9999; font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.04em; font-family: inherit; pointer-events: auto; }\n';
+        css += '.arbel-badge a { color: rgba(255,255,255,0.55); text-decoration: none; transition: color 0.2s; }\n';
+        css += '.arbel-badge a:hover { color: ' + accent + '; }\n\n';
 
         // Scrollbar
         css += '::-webkit-scrollbar { width: 6px; }\n';
@@ -2282,7 +2399,24 @@ window.ArbelCinematicCompiler = (function () {
         js += 'document.querySelectorAll("a, button").forEach(function(el){\n';
         js += '  el.addEventListener("mouseenter", function(){ cursor.classList.add("hover"); });\n';
         js += '  el.addEventListener("mouseleave", function(){ cursor.classList.remove("hover"); });\n';
-        js += '});\n';
+        js += '});\n\n';
+
+        // Hamburger menu toggle
+        var menuOn = cfg.editorOverrides && cfg.editorOverrides.menuEnabled !== false;
+        if (menuOn) {
+            js += '/* Hamburger menu overlay */\n';
+            js += 'var menuBtn = document.querySelector(".cne-menu-btn");\n';
+            js += 'var menuOverlay = document.getElementById("cneMenuOverlay");\n';
+            js += 'var menuClose = menuOverlay ? menuOverlay.querySelector(".cne-menu-close") : null;\n';
+            js += 'function openMenu() { if(menuOverlay){ menuOverlay.classList.add("open"); document.body.style.overflow="hidden"; } }\n';
+            js += 'function closeMenu() { if(menuOverlay){ menuOverlay.classList.remove("open"); document.body.style.overflow=""; } }\n';
+            js += 'if(menuBtn) menuBtn.addEventListener("click", openMenu);\n';
+            js += 'if(menuClose) menuClose.addEventListener("click", closeMenu);\n';
+            js += 'if(menuOverlay) menuOverlay.addEventListener("click", function(e){ if(e.target===menuOverlay || e.target.classList.contains("cne-menu-overlay-bg")) closeMenu(); });\n';
+            js += 'document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeMenu(); });\n';
+            // Close overlay when clicking nav links inside it
+            js += 'menuOverlay && menuOverlay.querySelectorAll("a[href]").forEach(function(a){ a.addEventListener("click", closeMenu); });\n\n';
+        }
 
         js += '})();\n';
         return js;

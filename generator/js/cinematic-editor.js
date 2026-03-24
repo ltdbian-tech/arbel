@@ -4071,6 +4071,166 @@ window.ArbelCinematicEditor = (function () {
 
         _renderNavLinks();
 
+        /* ── Menu Overlay Setup ── */
+
+        // Ensure defaults for menu overlay data
+        if (!_overrides.hasOwnProperty('menuEnabled')) _overrides.menuEnabled = true;
+        if (!_overrides.menuTrigger) _overrides.menuTrigger = { type: 'bars', color: '#ffffff', size: 28, svg: '', mediaSrc: '' };
+        if (!_overrides.menuOverlay) _overrides.menuOverlay = {
+            bgColor: '#0a0a0f', bgOpacity: 95,
+            elements: [
+                { id: 'menu-title-' + Date.now().toString(36), tag: 'h2', text: 'Menu', style: { position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', fontSize: '3vw', fontWeight: '700', color: '#ffffff', letterSpacing: '-0.02em' }, scroll: null, visible: true, locked: false },
+                { id: 'menu-close-' + Date.now().toString(36), tag: 'span', text: '✕', style: { position: 'absolute', top: '24px', right: '24px', left: 'auto', fontSize: '1.5rem', color: '#ffffff', cursor: 'pointer', zIndex: '10' }, scroll: null, visible: true, locked: false }
+            ]
+        };
+
+        var menuEnabled = _qs('#cneMenuEnabled');
+        var menuSection = _qs('#cneMenuSection');
+        var menuTriggerType = _qs('#cneMenuTriggerType');
+        var menuTriggerCustom = _qs('#cneMenuTriggerCustom');
+        var menuTriggerSvg = _qs('#cneMenuTriggerSvg');
+        var menuTriggerUpload = _qs('#cneMenuTriggerUpload');
+        var menuTriggerFile = _qs('#cneMenuTriggerFile');
+        var menuTriggerColor = _qs('#cneMenuTriggerColor');
+        var menuTriggerSize = _qs('#cneMenuTriggerSize');
+        var menuTriggerSizeVal = _qs('#cneMenuTriggerSizeVal');
+        var menuOverlayBg = _qs('#cneMenuOverlayBg');
+        var menuOverlayOpacity = _qs('#cneMenuOverlayOpacity');
+        var menuOverlayOpacityVal = _qs('#cneMenuOverlayOpacityVal');
+        var editMenuOverlayBtn = _qs('#cneEditMenuOverlay');
+
+        function _syncMenuUI() {
+            var mt = _overrides.menuTrigger;
+            var mo = _overrides.menuOverlay;
+            if (menuEnabled) menuEnabled.checked = _overrides.menuEnabled !== false;
+            if (menuSection) menuSection.style.display = _overrides.menuEnabled !== false ? '' : 'none';
+            if (menuTriggerType) menuTriggerType.value = mt.type || 'bars';
+            if (menuTriggerColor) menuTriggerColor.value = mt.color || '#ffffff';
+            if (menuTriggerSize) menuTriggerSize.value = mt.size || 28;
+            if (menuTriggerSizeVal) menuTriggerSizeVal.textContent = (mt.size || 28);
+            if (menuOverlayBg) menuOverlayBg.value = mo.bgColor || '#0a0a0f';
+            if (menuOverlayOpacity) menuOverlayOpacity.value = mo.bgOpacity || 95;
+            if (menuOverlayOpacityVal) menuOverlayOpacityVal.textContent = (mo.bgOpacity || 95) + '%';
+            _showMenuCustomInputs(mt.type);
+        }
+
+        function _showMenuCustomInputs(type) {
+            if (!menuTriggerCustom) return;
+            var showCustom = type === 'svg' || type === 'image' || type === 'video';
+            menuTriggerCustom.style.display = showCustom ? '' : 'none';
+            if (menuTriggerSvg) menuTriggerSvg.style.display = type === 'svg' ? '' : 'none';
+            if (menuTriggerUpload) menuTriggerUpload.style.display = (type === 'image' || type === 'video') ? '' : 'none';
+        }
+
+        if (menuEnabled) menuEnabled.addEventListener('change', function () {
+            _overrides.menuEnabled = menuEnabled.checked;
+            if (menuSection) menuSection.style.display = menuEnabled.checked ? '' : 'none';
+            _notifyUpdate(true);
+        });
+
+        if (menuTriggerType) menuTriggerType.addEventListener('change', function () {
+            _overrides.menuTrigger.type = menuTriggerType.value;
+            _showMenuCustomInputs(menuTriggerType.value);
+            _notifyUpdate(true);
+        });
+
+        if (menuTriggerSvg) menuTriggerSvg.addEventListener('input', function () {
+            _overrides.menuTrigger.svg = menuTriggerSvg.value;
+            _notifyUpdate(true);
+        });
+
+        if (menuTriggerUpload && menuTriggerFile) {
+            menuTriggerUpload.addEventListener('click', function () { menuTriggerFile.click(); });
+            menuTriggerFile.addEventListener('change', function () {
+                var file = menuTriggerFile.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    _overrides.menuTrigger.mediaSrc = e.target.result;
+                    _notifyUpdate(true);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        if (menuTriggerColor) menuTriggerColor.addEventListener('input', function () {
+            _overrides.menuTrigger.color = menuTriggerColor.value;
+            _notifyUpdate(true);
+        });
+
+        if (menuTriggerSize) menuTriggerSize.addEventListener('input', function () {
+            _overrides.menuTrigger.size = parseInt(menuTriggerSize.value);
+            if (menuTriggerSizeVal) menuTriggerSizeVal.textContent = menuTriggerSize.value;
+            _notifyUpdate(true);
+        });
+
+        if (menuOverlayBg) menuOverlayBg.addEventListener('input', function () {
+            _overrides.menuOverlay.bgColor = menuOverlayBg.value;
+            _notifyUpdate(true);
+        });
+
+        if (menuOverlayOpacity) menuOverlayOpacity.addEventListener('input', function () {
+            _overrides.menuOverlay.bgOpacity = parseInt(menuOverlayOpacity.value);
+            if (menuOverlayOpacityVal) menuOverlayOpacityVal.textContent = menuOverlayOpacity.value + '%';
+            _notifyUpdate(true);
+        });
+
+        // "Design Menu Overlay" button — switch to a special overlay-editing mode
+        // Treat the overlay as an ad-hoc scene: push it onto scenes, switch, pop on exit
+        function _enterMenuOverlay() {
+            _pushUndo();
+            var ovScene = {
+                id: '_nav-overlay',
+                name: '\u2630 Menu Overlay',
+                template: 'blank',
+                duration: 100,
+                pin: false,
+                bgColor: _overrides.menuOverlay.bgColor || '#0a0a0f',
+                bgImage: '',
+                elements: _overrides.menuOverlay.elements || []
+            };
+            _scenes.push(ovScene);
+            var ovIdx = _scenes.length - 1;
+            _renderSceneList();
+            _selectScene(ovIdx);
+            _overrides._editingMenuOverlay = true;
+            if (editMenuOverlayBtn) {
+                editMenuOverlayBtn.textContent = '\u2190 Exit Menu Overlay Editing';
+                editMenuOverlayBtn.style.background = 'rgba(231,76,60,0.15)';
+                editMenuOverlayBtn.style.borderColor = 'rgba(231,76,60,0.3)';
+            }
+        }
+        function _exitMenuOverlay() {
+            // Find the overlay scene
+            var ovIdx = -1;
+            for (var si = 0; si < _scenes.length; si++) {
+                if (_scenes[si].id === '_nav-overlay') { ovIdx = si; break; }
+            }
+            if (ovIdx >= 0) {
+                _overrides.menuOverlay.elements = _scenes[ovIdx].elements;
+                _overrides.menuOverlay.bgColor = _scenes[ovIdx].bgColor || _overrides.menuOverlay.bgColor;
+                _scenes.splice(ovIdx, 1);
+            }
+            _overrides._editingMenuOverlay = false;
+            _renderSceneList();
+            _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
+            _notifyUpdate(true);
+            if (editMenuOverlayBtn) {
+                editMenuOverlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg> Design Menu Overlay';
+                editMenuOverlayBtn.style.background = 'rgba(108,92,231,0.15)';
+                editMenuOverlayBtn.style.borderColor = 'rgba(108,92,231,0.3)';
+            }
+        }
+        if (editMenuOverlayBtn) editMenuOverlayBtn.addEventListener('click', function () {
+            if (_overrides._editingMenuOverlay) {
+                _exitMenuOverlay();
+            } else {
+                _enterMenuOverlay();
+            }
+        });
+
+        _syncMenuUI();
+
         // Form element settings
         var formAction = _qs('#cneFormAction');
         if (formAction) {
