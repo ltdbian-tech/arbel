@@ -867,7 +867,7 @@ window.ArbelCinematicCompiler = (function () {
             }
 
             (scene.elements || []).forEach(function (el) {
-                if (!el.visible) return;
+                if (el.visible === false) return;
                 var validTags = ['h1','h2','h3','p','span','div','img','video','a','form','section','header','footer','nav','ul','li','ol'];
                 var tag = (validTags.indexOf(el.tag) >= 0) ? el.tag : 'div';
                 var style = '';

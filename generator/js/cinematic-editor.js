@@ -4217,6 +4217,8 @@ window.ArbelCinematicEditor = (function () {
         // "Design Menu Overlay" button
         function _enterMenuOverlay() {
             _pushUndo();
+            // Deep-copy elements so editing doesn't mutate _overrides directly
+            var elsCopy = JSON.parse(JSON.stringify(_overrides.menuOverlay.elements || []));
             var ovScene = {
                 id: '_nav-overlay',
                 name: '\u2630 Menu Overlay',
@@ -4225,13 +4227,13 @@ window.ArbelCinematicEditor = (function () {
                 pin: false,
                 bgColor: _overrides.menuOverlay.bgColor || '#0a0a0f',
                 bgImage: '',
-                elements: _overrides.menuOverlay.elements || []
+                elements: elsCopy
             };
             _scenes.push(ovScene);
             var ovIdx = _scenes.length - 1;
             _overrides._editingMenuOverlay = true;
             _renderSceneList();
-            _selectScene(ovIdx, true);
+            _selectScene(ovIdx);
             if (editMenuOverlayBtn) {
                 editMenuOverlayBtn.textContent = '\u2190 Exit Menu Overlay Editing';
                 editMenuOverlayBtn.style.background = 'rgba(231,76,60,0.15)';
@@ -4247,6 +4249,8 @@ window.ArbelCinematicEditor = (function () {
                 menuToolbarBtn.title = 'Click to exit Menu Overlay editing';
                 menuToolbarBtn._overlayMode = true;
             }
+            // Force rerender after all UI is set up
+            _notifyUpdate(true);
         }
         function _exitMenuOverlay() {
             var ovIdx = -1;
