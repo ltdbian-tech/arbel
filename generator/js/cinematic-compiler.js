@@ -622,8 +622,14 @@ window.ArbelCinematicCompiler = (function () {
             cfg.nav.links = ov.navLinks;
         }
 
-        // Menu overlay settings
-        var menuEnabled = ov.menuEnabled !== false;
+        // Menu overlay settings (per-device)
+        var menuDevice = ov.menuDevice || { desktop: 'hidden', tablet: 'visible', mobile: 'visible' };
+        // Backward compat: old boolean menuEnabled
+        if (!ov.menuDevice && ov.hasOwnProperty('menuEnabled')) {
+            var wasOn = ov.menuEnabled !== false;
+            menuDevice = { desktop: wasOn ? 'hidden' : 'hidden', tablet: wasOn ? 'visible' : 'hidden', mobile: wasOn ? 'visible' : 'hidden' };
+        }
+        var menuEnabled = menuDevice.desktop === 'visible' || menuDevice.tablet === 'visible' || menuDevice.mobile === 'visible';
         var menuTrigger = ov.menuTrigger || { type: 'bars', color: '#ffffff', size: 28, svg: '', mediaSrc: '' };
         var menuOverlay = ov.menuOverlay || { bgColor: '#0a0a0f', bgOpacity: 95, elements: [] };
 
@@ -1160,6 +1166,23 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-menu-btn { display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer; padding: 4px; z-index: 101; position: relative; transition: opacity 0.3s; }\n';
         css += '.cne-menu-btn:hover { opacity: 0.7; }\n';
         css += '.cne-menu-btn img, .cne-menu-btn video { display: block; border-radius: 2px; }\n';
+        // Per-device hamburger visibility
+        var md = (cfg.editorOverrides || {}).menuDevice || { desktop: 'hidden', tablet: 'visible', mobile: 'visible' };
+        if (md.desktop !== 'visible') {
+            css += '@media (min-width: 769px) { .cne-menu-btn { display: none !important; } }\n';
+        } else {
+            css += '@media (min-width: 769px) { .cne-nav-links { display: none !important; } }\n';
+        }
+        if (md.tablet !== 'visible') {
+            css += '@media (min-width: 481px) and (max-width: 768px) { .cne-menu-btn { display: none !important; } }\n';
+        } else {
+            css += '@media (min-width: 481px) and (max-width: 768px) { .cne-nav-links { display: none !important; } }\n';
+        }
+        if (md.mobile !== 'visible') {
+            css += '@media (max-width: 480px) { .cne-menu-btn { display: none !important; } }\n';
+        } else {
+            css += '@media (max-width: 480px) { .cne-nav-links { display: none !important; } }\n';
+        }
         css += '.cne-menu-overlay { position: fixed; inset: 0; z-index: 9990; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), visibility 0.5s; }\n';
         css += '.cne-menu-overlay.open { opacity: 1; visibility: visible; }\n';
         css += '.cne-menu-overlay-bg { position: absolute; inset: 0; z-index: 0; }\n';
@@ -2401,8 +2424,9 @@ window.ArbelCinematicCompiler = (function () {
         js += '  el.addEventListener("mouseleave", function(){ cursor.classList.remove("hover"); });\n';
         js += '});\n\n';
 
-        // Hamburger menu toggle
-        var menuOn = cfg.editorOverrides && cfg.editorOverrides.menuEnabled !== false;
+        // Hamburger menu toggle (per-device — always emit JS if any device has menu)
+        var _md = (cfg.editorOverrides || {}).menuDevice || { desktop: 'hidden', tablet: 'visible', mobile: 'visible' };
+        var menuOn = _md.desktop === 'visible' || _md.tablet === 'visible' || _md.mobile === 'visible';
         if (menuOn) {
             js += '/* Hamburger menu overlay */\n';
             js += 'var menuBtn = document.querySelector(".cne-menu-btn");\n';

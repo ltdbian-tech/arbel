@@ -4071,21 +4071,46 @@ window.ArbelCinematicEditor = (function () {
 
         _renderNavLinks();
 
-        /* ── Menu Overlay Setup ── */
+        /* ── Menu / Hamburger Setup ── */
 
-        // Ensure defaults for menu overlay data
-        if (!_overrides.hasOwnProperty('menuEnabled')) _overrides.menuEnabled = true;
+        // Per-device visibility defaults
+        if (!_overrides.menuDevice) _overrides.menuDevice = { desktop: 'hidden', tablet: 'visible', mobile: 'visible' };
+        // Keep backward compat: migrate old menuEnabled boolean
+        if (_overrides.hasOwnProperty('menuEnabled') && !_overrides.menuDevice) {
+            var wasOn = _overrides.menuEnabled !== false;
+            _overrides.menuDevice = { desktop: wasOn ? 'hidden' : 'hidden', tablet: wasOn ? 'visible' : 'hidden', mobile: wasOn ? 'visible' : 'hidden' };
+        }
         if (!_overrides.menuTrigger) _overrides.menuTrigger = { type: 'bars', color: '#ffffff', size: 28, svg: '', mediaSrc: '' };
         if (!_overrides.menuOverlay) _overrides.menuOverlay = {
             bgColor: '#0a0a0f', bgOpacity: 95,
             elements: [
                 { id: 'menu-title-' + Date.now().toString(36), tag: 'h2', text: 'Menu', style: { position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', fontSize: '3vw', fontWeight: '700', color: '#ffffff', letterSpacing: '-0.02em' }, scroll: null, visible: true, locked: false },
-                { id: 'menu-close-' + Date.now().toString(36), tag: 'span', text: '✕', style: { position: 'absolute', top: '24px', right: '24px', left: 'auto', fontSize: '1.5rem', color: '#ffffff', cursor: 'pointer', zIndex: '10' }, scroll: null, visible: true, locked: false }
+                { id: 'menu-close-' + Date.now().toString(36), tag: 'span', text: '\u2715', style: { position: 'absolute', top: '24px', right: '24px', left: 'auto', fontSize: '1.5rem', color: '#ffffff', cursor: 'pointer', zIndex: '10' }, scroll: null, visible: true, locked: false }
             ]
         };
 
-        var menuEnabled = _qs('#cneMenuEnabled');
-        var menuSection = _qs('#cneMenuSection');
+        // Toolbar dropdown toggle
+        var menuToolbarBtn = _qs('#cneMenuToolbarBtn');
+        var menuToolbarDd = _qs('#cneMenuToolbarDd');
+
+        if (menuToolbarBtn && menuToolbarDd) {
+            menuToolbarBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var isOpen = menuToolbarDd.style.display !== 'none';
+                menuToolbarDd.style.display = isOpen ? 'none' : '';
+            });
+            document.addEventListener('click', function (e) {
+                if (menuToolbarDd.style.display !== 'none' && !menuToolbarDd.contains(e.target) && e.target !== menuToolbarBtn) {
+                    menuToolbarDd.style.display = 'none';
+                }
+            });
+        }
+
+        // Per-device selects
+        var menuDesktop = _qs('#cneMenuDesktop');
+        var menuTablet = _qs('#cneMenuTablet');
+        var menuMobile = _qs('#cneMenuMobile');
+
         var menuTriggerType = _qs('#cneMenuTriggerType');
         var menuTriggerCustom = _qs('#cneMenuTriggerCustom');
         var menuTriggerSvg = _qs('#cneMenuTriggerSvg');
@@ -4100,10 +4125,12 @@ window.ArbelCinematicEditor = (function () {
         var editMenuOverlayBtn = _qs('#cneEditMenuOverlay');
 
         function _syncMenuUI() {
-            var mt = _overrides.menuTrigger;
-            var mo = _overrides.menuOverlay;
-            if (menuEnabled) menuEnabled.checked = _overrides.menuEnabled !== false;
-            if (menuSection) menuSection.style.display = _overrides.menuEnabled !== false ? '' : 'none';
+            var md = _overrides.menuDevice || {};
+            var mt = _overrides.menuTrigger || {};
+            var mo = _overrides.menuOverlay || {};
+            if (menuDesktop) menuDesktop.value = md.desktop || 'hidden';
+            if (menuTablet) menuTablet.value = md.tablet || 'visible';
+            if (menuMobile) menuMobile.value = md.mobile || 'visible';
             if (menuTriggerType) menuTriggerType.value = mt.type || 'bars';
             if (menuTriggerColor) menuTriggerColor.value = mt.color || '#ffffff';
             if (menuTriggerSize) menuTriggerSize.value = mt.size || 28;
@@ -4122,11 +4149,18 @@ window.ArbelCinematicEditor = (function () {
             if (menuTriggerUpload) menuTriggerUpload.style.display = (type === 'image' || type === 'video') ? '' : 'none';
         }
 
-        if (menuEnabled) menuEnabled.addEventListener('change', function () {
-            _overrides.menuEnabled = menuEnabled.checked;
-            if (menuSection) menuSection.style.display = menuEnabled.checked ? '' : 'none';
+        // Per-device change handlers
+        function _onMenuDeviceChange() {
+            _overrides.menuDevice = {
+                desktop: menuDesktop ? menuDesktop.value : 'hidden',
+                tablet: menuTablet ? menuTablet.value : 'visible',
+                mobile: menuMobile ? menuMobile.value : 'visible'
+            };
             _notifyUpdate(true);
-        });
+        }
+        if (menuDesktop) menuDesktop.addEventListener('change', _onMenuDeviceChange);
+        if (menuTablet) menuTablet.addEventListener('change', _onMenuDeviceChange);
+        if (menuMobile) menuMobile.addEventListener('change', _onMenuDeviceChange);
 
         if (menuTriggerType) menuTriggerType.addEventListener('change', function () {
             _overrides.menuTrigger.type = menuTriggerType.value;
@@ -4175,8 +4209,7 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate(true);
         });
 
-        // "Design Menu Overlay" button — switch to a special overlay-editing mode
-        // Treat the overlay as an ad-hoc scene: push it onto scenes, switch, pop on exit
+        // "Design Menu Overlay" button
         function _enterMenuOverlay() {
             _pushUndo();
             var ovScene = {
@@ -4199,9 +4232,10 @@ window.ArbelCinematicEditor = (function () {
                 editMenuOverlayBtn.style.background = 'rgba(231,76,60,0.15)';
                 editMenuOverlayBtn.style.borderColor = 'rgba(231,76,60,0.3)';
             }
+            // Close the dropdown
+            if (menuToolbarDd) menuToolbarDd.style.display = 'none';
         }
         function _exitMenuOverlay() {
-            // Find the overlay scene
             var ovIdx = -1;
             for (var si = 0; si < _scenes.length; si++) {
                 if (_scenes[si].id === '_nav-overlay') { ovIdx = si; break; }
@@ -4216,7 +4250,7 @@ window.ArbelCinematicEditor = (function () {
             _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
             _notifyUpdate(true);
             if (editMenuOverlayBtn) {
-                editMenuOverlayBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg> Design Menu Overlay';
+                editMenuOverlayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg> Design Menu Overlay';
                 editMenuOverlayBtn.style.background = 'rgba(108,92,231,0.15)';
                 editMenuOverlayBtn.style.borderColor = 'rgba(108,92,231,0.3)';
             }
