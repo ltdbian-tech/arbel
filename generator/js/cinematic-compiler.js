@@ -353,9 +353,16 @@ window.ArbelCinematicCompiler = (function () {
         var files = {};
         var c = _defaults(cfg);
 
-        // Filter out the virtual overlay scene (used by editor only)
+        // Menu overlay editing mode: show ONLY the overlay scene on the canvas
+        var _editingOverlay = c.editorOverrides && c.editorOverrides._editingMenuOverlay;
         if (c.scenes) {
-            c.scenes = c.scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+            if (_editingOverlay) {
+                // Keep only the overlay scene so it renders fullscreen for editing
+                c.scenes = c.scenes.filter(function (s) { return s.id === '_nav-overlay'; });
+            } else {
+                // Normal compile: filter out the virtual overlay scene
+                c.scenes = c.scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+            }
         }
 
         // L8: Validate scenes — ensure each has elements array and reasonable duration

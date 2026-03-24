@@ -4096,6 +4096,11 @@ window.ArbelCinematicEditor = (function () {
         if (menuToolbarBtn && menuToolbarDd) {
             menuToolbarBtn.addEventListener('click', function (e) {
                 e.stopPropagation();
+                // If in overlay editing mode, clicking exits the overlay
+                if (menuToolbarBtn._overlayMode) {
+                    _exitMenuOverlay();
+                    return;
+                }
                 var isOpen = menuToolbarDd.style.display !== 'none';
                 menuToolbarDd.style.display = isOpen ? 'none' : '';
             });
@@ -4224,9 +4229,9 @@ window.ArbelCinematicEditor = (function () {
             };
             _scenes.push(ovScene);
             var ovIdx = _scenes.length - 1;
-            _renderSceneList();
-            _selectScene(ovIdx);
             _overrides._editingMenuOverlay = true;
+            _renderSceneList();
+            _selectScene(ovIdx, true);
             if (editMenuOverlayBtn) {
                 editMenuOverlayBtn.textContent = '\u2190 Exit Menu Overlay Editing';
                 editMenuOverlayBtn.style.background = 'rgba(231,76,60,0.15)';
@@ -4234,6 +4239,14 @@ window.ArbelCinematicEditor = (function () {
             }
             // Close the dropdown
             if (menuToolbarDd) menuToolbarDd.style.display = 'none';
+            // Show exit banner on toolbar button
+            if (menuToolbarBtn) {
+                menuToolbarBtn.innerHTML = '<span style="color:#e74c3c;font-size:0.65rem;font-weight:700">\u2190 Exit Overlay</span>';
+                menuToolbarBtn.style.background = 'rgba(231,76,60,0.2)';
+                menuToolbarBtn.style.borderColor = 'rgba(231,76,60,0.4)';
+                menuToolbarBtn.title = 'Click to exit Menu Overlay editing';
+                menuToolbarBtn._overlayMode = true;
+            }
         }
         function _exitMenuOverlay() {
             var ovIdx = -1;
@@ -4247,12 +4260,20 @@ window.ArbelCinematicEditor = (function () {
             }
             _overrides._editingMenuOverlay = false;
             _renderSceneList();
-            _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1));
+            _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
             _notifyUpdate(true);
             if (editMenuOverlayBtn) {
                 editMenuOverlayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg> Design Menu Overlay';
                 editMenuOverlayBtn.style.background = 'rgba(108,92,231,0.15)';
                 editMenuOverlayBtn.style.borderColor = 'rgba(108,92,231,0.3)';
+            }
+            // Restore toolbar button
+            if (menuToolbarBtn) {
+                menuToolbarBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>';
+                menuToolbarBtn.style.background = '';
+                menuToolbarBtn.style.borderColor = '';
+                menuToolbarBtn.title = 'Hamburger Menu Settings';
+                menuToolbarBtn._overlayMode = false;
             }
         }
         if (editMenuOverlayBtn) editMenuOverlayBtn.addEventListener('click', function () {
