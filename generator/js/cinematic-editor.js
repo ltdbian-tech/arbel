@@ -381,6 +381,11 @@ window.ArbelCinematicEditor = (function () {
             }
         }
 
+        // Always clear transient editing flags on init — they must never persist
+        delete _overrides._editingMenuOverlay;
+        // Remove any stale _nav-overlay scene left from a previous session
+        _scenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+
         // Start with one hero scene if nothing restored
         if (_scenes.length === 0) {
             _scenes.push(ArbelCinematicCompiler.createScene('hero', 0));
@@ -4821,9 +4826,13 @@ window.ArbelCinematicEditor = (function () {
 
     function _autosave() {
         try {
+            // Strip transient state: _editingMenuOverlay flag and _nav-overlay scene
+            var saveOverrides = Object.assign({}, _overrides);
+            delete saveOverrides._editingMenuOverlay;
+            var saveScenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
             var data = {
-                scenes: _scenes,
-                overrides: _overrides,
+                scenes: saveScenes,
+                overrides: saveOverrides,
                 designTokens: _designTokens,
                 timestamp: Date.now()
             };
@@ -5714,9 +5723,18 @@ window.ArbelCinematicEditor = (function () {
         _updateTimeline();
         _scheduleAutosave();
         if (_onUpdate) {
+            // Build overrides to send: include _editingMenuOverlay ONLY when
+            // we are actively in overlay editing mode (so the compiler can
+            // keep the overlay scene).  Outside that mode, strip the flag
+            // so it never leaks into saved/persisted state.
+            var outOverrides = _overrides;
+            if (!_overrides._editingMenuOverlay) {
+                outOverrides = Object.assign({}, _overrides);
+                delete outOverrides._editingMenuOverlay;
+            }
             _onUpdate({
                 scenes: _scenes,
-                overrides: _overrides,
+                overrides: outOverrides,
                 rerender: !!rerender
             });
         }
@@ -6768,7 +6786,11 @@ window.ArbelCinematicEditor = (function () {
 
     /* ─── Export / Import Scene JSON ─── */
     function _exportJSON() {
-        var data = JSON.stringify({ scenes: _scenes, overrides: _overrides, designTokens: _designTokens }, null, 2);
+        // Strip transient editing flags from export
+        var exportOverrides = Object.assign({}, _overrides);
+        delete exportOverrides._editingMenuOverlay;
+        var exportScenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+        var data = JSON.stringify({ scenes: exportScenes, overrides: exportOverrides, designTokens: _designTokens }, null, 2);
         var blob = new Blob([data], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');

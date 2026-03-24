@@ -353,10 +353,13 @@ window.ArbelCinematicCompiler = (function () {
         var files = {};
         var c = _defaults(cfg);
 
-        // Menu overlay editing mode: show ONLY the overlay scene on the canvas
+        // Menu overlay editing: _editingMenuOverlay is a TRANSIENT flag set only during
+        // the current editing session.  It must never come from saved/persisted state.
+        // Safety: if no _nav-overlay scene exists, ignore the flag to prevent blank canvas.
         var _editingOverlay = c.editorOverrides && c.editorOverrides._editingMenuOverlay;
         if (c.scenes) {
-            if (_editingOverlay) {
+            var hasOverlayScene = c.scenes.some(function (s) { return s.id === '_nav-overlay'; });
+            if (_editingOverlay && hasOverlayScene) {
                 // Keep only the overlay scene so it renders fullscreen for editing
                 c.scenes = c.scenes.filter(function (s) { return s.id === '_nav-overlay'; });
             } else {
