@@ -26,6 +26,11 @@ window.ArbelCinematicEditor = (function () {
     var _uiBound = false;          // guard against duplicate listener binding
     var _clipboard = null;           // copy/paste: deep-cloned element object
     var _keydownHandler = null;      // stored for cleanup in destroy
+    var _beforeUnloadHandler = null; // stored for cleanup in destroy
+
+    // ─── Project File State ───
+    var _fileHandle = null;           // File System Access API handle
+    var _projectDirty = false;        // unsaved changes flag
 
     /* ─── P6: Content-key ↔ element-ID prefix mapping (for AI copy push) ─── */
     var _CONTENT_PREFIXES = {
@@ -400,6 +405,12 @@ window.ArbelCinematicEditor = (function () {
         _selectScene(0, true);
 
         window.addEventListener('message', _handleMessage);
+
+        // Warn before closing with unsaved changes
+        _beforeUnloadHandler = function (e) {
+            if (_projectDirty) { e.preventDefault(); e.returnValue = ''; }
+        };
+        window.addEventListener('beforeunload', _beforeUnloadHandler);
     }
 
     /* ─── Message handler from iframe ─── */
@@ -3567,11 +3578,15 @@ window.ArbelCinematicEditor = (function () {
         if (exportBtn) exportBtn.addEventListener('click', function () { _exportJSON(); });
         if (importBtn) importBtn.addEventListener('click', function () { _importJSON(); });
 
-        // New Project / Open Project
+        // New Project / Open Project / Save / Save As
         var newBtn = _qs('#cneNewProject');
         if (newBtn) newBtn.addEventListener('click', function () { _newProject(); });
         var openBtn = _qs('#cneOpenProject');
-        if (openBtn) openBtn.addEventListener('click', function () { _importJSON(); });
+        if (openBtn) openBtn.addEventListener('click', function () { _openProject(); });
+        var saveBtn = _qs('#cneSaveProject');
+        if (saveBtn) saveBtn.addEventListener('click', function () { _saveProject(); });
+        var saveAsBtn = _qs('#cneSaveProjectAs');
+        if (saveAsBtn) saveAsBtn.addEventListener('click', function () { _saveProjectAs(); });
 
         // Export as ZIP
         var exportZipBtn = _qs('#cneExportZIP');
@@ -3620,6 +3635,10 @@ window.ArbelCinematicEditor = (function () {
             var tag = document.activeElement.tagName;
             var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
             if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+                if ((e.key === 's' || e.key === 'S') && e.shiftKey) { e.preventDefault(); _saveProjectAs(); return; }
+                if ((e.key === 's' || e.key === 'S') && !e.shiftKey) { e.preventDefault(); _saveProject(); return; }
+                if ((e.key === 'o' || e.key === 'O') && !e.shiftKey) { e.preventDefault(); _openProject(); return; }
+                if ((e.key === 'n' || e.key === 'N') && !e.shiftKey) { e.preventDefault(); _newProject(); return; }
                 if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
                 if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
                 if (e.key === 'y') { e.preventDefault(); _redo(); }
@@ -4831,6 +4850,8 @@ window.ArbelCinematicEditor = (function () {
             delete saveOverrides._editingMenuOverlay;
             var saveScenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
             var data = {
+                version: 2,
+                meta: { name: _getBrandName(), savedAt: new Date().toISOString() },
                 scenes: saveScenes,
                 overrides: saveOverrides,
                 designTokens: _designTokens,
@@ -4842,7 +4863,7 @@ window.ArbelCinematicEditor = (function () {
 
     function _scheduleAutosave() {
         clearTimeout(_autosaveTimer);
-        _autosaveTimer = setTimeout(_autosave, 30000);
+        _autosaveTimer = setTimeout(_autosave, 2000);
     }
 
     function _restoreAutosave() {
@@ -5721,7 +5742,7 @@ window.ArbelCinematicEditor = (function () {
 
     function _notifyUpdate(rerender) {
         _updateTimeline();
-        _scheduleAutosave();
+        _markDirty();
         if (_onUpdate) {
             // Build overrides to send: include _editingMenuOverlay ONLY when
             // we are actively in overlay editing mode (so the compiler can
@@ -6771,70 +6792,213 @@ window.ArbelCinematicEditor = (function () {
 
     /* ─── New Project (clear all) ─── */
     function _newProject() {
-        if (!confirm('Start a new project? This will clear all scenes and unsaved work.')) return;
+        if (_projectDirty) {
+            if (!confirm('You have unsaved changes. Start a new project anyway?')) return;
+        }
         _flushBursts();
         _pushUndo();
         _clearAutosave();
+        _fileHandle = null;
+        _projectDirty = false;
         _scenes = [ArbelCinematicCompiler.createScene('hero', 0)];
         _overrides = {};
+        _designTokens = { fontHeading: 'Inter', fontBody: 'Inter', borderRadius: '8px', spacingUnit: '1rem' };
         _selectedElementId = null;
         _selectedElementIds = [];
         _currentSceneIdx = 0;
         _renderSceneList();
         _selectScene(0, true);
+        _updateDirtyIndicator();
     }
 
-    /* ─── Export / Import Scene JSON ─── */
+    /* ─── Brand Name Helper ─── */
+    function _getBrandName() {
+        var brandEl = document.querySelector('#brandName');
+        return (brandEl && brandEl.value && brandEl.value.trim()) || 'My Site';
+    }
+
+    /* ─── Dirty Tracking ─── */
+    function _markDirty() {
+        if (!_projectDirty) {
+            _projectDirty = true;
+            _updateDirtyIndicator();
+        }
+        _scheduleAutosave();
+    }
+
+    function _updateDirtyIndicator() {
+        var brand = _qs('#cneBrand');
+        if (brand) {
+            var name = _getBrandName();
+            brand.textContent = _projectDirty ? name + ' \u2022' : name;
+        }
+        var dot = _qs('#cneUnsavedDot');
+        if (dot) dot.style.display = _projectDirty ? '' : 'none';
+    }
+
+    /* ─── Collect / Restore Full Project State ─── */
+    function _collectFullState() {
+        var saveOverrides = Object.assign({}, _overrides);
+        delete saveOverrides._editingMenuOverlay;
+        var saveScenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+        return {
+            version: 2,
+            format: 'cinematic',
+            meta: {
+                name: _getBrandName(),
+                savedAt: new Date().toISOString()
+            },
+            scenes: saveScenes,
+            overrides: saveOverrides,
+            designTokens: Object.assign({}, _designTokens)
+        };
+    }
+
+    function _restoreFullState(proj) {
+        _flushBursts();
+        _pushUndo();
+        if (proj.scenes && Array.isArray(proj.scenes)) {
+            _scenes = proj.scenes;
+        }
+        if (proj.overrides) _overrides = proj.overrides;
+        delete _overrides._editingMenuOverlay;
+        _scenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
+        if (proj.designTokens && typeof proj.designTokens === 'object') {
+            Object.keys(proj.designTokens).forEach(function (k) {
+                if (_designTokens.hasOwnProperty(k)) _designTokens[k] = proj.designTokens[k];
+            });
+            _syncTokenUI();
+        }
+        _selectedElementId = null;
+        _selectedElementIds = [];
+        _currentSceneIdx = 0;
+        _renderSceneList();
+        _selectScene(0, true);
+        _projectDirty = false;
+        _updateDirtyIndicator();
+    }
+
+    /* ─── Save / Save As / Open ─── */
+    function _saveProject() {
+        if (_fileHandle) {
+            _writeToHandle(_fileHandle);
+        } else {
+            _saveProjectAs();
+        }
+    }
+
+    function _saveProjectAs() {
+        var proj = _collectFullState();
+        var json = JSON.stringify(proj, null, 2);
+        var name = (proj.meta.name || 'my-site').replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
+
+        if (window.showSaveFilePicker) {
+            window.showSaveFilePicker({
+                suggestedName: name + '.arbel',
+                types: [{
+                    description: 'Arbel Project',
+                    accept: { 'application/json': ['.arbel'] }
+                }]
+            }).then(function (handle) {
+                _fileHandle = handle;
+                return _writeToHandle(handle);
+            }).catch(function () { /* user cancelled */ });
+        } else {
+            // Fallback: download
+            var blob = new Blob([json], { type: 'application/json' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name + '.arbel';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            _projectDirty = false;
+            _updateDirtyIndicator();
+        }
+    }
+
+    function _writeToHandle(handle) {
+        var proj = _collectFullState();
+        var json = JSON.stringify(proj, null, 2);
+        return handle.createWritable().then(function (writable) {
+            return writable.write(json).then(function () {
+                return writable.close();
+            });
+        }).then(function () {
+            _projectDirty = false;
+            _updateDirtyIndicator();
+        });
+    }
+
+    function _openProject() {
+        if (window.showOpenFilePicker) {
+            window.showOpenFilePicker({
+                types: [{
+                    description: 'Arbel Project',
+                    accept: { 'application/json': ['.arbel', '.json'] }
+                }],
+                multiple: false
+            }).then(function (handles) {
+                _fileHandle = handles[0];
+                return _fileHandle.getFile();
+            }).then(function (file) {
+                return file.text();
+            }).then(function (text) {
+                var proj = JSON.parse(text);
+                _loadProjectData(proj);
+            }).catch(function (err) {
+                if (err.name !== 'AbortError') alert('Failed to open: ' + err.message);
+            });
+        } else {
+            // Fallback: file input
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.arbel,.json';
+            input.addEventListener('change', function () {
+                var file = input.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    try {
+                        var proj = JSON.parse(e.target.result);
+                        _fileHandle = null;
+                        _loadProjectData(proj);
+                    } catch (err) {
+                        alert('Failed to open: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            input.click();
+        }
+    }
+
+    function _loadProjectData(proj) {
+        if (!proj) { alert('Invalid project file.'); return; }
+        // Support both v2 full format and legacy scene-only format
+        if (proj.scenes && Array.isArray(proj.scenes)) {
+            _restoreFullState(proj);
+        } else {
+            alert('Invalid project file — no scenes found.');
+        }
+    }
+
+    /* ─── Export / Import Scene JSON (legacy) ─── */
     function _exportJSON() {
-        // Strip transient editing flags from export
-        var exportOverrides = Object.assign({}, _overrides);
-        delete exportOverrides._editingMenuOverlay;
-        var exportScenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
-        var data = JSON.stringify({ scenes: exportScenes, overrides: exportOverrides, designTokens: _designTokens }, null, 2);
-        var blob = new Blob([data], { type: 'application/json' });
+        var proj = _collectFullState();
+        var json = JSON.stringify(proj, null, 2);
+        var name = (proj.meta.name || 'my-site').replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
+        var blob = new Blob([json], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
         a.href = url;
-        a.download = 'cinematic-scenes.json';
+        a.download = name + '.arbel';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
     function _importJSON() {
-        var input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.addEventListener('change', function () {
-            if (!input.files || !input.files[0]) return;
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    var parsed = JSON.parse(e.target.result);
-                    if (!parsed || !Array.isArray(parsed.scenes)) {
-                        alert('Invalid scene JSON file.');
-                        return;
-                    }
-                    _flushBursts();
-                    _pushUndo();
-                    _scenes = parsed.scenes;
-                    if (parsed.overrides) _overrides = parsed.overrides;
-                    if (parsed.designTokens && typeof parsed.designTokens === 'object') {
-                        Object.keys(parsed.designTokens).forEach(function (k) {
-                            if (_designTokens.hasOwnProperty(k)) _designTokens[k] = parsed.designTokens[k];
-                        });
-                        _syncTokenUI();
-                    }
-                    _renderSceneList();
-                    _selectScene(0);
-                    _notifyUpdate(true);
-                } catch (ex) {
-                    alert('Failed to parse JSON: ' + ex.message);
-                }
-            };
-            reader.readAsText(input.files[0]);
-        });
-        input.click();
+        _openProject();
     }
 
     /* ─── Export as ZIP (HTML/CSS/JS bundle) ─── */
@@ -8157,6 +8321,9 @@ window.ArbelCinematicEditor = (function () {
             _uiBound = false;
             window.removeEventListener('message', _handleMessage);
             if (_keydownHandler) { document.removeEventListener('keydown', _keydownHandler); _keydownHandler = null; }
+            if (_beforeUnloadHandler) { window.removeEventListener('beforeunload', _beforeUnloadHandler); _beforeUnloadHandler = null; }
+            _fileHandle = null;
+            _projectDirty = false;
         }
     };
 })();
