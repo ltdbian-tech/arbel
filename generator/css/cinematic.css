@@ -48,7 +48,6 @@
     border-bottom: 1px solid var(--border);
     gap: 8px;
     overflow-x: auto;
-    overflow-y: visible;
     scrollbar-width: none;
     flex-shrink: 0;
 }
@@ -130,17 +129,8 @@
 }
 
 /* Hamburger Menu Toolbar Dropdown */
-#cneMenuToolbarWrap {
-    position: relative;
-    display: inline-flex;
-    z-index: 10001;
-}
-
 .cne-menu-toolbar-dd {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed;
     background: #1a1a2e;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;

@@ -4126,7 +4126,15 @@ window.ArbelCinematicEditor = (function () {
                     return;
                 }
                 var isOpen = menuToolbarDd.style.display !== 'none';
-                menuToolbarDd.style.display = isOpen ? 'none' : '';
+                if (isOpen) {
+                    menuToolbarDd.style.display = 'none';
+                } else {
+                    menuToolbarDd.style.display = '';
+                    var r = menuToolbarBtn.getBoundingClientRect();
+                    menuToolbarDd.style.top = (r.bottom + 6) + 'px';
+                    menuToolbarDd.style.left = (r.left + r.width / 2) + 'px';
+                    menuToolbarDd.style.transform = 'translateX(-50%)';
+                }
             });
             document.addEventListener('click', function (e) {
                 if (menuToolbarDd.style.display !== 'none' && !menuToolbarDd.contains(e.target) && e.target !== menuToolbarBtn) {
