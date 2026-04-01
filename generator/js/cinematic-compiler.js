@@ -650,7 +650,7 @@ window.ArbelCinematicCompiler = (function () {
             html += '  <a href="#" class="cne-nav-logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n';
             html += '  <div class="cne-nav-links">\n';
             if (cfg.nav && cfg.nav.links) {
-                cfg.nav.links.forEach(function (link) {
+                cfg.nav.links.forEach(function (link, linkIdx) {
                     var href = link.href || '#';
                     // Resolve scene name references to anchor slugs
                     var lowerHref = href.replace(/^#/, '');
@@ -658,7 +658,7 @@ window.ArbelCinematicCompiler = (function () {
                         href = '#' + (sceneSlugMap[lowerHref] || sceneSlugMap[lowerHref.toLowerCase()]);
                     }
                     var linkClass = link.variant === 'button' ? 'cne-nav-link cne-nav-cta' : 'cne-nav-link';
-                    html += '    <a href="' + escHref(href) + '" class="' + linkClass + '" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
+                    html += '    <a href="' + escHref(href) + '" class="' + linkClass + '" data-arbel-id="nav-link-' + linkIdx + '" data-arbel-edit="text">' + esc(link.text) + '</a>\n';
                 });
             }
             html += '  </div>\n';

@@ -7362,7 +7362,7 @@ window.ArbelCinematicEditor = (function () {
     /* ─── Overlay script injected into cinematic iframe ─── */
     function _getOverlayScript() {
         return '(function(){' +
-        'var selected=[],primary=null,editing=false,drag=null,resize=null,marquee=null,rotating=null;' +
+        'var selected=[],primary=null,editing=false,drag=null,resize=null,marquee=null,rotating=null,justDragged=false;' +
         'var s=document.createElement("style");' +
         's.textContent="' +
           '[data-arbel-id]{cursor:pointer;transition:outline .15s,outline-offset .15s}' +
@@ -7391,6 +7391,9 @@ window.ArbelCinematicEditor = (function () {
           '.arbel-guide-v{width:1px;top:0;bottom:0;border-left:1px dashed rgba(100,108,255,.35)}' +
           '.arbel-marquee{position:fixed;border:1px dashed #646cff;background:rgba(100,108,255,.08);z-index:99997;pointer-events:none}' +
           '.cne-reveal-container,.cne-reveal-layer,.cne-reveal-top{pointer-events:none!important}' +
+          '[data-arbel-id] iframe,[data-arbel-id] video,[data-arbel-id] dotlottie-player{pointer-events:none!important}' +
+          '[data-arbel-id] .cne-form-input,[data-arbel-id] .cne-form-textarea,[data-arbel-id] .cne-form-label,[data-arbel-id] button[type=submit]{pointer-events:none!important}' +
+          'a[data-arbel-id]{-webkit-user-drag:none}' +
         '";document.head.appendChild(s);' +
         'var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);' +
         'var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";document.body.appendChild(posLbl);' +
@@ -7450,9 +7453,10 @@ window.ArbelCinematicEditor = (function () {
           'window.parent.postMessage({type:"arbel-resize-start"},"*");' +
         '});' +
 
-        /* ── Click → select ── */
+        /* ── Click → select (suppressed after drag) ── */
         'document.addEventListener("click",function(e){' +
           'if(editing||drag||marquee)return;' +
+          'if(justDragged){justDragged=false;e.preventDefault();e.stopPropagation();return}' +
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(!el){desel();return}' +
           'e.preventDefault();e.stopPropagation();sel(el,e.shiftKey);' +
@@ -7513,6 +7517,8 @@ window.ArbelCinematicEditor = (function () {
         /* ── Mousedown → start drag or marquee ── */
         'document.addEventListener("mousedown",function(e){' +
           'if(editing||resize||rotating)return;' +
+          'justDragged=false;' +
+          'if(marquee&&marquee.div&&marquee.div.parentNode){marquee.div.parentNode.removeChild(marquee.div);}marquee=null;' +
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(el&&e.button===0){' +
             'if(selected.indexOf(el)<0){sel(el,e.shiftKey);}' +
@@ -7604,6 +7610,7 @@ window.ArbelCinematicEditor = (function () {
               'document.querySelectorAll("[data-arbel-id]").forEach(function(el){' +
                 'var r=el.getBoundingClientRect();' +
                 'if(r.right>mr.left&&r.left<mr.right&&r.bottom>mr.top&&r.top<mr.bottom){' +
+                  'var cs=window.getComputedStyle(el);if(cs.pointerEvents==="none"||cs.display==="none"||cs.visibility==="hidden")return;' +
                   'selected.push(el);el.classList.add("arbel-sel");' +
                 '}' +
               '});' +
@@ -7618,6 +7625,7 @@ window.ArbelCinematicEditor = (function () {
           'if(wasDrag){' +
             'posHandles(selected.length===1?primary:null);' +
             'window.parent.postMessage({type:"arbel-move-end"},"*");' +
+            'justDragged=true;' +
           '}' +
           'drag=null;' +
           'if(wasDrag){e.preventDefault();e.stopPropagation()}' +
@@ -7693,7 +7701,8 @@ window.ArbelCinematicEditor = (function () {
           'var s2=window.getSelection();s2.removeAllRanges();s2.addRange(rng);' +
           'el._arbelAutoH=function(){el.style.height="auto";el.style.height=el.scrollHeight+"px";posHandles(el)};' +
           'el.addEventListener("input",el._arbelAutoH);' +
-          'el.addEventListener("blur",function onB(){el.removeEventListener("blur",onB);stopEdit()});' +
+          'el._arbelBlurH=function(){el.removeEventListener("blur",el._arbelBlurH);delete el._arbelBlurH;stopEdit()};' +
+          'el.addEventListener("blur",el._arbelBlurH);' +
           'el._arbelKeyK=function onK(e){' +
             'if(e.key==="Escape"||(e.key==="Enter"&&!e.shiftKey)){e.preventDefault();el.removeEventListener("keydown",el._arbelKeyK);delete el._arbelKeyK;el.blur()}' +
           '};' +
@@ -7704,6 +7713,7 @@ window.ArbelCinematicEditor = (function () {
           'primary.classList.remove("arbel-editing");primary.contentEditable=false;' +
           'if(primary._arbelAutoH){primary.removeEventListener("input",primary._arbelAutoH);delete primary._arbelAutoH}' +
           'if(primary._arbelKeyK){primary.removeEventListener("keydown",primary._arbelKeyK);delete primary._arbelKeyK}' +
+          'if(primary._arbelBlurH){primary.removeEventListener("blur",primary._arbelBlurH);delete primary._arbelBlurH}' +
           /* Auto-resize height to fit content after text edit */
           'var oldH=primary.style.height;' +
           'primary.style.height="auto";' +
@@ -7742,8 +7752,8 @@ window.ArbelCinematicEditor = (function () {
           '}' +
         '});' +
         /* ── Reposition handles on scroll ── */
-        'window.addEventListener("scroll",function(){if(selected.length===1&&primary&&!resize)posHandles(primary)},true);' +
-        'window.addEventListener("resize",function(){if(selected.length===1&&primary)posHandles(primary)});' +
+        'window.addEventListener("scroll",function(){if(selected.length===1&&primary&&!resize&&document.contains(primary))posHandles(primary)},true);' +
+        'window.addEventListener("resize",function(){if(selected.length===1&&primary&&document.contains(primary))posHandles(primary)});' +
         /* ── Forward keyboard shortcuts to parent (iframe eats keydown) ── */
         'document.addEventListener("keydown",function(e){' +
           'if(editing)return;' +
