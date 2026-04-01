@@ -7613,6 +7613,8 @@ window.ArbelCinematicEditor = (function () {
           'el.classList.add("arbel-editing");el.contentEditable=true;el.focus();' +
           'var rng=document.createRange();rng.selectNodeContents(el);' +
           'var s2=window.getSelection();s2.removeAllRanges();s2.addRange(rng);' +
+          'el._arbelAutoH=function(){el.style.height="auto";el.style.height=el.scrollHeight+"px";posHandles(el)};' +
+          'el.addEventListener("input",el._arbelAutoH);' +
           'el.addEventListener("blur",function onB(){el.removeEventListener("blur",onB);stopEdit()});' +
           'el.addEventListener("keydown",function onK(e){' +
             'if(e.key==="Escape"||(e.key==="Enter"&&!e.shiftKey)){e.preventDefault();el.removeEventListener("keydown",onK);el.blur()}' +
@@ -7621,7 +7623,19 @@ window.ArbelCinematicEditor = (function () {
         'function stopEdit(){' +
           'if(!primary)return;editing=false;' +
           'primary.classList.remove("arbel-editing");primary.contentEditable=false;' +
+          'if(primary._arbelAutoH){primary.removeEventListener("input",primary._arbelAutoH);delete primary._arbelAutoH}' +
+          /* Auto-resize height to fit content after text edit */
+          'var oldH=primary.style.height;' +
+          'primary.style.height="auto";' +
+          'var fitH=primary.scrollHeight;' +
+          'primary.style.height=fitH+"px";' +
+          'var fitW=primary.offsetWidth;' +
+          'var fitT=primary.offsetTop;var fitL=primary.offsetLeft;' +
+          'posHandles(primary);' +
           'window.parent.postMessage({type:"arbel-text-update",id:primary.getAttribute("data-arbel-id"),text:primary.textContent},"*");' +
+          'window.parent.postMessage({type:"arbel-resize",' +
+            'id:primary.getAttribute("data-arbel-id"),' +
+            'width:fitW+"px",height:fitH+"px",top:fitT+"px",left:fitL+"px"},"*");' +
         '}' +
 
         /* ── Listen for messages from editor ── */
