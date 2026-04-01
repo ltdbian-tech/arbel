@@ -482,7 +482,20 @@ window.ArbelCinematicEditor = (function () {
                 _pushUndo();
                 _iframeTextUndoPushed = true;
             }
-            _applyOverride(d.id, { text: d.text });
+            // Update scene element model directly so properties panel stays in sync
+            var scene = _scenes[_currentSceneIdx];
+            if (scene) {
+                for (var ti = 0; ti < scene.elements.length; ti++) {
+                    if (scene.elements[ti].id === d.id) {
+                        scene.elements[ti].text = d.text;
+                        break;
+                    }
+                }
+            }
+            // Update text input in properties panel
+            var textInput = _qs('#cneTextInput');
+            if (textInput && _selectedElementId === d.id) textInput.value = d.text;
+            _notifyUpdate();
         }
         if (d.type === 'arbel-move' && d.id) {
             // Snapshot BEFORE the first drag mutation
@@ -724,6 +737,9 @@ window.ArbelCinematicEditor = (function () {
         _currentSceneIdx = idx;
         _selectedElementId = null;
         _selectedElementIds = [];
+        _iframeTextUndoPushed = false;
+        _dragUndoPushed = false;
+        _resizeUndoPushed = false;
         _renderSceneList();
         _renderElementList();
         _clearProperties();
@@ -1022,6 +1038,7 @@ window.ArbelCinematicEditor = (function () {
                 _pushUndo();
                 var clone = JSON.parse(JSON.stringify(el));
                 clone.id = el.tag + '-' + Date.now().toString(36);
+                if (clone.group) clone.group = 'grp-' + Date.now().toString(36) + '-dup';
                 scene.elements.splice(i + 1, 0, clone);
                 _selectedElementId = clone.id;
                 _selectedElementIds = [clone.id];
@@ -5299,6 +5316,8 @@ window.ArbelCinematicEditor = (function () {
         if (!scene) return;
         var ids = _selectedElementIds;
         scene.elements = scene.elements.filter(function (e) { return ids.indexOf(e.id) < 0; });
+        // Clean up overrides for deleted elements
+        ids.forEach(function (id) { if (_overrides[id]) delete _overrides[id]; });
         _selectedElementId = null;
         _selectedElementIds = [];
         _renderElementList();
