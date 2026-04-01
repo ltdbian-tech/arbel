@@ -1233,7 +1233,8 @@ window.ArbelCinematicCompiler = (function () {
         // Scenes
         css += '.cne-scenes { position: relative; z-index: 1; }\n';
         css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
-        css += '.cne-element { position: absolute; will-change: transform, opacity; z-index: var(--content-z, 1); }\n';
+        css += '.cne-element { position: absolute; z-index: var(--content-z, 1); }\n';
+        css += '.cne-element[data-scroll] { will-change: transform, opacity; }\n';
         css += '.cne-scene-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }\n';
         css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n';
         css += '@media (max-width: 768px) { .cne-scene-bgvid, .cne-el-bgvid { display: none; } }\n\n';

@@ -28,6 +28,7 @@ window.ArbelCinematicEditor = (function () {
     var _uiBound = false;          // guard against duplicate listener binding
     var _clipboard = null;           // copy/paste: deep-cloned element object
     var _styleClipboard = null;      // copy/paste style: cloned style + hoverStyle
+    var _isDragging = false;         // true while element is being dragged (skip expensive updates)
     var _keydownHandler = null;      // stored for cleanup in destroy
     var _beforeUnloadHandler = null; // stored for cleanup in destroy
 
@@ -501,6 +502,7 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate();
         }
         if (d.type === 'arbel-move' && d.id) {
+            _isDragging = true;
             // Snapshot BEFORE the first drag mutation
             if (!_dragUndoPushed) {
                 _pushUndo();
@@ -525,6 +527,7 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate(_activeDevice !== 'desktop');
         }
         if (d.type === 'arbel-multi-move' && d.moves) {
+            _isDragging = true;
             if (!_dragUndoPushed) {
                 _pushUndo();
                 _dragUndoPushed = true;
@@ -554,9 +557,12 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate(_activeDevice !== 'desktop');
         }
         if (d.type === 'arbel-move-end') {
+            _isDragging = false;
             _dragUndoPushed = false;
+            _updateTimeline();  // rebuild timeline once after drag ends
         }
         if (d.type === 'arbel-resize-start') {
+            _isDragging = true;
             if (!_resizeUndoPushed) {
                 _pushUndo();
                 _resizeUndoPushed = true;
@@ -587,7 +593,9 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate(_activeDevice !== 'desktop');
         }
         if (d.type === 'arbel-resize-end') {
+            _isDragging = false;
             _resizeUndoPushed = false;
+            _updateTimeline();
         }
         if (d.type === 'arbel-rotate' && d.id) {
             var scene = _scenes[_currentSceneIdx];
@@ -983,6 +991,8 @@ window.ArbelCinematicEditor = (function () {
         _currentSceneIdx = 0;
         _selectedElementId = null;
         _selectedElementIds = [];
+        _undoStack = [];
+        _redoStack = [];
         _renderPageList();
         _renderSceneList();
         if (_scenes.length > 0) _selectScene(0, true);
@@ -3400,6 +3410,7 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _updateTimeline() {
+        if (_isDragging) return;   // skip expensive DOM rebuild during drag
         var tracks = _qs('#cneTlTracks');
         if (!tracks || !_timelineOpen) return;
 
@@ -6160,7 +6171,7 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _notifyUpdate(rerender) {
-        _updateTimeline();
+        if (!_isDragging) _updateTimeline();
         _markDirty();
         if (_onUpdate) {
             // Build overrides to send: include _editingMenuOverlay ONLY when
@@ -6175,7 +6186,7 @@ window.ArbelCinematicEditor = (function () {
             _onUpdate({
                 scenes: _scenes,
                 overrides: outOverrides,
-                rerender: !!rerender
+                rerender: !!rerender && !_isDragging
             });
         }
     }
@@ -7946,6 +7957,7 @@ window.ArbelCinematicEditor = (function () {
           '}' +
         '},true);' +
 
+        'var _dragRaf=0;' +
         /* ── Mousemove → drag elements, resize, rotate, or marquee ── */
         'document.addEventListener("mousemove",function(e){' +
           'if(rotating){' +
@@ -7985,7 +7997,11 @@ window.ArbelCinematicEditor = (function () {
             'return;' +
           '}' +
           'if(!drag)return;' +
-          'var dx=e.clientX-drag.startX,dy=e.clientY-drag.startY;' +
+          'var _cx=e.clientX,_cy=e.clientY,_sh=e.shiftKey;' +
+          'if(_dragRaf)return;' +
+          '_dragRaf=requestAnimationFrame(function(){_dragRaf=0;' +
+          'if(!drag)return;' +
+          'var dx=_cx-drag.startX,dy=_cy-drag.startY;' +
           'if(!drag.moved&&Math.abs(dx)+Math.abs(dy)<4)return;' +
           'drag.moved=true;' +
           'for(var i=0;i<drag.origins.length;i++){drag.origins[i].el.classList.add("arbel-dragging");}' +
@@ -8003,7 +8019,7 @@ window.ArbelCinematicEditor = (function () {
           '}' +
           'posLbl.textContent="top: "+moves[0].top+"  left: "+moves[0].left;posLbl.classList.add("vis");' +
           'window.parent.postMessage({type:"arbel-multi-move",moves:moves},"*");' +
-        '});' +
+        '});});' +
 
         /* ── Mouseup → end drag, resize, rotate, or marquee ── */
         'document.addEventListener("mouseup",function(e){' +
@@ -8035,6 +8051,7 @@ window.ArbelCinematicEditor = (function () {
           '}' +
           'if(!drag)return;' +
           'var wasDrag=drag.moved;' +
+          'if(_dragRaf){cancelAnimationFrame(_dragRaf);_dragRaf=0;}' +
           'for(var i=0;i<drag.origins.length;i++){drag.origins[i].el.classList.remove("arbel-dragging");}' +
           'posLbl.classList.remove("vis");hideSnap();' +
           'if(wasDrag){' +

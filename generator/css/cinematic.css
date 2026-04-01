@@ -412,8 +412,9 @@
 
 /* Page List */
 .cne-page-list {
-    display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px;
+    display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 10px 2px; margin: 0;
 }
+.cne-page-list:empty { display: none; }
 .cne-page-item {
     padding: 5px 10px; background: var(--bg); border: 1px solid var(--border);
     border-radius: var(--radius-sm); cursor: pointer; font-size: 0.72rem;
