@@ -3639,12 +3639,12 @@ window.ArbelCinematicEditor = (function () {
                 if ((e.key === 's' || e.key === 'S') && !e.shiftKey) { e.preventDefault(); _saveProject(); return; }
                 if ((e.key === 'o' || e.key === 'O') && !e.shiftKey) { e.preventDefault(); _openProject(); return; }
                 if ((e.key === 'n' || e.key === 'N') && !e.shiftKey) { e.preventDefault(); _newProject(); return; }
-                if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); _undo(); }
-                if (e.key === 'z' && e.shiftKey) { e.preventDefault(); _redo(); }
-                if (e.key === 'y') { e.preventDefault(); _redo(); }
+                if (e.key === 'z' && !e.shiftKey && !inInput) { e.preventDefault(); _undo(); }
+                if (e.key === 'z' && e.shiftKey && !inInput) { e.preventDefault(); _redo(); }
+                if (e.key === 'y' && !inInput) { e.preventDefault(); _redo(); }
                 if (e.key === 'c' && !inInput && _selectedElementIds.length > 0) { e.preventDefault(); _copyElement(); }
                 if (e.key === 'v' && !inInput && _clipboard) { e.preventDefault(); _pasteElement(); }
-                if (e.key === 'd' && _selectedElementIds.length > 0) { e.preventDefault(); _duplicateElement(); }
+                if (e.key === 'd' && !inInput && _selectedElementIds.length > 0) { e.preventDefault(); _duplicateElement(); }
                 if (e.key === 'a' && !inInput) { e.preventDefault(); _selectAll(); }
                 if (e.key === 'g' && !e.shiftKey && _selectedElementIds.length > 1) { e.preventDefault(); _groupSelection(); }
                 if (e.key === 'g' && e.shiftKey && _selectedElementIds.length > 0) { e.preventDefault(); _ungroupSelection(); }
@@ -6831,7 +6831,20 @@ window.ArbelCinematicEditor = (function () {
         _projectDirty = false;
         _scenes = [ArbelCinematicCompiler.createScene('hero', 0)];
         _overrides = {};
-        _designTokens = { fontHeading: 'Inter', fontBody: 'Inter', borderRadius: '8px', spacingUnit: '1rem' };
+        _designTokens = {
+            headingFont: "'Inter', system-ui, sans-serif",
+            bodyFont: "'Inter', system-ui, sans-serif",
+            baseSize: 16,
+            scale: 1.25,
+            primary: '#6C5CE7',
+            secondary: '#00cec9',
+            text: '#f0f0f0',
+            textMuted: '#888888',
+            bg: '#0a0a0f',
+            surface: '#1a1a2e',
+            spaceUnit: 8,
+            radius: 8
+        };
         _selectedElementId = null;
         _selectedElementIds = [];
         _currentSceneIdx = 0;
@@ -6901,10 +6914,13 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementId = null;
         _selectedElementIds = [];
         _currentSceneIdx = 0;
+        _undoStack = [];
+        _redoStack = [];
         _renderSceneList();
         _selectScene(0, true);
         _projectDirty = false;
         _updateDirtyIndicator();
+        _updateUndoButtons();
     }
 
     /* ─── Save / Save As / Open ─── */
@@ -6948,13 +6964,18 @@ window.ArbelCinematicEditor = (function () {
     function _writeToHandle(handle) {
         var proj = _collectFullState();
         var json = JSON.stringify(proj, null, 2);
+        var saveDirtyGen = _projectDirty;
         return handle.createWritable().then(function (writable) {
             return writable.write(json).then(function () {
                 return writable.close();
             });
         }).then(function () {
-            _projectDirty = false;
-            _updateDirtyIndicator();
+            if (_projectDirty === saveDirtyGen) {
+                _projectDirty = false;
+                _updateDirtyIndicator();
+            }
+        }).catch(function (err) {
+            alert('Failed to save: ' + err.message);
         });
     }
 
@@ -7668,7 +7689,7 @@ window.ArbelCinematicEditor = (function () {
         'document.addEventListener("keydown",function(e){' +
           'if(editing)return;' +
           'var k=e.key;var ctrl=e.ctrlKey||e.metaKey;' +
-          'if(k==="Delete"||k==="Backspace"||k==="Escape"||(ctrl&&(k==="z"||k==="y"||k==="c"||k==="v"||k==="d"||k==="a"||k==="g"))){' +
+          'if(k==="Delete"||k==="Backspace"||k==="Escape"||(ctrl&&(k==="z"||k==="y"||k==="c"||k==="v"||k==="d"||k==="a"||k==="g"||k==="s"||k==="S"||k==="o"||k==="O"||k==="n"||k==="N"))){' +
             'e.preventDefault();' +
             'window.parent.postMessage({type:"arbel-key",key:k,ctrl:!!ctrl,shift:!!e.shiftKey,alt:!!e.altKey},"*");' +
           '}' +
@@ -8365,6 +8386,7 @@ window.ArbelCinematicEditor = (function () {
             window.removeEventListener('message', _handleMessage);
             if (_keydownHandler) { document.removeEventListener('keydown', _keydownHandler); _keydownHandler = null; }
             if (_beforeUnloadHandler) { window.removeEventListener('beforeunload', _beforeUnloadHandler); _beforeUnloadHandler = null; }
+            if (_autosaveTimer) { clearTimeout(_autosaveTimer); _autosaveTimer = null; }
             _fileHandle = null;
             _projectDirty = false;
         }

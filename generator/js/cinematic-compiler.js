@@ -11,9 +11,10 @@ window.ArbelCinematicCompiler = (function () {
 
     /* ─── Helpers ─── */
     function esc(str) {
+        if (str === 0 || str === false) str = String(str);
         if (!str) return '';
         var div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
+        div.appendChild(document.createTextNode(String(str)));
         return div.innerHTML;
     }
 
@@ -675,7 +676,12 @@ window.ArbelCinematicCompiler = (function () {
                 } else if (trigType === 'plus') {
                     html += '    <svg width="' + trigSize + '" height="' + trigSize + '" viewBox="0 0 24 24" fill="none" stroke="' + trigColor + '" stroke-width="2" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>\n';
                 } else if (trigType === 'svg' && menuTrigger.svg) {
-                    html += '    ' + menuTrigger.svg + '\n';
+                    var safeTrigSvg = menuTrigger.svg
+                        .replace(/<script[\s\S]*?<\/script>/gi, '')
+                        .replace(/\bon\w+\s*=/gi, 'data-removed=')
+                        .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+                        .replace(/<object[\s\S]*?<\/object>/gi, '');
+                    html += '    ' + safeTrigSvg + '\n';
                 } else if ((trigType === 'image' || trigType === 'video') && menuTrigger.mediaSrc) {
                     var safeSrc = menuTrigger.mediaSrc.replace(/[\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '');
                     if (/^(https?:\/\/|data:)/i.test(safeSrc)) {
@@ -982,7 +988,7 @@ window.ArbelCinematicCompiler = (function () {
                     fields.forEach(function (field) {
                         var fName = esc(field.name || '');
                         var fType = esc(field.type || 'text');
-                        var validTypes = ['text','email','tel','url','number','textarea','select'];
+                        var validTypes = ['text','email','tel','url','number','textarea'];
                         if (validTypes.indexOf(fType) < 0) fType = 'text';
                         var fLabel = fName.charAt(0).toUpperCase() + fName.slice(1);
                         html += '      <div class="cne-form-group">\n';
@@ -1050,7 +1056,7 @@ window.ArbelCinematicCompiler = (function () {
                         anchorAttrs += ' style="text-decoration:none;color:inherit;display:contents"';
                         html += '>' + elBgVidHtml + esc(el.text) + '</' + tag + '>\n';
                         // Wrap: inject opening <a> before the element, closing </a> after
-                        var elOpen = '    <' + tag + ' class="cne-element"';
+                        var elOpen = '    <' + tag + ' class="cne-element';
                         var lastIdx = html.lastIndexOf(elOpen);
                         if (lastIdx >= 0) {
                             html = html.substring(0, lastIdx) + '    <a' + anchorAttrs + '>\n    ' + html.substring(lastIdx) + '    </a>\n';
@@ -1282,7 +1288,6 @@ window.ArbelCinematicCompiler = (function () {
         // Responsive — tablet
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
-        css += '  .cne-nav-links { display: none; }\n';
         css += '  .cne-scene { min-height: 100vh; overflow: hidden; }\n';
         css += '  .cne-element { font-size: 0.9em; max-width: 96vw; overflow-wrap: break-word; word-wrap: break-word; }\n';
         css += '  .cne-r-center {\n';
@@ -1362,9 +1367,9 @@ window.ArbelCinematicCompiler = (function () {
                 var rawDur = parseFloat(hs._duration);
                 var duration = (!isNaN(rawDur) && rawDur >= 0 && rawDur <= 5) ? rawDur : 0.3;
                 if (hs.opacity !== undefined && hs.opacity !== '') { var ho = Math.max(0, Math.min(100, parseFloat(hs.opacity) || 0)); rule += ' opacity: ' + (ho / 100) + ';'; transProps.push('opacity'); }
-                if (hs.color) { rule += ' color: ' + hs.color + ';'; transProps.push('color'); }
-                if (hs.background) { rule += ' background: ' + hs.background + ';'; transProps.push('background'); }
-                if (hs.boxShadow) { rule += ' box-shadow: ' + hs.boxShadow + ';'; transProps.push('box-shadow'); }
+                if (hs.color) { var hc = String(hs.color).replace(/[<>"'`;{}]/g, ''); rule += ' color: ' + hc + ';'; transProps.push('color'); }
+                if (hs.background) { var hb = String(hs.background).replace(/[<>"'`;{}]/g, ''); rule += ' background: ' + hb + ';'; transProps.push('background'); }
+                if (hs.boxShadow) { var hbs = String(hs.boxShadow).replace(/[<>"'`;{}]/g, ''); rule += ' box-shadow: ' + hbs + ';'; transProps.push('box-shadow'); }
                 // Individual CSS transform properties — compose with GSAP's inline transform
                 if (hs.scale !== undefined && hs.scale !== '') { rule += ' scale: ' + hs.scale + ';'; transProps.push('scale'); }
                 if (hs.translateY !== undefined && hs.translateY !== '') { rule += ' translate: 0 ' + hs.translateY + 'px;'; transProps.push('translate'); }
