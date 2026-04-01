@@ -664,7 +664,7 @@ window.ArbelCinematicCompiler = (function () {
 
             // Hamburger trigger button
             if (menuEnabled) {
-                html += '  <button class="cne-menu-btn" aria-label="Menu" type="button">\n';
+                html += '  <button class="cne-menu-btn" aria-label="Menu" type="button" data-arbel-id="menu-trigger">\n';
                 var trigType = menuTrigger.type || 'bars';
                 var trigSize = parseInt(menuTrigger.size) || 28;
                 var trigColor = esc(menuTrigger.color || '#ffffff');
@@ -701,7 +701,7 @@ window.ArbelCinematicCompiler = (function () {
                 var ovOp = Math.min(100, Math.max(0, parseInt(menuOverlay.bgOpacity) || 95)) / 100;
                 html += '<div class="cne-menu-overlay" id="cneMenuOverlay">\n';
                 html += '  <div class="cne-menu-overlay-bg" style="background:' + ovBg + ';opacity:' + ovOp + '"></div>\n';
-                html += '  <button class="cne-menu-close" aria-label="Close menu" type="button">\n';
+                html += '  <button class="cne-menu-close" aria-label="Close menu" type="button" data-arbel-id="menu-close">\n';
                 html += '    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>\n';
                 html += '  </button>\n';
                 html += '  <div class="cne-menu-overlay-content">\n';

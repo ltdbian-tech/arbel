@@ -5340,6 +5340,27 @@ window.ArbelCinematicEditor = (function () {
         var alignGroup = _qs('#cneAlignGroup');
         if (alignGroup) alignGroup.style.display = _selectedElementIds.length > 1 ? '' : 'none';
 
+        // Special handling for nav structural elements (hamburger trigger / close button)
+        if (_selectedElementId === 'menu-trigger' || _selectedElementId === 'menu-close') {
+            var elHeader = _qs('#cneElHeader');
+            if (elHeader) elHeader.textContent = _selectedElementId === 'menu-trigger' ? 'Menu Trigger' : 'Close Button';
+            var propsContainer = _qs('#cnePropsContainer');
+            if (propsContainer) propsContainer.style.display = 'none';
+            // Open the hamburger menu settings dropdown
+            var menuDd = _qs('#cneMenuToolbarDd');
+            var menuBtn = _qs('#cneMenuToolbarBtn');
+            if (menuDd && menuDd.style.display === 'none') {
+                menuDd.style.display = '';
+                if (menuBtn) {
+                    var r = menuBtn.getBoundingClientRect();
+                    menuDd.style.top = (r.bottom + 6) + 'px';
+                    menuDd.style.left = (r.left + r.width / 2) + 'px';
+                    menuDd.style.transform = 'translateX(-50%)';
+                }
+            }
+            return;
+        }
+
         if (_selectedElementIds.length > 1) {
             _updateMultiSelectPanel();
         } else {
