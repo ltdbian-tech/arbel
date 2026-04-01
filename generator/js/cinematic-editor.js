@@ -706,7 +706,7 @@ window.ArbelCinematicEditor = (function () {
             });
 
             actions.appendChild(dupBtn);
-            if (_scenes.length > 1) actions.appendChild(delBtn);
+            if (_scenes.length > 1 && _scenes[i].id !== '_nav-overlay') actions.appendChild(delBtn);
 
             item.appendChild(actions);
 
@@ -881,6 +881,8 @@ window.ArbelCinematicEditor = (function () {
 
     function _deleteScene(idx) {
         if (_scenes.length <= 1) return;
+        // Prevent deleting the overlay scene during overlay editing
+        if (_scenes[idx] && _scenes[idx].id === '_nav-overlay') return;
         _pushUndo();
         _scenes.splice(idx, 1);
         if (_currentSceneIdx >= _scenes.length) _currentSceneIdx = _scenes.length - 1;
@@ -5087,22 +5089,22 @@ window.ArbelCinematicEditor = (function () {
     function _offsetClonePosition(sty) {
         if (!sty) return;
         if (sty.top !== undefined) {
-            var t = parseInt(sty.top) || 0;
+            var t = parseFloat(sty.top) || 0;
             var tUnit = String(sty.top).indexOf('%') >= 0 ? '%' : 'px';
             sty.top = (t + 20) + tUnit;
         }
         if (sty.bottom !== undefined) {
-            var b = parseInt(sty.bottom) || 0;
+            var b = parseFloat(sty.bottom) || 0;
             var bUnit = String(sty.bottom).indexOf('%') >= 0 ? '%' : 'px';
             sty.bottom = (b - 20) + bUnit;
         }
         if (sty.left !== undefined) {
-            var l = parseInt(sty.left) || 0;
+            var l = parseFloat(sty.left) || 0;
             var lUnit = String(sty.left).indexOf('%') >= 0 ? '%' : 'px';
             sty.left = (l + 20) + lUnit;
         }
         if (sty.right !== undefined) {
-            var r = parseInt(sty.right) || 0;
+            var r = parseFloat(sty.right) || 0;
             var rUnit = String(sty.right).indexOf('%') >= 0 ? '%' : 'px';
             sty.right = (r - 20) + rUnit;
         }
@@ -5114,9 +5116,15 @@ window.ArbelCinematicEditor = (function () {
         if (!scene) return;
         _pushUndo();
         var newIds = [];
+        // Generate a new group ID mapping so pasted elements don't join original groups
+        var groupMap = {};
         for (var c = 0; c < _clipboard.length; c++) {
             var clone = JSON.parse(JSON.stringify(_clipboard[c]));
             clone.id = clone.tag + '-' + Date.now().toString(36) + c;
+            if (clone.group) {
+                if (!groupMap[clone.group]) groupMap[clone.group] = 'grp-' + Date.now().toString(36) + '-' + c;
+                clone.group = groupMap[clone.group];
+            }
             _offsetClonePosition(clone.style);
             _offsetClonePosition(clone.tabletStyle);
             _offsetClonePosition(clone.mobileStyle);
@@ -5136,11 +5144,16 @@ window.ArbelCinematicEditor = (function () {
         if (!scene || _selectedElementIds.length === 0) return;
         _pushUndo();
         var newIds = [];
+        var groupMap = {};
         // Iterate in reverse insertion order to maintain relative positions
         for (var i = scene.elements.length - 1; i >= 0; i--) {
             if (_selectedElementIds.indexOf(scene.elements[i].id) >= 0) {
                 var clone = JSON.parse(JSON.stringify(scene.elements[i]));
                 clone.id = scene.elements[i].tag + '-' + Date.now().toString(36) + i;
+                if (clone.group) {
+                    if (!groupMap[clone.group]) groupMap[clone.group] = 'grp-' + Date.now().toString(36) + '-' + i;
+                    clone.group = groupMap[clone.group];
+                }
                 _offsetClonePosition(clone.style);
                 _offsetClonePosition(clone.tabletStyle);
                 _offsetClonePosition(clone.mobileStyle);
@@ -5809,11 +5822,18 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /* Check if two state snapshots are identical (dirty-state guard) */
+    var _lastSnapshotHash = '';
+    function _fastHash(obj) {
+        var str = JSON.stringify(obj);
+        var hash = 0;
+        for (var i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+        }
+        return hash;
+    }
     function _stateEqual(a, b) {
         if (!a || !b) return false;
-        return JSON.stringify(a.scenes) === JSON.stringify(b.scenes) &&
-               JSON.stringify(a.overrides) === JSON.stringify(b.overrides) &&
-               JSON.stringify(a.designTokens) === JSON.stringify(b.designTokens);
+        return _fastHash(a) === _fastHash(b);
     }
 
     function _pushUndo() {
@@ -5872,8 +5892,28 @@ window.ArbelCinematicEditor = (function () {
         _redoStack.push(_snapshotState());
         _undoLocked = true;
         var state = _undoStack.pop();
+        // If we're in overlay editing mode and the undo state doesn't have the overlay flag,
+        // exit overlay mode first so UI stays consistent
+        var wasInOverlay = _overrides._editingMenuOverlay;
         _scenes = state.scenes;
         _overrides = state.overrides;
+        if (wasInOverlay && !_overrides._editingMenuOverlay) {
+            // Restore toolbar button from overlay mode
+            var menuToolbarBtn = _qs('#cneMenuToolbarBtn');
+            if (menuToolbarBtn && menuToolbarBtn._overlayMode) {
+                menuToolbarBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>';
+                menuToolbarBtn.style.background = '';
+                menuToolbarBtn.style.borderColor = '';
+                menuToolbarBtn.title = 'Hamburger Menu Settings';
+                menuToolbarBtn._overlayMode = false;
+            }
+            var editMenuOverlayBtn = _qs('#cneEditMenuOverlay');
+            if (editMenuOverlayBtn) {
+                editMenuOverlayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg> Design Menu Overlay';
+                editMenuOverlayBtn.style.background = 'rgba(108,92,231,0.15)';
+                editMenuOverlayBtn.style.borderColor = 'rgba(108,92,231,0.3)';
+            }
+        }
         if (state.designTokens) {
             _designTokens = state.designTokens;
             _syncTokenUI();
@@ -5889,8 +5929,25 @@ window.ArbelCinematicEditor = (function () {
         _undoStack.push(_snapshotState());
         _undoLocked = true;
         var state = _redoStack.pop();
+        var wasInOverlay = _overrides._editingMenuOverlay;
         _scenes = state.scenes;
         _overrides = state.overrides;
+        if (wasInOverlay && !_overrides._editingMenuOverlay) {
+            var menuToolbarBtn = _qs('#cneMenuToolbarBtn');
+            if (menuToolbarBtn && menuToolbarBtn._overlayMode) {
+                menuToolbarBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>';
+                menuToolbarBtn.style.background = '';
+                menuToolbarBtn.style.borderColor = '';
+                menuToolbarBtn.title = 'Hamburger Menu Settings';
+                menuToolbarBtn._overlayMode = false;
+            }
+            var editMenuOverlayBtn = _qs('#cneEditMenuOverlay');
+            if (editMenuOverlayBtn) {
+                editMenuOverlayBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg> Design Menu Overlay';
+                editMenuOverlayBtn.style.background = 'rgba(108,92,231,0.15)';
+                editMenuOverlayBtn.style.borderColor = 'rgba(108,92,231,0.3)';
+            }
+        }
         if (state.designTokens) {
             _designTokens = state.designTokens;
             _syncTokenUI();
@@ -7637,14 +7694,16 @@ window.ArbelCinematicEditor = (function () {
           'el._arbelAutoH=function(){el.style.height="auto";el.style.height=el.scrollHeight+"px";posHandles(el)};' +
           'el.addEventListener("input",el._arbelAutoH);' +
           'el.addEventListener("blur",function onB(){el.removeEventListener("blur",onB);stopEdit()});' +
-          'el.addEventListener("keydown",function onK(e){' +
-            'if(e.key==="Escape"||(e.key==="Enter"&&!e.shiftKey)){e.preventDefault();el.removeEventListener("keydown",onK);el.blur()}' +
-          '});' +
+          'el._arbelKeyK=function onK(e){' +
+            'if(e.key==="Escape"||(e.key==="Enter"&&!e.shiftKey)){e.preventDefault();el.removeEventListener("keydown",el._arbelKeyK);delete el._arbelKeyK;el.blur()}' +
+          '};' +
+          'el.addEventListener("keydown",el._arbelKeyK);' +
         '}' +
         'function stopEdit(){' +
           'if(!primary)return;editing=false;' +
           'primary.classList.remove("arbel-editing");primary.contentEditable=false;' +
           'if(primary._arbelAutoH){primary.removeEventListener("input",primary._arbelAutoH);delete primary._arbelAutoH}' +
+          'if(primary._arbelKeyK){primary.removeEventListener("keydown",primary._arbelKeyK);delete primary._arbelKeyK}' +
           /* Auto-resize height to fit content after text edit */
           'var oldH=primary.style.height;' +
           'primary.style.height="auto";' +
