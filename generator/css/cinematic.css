@@ -548,7 +548,13 @@
 /* Elements Section */
 .cne-elements-section {
     border-top: 1px solid var(--border);
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    max-height: 35%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.08) transparent;
 }
 .cne-elements-section .cne-panel-head {
     padding: 10px 16px 8px;
@@ -962,7 +968,7 @@
     border-radius: 6px;
     flex-shrink: 0;
 }
-.cne-ease-custom { }
+.cne-ease-custom { display: block; }
 
 /* Preset Select */
 .cne-preset-select {
@@ -1033,7 +1039,7 @@
 }
 
 /* Tracks */
-.cne-tl-tracks { }
+.cne-tl-tracks { display: flex; flex-direction: column; }
 .cne-tl-track {
     display: flex;
     align-items: center;

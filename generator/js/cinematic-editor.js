@@ -7791,7 +7791,8 @@ window.ArbelCinematicEditor = (function () {
         'var selected=[],primary=null,editing=false,drag=null,resize=null,marquee=null,rotating=null,justDragged=false;' +
         'var s=document.createElement("style");' +
         's.textContent="' +
-          '[data-arbel-id]{cursor:pointer;transition:outline .15s,outline-offset .15s}' +
+          '.cne-preloader{display:none!important}' +
+          '[data-arbel-id]{cursor:pointer;pointer-events:auto!important;transition:outline .15s,outline-offset .15s}' +
           '[data-arbel-id]:hover:not(.arbel-sel){outline:2px dashed rgba(100,108,255,.5);outline-offset:2px}' +
           '.arbel-sel{outline:2px solid #646cff!important;outline-offset:3px!important}' +
           '.arbel-dragging{outline-color:#ff6b35!important;cursor:grabbing!important}' +
@@ -7823,6 +7824,9 @@ window.ArbelCinematicEditor = (function () {
         '";document.head.appendChild(s);' +
         'var lbl=document.createElement("div");lbl.className="arbel-lbl";document.body.appendChild(lbl);' +
         'var posLbl=document.createElement("div");posLbl.className="arbel-pos-lbl";document.body.appendChild(posLbl);' +
+
+        /* ── Force-dismiss preloader in editor (no loading delay) ── */
+        'var _pre=document.getElementById("preloader");if(_pre)_pre.classList.add("hidden");' +
 
         /* ── Center alignment guides (persistent crosshair lines) ── */
         'var guideH=document.createElement("div");guideH.className="arbel-guide arbel-guide-h";document.body.appendChild(guideH);' +
@@ -8052,6 +8056,15 @@ window.ArbelCinematicEditor = (function () {
           'if(!drag)return;' +
           'var wasDrag=drag.moved;' +
           'if(_dragRaf){cancelAnimationFrame(_dragRaf);_dragRaf=0;}' +
+          /* Send final position for each dragged element so model stays in sync */
+          'if(wasDrag){' +
+            'var finalMoves=[];' +
+            'for(var i=0;i<drag.origins.length;i++){' +
+              'var oi=drag.origins[i];' +
+              'finalMoves.push({id:oi.el.getAttribute("data-arbel-id"),top:oi.el.style.top,left:oi.el.style.left});' +
+            '}' +
+            'if(finalMoves.length)window.parent.postMessage({type:"arbel-multi-move",moves:finalMoves},"*");' +
+          '}' +
           'for(var i=0;i<drag.origins.length;i++){drag.origins[i].el.classList.remove("arbel-dragging");}' +
           'posLbl.classList.remove("vis");hideSnap();' +
           'if(wasDrag){' +
