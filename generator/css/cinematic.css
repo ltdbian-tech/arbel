@@ -410,6 +410,20 @@
 .cne-scene-list::-webkit-scrollbar { width: 4px; }
 .cne-scene-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
+/* Page List */
+.cne-page-list {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px;
+}
+.cne-page-item {
+    padding: 5px 10px; background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); cursor: pointer; font-size: 0.72rem;
+    transition: all 0.15s; display: flex; flex-direction: column; gap: 1px; min-width: 0;
+}
+.cne-page-item:hover { border-color: var(--border-hover); }
+.cne-page-item.active { border-color: var(--accent); background: rgba(108,92,231,0.08); }
+.cne-page-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cne-page-path { opacity: 0.45; font-size: 0.65rem; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* Scene Card (CSS) + Scene Item (JS-generated) */
 .cne-scene-card,
 .cne-scene-item {

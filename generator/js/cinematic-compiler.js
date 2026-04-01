@@ -815,9 +815,26 @@ window.ArbelCinematicCompiler = (function () {
                 html += '    <div class="cne-bg3d" data-bg3d="' + esc(scene.bg3dType) + '"';
                 html += ' data-color1="' + bg3dC1 + '" data-color2="' + bg3dC2 + '"';
                 html += ' data-intensity="' + bg3dIntensity + '" data-speed="' + bg3dSpeed + '"';
+                if (scene.bg3dCount) html += ' data-count="' + parseInt(scene.bg3dCount) + '"';
+                if (scene.bg3dSize) html += ' data-size="' + parseInt(scene.bg3dSize) + '"';
+                if (scene.bg3dGlow) html += ' data-glow="' + parseInt(scene.bg3dGlow) + '"';
+                if (scene.bg3dColor3) html += ' data-color3="' + esc(scene.bg3dColor3) + '"';
+                if (scene.bg3dInteractive) html += ' data-interactive="true"';
                 html += ' aria-hidden="true"></div>\n';
                 // Vignette overlay to ensure content readability over 3D backgrounds
                 html += '    <div class="cne-bg3d-vignette" aria-hidden="true"></div>\n';
+            }
+
+            // Video scroll layer
+            if (scene.videoScrollPreset) {
+                var vsC1 = esc(scene.videoScrollColor1 || '#6c5ce7');
+                var vsC2 = esc(scene.videoScrollColor2 || '#00cec9');
+                var vsOp = parseInt(scene.videoScrollOpacity) || 60;
+                var vsSpd = parseFloat(scene.videoScrollSpeed) || 1;
+                html += '    <canvas class="cne-video-scroll" data-preset="' + esc(scene.videoScrollPreset) + '"';
+                html += ' data-color1="' + vsC1 + '" data-color2="' + vsC2 + '"';
+                html += ' data-opacity="' + vsOp + '" data-speed="' + vsSpd + '"';
+                html += ' aria-hidden="true"></canvas>\n';
             }
 
             // Spline 3D embed
@@ -1271,6 +1288,10 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-bg3d-grid-line { position: absolute; background: currentColor; opacity: 0.04; }\n';
         css += '.cne-bg3d-vignette { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%); }\n\n';
 
+        // Video Scroll Layer styles
+        css += '/* Video Scroll Layer */\n';
+        css += '.cne-video-scroll { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }\n\n';
+
         // Hover Reveal Layer styles
         css += '/* Hover Reveal Layers */\n';
         css += '.cne-reveal-container { position: absolute; inset: 0; z-index: var(--reveal-z, 2); overflow: hidden; cursor: none; }\n';
@@ -1617,9 +1638,14 @@ window.ArbelCinematicCompiler = (function () {
         js += '    var type = container.dataset.bg3d;\n';
         js += '    var c1 = container.dataset.color1 || "#6c5ce7";\n';
         js += '    var c2 = container.dataset.color2 || "#00cec9";\n';
+        js += '    var c3 = container.dataset.color3 || "";\n';
         js += '    var intensity = parseInt(container.dataset.intensity) || 5;\n';
         js += '    var speed = container.dataset.speed || "medium";\n';
-        js += '    var speedMs = speed === "slow" ? 20 : speed === "fast" ? 6 : 12;\n\n';
+        js += '    var speedMs = speed === "slow" ? 20 : speed === "fast" ? 6 : 12;\n';
+        js += '    var pCount = parseInt(container.dataset.count) || (intensity * 12);\n';
+        js += '    var pSize = parseInt(container.dataset.size) || 4;\n';
+        js += '    var pGlow = parseInt(container.dataset.glow) || 8;\n';
+        js += '    var isInteractive = container.dataset.interactive === "true";\n\n';
 
         js += '    if(type === "gradient-orbs"){\n';
         js += '      for(var i = 0; i < Math.min(intensity, 8); i++){\n';
@@ -1827,6 +1853,86 @@ window.ArbelCinematicCompiler = (function () {
         js += '    }\n';
 
         js += '  });\n\n';
+
+        // Video Scroll Layer engine
+        js += '  /* Video Scroll Layer */\n';
+        js += '  document.querySelectorAll(".cne-video-scroll").forEach(function(cv){\n';
+        js += '    var preset = cv.dataset.preset || "cosmic";\n';
+        js += '    var c1 = cv.dataset.color1 || "#6c5ce7";\n';
+        js += '    var c2 = cv.dataset.color2 || "#00cec9";\n';
+        js += '    var opac = (parseInt(cv.dataset.opacity) || 60) / 100;\n';
+        js += '    var spd = parseFloat(cv.dataset.speed) || 1;\n';
+        js += '    cv.style.opacity = opac;\n';
+        js += '    var ctx = cv.getContext("2d");\n';
+        js += '    var rsz = function(){ cv.width = cv.parentElement.offsetWidth; cv.height = cv.parentElement.offsetHeight; };\n';
+        js += '    rsz(); window.addEventListener("resize", rsz);\n';
+        js += '    var hRgb = function(h){ h = h.replace("#",""); return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)]; };\n';
+        js += '    var rgb1 = hRgb(c1), rgb2 = hRgb(c2);\n';
+        js += '    var scrollY = 0;\n';
+        js += '    window.addEventListener("scroll", function(){ scrollY = window.scrollY * spd; });\n';
+        js += '    var ps = [];\n';
+        js += '    for(var i = 0; i < 80; i++) ps.push({ x: Math.random(), y: Math.random(), s: Math.random() * 3 + 1, v: (Math.random() + 0.5) * 0.002, p: Math.random() * 6.28 });\n';
+        js += '    (function draw(){\n';
+        js += '      var w = cv.width, h = cv.height, t = Date.now() * 0.001;\n';
+        js += '      ctx.clearRect(0, 0, w, h);\n';
+        js += '      var off = scrollY * 0.3;\n';
+        // Presets
+        js += '      if(preset === "cosmic" || preset === "starfield-warp" || preset === "galaxy-spiral"){\n';
+        js += '        var grd = ctx.createRadialGradient(w/2, h/2 - off*0.1, 0, w/2, h/2, Math.max(w,h)*0.8);\n';
+        js += '        grd.addColorStop(0, "rgba(" + rgb1.join(",") + ",0.15)"); grd.addColorStop(1, "rgba(" + rgb2.join(",") + ",0.05)");\n';
+        js += '        ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);\n';
+        js += '        ps.forEach(function(p){\n';
+        js += '          var px = p.x * w, py = ((p.y * h + off * p.v * 200) % (h + 20)) - 10;\n';
+        js += '          if(preset === "starfield-warp"){ var cx = w/2, cy = h/2; px = cx + (px - cx) * (1 + off * 0.0003); py = cy + (py - cy) * (1 + off * 0.0003); }\n';
+        js += '          if(preset === "galaxy-spiral"){ var a = Math.atan2(py - h/2, px - w/2) + off * 0.001; var d = Math.sqrt((px-w/2)*(px-w/2)+(py-h/2)*(py-h/2)); px = w/2 + Math.cos(a)*d; py = h/2 + Math.sin(a)*d; }\n';
+        js += '          var al = 0.4 + 0.6 * Math.sin(t * 2 + p.p);\n';
+        js += '          ctx.beginPath(); ctx.arc(px, py, p.s, 0, 6.28);\n';
+        js += '          ctx.fillStyle = "rgba(255,255,255," + al + ")"; ctx.fill();\n';
+        js += '        });\n';
+        js += '      }\n';
+        js += '      if(preset === "ocean-waves" || preset === "aurora-borealis"){\n';
+        js += '        for(var ly = 0; ly < 5; ly++){\n';
+        js += '          ctx.beginPath();\n';
+        js += '          for(var x = 0; x <= w; x += 4){\n';
+        js += '            var wave = Math.sin(x * 0.008 + t * (0.5 + ly * 0.2) + ly * 1.5 + off * 0.003) * (30 + ly * 20);\n';
+        js += '            var yy = h * (0.3 + ly * 0.12) + wave;\n';
+        js += '            x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);\n';
+        js += '          }\n';
+        js += '          ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();\n';
+        js += '          var mix = ly / 5;\n';
+        js += '          ctx.fillStyle = "rgba(" + Math.round(rgb1[0]*(1-mix)+rgb2[0]*mix) + "," + Math.round(rgb1[1]*(1-mix)+rgb2[1]*mix) + "," + Math.round(rgb1[2]*(1-mix)+rgb2[2]*mix) + ",0.12)";\n';
+        js += '          ctx.fill();\n';
+        js += '        }\n';
+        js += '      }\n';
+        js += '      if(preset === "forest-fog" || preset === "smoke-trails"){\n';
+        js += '        for(var fi = 0; fi < 6; fi++){\n';
+        js += '          var fx = w * (0.1 + fi * 0.15) + Math.sin(t * 0.3 + fi) * 60;\n';
+        js += '          var fy = h * 0.5 + Math.cos(t * 0.2 + fi * 2) * 40 - off * 0.05;\n';
+        js += '          var fr = 100 + Math.sin(t * 0.5 + fi) * 40;\n';
+        js += '          var fg = ctx.createRadialGradient(fx, fy, 0, fx, fy, fr);\n';
+        js += '          fg.addColorStop(0, "rgba(" + rgb1.join(",") + ",0.08)"); fg.addColorStop(1, "rgba(" + rgb2.join(",") + ",0)");\n';
+        js += '          ctx.fillStyle = fg; ctx.fillRect(fx - fr, fy - fr, fr * 2, fr * 2);\n';
+        js += '        }\n';
+        js += '      }\n';
+        js += '      if(preset === "neon-grid"){\n';
+        js += '        var gs = 60; ctx.strokeStyle = "rgba(" + rgb1.join(",") + ",0.15)"; ctx.lineWidth = 1;\n';
+        js += '        for(var gx = -gs + (off % gs); gx < w + gs; gx += gs){ ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }\n';
+        js += '        for(var gy = -gs + (off * 0.5 % gs); gy < h + gs; gy += gs){ ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }\n';
+        js += '      }\n';
+        js += '      if(preset === "liquid-metal" || preset === "geometric-flow"){\n';
+        js += '        for(var bi = 0; bi < 8; bi++){\n';
+        js += '          var bx = w * (0.1 + (bi % 4) * 0.25) + Math.sin(t + bi) * 80;\n';
+        js += '          var by = h * (0.2 + Math.floor(bi / 4) * 0.5) + Math.cos(t * 0.7 + bi * 2) * 60 - off * 0.08;\n';
+        js += '          var br = 80 + Math.sin(t * 0.5 + bi * 3) * 40;\n';
+        js += '          var bg = ctx.createRadialGradient(bx, by, 0, bx, by, br);\n';
+        js += '          bg.addColorStop(0, "rgba(" + (bi % 2 === 0 ? rgb1 : rgb2).join(",") + ",0.12)"); bg.addColorStop(1, "transparent");\n';
+        js += '          ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.28); ctx.fill();\n';
+        js += '        }\n';
+        js += '      }\n';
+        js += '      requestAnimationFrame(draw);\n';
+        js += '    })();\n';
+        js += '  });\n\n';
+
         js += '  /* Nav auto-hide on scroll */\n';
         js += '  var nav = document.querySelector(".cne-nav");\n';
         js += '  if(nav){\n';

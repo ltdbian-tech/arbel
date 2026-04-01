@@ -16,6 +16,8 @@ window.ArbelCinematicEditor = (function () {
     var _onUpdate = null;
     var _scenes = [];
     var _currentSceneIdx = 0;
+    var _pages = [];         // [{id, name, path, scenes, seo:{title,description}}]
+    var _currentPageIdx = 0; // active page
     var _selectedElementId = null;
     var _selectedElementIds = [];
     var _overrides = {};
@@ -25,6 +27,7 @@ window.ArbelCinematicEditor = (function () {
     var _timelineOpen = false;
     var _uiBound = false;          // guard against duplicate listener binding
     var _clipboard = null;           // copy/paste: deep-cloned element object
+    var _styleClipboard = null;      // copy/paste style: cloned style + hoverStyle
     var _keydownHandler = null;      // stored for cleanup in destroy
     var _beforeUnloadHandler = null; // stored for cleanup in destroy
 
@@ -662,6 +665,18 @@ window.ArbelCinematicEditor = (function () {
                 _showAddSceneDialog();
             });
         }
+
+        // Page management buttons
+        var addPageBtn = _qs('#cneAddPage');
+        if (addPageBtn) addPageBtn.addEventListener('click', function () { _addPage(); });
+        var pageSettingsBtn = _qs('#cnePageSettings');
+        if (pageSettingsBtn) pageSettingsBtn.addEventListener('click', function () {
+            _ensurePages();
+            _showPageSEO(_currentPageIdx);
+        });
+
+        _ensurePages();
+        _renderPageList();
     }
 
     function _renderSceneList() {
@@ -765,6 +780,32 @@ window.ArbelCinematicEditor = (function () {
             if (bg3dIntRow) bg3dIntRow.style.display = show3d ? '' : 'none';
             if (bg3dSpdRow) bg3dSpdRow.style.display = show3d ? '' : 'none';
             var bg3dWarn = _qs('#cneBg3dWarning'); if (bg3dWarn) bg3dWarn.style.display = show3d ? '' : 'none';
+
+            // Enhanced particle controls
+            var isParticleType = ['particles','bubbles','stars','snow','fireflies','confetti','matrix','star-field','particle-field'].indexOf(scene.bg3dType) >= 0;
+            var bg3dCountRow = _qs('#cneBg3dCountRow'); if (bg3dCountRow) bg3dCountRow.style.display = isParticleType ? '' : 'none';
+            var bg3dSizeRow = _qs('#cneBg3dSizeRow'); if (bg3dSizeRow) bg3dSizeRow.style.display = isParticleType ? '' : 'none';
+            var bg3dGlowRow = _qs('#cneBg3dGlowRow'); if (bg3dGlowRow) bg3dGlowRow.style.display = isParticleType ? '' : 'none';
+            var bg3dColor3Row = _qs('#cneBg3dColor3Row'); if (bg3dColor3Row) bg3dColor3Row.style.display = isParticleType ? '' : 'none';
+            var bg3dInterRow = _qs('#cneBg3dInteractiveRow'); if (bg3dInterRow) bg3dInterRow.style.display = isParticleType ? '' : 'none';
+            var bg3dCnt = _qs('#cneBg3dCount'); if (bg3dCnt) bg3dCnt.value = scene.bg3dCount || 60;
+            var bg3dCntV = _qs('#cneBg3dCountVal'); if (bg3dCntV) bg3dCntV.textContent = scene.bg3dCount || 60;
+            var bg3dSz = _qs('#cneBg3dSize'); if (bg3dSz) bg3dSz.value = scene.bg3dSize || 4;
+            var bg3dSzV = _qs('#cneBg3dSizeVal'); if (bg3dSzV) bg3dSzV.textContent = (scene.bg3dSize || 4) + 'px';
+            var bg3dGl = _qs('#cneBg3dGlow'); if (bg3dGl) bg3dGl.value = scene.bg3dGlow || 8;
+            var bg3dGlV = _qs('#cneBg3dGlowVal'); if (bg3dGlV) bg3dGlV.textContent = (scene.bg3dGlow || 8) + 'px';
+            var bg3dc3 = _qs('#cneBg3dColor3'); if (bg3dc3) bg3dc3.value = scene.bg3dColor3 || '#fd79a8';
+            var bg3dInter = _qs('#cneBg3dInteractive'); if (bg3dInter) bg3dInter.checked = !!scene.bg3dInteractive;
+
+            // Video scroll layer
+            var vsPreset = _qs('#cneVideoScrollPreset'); if (vsPreset) vsPreset.value = scene.videoScrollPreset || '';
+            var vsOpts = _qs('#cneVideoScrollOpts'); if (vsOpts) vsOpts.style.display = scene.videoScrollPreset ? '' : 'none';
+            var vsSpeed = _qs('#cneVideoScrollSpeed'); if (vsSpeed) vsSpeed.value = scene.videoScrollSpeed || 1;
+            var vsSpeedV = _qs('#cneVideoScrollSpeedVal'); if (vsSpeedV) vsSpeedV.textContent = (scene.videoScrollSpeed || 1) + 'x';
+            var vsOpacity = _qs('#cneVideoScrollOpacity'); if (vsOpacity) vsOpacity.value = scene.videoScrollOpacity || 60;
+            var vsOpacV = _qs('#cneVideoScrollOpacityVal'); if (vsOpacV) vsOpacV.textContent = (scene.videoScrollOpacity || 60) + '%';
+            var vsc1 = _qs('#cneVideoScrollColor1'); if (vsc1) vsc1.value = scene.videoScrollColor1 || '#6c5ce7';
+            var vsc2 = _qs('#cneVideoScrollColor2'); if (vsc2) vsc2.value = scene.videoScrollColor2 || '#00cec9';
             // Spline 3D embed
             var spline = _qs('#cneSceneSpline'); if (spline) spline.value = scene.splineUrl || '';
             var splineInfo = _qs('#cneSplineInfo'); if (splineInfo) splineInfo.style.display = scene.splineUrl ? '' : 'none';
@@ -903,6 +944,167 @@ window.ArbelCinematicEditor = (function () {
         _scenes.splice(idx, 1);
         if (_currentSceneIdx >= _scenes.length) _currentSceneIdx = _scenes.length - 1;
         _selectScene(_currentSceneIdx, true);
+    }
+
+    /* ─── Page Management (multi-page routing) ─── */
+    function _ensurePages() {
+        if (_pages.length === 0) {
+            _pages = [{ id: 'page-' + Date.now().toString(36), name: 'Home', path: '/', scenes: _scenes, seo: { title: '', description: '' } }];
+            _currentPageIdx = 0;
+        }
+    }
+
+    function _renderPageList() {
+        var list = _qs('#cnePageList');
+        if (!list) return;
+        _ensurePages();
+        list.innerHTML = '';
+        _pages.forEach(function (page, i) {
+            var div = document.createElement('div');
+            div.className = 'cne-page-item' + (i === _currentPageIdx ? ' active' : '');
+            div.innerHTML = '<span class="cne-page-name">' + (page.name || 'Page') + '</span><span class="cne-page-path">' + (page.path || '/') + '</span>';
+            div.addEventListener('click', function () { _selectPage(i); });
+            // Right-click to rename/delete
+            div.addEventListener('contextmenu', function (e) {
+                e.preventDefault();
+                _showPageContextMenu(e.clientX, e.clientY, i);
+            });
+            list.appendChild(div);
+        });
+    }
+
+    function _selectPage(idx) {
+        _ensurePages();
+        if (idx < 0 || idx >= _pages.length) return;
+        // Save current scenes back to current page
+        _pages[_currentPageIdx].scenes = _scenes;
+        _currentPageIdx = idx;
+        _scenes = _pages[idx].scenes || [];
+        _currentSceneIdx = 0;
+        _selectedElementId = null;
+        _selectedElementIds = [];
+        _renderPageList();
+        _renderSceneList();
+        if (_scenes.length > 0) _selectScene(0, true);
+        _notifyUpdate(true);
+    }
+
+    function _addPage() {
+        _ensurePages();
+        _pages[_currentPageIdx].scenes = _scenes;
+        var pageName = 'Page ' + (_pages.length + 1);
+        var pagePath = '/' + pageName.toLowerCase().replace(/\s+/g, '-');
+        var newPage = {
+            id: 'page-' + Date.now().toString(36),
+            name: pageName,
+            path: pagePath,
+            scenes: [{ id: 'scene-' + Date.now().toString(36), name: 'Hero', pin: true, duration: 100, bgColor: '#0a0a0f', elements: [] }],
+            seo: { title: '', description: '' }
+        };
+        _pushUndo();
+        _pages.push(newPage);
+        _selectPage(_pages.length - 1);
+    }
+
+    function _deletePage(idx) {
+        if (_pages.length <= 1) return;
+        _pushUndo();
+        _pages.splice(idx, 1);
+        if (_currentPageIdx >= _pages.length) _currentPageIdx = _pages.length - 1;
+        _scenes = _pages[_currentPageIdx].scenes || [];
+        _currentSceneIdx = 0;
+        _selectedElementId = null;
+        _selectedElementIds = [];
+        _renderPageList();
+        _renderSceneList();
+        if (_scenes.length > 0) _selectScene(0, true);
+        _notifyUpdate(true);
+    }
+
+    function _renamePage(idx) {
+        if (!_pages[idx]) return;
+        var current = _pages[idx].name || '';
+        var name = prompt('Page name:', current);
+        if (name === null || name.trim() === '') return;
+        _pushUndo();
+        _pages[idx].name = name.trim();
+        if (idx !== 0) {
+            _pages[idx].path = '/' + name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
+        _renderPageList();
+        _notifyUpdate();
+    }
+
+    function _showPageContextMenu(x, y, idx) {
+        _hideContextMenu();
+        var menu = document.createElement('div');
+        menu.className = 'arbel-ctx-menu';
+        function addItem(label, action, cls) {
+            var item = document.createElement('div');
+            item.className = 'arbel-ctx-item' + (cls ? ' ' + cls : '');
+            item.innerHTML = '<span>' + label + '</span>';
+            if (action) item.addEventListener('click', function () { _hideContextMenu(); action(); });
+            else item.setAttribute('data-disabled', '');
+            menu.appendChild(item);
+        }
+        addItem('Rename', function () { _renamePage(idx); });
+        addItem('Duplicate', function () {
+            _ensurePages();
+            _pages[_currentPageIdx].scenes = _scenes;
+            _pushUndo();
+            var clone = JSON.parse(JSON.stringify(_pages[idx]));
+            clone.id = 'page-' + Date.now().toString(36);
+            clone.name = clone.name + ' Copy';
+            clone.path = clone.path + '-copy';
+            _pages.push(clone);
+            _selectPage(_pages.length - 1);
+        });
+        if (_pages.length > 1) {
+            addItem('Delete', function () { _deletePage(idx); }, 'arbel-ctx-item--danger');
+        }
+        addItem('SEO Settings', function () { _showPageSEO(idx); });
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        document.body.appendChild(menu);
+        var rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) menu.style.left = (window.innerWidth - rect.width - 8) + 'px';
+        if (rect.bottom > window.innerHeight) menu.style.top = (window.innerHeight - rect.height - 8) + 'px';
+        _ctxMenu = menu;
+        setTimeout(function () {
+            document.addEventListener('mousedown', _ctxAutoClose);
+            document.addEventListener('keydown', _ctxEscClose);
+        }, 0);
+    }
+
+    function _showPageSEO(idx) {
+        var page = _pages[idx];
+        if (!page) return;
+        var overlay = document.createElement('div');
+        overlay.className = 'arbel-dialog-overlay';
+        var dialog = document.createElement('div');
+        dialog.className = 'arbel-dialog';
+        dialog.style.gap = '12px';
+        dialog.innerHTML = '<h3 style="margin:0;font-size:1rem">Page SEO — ' + (page.name || 'Page') + '</h3>' +
+            '<label class="cne-hint mono" style="display:block">URL Path</label>' +
+            '<input type="text" class="gen-input" id="dlgPagePath" value="' + (page.path || '/').replace(/"/g, '&quot;') + '" placeholder="/">' +
+            '<label class="cne-hint mono" style="display:block">Meta Title</label>' +
+            '<input type="text" class="gen-input" id="dlgPageTitle" value="' + ((page.seo && page.seo.title) || '').replace(/"/g, '&quot;') + '" placeholder="Page Title">' +
+            '<label class="cne-hint mono" style="display:block">Meta Description</label>' +
+            '<textarea class="gen-input" id="dlgPageDesc" rows="3" placeholder="Page description for SEO">' + ((page.seo && page.seo.description) || '') + '</textarea>' +
+            '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="cne-toolbar-btn" id="dlgPageCancel">Cancel</button><button class="cne-toolbar-btn cne-toolbar-btn--accent" id="dlgPageSave">Save</button></div>';
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+        dialog.querySelector('#dlgPageCancel').addEventListener('click', function () { overlay.remove(); });
+        dialog.querySelector('#dlgPageSave').addEventListener('click', function () {
+            _pushUndo();
+            page.path = dialog.querySelector('#dlgPagePath').value.trim() || '/';
+            if (!page.seo) page.seo = {};
+            page.seo.title = dialog.querySelector('#dlgPageTitle').value.trim();
+            page.seo.description = dialog.querySelector('#dlgPageDesc').value.trim();
+            _renderPageList();
+            overlay.remove();
+        });
     }
 
     /* ─── Element List (inside scene panel) ─── */
@@ -2412,12 +2614,20 @@ window.ArbelCinematicEditor = (function () {
             var imgRemove = _qs('#cneElBgImgRemove');
             var vidStatus = _qs('#cneElBgVidStatus');
             var vidRemove = _qs('#cneElBgVidRemove');
+            var bgFitRow = _qs('#cneBgFitRow');
             var hasImg = el && _getElStyleValue(el, 'backgroundImage') && _getElStyleValue(el, 'backgroundImage') !== '';
             var hasVid = el && el.bgVideo;
             if (imgStatus) imgStatus.style.display = hasImg ? '' : 'none';
             if (imgRemove) imgRemove.style.display = hasImg ? '' : 'none';
             if (vidStatus) vidStatus.style.display = hasVid ? '' : 'none';
             if (vidRemove) vidRemove.style.display = hasVid ? '' : 'none';
+            if (bgFitRow) bgFitRow.style.display = hasImg ? '' : 'none';
+            if (hasImg && el) {
+                var bgSizeEl = _qs('#cneBgSize');
+                var bgPosEl = _qs('#cneBgPosition');
+                if (bgSizeEl) bgSizeEl.value = _getElStyleValue(el, 'backgroundSize') || 'cover';
+                if (bgPosEl) bgPosEl.value = _getElStyleValue(el, 'backgroundPosition') || 'center';
+            }
         }
 
         // Element background-image upload
@@ -2456,6 +2666,20 @@ window.ArbelCinematicEditor = (function () {
                 if (elBgUpload) elBgUpload.value = '';
                 _updateElBgStatus();
                 _notifyUpdate(true);
+            });
+        }
+
+        // Background size & position
+        var bgSizeSelect = _qs('#cneBgSize');
+        if (bgSizeSelect) {
+            bgSizeSelect.addEventListener('change', function () {
+                _setElStyle('backgroundSize', bgSizeSelect.value);
+            });
+        }
+        var bgPosSelect = _qs('#cneBgPosition');
+        if (bgPosSelect) {
+            bgPosSelect.addEventListener('change', function () {
+                _setElStyle('backgroundPosition', bgPosSelect.value);
             });
         }
 
@@ -3373,6 +3597,44 @@ window.ArbelCinematicEditor = (function () {
             _notifyUpdate();
         }
 
+        // Hover presets
+        var _HOVER_PRESETS = {
+            lift:       { translateY: '-6', scale: '1.02', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', _duration: '0.3' },
+            liftMore:   { translateY: '-12', scale: '1.04', boxShadow: '0 16px 48px rgba(0,0,0,0.35)', _duration: '0.35' },
+            float:      { translateY: '-10', _duration: '0.4' },
+            grow:       { scale: '1.08', _duration: '0.25' },
+            growMore:   { scale: '1.15', _duration: '0.3' },
+            shrink:     { scale: '0.95', _duration: '0.25' },
+            tiltLeft:   { rotate: '-5', _duration: '0.3' },
+            tiltRight:  { rotate: '5', _duration: '0.3' },
+            spin:       { rotate: '360', _duration: '0.6' },
+            glow:       { boxShadow: '0 0 40px rgba(108,92,231,0.6)', _duration: '0.35' },
+            glowBlue:   { boxShadow: '0 0 40px rgba(59,130,246,0.6)', _duration: '0.35' },
+            glowGreen:  { boxShadow: '0 0 40px rgba(16,185,129,0.6)', _duration: '0.35' },
+            neon:       { boxShadow: '0 0 20px #fff, 0 0 60px #6C5CE7, 0 0 100px #6C5CE7', _duration: '0.4' },
+            shadowPop:  { boxShadow: '0 12px 40px rgba(0,0,0,0.5)', translateY: '-4', _duration: '0.3' },
+            skewLeft:   { rotate: '-3', scale: '1.02', _duration: '0.3' },
+            skewRight:  { rotate: '3', scale: '1.02', _duration: '0.3' },
+            fadeHalf:   { opacity: '50', _duration: '0.3' },
+            brighten:   { opacity: '100', scale: '1.03', _duration: '0.3' },
+            dim:        { opacity: '60', _duration: '0.3' }
+        };
+        var hPreset = _qs('#cneHoverPreset');
+        if (hPreset) {
+            hPreset.addEventListener('change', function () {
+                var el = _getSelectedElement();
+                if (!el) return;
+                var key = hPreset.value;
+                if (!key) return; // Custom / None selected
+                var p = _HOVER_PRESETS[key];
+                if (!p) return;
+                _pushUndo();
+                el.hoverStyle = JSON.parse(JSON.stringify(p));
+                _updateHoverPanel(el);
+                _notifyUpdate();
+            });
+        }
+
         var hOpacity = _qs('#cneHoverOpacity');
         if (hOpacity) hOpacity.addEventListener('input', function () {
             var raw = hOpacity.value.trim();
@@ -3431,6 +3693,7 @@ window.ArbelCinematicEditor = (function () {
     function _updateHoverPanel(el) {
         if (!el) return;
         var hs = el.hoverStyle || {};
+        var hPreset = _qs('#cneHoverPreset'); if (hPreset) hPreset.value = '';
         var hOpacity = _qs('#cneHoverOpacity'); if (hOpacity) hOpacity.value = hs.opacity !== undefined ? hs.opacity : '';
         var hScale = _qs('#cneHoverScale'); if (hScale) hScale.value = hs.scale !== undefined ? hs.scale : '';
         var hColorEn = _qs('#cneHoverColorEnable'); if (hColorEn) hColorEn.checked = !!hs.color;
@@ -3585,6 +3848,14 @@ window.ArbelCinematicEditor = (function () {
             });
         }
 
+        // Refresh preview
+        var refreshBtn = _qs('#cneRefreshPreview');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', function () {
+                _notifyUpdate(true);
+            });
+        }
+
         // Undo / Redo buttons
         var undoBtn = _qs('#cneUndo');
         var redoBtn = _qs('#cneRedo');
@@ -3653,6 +3924,10 @@ window.ArbelCinematicEditor = (function () {
             if (!_active) return;
             var tag = document.activeElement.tagName;
             var inInput = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
+            if ((e.ctrlKey || e.metaKey) && e.altKey && !inInput) {
+                if (e.key === 'c' && _selectedElementIds.length > 0) { e.preventDefault(); _copyStyle(); return; }
+                if (e.key === 'v' && _styleClipboard) { e.preventDefault(); _pasteStyle(); return; }
+            }
             if ((e.ctrlKey || e.metaKey) && !e.altKey) {
                 if ((e.key === 's' || e.key === 'S') && e.shiftKey) { e.preventDefault(); _saveProjectAs(); return; }
                 if ((e.key === 's' || e.key === 'S') && !e.shiftKey) { e.preventDefault(); _saveProject(); return; }
@@ -3988,6 +4263,9 @@ window.ArbelCinematicEditor = (function () {
             if (bg3dIntRow) bg3dIntRow.style.display = show ? '' : 'none';
             if (bg3dSpeedRow) bg3dSpeedRow.style.display = show ? '' : 'none';
             if (bg3dWarning) bg3dWarning.style.display = show ? '' : 'none';
+            var isParticle = bg3dSelect && ['particles','bubbles','stars','snow','fireflies','confetti','matrix','star-field','particle-field'].indexOf(bg3dSelect.value) >= 0;
+            var rows = ['#cneBg3dCountRow','#cneBg3dSizeRow','#cneBg3dGlowRow','#cneBg3dColor3Row','#cneBg3dInteractiveRow'];
+            rows.forEach(function(s){ var r = _qs(s); if (r) r.style.display = isParticle ? '' : 'none'; });
         }
 
         function _apply3dBg() {
@@ -3999,6 +4277,14 @@ window.ArbelCinematicEditor = (function () {
             scene.bg3dColor2 = (_qs('#cneBg3dColor2') || {}).value || '#00cec9';
             scene.bg3dIntensity = (_qs('#cneBg3dIntensity') || {}).value || '5';
             scene.bg3dSpeed = (_qs('#cneBg3dSpeed') || {}).value || 'medium';
+            scene.bg3dCount = (_qs('#cneBg3dCount') || {}).value || '60';
+            scene.bg3dSize = (_qs('#cneBg3dSize') || {}).value || '4';
+            scene.bg3dGlow = (_qs('#cneBg3dGlow') || {}).value || '8';
+            scene.bg3dColor3 = (_qs('#cneBg3dColor3') || {}).value || '#fd79a8';
+            scene.bg3dInteractive = !!(_qs('#cneBg3dInteractive') || {}).checked;
+            var cntV = _qs('#cneBg3dCountVal'); if (cntV) cntV.textContent = scene.bg3dCount;
+            var szV = _qs('#cneBg3dSizeVal'); if (szV) szV.textContent = scene.bg3dSize + 'px';
+            var glV = _qs('#cneBg3dGlowVal'); if (glV) glV.textContent = scene.bg3dGlow + 'px';
             _commitBurst('scene', 600);
             _toggle3dRows();
             _notifyUpdate(true);
@@ -4009,6 +4295,34 @@ window.ArbelCinematicEditor = (function () {
         var bg3dc2 = _qs('#cneBg3dColor2'); if (bg3dc2) bg3dc2.addEventListener('input', _apply3dBg);
         var bg3dInt = _qs('#cneBg3dIntensity'); if (bg3dInt) bg3dInt.addEventListener('input', _apply3dBg);
         var bg3dSpd = _qs('#cneBg3dSpeed'); if (bg3dSpd) bg3dSpd.addEventListener('change', _apply3dBg);
+        var bg3dc3 = _qs('#cneBg3dColor3'); if (bg3dc3) bg3dc3.addEventListener('input', _apply3dBg);
+        var bg3dCnt = _qs('#cneBg3dCount'); if (bg3dCnt) bg3dCnt.addEventListener('input', _apply3dBg);
+        var bg3dSz = _qs('#cneBg3dSize'); if (bg3dSz) bg3dSz.addEventListener('input', _apply3dBg);
+        var bg3dGl = _qs('#cneBg3dGlow'); if (bg3dGl) bg3dGl.addEventListener('input', _apply3dBg);
+        var bg3dInter = _qs('#cneBg3dInteractive'); if (bg3dInter) bg3dInter.addEventListener('change', _apply3dBg);
+
+        // Video Scroll Layer
+        function _applyVideoScroll() {
+            var scene = _scenes[_currentSceneIdx];
+            if (!scene) return;
+            _beginBurst('scene');
+            scene.videoScrollPreset = (_qs('#cneVideoScrollPreset') || {}).value || '';
+            scene.videoScrollSpeed = parseFloat((_qs('#cneVideoScrollSpeed') || {}).value) || 1;
+            scene.videoScrollOpacity = parseInt((_qs('#cneVideoScrollOpacity') || {}).value) || 60;
+            scene.videoScrollColor1 = (_qs('#cneVideoScrollColor1') || {}).value || '#6c5ce7';
+            scene.videoScrollColor2 = (_qs('#cneVideoScrollColor2') || {}).value || '#00cec9';
+            var vsOpts = _qs('#cneVideoScrollOpts');
+            if (vsOpts) vsOpts.style.display = scene.videoScrollPreset ? '' : 'none';
+            var vsSpeedV = _qs('#cneVideoScrollSpeedVal'); if (vsSpeedV) vsSpeedV.textContent = scene.videoScrollSpeed + 'x';
+            var vsOpacV = _qs('#cneVideoScrollOpacityVal'); if (vsOpacV) vsOpacV.textContent = scene.videoScrollOpacity + '%';
+            _commitBurst('scene', 600);
+            _notifyUpdate(true);
+        }
+        var vsPreset = _qs('#cneVideoScrollPreset'); if (vsPreset) vsPreset.addEventListener('change', _applyVideoScroll);
+        var vsSpeed = _qs('#cneVideoScrollSpeed'); if (vsSpeed) vsSpeed.addEventListener('input', _applyVideoScroll);
+        var vsOpac = _qs('#cneVideoScrollOpacity'); if (vsOpac) vsOpac.addEventListener('input', _applyVideoScroll);
+        var vsc1 = _qs('#cneVideoScrollColor1'); if (vsc1) vsc1.addEventListener('input', _applyVideoScroll);
+        var vsc2 = _qs('#cneVideoScrollColor2'); if (vsc2) vsc2.addEventListener('input', _applyVideoScroll);
 
         // Spline 3D embed
         var splineInput = _qs('#cneSceneSpline');
@@ -5186,6 +5500,39 @@ window.ArbelCinematicEditor = (function () {
         _notifyUpdate(true);
     }
 
+    /* ─── Copy / Paste Style ─── */
+    function _copyStyle() {
+        var el = _getSelectedElement();
+        if (!el) return;
+        _styleClipboard = {
+            style: JSON.parse(JSON.stringify(el.style || {})),
+            hoverStyle: JSON.parse(JSON.stringify(el.hoverStyle || {}))
+        };
+        // Remove positional props — we only want visual styling
+        var positional = ['position','top','left','right','bottom','width','height','zIndex'];
+        positional.forEach(function (p) { delete _styleClipboard.style[p]; });
+    }
+
+    function _pasteStyle() {
+        if (!_styleClipboard) return;
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene || _selectedElementIds.length === 0) return;
+        _pushUndo();
+        for (var i = 0; i < scene.elements.length; i++) {
+            if (_selectedElementIds.indexOf(scene.elements[i].id) >= 0) {
+                var el = scene.elements[i];
+                var clip = JSON.parse(JSON.stringify(_styleClipboard));
+                // Merge style: keep positional, overwrite visual
+                Object.keys(clip.style).forEach(function (k) { el.style[k] = clip.style[k]; });
+                // Overwrite hover style entirely
+                el.hoverStyle = clip.hoverStyle;
+            }
+        }
+        var sel = _getSelectedElement();
+        if (sel) _updatePropertiesFromScene(sel);
+        _notifyUpdate(true);
+    }
+
     /* ─── Context Menu ─── */
     var _ctxMenu = null;
 
@@ -5214,6 +5561,9 @@ window.ArbelCinematicEditor = (function () {
         addItem(multi ? 'Copy ' + n : 'Copy', 'Ctrl+C', _selectedElementIds.length > 0 ? _copyElement : null);
         addItem('Paste', 'Ctrl+V', _clipboard ? _pasteElement : null);
         addItem(multi ? 'Duplicate ' + n : 'Duplicate', 'Ctrl+D', _selectedElementIds.length > 0 ? _duplicateElement : null);
+        addSep();
+        addItem('Copy Style', 'Ctrl+Alt+C', (!multi && _selectedElementIds.length === 1) ? _copyStyle : null);
+        addItem('Paste Style', 'Ctrl+Alt+V', _styleClipboard && _selectedElementIds.length > 0 ? _pasteStyle : null);
         addSep();
         if (!multi && data.editable) { addItem('Edit Text', 'Dbl-click', function () { _postIframe('arbel-edit-text', { id: data.id }); }); }
         if (!multi) {
@@ -5550,6 +5900,14 @@ window.ArbelCinematicEditor = (function () {
         var _ebgIR = _qs('#cneElBgImgRemove'); if (_ebgIR) _ebgIR.style.display = _hasElBgImg ? '' : 'none';
         var _ebgVS = _qs('#cneElBgVidStatus'); if (_ebgVS) _ebgVS.style.display = el.bgVideo ? '' : 'none';
         var _ebgVR = _qs('#cneElBgVidRemove'); if (_ebgVR) _ebgVR.style.display = el.bgVideo ? '' : 'none';
+        var _bgFitRow = _qs('#cneBgFitRow');
+        if (_bgFitRow) {
+            _bgFitRow.style.display = _hasElBgImg ? '' : 'none';
+            if (_hasElBgImg) {
+                var _bgSz = _qs('#cneBgSize'); if (_bgSz) _bgSz.value = _getElStyleValue(el, 'backgroundSize') || 'cover';
+                var _bgPs = _qs('#cneBgPosition'); if (_bgPs) _bgPs.value = _getElStyleValue(el, 'backgroundPosition') || 'center';
+            }
+        }
 
         var opacity = _qs('#cneOpacity');
         if (opacity) {
@@ -6958,6 +7316,16 @@ window.ArbelCinematicEditor = (function () {
     function _collectFullState() {
         var saveOverrides = Object.assign({}, _overrides);
         delete saveOverrides._editingMenuOverlay;
+        // Save current scenes back to current page
+        _ensurePages();
+        _pages[_currentPageIdx].scenes = _scenes;
+        // Build save-able pages array (strip nav overlay from each page)
+        var savePages = _pages.map(function (p) {
+            return {
+                id: p.id, name: p.name, path: p.path, seo: p.seo || {},
+                scenes: (p.scenes || []).filter(function (s) { return s.id !== '_nav-overlay'; })
+            };
+        });
         var saveScenes = _scenes.filter(function (s) { return s.id !== '_nav-overlay'; });
         return {
             version: 2,
@@ -6967,6 +7335,8 @@ window.ArbelCinematicEditor = (function () {
                 savedAt: new Date().toISOString()
             },
             scenes: saveScenes,
+            pages: savePages,
+            currentPageIdx: _currentPageIdx,
             overrides: saveOverrides,
             designTokens: Object.assign({}, _designTokens)
         };
@@ -6975,8 +7345,16 @@ window.ArbelCinematicEditor = (function () {
     function _restoreFullState(proj) {
         _flushBursts();
         _pushUndo();
-        if (proj.scenes && Array.isArray(proj.scenes)) {
+        // Restore pages if present
+        if (proj.pages && Array.isArray(proj.pages) && proj.pages.length > 0) {
+            _pages = proj.pages;
+            _currentPageIdx = proj.currentPageIdx || 0;
+            if (_currentPageIdx >= _pages.length) _currentPageIdx = 0;
+            _scenes = _pages[_currentPageIdx].scenes || [];
+        } else if (proj.scenes && Array.isArray(proj.scenes)) {
             _scenes = proj.scenes;
+            _pages = [{ id: 'page-' + Date.now().toString(36), name: 'Home', path: '/', scenes: _scenes, seo: { title: '', description: '' } }];
+            _currentPageIdx = 0;
         }
         if (proj.overrides) _overrides = proj.overrides;
         delete _overrides._editingMenuOverlay;
@@ -6992,6 +7370,7 @@ window.ArbelCinematicEditor = (function () {
         _currentSceneIdx = 0;
         _undoStack = [];
         _redoStack = [];
+        _renderPageList();
         _renderSceneList();
         _selectScene(0, true);
         _projectDirty = false;
@@ -7163,6 +7542,23 @@ window.ArbelCinematicEditor = (function () {
         if (!files || !files['index.html']) {
             alert('Failed to compile. Please ensure you have at least one scene.');
             return;
+        }
+
+        // Compile additional pages if multi-page project
+        _ensurePages();
+        _pages[_currentPageIdx].scenes = _scenes;
+        if (_pages.length > 1) {
+            _pages.forEach(function (page, pageIdx) {
+                if (pageIdx === 0) return; // first page is already compiled as index.html
+                var pageCfg = JSON.parse(JSON.stringify(cfg));
+                pageCfg.scenes = page.scenes || [];
+                if (page.seo && page.seo.title) pageCfg.brandName = page.seo.title;
+                var pageFiles = ArbelCinematicCompiler.compile(pageCfg);
+                if (pageFiles && pageFiles['index.html']) {
+                    var pathSlug = (page.path || '/' + page.name).replace(/^\//, '').replace(/[^a-z0-9-]/gi, '-').toLowerCase() || page.name.toLowerCase().replace(/\s+/g, '-');
+                    files[pathSlug + '/index.html'] = pageFiles['index.html'];
+                }
+            });
         }
 
         // Extract inline data URLs to separate asset files for ZIP

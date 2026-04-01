@@ -1758,6 +1758,9 @@
                     <button class="cne-toolbar-btn" id="cneDeleteEl" title="Delete Element">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
                     </button>
+                    <button class="cne-toolbar-btn" id="cneRefreshPreview" title="Refresh Preview">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                    </button>
                     <div class="cne-toolbar-divider"></div>
                     <div class="cne-align-group" id="cneAlignGroup" style="display:none">
                         <button class="cne-toolbar-btn cne-align-btn" data-align="left" title="Align Left">
@@ -1833,6 +1836,18 @@
 
             <!-- Left: Scenes + Elements -->
             <div class="cne-scenes-panel">
+                <div class="cne-panel-head" style="display:flex;align-items:center;justify-content:space-between">
+                    PAGES
+                    <div style="display:flex;gap:4px">
+                        <button class="cne-toolbar-btn" id="cneAddPage" title="Add Page" style="padding:2px 4px;font-size:10px">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                        </button>
+                        <button class="cne-toolbar-btn" id="cnePageSettings" title="Page Settings" style="padding:2px 4px;font-size:10px">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="cnePageList" class="cne-page-list"></div>
                 <div class="cne-panel-head">SCENES</div>
                 <div class="cne-scene-list" id="cneSceneList"></div>
                 <button class="cne-add-scene-btn" id="cneAddScene">
@@ -2460,6 +2475,31 @@
                             <button class="cne-upload-btn" id="cneElBgImgRemove" style="display:none;margin-left:4px;color:#ff6b6b" title="Remove background image">&times; Remove</button>
                         </div>
                     </div>
+                    <div class="cne-row" id="cneBgFitRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Bg Size</span>
+                            <select class="gen-select" id="cneBgSize">
+                                <option value="cover">Cover</option>
+                                <option value="contain">Contain</option>
+                                <option value="auto">Auto</option>
+                                <option value="100% 100%">Stretch</option>
+                            </select>
+                        </div>
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Bg Position</span>
+                            <select class="gen-select" id="cneBgPosition">
+                                <option value="center">Center</option>
+                                <option value="top">Top</option>
+                                <option value="bottom">Bottom</option>
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                                <option value="top left">Top Left</option>
+                                <option value="top right">Top Right</option>
+                                <option value="bottom left">Bottom Left</option>
+                                <option value="bottom right">Bottom Right</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
                             <label class="cne-upload-btn" id="cneElBgVideoUploadLabel">
@@ -2661,7 +2701,46 @@
                     </div>
 
                     <div class="cne-section-label">HOVER STATE</div>
-                    <p class="cne-hint" style="margin-bottom:8px">Style changes on mouse hover. Leave blank = no hover effect.</p>
+                    <p class="cne-hint" style="margin-bottom:8px">Style changes on mouse hover. Pick a preset or customize.</p>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Preset</span>
+                            <select class="gen-select" id="cneHoverPreset">
+                                <option value="">Custom / None</option>
+                                <optgroup label="Lift &amp; Float">
+                                    <option value="lift">Lift</option>
+                                    <option value="liftMore">Lift More</option>
+                                    <option value="float">Float</option>
+                                </optgroup>
+                                <optgroup label="Scale">
+                                    <option value="grow">Grow</option>
+                                    <option value="growMore">Grow More</option>
+                                    <option value="shrink">Shrink</option>
+                                </optgroup>
+                                <optgroup label="Tilt &amp; Rotate">
+                                    <option value="tiltLeft">Tilt Left</option>
+                                    <option value="tiltRight">Tilt Right</option>
+                                    <option value="spin">Spin</option>
+                                </optgroup>
+                                <optgroup label="Glow &amp; Shadow">
+                                    <option value="glow">Glow (Purple)</option>
+                                    <option value="glowBlue">Glow (Blue)</option>
+                                    <option value="glowGreen">Glow (Green)</option>
+                                    <option value="neon">Neon</option>
+                                    <option value="shadowPop">Shadow Pop</option>
+                                </optgroup>
+                                <optgroup label="Skew &amp; Transform">
+                                    <option value="skewLeft">Skew Left</option>
+                                    <option value="skewRight">Skew Right</option>
+                                </optgroup>
+                                <optgroup label="Fade &amp; Color">
+                                    <option value="fadeHalf">Fade 50%</option>
+                                    <option value="brighten">Brighten</option>
+                                    <option value="dim">Dim</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
                     <div class="cne-row">
                         <div class="cne-col">
                             <span class="cne-hint mono">Opacity</span>
@@ -3091,6 +3170,57 @@
                         </div>
                     </div>
 
+                    <div class="cne-section-label">VIDEO SCROLL LAYER</div>
+                    <p class="cne-hint" style="margin-bottom:6px">Full-viewport scroll-linked video background that scrubs with page scroll.</p>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">Video Preset</span>
+                            <select class="gen-select" id="cneVideoScrollPreset">
+                                <option value="">None</option>
+                                <optgroup label="Cosmic">
+                                    <option value="cosmic">Cosmic Nebula</option>
+                                    <option value="starfield-warp">Starfield Warp</option>
+                                    <option value="galaxy-spiral">Galaxy Spiral</option>
+                                </optgroup>
+                                <optgroup label="Nature">
+                                    <option value="ocean-waves">Ocean Waves</option>
+                                    <option value="aurora-borealis">Aurora Borealis</option>
+                                    <option value="forest-fog">Forest Fog</option>
+                                </optgroup>
+                                <optgroup label="Abstract">
+                                    <option value="neon-grid">Neon Grid</option>
+                                    <option value="liquid-metal">Liquid Metal</option>
+                                    <option value="smoke-trails">Smoke Trails</option>
+                                    <option value="geometric-flow">Geometric Flow</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="cneVideoScrollOpts" style="display:none">
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Speed</span>
+                                <input type="range" class="gen-range" id="cneVideoScrollSpeed" min="0.2" max="3" step="0.1" value="1">
+                                <span class="cne-hint" id="cneVideoScrollSpeedVal">1x</span>
+                            </div>
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Opacity</span>
+                                <input type="range" class="gen-range" id="cneVideoScrollOpacity" min="10" max="100" value="60">
+                                <span class="cne-hint" id="cneVideoScrollOpacityVal">60%</span>
+                            </div>
+                        </div>
+                        <div class="cne-row">
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Color 1</span>
+                                <input type="color" class="cne-color-input" id="cneVideoScrollColor1" value="#6c5ce7">
+                            </div>
+                            <div class="cne-col">
+                                <span class="cne-hint mono">Color 2</span>
+                                <input type="color" class="cne-color-input" id="cneVideoScrollColor2" value="#00cec9">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="cne-section-label">3D BACKGROUND EFFECT</div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">
@@ -3163,6 +3293,41 @@
                                 <option value="medium" selected>Medium</option>
                                 <option value="fast">Fast</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dCountRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Count</span>
+                            <input type="range" class="gen-range" id="cneBg3dCount" min="10" max="200" value="60">
+                            <span class="cne-hint" id="cneBg3dCountVal">60</span>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dSizeRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Particle Size</span>
+                            <input type="range" class="gen-range" id="cneBg3dSize" min="1" max="20" value="4">
+                            <span class="cne-hint" id="cneBg3dSizeVal">4px</span>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dGlowRow" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Glow</span>
+                            <input type="range" class="gen-range" id="cneBg3dGlow" min="0" max="30" value="8">
+                            <span class="cne-hint" id="cneBg3dGlowVal">8px</span>
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dColor3Row" style="display:none">
+                        <div class="cne-col">
+                            <span class="cne-hint mono">Color 3</span>
+                            <input type="color" class="cne-color-input" id="cneBg3dColor3" value="#fd79a8">
+                        </div>
+                    </div>
+                    <div class="cne-row" id="cneBg3dInteractiveRow" style="display:none">
+                        <div class="cne-col" style="flex:1">
+                            <div class="cne-scroll-toggle">
+                                <label>Interactive (follow cursor)</label>
+                                <input type="checkbox" class="cne-toggle" id="cneBg3dInteractive">
+                            </div>
                         </div>
                     </div>
 
