@@ -48,6 +48,7 @@
     border-bottom: 1px solid var(--border);
     gap: 8px;
     overflow-x: auto;
+    overflow-y: visible;
     scrollbar-width: none;
     flex-shrink: 0;
 }
@@ -129,6 +130,12 @@
 }
 
 /* Hamburger Menu Toolbar Dropdown */
+#cneMenuToolbarWrap {
+    position: relative;
+    display: inline-flex;
+    z-index: 10001;
+}
+
 .cne-menu-toolbar-dd {
     position: absolute;
     top: calc(100% + 6px);
@@ -138,7 +145,7 @@
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 10px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.55);
-    z-index: 10000;
+    z-index: 10001;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     max-height: 80vh;
@@ -184,7 +191,7 @@
 
 /* Effects dropdown menu */
 .cne-effects-menu {
-    z-index: 10000;
+    z-index: 10001;
     background: #1a1a2e;
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 8px;
