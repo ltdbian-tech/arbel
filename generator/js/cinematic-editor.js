@@ -9399,6 +9399,8 @@ window.ArbelCinematicEditor = (function () {
             var cmds = [];
             // Actions
             cmds.push({ cat: 'Action', label: 'New project', run: function () { _newProject(); } });
+            cmds.push({ cat: 'Action', label: 'Start from a template\u2026', run: function () { _showStartersDialog(); } });
+            cmds.push({ cat: 'Action', label: 'AI rewrite current scene\u2026', run: function () { _aiRewriteCurrentScene(); } });
             cmds.push({ cat: 'Action', label: 'Save project', kbd: 'Ctrl+S', run: function () { _saveProject(); } });
             cmds.push({ cat: 'Action', label: 'Save project as\u2026', kbd: 'Ctrl+Shift+S', run: function () { _saveProjectAs(); } });
             cmds.push({ cat: 'Action', label: 'Open project\u2026', kbd: 'Ctrl+O', run: function () { _openProject(); } });
@@ -9510,6 +9512,158 @@ window.ArbelCinematicEditor = (function () {
         input.focus();
     }
 
+    /* ─── Starter Templates Gallery ─── */
+    var _STARTER_TEMPLATES = [
+        { id: 'agency',          label: 'Agency',          desc: 'Creative studio w/ work showcase',      scenes: ['hero', 'splitMedia', 'featureGrid', 'showcase', 'testimonial', 'ctaSection'] },
+        { id: 'saas',            label: 'SaaS',            desc: 'Product landing, features, pricing',    scenes: ['gradientHero', 'featureGrid', 'stats', 'showcase', 'testimonial', 'ctaSection'] },
+        { id: 'portfolio',       label: 'Portfolio',       desc: 'Personal work showcase',                 scenes: ['bigText', 'imageReveal', 'imageReveal', 'textReveal', 'ctaSection'] },
+        { id: 'restaurant',      label: 'Restaurant',      desc: 'Menu / story / reservations',            scenes: ['hero', 'splitMedia', 'featureGrid', 'testimonial', 'ctaSection'] },
+        { id: 'event',           label: 'Event',           desc: 'Countdown landing w/ speakers',          scenes: ['gradientHero', 'stats', 'featureGrid', 'ctaSection'] },
+        { id: 'product-launch',  label: 'Product Launch',  desc: 'Big text, showcase, social proof',       scenes: ['bigText', 'hero', 'showcase', 'stats', 'testimonial', 'ctaSection'] },
+        { id: 'consulting',      label: 'Consulting',      desc: 'Services, process, testimonials',        scenes: ['hero', 'featureGrid', 'splitMedia', 'testimonial', 'ctaSection'] },
+        { id: 'creative-studio', label: 'Creative Studio', desc: 'Bold typography, image reveals',         scenes: ['textReveal', 'bigText', 'imageReveal', 'showcase', 'marquee', 'ctaSection'] }
+    ];
+
+    function _showStartersDialog() {
+        var existing = document.getElementById('cneStartersOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneStartersOverlay';
+        overlay.className = 'cne-dialog-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(760px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.3rem;letter-spacing:-0.01em">Start from a template</h2>' +
+            '<p style="margin:0 0 18px;font-size:.9rem;color:rgba(255,255,255,.55)">Each starter is a curated multi-scene layout. You can edit, remove, or rearrange scenes afterwards.</p>';
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px';
+        _STARTER_TEMPLATES.forEach(function (t) {
+            var card = document.createElement('button');
+            card.type = 'button';
+            card.style.cssText = 'text-align:left;padding:14px 14px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:10px;color:inherit;cursor:pointer;transition:all .15s;font-family:inherit';
+            card.onmouseenter = function () { card.style.borderColor = 'rgba(108,92,231,.6)'; card.style.background = 'rgba(108,92,231,.08)'; };
+            card.onmouseleave = function () { card.style.borderColor = 'rgba(255,255,255,.08)'; card.style.background = 'rgba(255,255,255,.02)'; };
+            card.innerHTML = '<div style="font-weight:600;font-size:.95rem;margin-bottom:4px">' + t.label + '</div>' +
+                '<div style="font-size:.78rem;color:rgba(255,255,255,.5);line-height:1.4;margin-bottom:8px">' + t.desc + '</div>' +
+                '<div style="font-size:.68rem;color:rgba(255,255,255,.35);letter-spacing:.05em">' + t.scenes.length + ' scenes</div>';
+            card.addEventListener('click', function () {
+                _applyStarter(t);
+                overlay.remove();
+                document.removeEventListener('keydown', onEsc);
+            });
+            grid.appendChild(card);
+        });
+        box.appendChild(grid);
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'margin-top:18px;display:flex;justify-content:flex-end;gap:8px';
+        var cancel = document.createElement('button');
+        cancel.className = 'gen-btn';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        btnRow.appendChild(cancel);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    function _applyStarter(tpl) {
+        if (_projectDirty && !confirm('Replace current scenes with the "' + tpl.label + '" starter?')) return;
+        _pushUndo();
+        _scenes = tpl.scenes.map(function (sid, i) { return ArbelCinematicCompiler.createScene(sid, i); });
+        _overrides = {};
+        _selectedElementId = null;
+        _selectedElementIds = [];
+        _currentSceneIdx = 0;
+        _autoResponsive('tablet');
+        _autoResponsive('mobile');
+        _renderSceneList();
+        _selectScene(0, true);
+        _notifyUpdate(true);
+    }
+
+    /* ─── AI Scene Director: rewrite scene copy via LLM ─── */
+    function _aiRewriteCurrentScene() {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) { alert('No scene selected.'); return; }
+        if (!window.ArbelAI || !window.ArbelKeyManager) { alert('AI module not loaded.'); return; }
+        var apiKey = (window.ArbelKeyManager.getKey && (window.ArbelKeyManager.getKey('text') || window.ArbelKeyManager.getKey()));
+        if (!apiKey) { alert('Add an API key in the AI panel first.'); return; }
+
+        var brand = prompt('Brand / company name for this scene:', (window.ArbelEditor && window.ArbelEditor.getBrandName && window.ArbelEditor.getBrandName()) || '') || '';
+        if (!brand) return;
+        var context = prompt('Context / tone (e.g., "modern SaaS, playful"):', '') || '';
+
+        // Gather editable text elements
+        var textEls = (scene.elements || []).filter(function (el) {
+            return el.text && typeof el.text === 'string' && el.tag !== 'img' && el.tag !== 'video' && el.tag !== 'form';
+        });
+        if (!textEls.length) { alert('No text elements to rewrite in this scene.'); return; }
+
+        var prompt1 = 'You are a world-class website copywriter. Rewrite the copy for a single scene of type "' +
+            (scene.template || 'generic') + '" for this brand:\n\n' +
+            'Brand: ' + brand + '\n' +
+            'Tone / context: ' + (context || 'professional, modern') + '\n\n' +
+            'Here are the current text strings with ids. Keep each string similar in length, tone-match the brand, and preserve the role of each element.\n' +
+            'Return a single JSON object where each key is the element id and each value is the new copy. No markdown, no prose.\n\n' +
+            'Elements:\n' + textEls.map(function (el) { return el.id + ': ' + JSON.stringify(el.text); }).join('\n');
+
+        var provider = window.ArbelKeyManager.getProvider('text') || window.ArbelKeyManager.getProvider();
+        // Inline minimal LLM call using the same endpoints ArbelAI uses
+        var url, body, headers = { 'Content-Type': 'application/json' };
+        if (provider === 'gemini') {
+            url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey);
+            body = JSON.stringify({ contents: [{ parts: [{ text: prompt1 }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1200, responseMimeType: 'application/json' } });
+        } else {
+            url = 'https://api.groq.com/openai/v1/chat/completions';
+            headers['Authorization'] = 'Bearer ' + apiKey;
+            body = JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'system', content: 'You are a website copywriter. Return only valid JSON.' }, { role: 'user', content: prompt1 }],
+                temperature: 0.8, max_tokens: 1200, response_format: { type: 'json_object' }
+            });
+        }
+
+        // Toast-like inline status using the command palette hint area
+        var statusEl = document.createElement('div');
+        statusEl.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:10002;background:#15151f;border:1px solid rgba(108,92,231,.6);padding:10px 18px;border-radius:999px;color:#fff;font-size:.85rem;font-family:inherit';
+        statusEl.textContent = 'Rewriting scene copy\u2026';
+        document.body.appendChild(statusEl);
+
+        fetch(url, { method: 'POST', headers: headers, body: body })
+            .then(function (r) { if (!r.ok) return r.json().then(function (j) { throw new Error((j.error && j.error.message) || ('AI error ' + r.status)); }); return r.json(); })
+            .then(function (data) {
+                var text;
+                if (provider === 'gemini') {
+                    text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+                } else {
+                    text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+                }
+                if (!text) throw new Error('Empty AI response.');
+                var map = JSON.parse(text);
+                _pushUndo();
+                var n = 0;
+                textEls.forEach(function (el) {
+                    if (typeof map[el.id] === 'string' && map[el.id].trim()) {
+                        el.text = map[el.id].trim();
+                        n++;
+                    }
+                });
+                _renderSceneList();
+                _notifyUpdate(true);
+                statusEl.style.borderColor = 'rgba(0,255,150,.7)';
+                statusEl.textContent = '\u2713 Rewrote ' + n + ' element' + (n === 1 ? '' : 's');
+                setTimeout(function () { statusEl.remove(); }, 1600);
+            })
+            .catch(function (err) {
+                statusEl.style.borderColor = 'rgba(255,80,80,.8)';
+                statusEl.textContent = 'AI rewrite failed: ' + (err && err.message ? err.message : 'unknown');
+                setTimeout(function () { statusEl.remove(); }, 3200);
+            });
+    }
+
     /* ─── First-run Onboarding Tour ─── */
     function _showOnboardingTour() {
         var steps = [
@@ -9619,6 +9773,8 @@ window.ArbelCinematicEditor = (function () {
         showAIDialog: _showAIGenerateDialog,
         showCommandPalette: _showCommandPalette,
         showOnboarding: _showOnboardingTour,
+        showStarters: _showStartersDialog,
+        aiRewriteScene: _aiRewriteCurrentScene,
         getEmbedSnippet: function (siteUrl, opts) {
             // Produce an iframe embed snippet for the deployed site. Honors optional
             // width / height / scroll scene index.
