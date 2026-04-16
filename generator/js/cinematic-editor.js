@@ -9430,6 +9430,7 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Projects dashboard\u2026', run: function () { _showProjectsDashboard(); } });
             cmds.push({ cat: 'Action', label: 'Asset library\u2026', run: function () { _showAssetLibrary(); } });
             cmds.push({ cat: 'Action', label: 'Find & replace\u2026', kbd: 'Ctrl+F', run: function () { _showFindReplace(); } });
+            cmds.push({ cat: 'Action', label: 'Accessibility audit\u2026', run: function () { _showA11yAudit(); } });
             cmds.push({ cat: 'Action', label: 'Keyboard shortcuts', kbd: '?', run: function () { _showShortcutsSheet(); } });
             cmds.push({ cat: 'Action', label: 'Components\u2026', run: function () { _showComponentsDialog(); } });
             cmds.push({ cat: 'Action', label: 'Save selection as component\u2026', run: function () { _saveSelectionAsComponent(); } });
@@ -10410,6 +10411,159 @@ window.ArbelCinematicEditor = (function () {
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
+    /* ─── Accessibility Audit ─── */
+    function _parseColor(str) {
+        if (!str) return null;
+        str = String(str).trim();
+        var m = str.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+        if (m) {
+            var h = m[1];
+            if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+            return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16), a: 1 };
+        }
+        m = str.match(/rgba?\(([^)]+)\)/i);
+        if (m) {
+            var p = m[1].split(',').map(function (v) { return parseFloat(v.trim()); });
+            if (p.length >= 3) return { r: p[0] | 0, g: p[1] | 0, b: p[2] | 0, a: p.length > 3 ? p[3] : 1 };
+        }
+        return null;
+    }
+
+    function _luminance(c) {
+        function ch(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+        return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+    }
+
+    function _contrastRatio(fg, bg) {
+        var l1 = _luminance(fg), l2 = _luminance(bg);
+        var a = Math.max(l1, l2), b = Math.min(l1, l2);
+        return (a + 0.05) / (b + 0.05);
+    }
+
+    function _resolveTokenColor(val) {
+        // Resolve CSS custom properties like var(--primary)
+        if (!val) return val;
+        var m = String(val).match(/var\(\s*--([a-z0-9_-]+)/i);
+        if (m && _designTokens && _designTokens[m[1]]) return _designTokens[m[1]];
+        return val;
+    }
+
+    function _runA11yAudit() {
+        var issues = [];
+        var textTypes = { text: 1, heading: 1, button: 1, link: 1 };
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            var sceneLabel = 'Scene ' + (i + 1) + (sc.name ? ' (' + sc.name + ')' : '');
+            if (!Array.isArray(sc.elements)) continue;
+            var headingLevels = [];
+            for (var j = 0; j < sc.elements.length; j++) {
+                var el = sc.elements[j];
+                if (!el) continue;
+                var where = sceneLabel + ' \u00b7 ' + (el.type || 'el');
+                // Image: missing alt
+                if (el.type === 'image') {
+                    var alt = (el.alt || '').trim();
+                    if (!alt) issues.push({ level: 'error', where: where, msg: 'Image has no alt text (screen readers will skip).', elementId: el.id, sceneIdx: i });
+                    else if (alt.length > 140) issues.push({ level: 'warn', where: where, msg: 'Alt text is very long (' + alt.length + ' chars). Keep it concise.', elementId: el.id, sceneIdx: i });
+                }
+                // Button / link: empty label or generic text
+                if (el.type === 'button' || el.type === 'link' || el.tag === 'a' || el.href !== undefined) {
+                    var content = String(el.content || '').replace(/<[^>]+>/g, '').trim();
+                    if (!content) issues.push({ level: 'error', where: where, msg: (el.type === 'button' ? 'Button' : 'Link') + ' has no visible text.', elementId: el.id, sceneIdx: i });
+                    else if (/^(click here|read more|learn more|here)$/i.test(content)) issues.push({ level: 'warn', where: where, msg: 'Link text "' + content + '" is non-descriptive. Describe the destination.', elementId: el.id, sceneIdx: i });
+                }
+                // Heading hierarchy
+                if (el.type === 'heading') {
+                    var lv = parseInt((el.tag || 'h2').replace(/\D/g, ''), 10) || 2;
+                    headingLevels.push({ level: lv, where: where, elementId: el.id });
+                }
+                // Contrast (text color vs scene bg)
+                if (textTypes[el.type]) {
+                    var style = el.style || {};
+                    var fgRaw = style.color || (_designTokens && _designTokens.text);
+                    var bgRaw = (style.backgroundColor && style.backgroundColor !== 'transparent' && style.backgroundColor !== 'rgba(0,0,0,0)') ? style.backgroundColor : (sc.bgColor || (_designTokens && _designTokens.bg));
+                    var fg = _parseColor(_resolveTokenColor(fgRaw));
+                    var bg = _parseColor(_resolveTokenColor(bgRaw));
+                    if (fg && bg && fg.a > 0.5 && bg.a > 0.5) {
+                        var ratio = _contrastRatio(fg, bg);
+                        var fontPx = parseFloat(style.fontSize) || 16;
+                        var bold = style.fontWeight && parseInt(style.fontWeight, 10) >= 600;
+                        var largeText = fontPx >= 24 || (fontPx >= 18.66 && bold);
+                        var min = largeText ? 3 : 4.5;
+                        if (ratio < min) {
+                            issues.push({ level: ratio < (min - 1) ? 'error' : 'warn', where: where, msg: 'Low contrast ' + ratio.toFixed(2) + ':1 (needs ' + min + ':1 for ' + (largeText ? 'large' : 'normal') + ' text).', elementId: el.id, sceneIdx: i });
+                        }
+                    }
+                }
+            }
+            // Heading-order check within scene
+            var lastLv = 0;
+            for (var h = 0; h < headingLevels.length; h++) {
+                var hl = headingLevels[h];
+                if (lastLv && hl.level > lastLv + 1) {
+                    issues.push({ level: 'warn', where: hl.where, msg: 'Heading level jumps from H' + lastLv + ' to H' + hl.level + '. Skipping levels confuses screen readers.', elementId: hl.elementId, sceneIdx: i });
+                }
+                lastLv = hl.level;
+            }
+        }
+        return issues;
+    }
+
+    function _showA11yAudit() {
+        var existing = document.getElementById('cneA11yOverlay');
+        if (existing) existing.remove();
+        var issues = _runA11yAudit();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneA11yOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(680px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var errs = issues.filter(function (x) { return x.level === 'error'; }).length;
+        var warns = issues.filter(function (x) { return x.level === 'warn'; }).length;
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Accessibility Audit</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">' +
+            (issues.length === 0 ? 'No issues found across ' + _scenes.length + ' scene' + (_scenes.length === 1 ? '' : 's') + '. Nice work.'
+                : '<span style="color:#ff6b6b">' + errs + ' error' + (errs === 1 ? '' : 's') + '</span> and <span style="color:#ffb86b">' + warns + ' warning' + (warns === 1 ? '' : 's') + '</span> across ' + _scenes.length + ' scene' + (_scenes.length === 1 ? '' : 's') + '.') +
+            '</p>';
+        if (issues.length) {
+            var list = document.createElement('div');
+            list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+            issues.forEach(function (it) {
+                var row = document.createElement('button');
+                row.type = 'button';
+                var color = it.level === 'error' ? '#ff6b6b' : '#ffb86b';
+                row.style.cssText = 'text-align:left;padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px;color:inherit;cursor:pointer;font-family:inherit;display:flex;gap:10px;align-items:flex-start';
+                row.onmouseenter = function () { row.style.borderColor = 'rgba(108,92,231,.6)'; };
+                row.onmouseleave = function () { row.style.borderColor = 'rgba(255,255,255,.08)'; };
+                row.innerHTML = '<span style="color:' + color + ';font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;min-width:60px;padding-top:2px">' + it.level + '</span>' +
+                    '<span style="flex:1;min-width:0"><div style="font-size:.84rem;color:#eee">' + _escapeHtml(it.msg) + '</div>' +
+                    '<div style="font-size:.7rem;color:rgba(255,255,255,.45);margin-top:2px">' + _escapeHtml(it.where) + '</div></span>';
+                row.addEventListener('click', function () {
+                    overlay.remove();
+                    document.removeEventListener('keydown', onEsc);
+                    if (typeof it.sceneIdx === 'number') _selectScene(it.sceneIdx, true);
+                    if (it.elementId) { _selectedElementId = it.elementId; _selectedElementIds = [it.elementId]; }
+                    _notifyUpdate();
+                });
+                list.appendChild(row);
+            });
+            box.appendChild(list);
+        }
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
     /* ─── Starter Templates Gallery ─── */
     var _STARTER_TEMPLATES = [
         { id: 'agency',          label: 'Agency',          desc: 'Creative studio w/ work showcase',      scenes: ['hero', 'splitMedia', 'featureGrid', 'showcase', 'testimonial', 'ctaSection'] },
@@ -10675,6 +10829,7 @@ window.ArbelCinematicEditor = (function () {
         showProjectsDashboard: _showProjectsDashboard,
         showAssetLibrary: _showAssetLibrary,
         showFindReplace: _showFindReplace,
+        showA11yAudit: _showA11yAudit,
         showShortcuts: _showShortcutsSheet,
         showComponents: _showComponentsDialog,
         saveSelectionAsComponent: _saveSelectionAsComponent,
