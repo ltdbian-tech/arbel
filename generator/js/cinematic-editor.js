@@ -31,6 +31,8 @@ window.ArbelCinematicEditor = (function () {
     var _isDragging = false;         // true while element is being dragged (skip expensive updates)
     var _keydownHandler = null;      // stored for cleanup in destroy
     var _beforeUnloadHandler = null; // stored for cleanup in destroy
+    var _scrollToSceneTimer = null;  // timer for deferred iframe scroll-to-scene
+    var _dragSceneIdx = -1;          // drag source index for scene reorder
 
     // ─── Project File State ───
     var _fileHandle = null;           // File System Access API handle
@@ -723,6 +725,37 @@ window.ArbelCinematicEditor = (function () {
             item.appendChild(thumb);
             item.appendChild(info);
 
+            // Double-click scene name to rename
+            name.addEventListener('dblclick', function (e) {
+                e.stopPropagation();
+                name.contentEditable = true;
+                name.focus();
+                var range = document.createRange();
+                range.selectNodeContents(name);
+                var s = window.getSelection();
+                s.removeAllRanges();
+                s.addRange(range);
+                function commitRename() {
+                    name.removeEventListener('blur', commitRename);
+                    name.removeEventListener('keydown', onKey);
+                    name.contentEditable = false;
+                    var newName = name.textContent.trim();
+                    if (newName && newName !== scene.name) {
+                        _pushUndo();
+                        scene.name = newName;
+                        _notifyUpdate(false);
+                    } else {
+                        name.textContent = scene.name;
+                    }
+                }
+                function onKey(e2) {
+                    if (e2.key === 'Enter') { e2.preventDefault(); name.blur(); }
+                    if (e2.key === 'Escape') { name.textContent = scene.name; name.blur(); }
+                }
+                name.addEventListener('blur', commitRename);
+                name.addEventListener('keydown', onKey);
+            });
+
             // Actions
             var actions = document.createElement('div');
             actions.className = 'cne-scene-actions';
@@ -751,6 +784,35 @@ window.ArbelCinematicEditor = (function () {
             if (_scenes.length > 1 && _scenes[i].id !== '_nav-overlay') actions.appendChild(delBtn);
 
             item.appendChild(actions);
+
+            // Drag-to-reorder scenes
+            item.draggable = true;
+            item.addEventListener('dragstart', function (e) {
+                _dragSceneIdx = i;
+                item.classList.add('cne-scene-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            item.addEventListener('dragend', function () {
+                _dragSceneIdx = -1;
+                item.classList.remove('cne-scene-dragging');
+                var all = list.querySelectorAll('.cne-scene-item');
+                for (var k = 0; k < all.length; k++) all[k].classList.remove('cne-scene-dragover');
+            });
+            item.addEventListener('dragover', function (e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                var all = list.querySelectorAll('.cne-scene-item');
+                for (var k = 0; k < all.length; k++) all[k].classList.remove('cne-scene-dragover');
+                item.classList.add('cne-scene-dragover');
+            });
+            item.addEventListener('drop', function (e) {
+                e.preventDefault();
+                if (_dragSceneIdx < 0 || _dragSceneIdx === i) return;
+                _pushUndo();
+                var moved = _scenes.splice(_dragSceneIdx, 1)[0];
+                _scenes.splice(i, 0, moved);
+                _selectScene(i, true);
+            });
 
             // Click to select
             item.addEventListener('click', function () {
@@ -842,7 +904,8 @@ window.ArbelCinematicEditor = (function () {
         _notifyUpdate(!!rerender);
         // After rerender, scroll iframe to show this scene (with delay to allow iframe to load)
         if (rerender) {
-            setTimeout(function () {
+            if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+            _scrollToSceneTimer = setTimeout(function () {
                 _postIframe('arbel-scroll-to-scene', { index: idx });
             }, 600);
         }
@@ -1322,7 +1385,7 @@ window.ArbelCinematicEditor = (function () {
                 } else {
                     _updateMultiSelectPanel();
                 }
-                _postIframe('arbel-select-by-id', { id: el.id });
+                _postIframe(ev.shiftKey ? 'arbel-sync-selection' : 'arbel-select-by-id', ev.shiftKey ? { ids: _selectedElementIds } : { id: el.id });
             });
 
             list.appendChild(row);
@@ -3112,6 +3175,7 @@ window.ArbelCinematicEditor = (function () {
                     var preset = ArbelCinematicCompiler.getPreset(presetId);
                     if (preset) {
                         el.scroll = preset;
+                        el.scroll._presetId = presetId;
                     }
                 }
                 _updateScrollPanel();
@@ -3364,6 +3428,7 @@ window.ArbelCinematicEditor = (function () {
     function _setScrollValues(prop, fromInput, toInput) {
         var el = _getSelectedElement();
         if (!el || !el.scroll) return;
+        if (el.scroll._presetId) delete el.scroll._presetId;
         var from = fromInput ? parseFloat(fromInput.value) : 0;
         var to = toInput ? parseFloat(toInput.value) : 0;
         if (isNaN(from)) from = 0;
@@ -3375,6 +3440,7 @@ window.ArbelCinematicEditor = (function () {
     function _setScrollStringValues(prop, fromInput, toInput) {
         var el = _getSelectedElement();
         if (!el || !el.scroll) return;
+        if (el.scroll._presetId) delete el.scroll._presetId;
         var from = fromInput ? fromInput.value.trim() : '';
         var to = toInput ? toInput.value.trim() : '';
         if (!from && !to) {
@@ -3388,6 +3454,7 @@ window.ArbelCinematicEditor = (function () {
     function _setScrollProp(prop, val) {
         var el = _getSelectedElement();
         if (!el || !el.scroll) return;
+        if (el.scroll._presetId) delete el.scroll._presetId;
         el.scroll[prop] = val;
         _notifyUpdate(true);
     }
@@ -4007,6 +4074,11 @@ window.ArbelCinematicEditor = (function () {
                 if (el) _updatePropertiesFromScene(el);
                 // Re-render preview to apply responsive overrides
                 _notifyUpdate(true);
+                // Scroll iframe to current scene after device rerender
+                if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+                _scrollToSceneTimer = setTimeout(function () {
+                    _postIframe('arbel-scroll-to-scene', { index: _currentSceneIdx });
+                }, 600);
             });
         });
     }
@@ -5488,6 +5560,7 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementIds = newIds;
         _selectedElementId = newIds[newIds.length - 1];
         _renderElementList();
+        _renderSceneList();
         var el = _getSelectedElement();
         if (el) _updatePropertiesFromScene(el);
         _notifyUpdate(true);
@@ -6127,9 +6200,9 @@ window.ArbelCinematicEditor = (function () {
         if (scrollToggle) scrollToggle.checked = !!el.scroll;
         if (scrollOpts) scrollOpts.style.display = el.scroll ? '' : 'none';
 
-        // Reset preset dropdown to Custom
+        // Reset preset dropdown to match stored preset (or Custom if manually edited)
         var presetSelect = _qs('#cneAnimPreset');
-        if (presetSelect) presetSelect.value = '';
+        if (presetSelect) presetSelect.value = (el.scroll && el.scroll._presetId) || '';
 
         if (el.scroll) {
             var startInput = _qs('#cneScrollStart');
@@ -6320,6 +6393,9 @@ window.ArbelCinematicEditor = (function () {
         }
         _renderSceneList();
         _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
+        // Safety: force a second rerender after a short delay to recover from
+        // iframe blackout/corruption when undo restores a very different state
+        setTimeout(function () { _notifyUpdate(true); }, 200);
         _undoLocked = false;
         _updateUndoButtons();
     }
@@ -6354,6 +6430,7 @@ window.ArbelCinematicEditor = (function () {
         }
         _renderSceneList();
         _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
+        setTimeout(function () { _notifyUpdate(true); }, 200);
         _undoLocked = false;
         _updateUndoButtons();
     }
@@ -7906,9 +7983,10 @@ window.ArbelCinematicEditor = (function () {
 
         /* ── Double-click → inline text edit ── */
         'document.addEventListener("dblclick",function(e){' +
-          'var el=e.target.closest("[data-arbel-edit=\\"text\\"]");' +
-          /* If primary (currently selected) element is editable, prefer it over e.target */
-          'if(primary&&primary.hasAttribute("data-arbel-edit")&&primary.contains(e.target)){el=primary;}' +
+          /* Use elementsFromPoint for z-index-aware picking of overlapping siblings */
+          'var els=document.elementsFromPoint(e.clientX,e.clientY);' +
+          'var el=null;' +
+          'for(var i=0;i<els.length;i++){if(els[i].hasAttribute&&els[i].hasAttribute("data-arbel-edit")){el=els[i];break;}}' +
           'if(!el)return;e.preventDefault();startEdit(el);' +
         '},true);' +
 
@@ -8192,6 +8270,15 @@ window.ArbelCinematicEditor = (function () {
           'var d;try{d=typeof e.data==="string"?JSON.parse(e.data):e.data}catch(x){return}' +
           'if(!d||!d.type)return;' +
           'if(d.type==="arbel-select-by-id"){var el=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el){el.scrollIntoView({behavior:"smooth",block:"center"});sel(el,false)}}' +
+          'if(d.type==="arbel-sync-selection"){' +
+            'for(var si=0;si<selected.length;si++)selected[si].classList.remove("arbel-sel");' +
+            'selected=[];primary=null;' +
+            'if(d.ids&&d.ids.length>0){' +
+              'd.ids.forEach(function(id){var el=document.querySelector(\'[data-arbel-id="\'+id+\'"]\');if(el){selected.push(el);el.classList.add("arbel-sel");}});' +
+              'primary=selected.length>0?selected[selected.length-1]:null;' +
+            '}' +
+            'posHandles(selected.length===1?primary:null);' +
+          '}' +
           'if(d.type==="arbel-select-all"){' +
             'desel();' +
             /* Scope selection to the current scene only (using sceneIndex from message or primary element) */
@@ -8216,7 +8303,13 @@ window.ArbelCinematicEditor = (function () {
           '}' +
           'if(d.type==="arbel-scroll-to-scene"){' +
             'var scn=document.querySelector(\'[data-scene-index="\'+d.index+\'"]\');' +
-            'if(scn){desel();scn.scrollIntoView({behavior:"smooth",block:"start"});}' +
+            'if(scn){' +
+              /* Clear iframe selection visually without sending arbel-deselect to parent
+                 (parent already handled deselection in _selectScene) */
+              'for(var si=0;si<selected.length;si++)selected[si].classList.remove("arbel-sel");' +
+              'selected=[];primary=null;posHandles(null);' +
+              'scn.scrollIntoView({behavior:"smooth",block:"start"});' +
+            '}' +
           '}' +
           'if(d.type==="arbel-deselect-all"){desel();}' +
         '});' +
