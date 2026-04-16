@@ -9424,6 +9424,8 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Start from a template\u2026', run: function () { _showStartersDialog(); } });
             cmds.push({ cat: 'Action', label: 'Projects dashboard\u2026', run: function () { _showProjectsDashboard(); } });
             cmds.push({ cat: 'Action', label: 'Asset library\u2026', run: function () { _showAssetLibrary(); } });
+            cmds.push({ cat: 'Action', label: 'Components\u2026', run: function () { _showComponentsDialog(); } });
+            cmds.push({ cat: 'Action', label: 'Save selection as component\u2026', run: function () { _saveSelectionAsComponent(); } });
             cmds.push({ cat: 'Action', label: 'Version history\u2026', run: function () { _showVersionHistory(); } });
             cmds.push({ cat: 'Action', label: 'Import brand kit\u2026', run: function () { _showBrandKitImport(); } });
             cmds.push({ cat: 'Action', label: 'AI rewrite current scene\u2026', run: function () { _aiRewriteCurrentScene(); } });
@@ -9966,6 +9968,205 @@ window.ArbelCinematicEditor = (function () {
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
+    /* ─── Components / Symbols (save element group, reuse across scenes) ─── */
+    var _COMPONENTS_KEY = 'arbel-cinematic-components';
+    var _COMPONENTS_MAX = 50;
+
+    function _loadComponents() {
+        try {
+            var raw = localStorage.getItem(_COMPONENTS_KEY);
+            var list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) list = [];
+            return list;
+        } catch (e) { return []; }
+    }
+
+    function _saveComponentsList(list) {
+        try {
+            while (list.length > _COMPONENTS_MAX) list.shift();
+            localStorage.setItem(_COMPONENTS_KEY, JSON.stringify(list));
+            return true;
+        } catch (e) {
+            alert('Browser storage is full. Delete older components to free space.');
+            return false;
+        }
+    }
+
+    function _saveSelectionAsComponent() {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) { alert('No active scene.'); return; }
+        var ids = (_selectedElementIds && _selectedElementIds.length) ? _selectedElementIds.slice() : (_selectedElementId ? [_selectedElementId] : []);
+        if (!ids.length) { alert('Select one or more elements first.'); return; }
+        var picks = [];
+        for (var i = 0; i < scene.elements.length; i++) {
+            if (ids.indexOf(scene.elements[i].id) >= 0) picks.push(scene.elements[i]);
+        }
+        if (!picks.length) { alert('Selection not found.'); return; }
+        var defaultName = picks.length === 1 ? (picks[0].type || 'Component') : (picks.length + ' elements');
+        var name = prompt('Component name:', defaultName);
+        if (name === null) return;
+        name = String(name).trim();
+        if (!name) { alert('Name required.'); return; }
+        var list = _loadComponents();
+        var existing = -1;
+        for (var j = 0; j < list.length; j++) { if (list[j].name === name) { existing = j; break; } }
+        if (existing >= 0 && !confirm('A component named "' + name + '" exists. Overwrite?')) return;
+        var cloned = JSON.parse(JSON.stringify(picks));
+        // Strip runtime-only fields
+        cloned.forEach(function (el) { delete el.group; });
+        var entry = {
+            id: existing >= 0 ? list[existing].id : 'comp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+            name: name,
+            createdAt: Date.now(),
+            elementCount: cloned.length,
+            elements: cloned
+        };
+        if (existing >= 0) list[existing] = entry; else list.push(entry);
+        if (_saveComponentsList(list)) {
+            alert('Saved component "' + name + '".');
+        }
+    }
+
+    function _insertComponent(id) {
+        var list = _loadComponents();
+        var comp = null;
+        for (var i = 0; i < list.length; i++) { if (list[i].id === id) { comp = list[i]; break; } }
+        if (!comp) { alert('Component not found.'); return; }
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) { alert('No active scene.'); return; }
+        _pushUndo();
+        var offset = 20;
+        var groupKey = 'cg-' + Date.now().toString(36);
+        var newIds = [];
+        (comp.elements || []).forEach(function (src) {
+            var dupe = JSON.parse(JSON.stringify(src));
+            dupe.id = 'el-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+            dupe.style = dupe.style || {};
+            // Nudge so the user sees the new copy
+            if (dupe.style.top) {
+                var t = parseFloat(dupe.style.top);
+                if (!isNaN(t)) dupe.style.top = (t + offset) + 'px';
+            }
+            if (dupe.style.left) {
+                var l = parseFloat(dupe.style.left);
+                if (!isNaN(l)) dupe.style.left = (l + offset) + 'px';
+            }
+            if (comp.elements.length > 1) dupe.group = groupKey;
+            scene.elements.push(dupe);
+            newIds.push(dupe.id);
+        });
+        _selectedElementIds = newIds;
+        _selectedElementId = newIds[newIds.length - 1] || null;
+        _renderSceneList();
+        _notifyUpdate(true);
+    }
+
+    function _deleteComponent(id) {
+        var list = _loadComponents();
+        var idx = -1;
+        for (var i = 0; i < list.length; i++) { if (list[i].id === id) { idx = i; break; } }
+        if (idx < 0) return;
+        if (!confirm('Delete component "' + list[idx].name + '"? This cannot be undone.')) return;
+        list.splice(idx, 1);
+        _saveComponentsList(list);
+    }
+
+    function _renameComponent(id) {
+        var list = _loadComponents();
+        var idx = -1;
+        for (var i = 0; i < list.length; i++) { if (list[i].id === id) { idx = i; break; } }
+        if (idx < 0) return;
+        var next = prompt('Rename component:', list[idx].name);
+        if (next === null) return;
+        next = String(next).trim();
+        if (!next) { alert('Name required.'); return; }
+        list[idx].name = next;
+        _saveComponentsList(list);
+    }
+
+    function _showComponentsDialog() {
+        var existing = document.getElementById('cneComponentsOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneComponentsOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(640px,92vw);max-height:84vh;overflow:auto;color:#eee;font-family:inherit';
+
+        function render() {
+            var list = _loadComponents();
+            list.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+            box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Components</h2>' +
+                '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">Reusable element groups (up to ' + _COMPONENTS_MAX + '). Insert adds a copy to the current scene (nudged ' + 20 + 'px).</p>';
+            var topRow = document.createElement('div');
+            topRow.style.cssText = 'display:flex;gap:8px;margin-bottom:14px';
+            var saveBtn = document.createElement('button');
+            saveBtn.className = 'gen-btn gen-btn--primary';
+            saveBtn.textContent = 'Save selection as component';
+            saveBtn.addEventListener('click', function () { _saveSelectionAsComponent(); render(); });
+            topRow.appendChild(saveBtn);
+            box.appendChild(topRow);
+
+            if (!list.length) {
+                var empty = document.createElement('div');
+                empty.style.cssText = 'text-align:center;padding:30px 0;color:rgba(255,255,255,.4)';
+                empty.textContent = 'No saved components yet. Select elements on canvas, then click "Save selection as component".';
+                box.appendChild(empty);
+            } else {
+                var ul = document.createElement('div');
+                ul.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+                list.forEach(function (c) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px';
+                    var left = document.createElement('div');
+                    left.style.cssText = 'flex:1;min-width:0;text-align:left';
+                    left.innerHTML = '<div style="font-size:.92rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escapeHtml(c.name) + '</div>' +
+                        '<div style="font-size:.72rem;color:rgba(255,255,255,.45);margin-top:2px">' + (c.elementCount || (c.elements && c.elements.length) || 0) + ' elements \u2014 ' + _formatAgo(c.createdAt || 0) + '</div>';
+                    row.appendChild(left);
+                    var btns = document.createElement('div');
+                    btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
+                    var insertBtn = document.createElement('button');
+                    insertBtn.className = 'gen-btn gen-btn--primary';
+                    insertBtn.textContent = 'Insert';
+                    insertBtn.style.cssText = 'padding:4px 10px;font-size:.78rem';
+                    insertBtn.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); _insertComponent(c.id); });
+                    var renameBtn = document.createElement('button');
+                    renameBtn.className = 'gen-btn';
+                    renameBtn.textContent = 'Rename';
+                    renameBtn.style.cssText = 'padding:4px 10px;font-size:.78rem';
+                    renameBtn.addEventListener('click', function () { _renameComponent(c.id); render(); });
+                    var delBtn = document.createElement('button');
+                    delBtn.className = 'gen-btn';
+                    delBtn.textContent = '\u00d7';
+                    delBtn.title = 'Delete';
+                    delBtn.style.cssText = 'padding:4px 10px;font-size:.9rem;color:#ff6b6b';
+                    delBtn.addEventListener('click', function () { _deleteComponent(c.id); render(); });
+                    btns.appendChild(insertBtn);
+                    btns.appendChild(renameBtn);
+                    btns.appendChild(delBtn);
+                    row.appendChild(btns);
+                    ul.appendChild(row);
+                });
+                box.appendChild(ul);
+            }
+
+            var footer = document.createElement('div');
+            footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+            var close = document.createElement('button');
+            close.className = 'gen-btn';
+            close.textContent = 'Close';
+            close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+            footer.appendChild(close);
+            box.appendChild(footer);
+        }
+        render();
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
     /* ─── Starter Templates Gallery ─── */
     var _STARTER_TEMPLATES = [
         { id: 'agency',          label: 'Agency',          desc: 'Creative studio w/ work showcase',      scenes: ['hero', 'splitMedia', 'featureGrid', 'showcase', 'testimonial', 'ctaSection'] },
@@ -10230,6 +10431,8 @@ window.ArbelCinematicEditor = (function () {
         showStarters: _showStartersDialog,
         showProjectsDashboard: _showProjectsDashboard,
         showAssetLibrary: _showAssetLibrary,
+        showComponents: _showComponentsDialog,
+        saveSelectionAsComponent: _saveSelectionAsComponent,
         showVersionHistory: _showVersionHistory,
         showBrandKitImport: _showBrandKitImport,
         aiRewriteScene: _aiRewriteCurrentScene,
