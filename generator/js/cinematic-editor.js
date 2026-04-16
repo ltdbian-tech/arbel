@@ -9422,6 +9422,8 @@ window.ArbelCinematicEditor = (function () {
             // Actions
             cmds.push({ cat: 'Action', label: 'New project', run: function () { _newProject(); } });
             cmds.push({ cat: 'Action', label: 'Start from a template\u2026', run: function () { _showStartersDialog(); } });
+            cmds.push({ cat: 'Action', label: 'Projects dashboard\u2026', run: function () { _showProjectsDashboard(); } });
+            cmds.push({ cat: 'Action', label: 'Asset library\u2026', run: function () { _showAssetLibrary(); } });
             cmds.push({ cat: 'Action', label: 'Version history\u2026', run: function () { _showVersionHistory(); } });
             cmds.push({ cat: 'Action', label: 'Import brand kit\u2026', run: function () { _showBrandKitImport(); } });
             cmds.push({ cat: 'Action', label: 'AI rewrite current scene\u2026', run: function () { _aiRewriteCurrentScene(); } });
@@ -9663,6 +9665,300 @@ window.ArbelCinematicEditor = (function () {
         btnRow.appendChild(cancel);
         btnRow.appendChild(apply);
         box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    /* ─── Multi-Project Dashboard (localStorage-backed named projects) ─── */
+    var _PROJECTS_KEY = 'arbel-cinematic-projects';
+    var _PROJECTS_MAX = 24;
+
+    function _loadProjectIndex() {
+        try {
+            var raw = localStorage.getItem(_PROJECTS_KEY);
+            var list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) list = [];
+            return list;
+        } catch (e) { return []; }
+    }
+
+    function _saveProjectIndex(list) {
+        try {
+            while (list.length > _PROJECTS_MAX) list.shift();
+            localStorage.setItem(_PROJECTS_KEY, JSON.stringify(list));
+            return true;
+        } catch (e) {
+            alert('Browser storage is full. Delete older projects to free space.');
+            return false;
+        }
+    }
+
+    function _saveProjectToBrowser(nameHint) {
+        var list = _loadProjectIndex();
+        var defaultName = (nameHint || _getBrandName() || 'Untitled').trim() || 'Untitled';
+        var name = prompt('Save project to browser as:', defaultName);
+        if (name === null) return;
+        name = String(name).trim();
+        if (!name) { alert('Name required.'); return; }
+        var data;
+        try { data = _collectFullState(); }
+        catch (e) { alert('Could not collect project state: ' + e.message); return; }
+        var existing = -1;
+        for (var i = 0; i < list.length; i++) { if (list[i].name === name) { existing = i; break; } }
+        if (existing >= 0) {
+            if (!confirm('A project named "' + name + '" already exists. Overwrite?')) return;
+        }
+        var entry = {
+            id: existing >= 0 ? list[existing].id : 'proj-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+            name: name,
+            updatedAt: Date.now(),
+            sceneCount: Array.isArray(data.scenes) ? data.scenes.length : 0,
+            data: data
+        };
+        if (existing >= 0) list[existing] = entry; else list.push(entry);
+        if (_saveProjectIndex(list)) {
+            alert('Saved "' + name + '" to browser.');
+        }
+    }
+
+    function _loadBrowserProject(id) {
+        var list = _loadProjectIndex();
+        var found = null;
+        for (var i = 0; i < list.length; i++) { if (list[i].id === id) { found = list[i]; break; } }
+        if (!found) { alert('Project not found.'); return; }
+        if (_projectDirty && !confirm('Unsaved changes will be lost. Load "' + found.name + '" anyway?')) return;
+        try { _loadProjectData(found.data); }
+        catch (e) { alert('Failed to load: ' + e.message); }
+    }
+
+    function _deleteBrowserProject(id) {
+        var list = _loadProjectIndex();
+        var idx = -1;
+        for (var i = 0; i < list.length; i++) { if (list[i].id === id) { idx = i; break; } }
+        if (idx < 0) return;
+        if (!confirm('Delete "' + list[idx].name + '" from browser? This cannot be undone.')) return;
+        list.splice(idx, 1);
+        _saveProjectIndex(list);
+    }
+
+    function _renameBrowserProject(id) {
+        var list = _loadProjectIndex();
+        var idx = -1;
+        for (var i = 0; i < list.length; i++) { if (list[i].id === id) { idx = i; break; } }
+        if (idx < 0) return;
+        var next = prompt('New name:', list[idx].name);
+        if (next === null) return;
+        next = String(next).trim();
+        if (!next) { alert('Name required.'); return; }
+        list[idx].name = next;
+        list[idx].updatedAt = Date.now();
+        _saveProjectIndex(list);
+    }
+
+    function _showProjectsDashboard() {
+        var existing = document.getElementById('cneProjectsOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneProjectsOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(640px,92vw);max-height:84vh;overflow:auto;color:#eee;font-family:inherit';
+
+        function render() {
+            var list = _loadProjectIndex();
+            list.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+            box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Projects</h2>' +
+                '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">Browser-saved projects (up to ' + _PROJECTS_MAX + '). For long-term safety, also Save As a <code>.arbel</code> file.</p>';
+            var topRow = document.createElement('div');
+            topRow.style.cssText = 'display:flex;gap:8px;margin-bottom:14px';
+            var saveCurrent = document.createElement('button');
+            saveCurrent.className = 'gen-btn gen-btn--primary';
+            saveCurrent.textContent = 'Save current \u2192 browser';
+            saveCurrent.addEventListener('click', function () { _saveProjectToBrowser(); render(); });
+            topRow.appendChild(saveCurrent);
+            box.appendChild(topRow);
+
+            if (!list.length) {
+                var empty = document.createElement('div');
+                empty.style.cssText = 'text-align:center;padding:30px 0;color:rgba(255,255,255,.4)';
+                empty.textContent = 'No saved projects yet.';
+                box.appendChild(empty);
+            } else {
+                var ul = document.createElement('div');
+                ul.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+                list.forEach(function (p) {
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px';
+                    var left = document.createElement('div');
+                    left.style.cssText = 'flex:1;min-width:0;text-align:left';
+                    var when = new Date(p.updatedAt || 0);
+                    left.innerHTML = '<div style="font-size:.92rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escapeHtml(p.name) + '</div>' +
+                        '<div style="font-size:.72rem;color:rgba(255,255,255,.45);margin-top:2px">' + when.toLocaleString() + ' \u2014 ' + (p.sceneCount || 0) + ' scenes \u2014 ' + _formatAgo(p.updatedAt || 0) + '</div>';
+                    row.appendChild(left);
+                    var btns = document.createElement('div');
+                    btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0';
+                    var loadBtn = document.createElement('button');
+                    loadBtn.className = 'gen-btn';
+                    loadBtn.textContent = 'Load';
+                    loadBtn.style.cssText = 'padding:4px 10px;font-size:.78rem';
+                    loadBtn.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); _loadBrowserProject(p.id); });
+                    var renameBtn = document.createElement('button');
+                    renameBtn.className = 'gen-btn';
+                    renameBtn.textContent = 'Rename';
+                    renameBtn.style.cssText = 'padding:4px 10px;font-size:.78rem';
+                    renameBtn.addEventListener('click', function () { _renameBrowserProject(p.id); render(); });
+                    var delBtn = document.createElement('button');
+                    delBtn.className = 'gen-btn';
+                    delBtn.textContent = '\u00d7';
+                    delBtn.title = 'Delete';
+                    delBtn.style.cssText = 'padding:4px 10px;font-size:.9rem;color:#ff6b6b';
+                    delBtn.addEventListener('click', function () { _deleteBrowserProject(p.id); render(); });
+                    btns.appendChild(loadBtn);
+                    btns.appendChild(renameBtn);
+                    btns.appendChild(delBtn);
+                    row.appendChild(btns);
+                    ul.appendChild(row);
+                });
+                box.appendChild(ul);
+            }
+
+            var footer = document.createElement('div');
+            footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+            var close = document.createElement('button');
+            close.className = 'gen-btn';
+            close.textContent = 'Close';
+            close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+            footer.appendChild(close);
+            box.appendChild(footer);
+        }
+        render();
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    /* ─── Asset Library (images + media used across current project) ─── */
+    function _collectProjectAssets() {
+        var assets = [];
+        var seen = {};
+        function push(url, source) {
+            if (!url || typeof url !== 'string') return;
+            if (seen[url]) return;
+            seen[url] = true;
+            var isData = url.indexOf('data:') === 0;
+            var isHttp = /^https?:\/\//i.test(url);
+            if (!isData && !isHttp) return;
+            var kind = 'other';
+            if (isData) {
+                if (url.indexOf('data:image/') === 0) kind = 'image';
+                else if (url.indexOf('data:video/') === 0) kind = 'video';
+                else if (url.indexOf('data:audio/') === 0) kind = 'audio';
+            } else {
+                if (/\.(png|jpe?g|gif|webp|svg|avif|bmp)(\?|#|$)/i.test(url)) kind = 'image';
+                else if (/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url)) kind = 'video';
+                else if (/\.(mp3|wav|ogg|m4a)(\?|#|$)/i.test(url)) kind = 'audio';
+            }
+            var size = isData ? Math.round(url.length * 0.75) : 0;
+            assets.push({ url: url, kind: kind, source: source, size: size });
+        }
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            var sLabel = 'Scene ' + (i + 1);
+            if (sc.bgImage) push(sc.bgImage, sLabel + ' bg');
+            if (sc.bgVideo) push(sc.bgVideo, sLabel + ' video');
+            if (Array.isArray(sc.elements)) {
+                for (var j = 0; j < sc.elements.length; j++) {
+                    var el = sc.elements[j];
+                    if (!el) continue;
+                    var eLabel = sLabel + ' \u2022 ' + (el.type || 'el');
+                    if (el.src) push(el.src, eLabel);
+                    if (el.url) push(el.url, eLabel);
+                    if (el.poster) push(el.poster, eLabel + ' poster');
+                    if (el.style && el.style.backgroundImage) {
+                        var m = String(el.style.backgroundImage).match(/url\(["']?([^"')]+)["']?\)/);
+                        if (m) push(m[1], eLabel + ' bg');
+                    }
+                }
+            }
+        }
+        return assets;
+    }
+
+    function _showAssetLibrary() {
+        var existing = document.getElementById('cneAssetsOverlay');
+        if (existing) existing.remove();
+        var assets = _collectProjectAssets();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneAssetsOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(820px,94vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var totalBytes = 0; assets.forEach(function (a) { totalBytes += a.size || 0; });
+        var totalKb = Math.round(totalBytes / 1024);
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Asset Library</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">' + assets.length + ' asset' + (assets.length === 1 ? '' : 's') + ' used across this project' + (totalBytes ? ' \u2014 approx ' + (totalKb >= 1024 ? (totalKb / 1024).toFixed(1) + ' MB' : totalKb + ' KB') + ' inline' : '') + '. Click a thumbnail to copy its URL.</p>';
+        if (!assets.length) {
+            box.innerHTML += '<div style="text-align:center;padding:30px 0;color:rgba(255,255,255,.4)">No images or media yet. Upload or paste URLs in element controls to populate.</div>';
+        } else {
+            var grid = document.createElement('div');
+            grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px';
+            assets.forEach(function (a) {
+                var card = document.createElement('button');
+                card.type = 'button';
+                card.title = a.source + (a.size ? ' \u2014 ' + Math.round(a.size / 1024) + ' KB' : '');
+                card.style.cssText = 'padding:0;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.3);border-radius:8px;overflow:hidden;cursor:pointer;text-align:left;font-family:inherit;color:inherit;display:flex;flex-direction:column';
+                card.onmouseenter = function () { card.style.borderColor = 'rgba(108,92,231,.6)'; };
+                card.onmouseleave = function () { card.style.borderColor = 'rgba(255,255,255,.1)'; };
+                var thumb;
+                if (a.kind === 'image') {
+                    thumb = document.createElement('img');
+                    thumb.src = a.url;
+                    thumb.loading = 'lazy';
+                    thumb.style.cssText = 'width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#000';
+                } else {
+                    thumb = document.createElement('div');
+                    thumb.style.cssText = 'width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1a2e,#252545);font-size:1.6rem;color:rgba(255,255,255,.6)';
+                    thumb.textContent = a.kind === 'video' ? '\u25b6' : a.kind === 'audio' ? '\u266a' : '\u25a1';
+                }
+                card.appendChild(thumb);
+                var meta = document.createElement('div');
+                meta.style.cssText = 'padding:6px 8px;font-size:.7rem;color:rgba(255,255,255,.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+                meta.textContent = a.source;
+                card.appendChild(meta);
+                card.addEventListener('click', function () {
+                    var url = a.url;
+                    var copied = false;
+                    try {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(url);
+                            copied = true;
+                        }
+                    } catch (e) { /* fall through */ }
+                    if (!copied) { prompt('Copy URL:', url); }
+                    else {
+                        var prev = meta.textContent;
+                        meta.textContent = 'Copied \u2713';
+                        meta.style.color = '#6ee7b7';
+                        setTimeout(function () { meta.textContent = prev; meta.style.color = 'rgba(255,255,255,.55)'; }, 1200);
+                    }
+                });
+                grid.appendChild(card);
+            });
+            box.appendChild(grid);
+        }
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
         overlay.appendChild(box);
         document.body.appendChild(overlay);
         function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
@@ -9932,6 +10228,8 @@ window.ArbelCinematicEditor = (function () {
         showCommandPalette: _showCommandPalette,
         showOnboarding: _showOnboardingTour,
         showStarters: _showStartersDialog,
+        showProjectsDashboard: _showProjectsDashboard,
+        showAssetLibrary: _showAssetLibrary,
         showVersionHistory: _showVersionHistory,
         showBrandKitImport: _showBrandKitImport,
         aiRewriteScene: _aiRewriteCurrentScene,
