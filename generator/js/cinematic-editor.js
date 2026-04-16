@@ -683,6 +683,46 @@ window.ArbelCinematicEditor = (function () {
 
         // Zoom
         _setupZoom();
+
+        // Breadcrumb project rename (double-click to edit)
+        _setupBrandRename();
+    }
+
+    /* ─── Brand Rename (Breadcrumb) ─── */
+    function _setupBrandRename() {
+        var brand = _qs('#cneBrand');
+        if (!brand || brand._renameBound) return;
+        brand._renameBound = true;
+        brand.title = 'Double-click to rename project';
+        brand.style.cursor = 'text';
+        brand.addEventListener('dblclick', function () {
+            brand.setAttribute('contenteditable', 'true');
+            brand.focus();
+            // Select all text
+            var range = document.createRange();
+            range.selectNodeContents(brand);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        });
+        function commit() {
+            brand.removeAttribute('contenteditable');
+            var newName = (brand.textContent || '').trim() || 'My Site';
+            brand.textContent = newName;
+            var input = document.querySelector('#brandName');
+            if (input && input.value !== newName) {
+                input.value = newName;
+                try { input.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+                try { input.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+            }
+            _markDirty();
+            _updateDirtyIndicator();
+        }
+        brand.addEventListener('blur', commit);
+        brand.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); brand.blur(); }
+            if (e.key === 'Escape') { brand.textContent = _getBrandName(); brand.blur(); }
+        });
     }
 
     /* ─── Scene Panel (Left) ─── */
@@ -1688,11 +1728,26 @@ window.ArbelCinematicEditor = (function () {
         var dialog = document.createElement('div');
         dialog.className = 'arbel-dialog';
         dialog.style.maxWidth = '560px';
-        dialog.style.maxHeight = '80vh';
+        dialog.style.maxHeight = '85vh';
+        dialog.style.display = 'flex';
+        dialog.style.flexDirection = 'column';
+        dialog.style.position = 'relative';
+
+        // Top-right X close button
+        var xBtn = document.createElement('button');
+        xBtn.type = 'button';
+        xBtn.setAttribute('aria-label', 'Close');
+        xBtn.innerHTML = '&times;';
+        xBtn.style.cssText = 'position:absolute;top:10px;right:12px;background:transparent;border:none;color:rgba(255,255,255,.7);font-size:24px;line-height:1;cursor:pointer;padding:4px 8px;border-radius:4px;z-index:2';
+        xBtn.addEventListener('mouseenter', function(){ xBtn.style.background='rgba(255,255,255,.08)'; xBtn.style.color='#fff'; });
+        xBtn.addEventListener('mouseleave', function(){ xBtn.style.background='transparent'; xBtn.style.color='rgba(255,255,255,.7)'; });
+        xBtn.addEventListener('click', function () { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); });
+        dialog.appendChild(xBtn);
 
         var title = document.createElement('h3');
         title.className = 'arbel-dialog-title';
         title.textContent = 'SVG Icons';
+        title.style.paddingRight = '32px';
 
         // Search
         var searchRow = document.createElement('div');
@@ -1806,8 +1861,8 @@ window.ArbelCinematicEditor = (function () {
         renderIcons('');
         searchInput.focus();
 
-        // Escape key + backdrop click to close
-        function onKey(e) { if (e.key === 'Escape') { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); } }
+        // Escape key + backdrop click to close (onKey referenced by X button above)
+        function onKey(e) { if (e.key === 'Escape') { if (overlay.parentNode) document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); } }
         document.addEventListener('keydown', onKey);
         overlay.addEventListener('click', function (e) {
             if (e.target === overlay) { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); }
@@ -4682,6 +4737,12 @@ window.ArbelCinematicEditor = (function () {
                     menuToolbarDd.style.display = 'none';
                 }
             });
+            // Escape key closes hamburger dropdown
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && menuToolbarDd.style.display !== 'none') {
+                    menuToolbarDd.style.display = 'none';
+                }
+            });
         }
 
         // Per-device selects
@@ -7225,13 +7286,18 @@ window.ArbelCinematicEditor = (function () {
 
         document.body.appendChild(dialog);
 
+        // Escape key to close
+        function onAutoGenKey(e) { if (e.key === 'Escape') { if (dialog.parentNode) dialog.remove(); document.removeEventListener('keydown', onAutoGenKey); } }
+        document.addEventListener('keydown', onAutoGenKey);
+
         // Close on overlay click
         dialog.addEventListener('click', function (e) {
-            if (e.target === dialog) dialog.remove();
+            if (e.target === dialog) { dialog.remove(); document.removeEventListener('keydown', onAutoGenKey); }
         });
 
         document.getElementById('cneAutoGenCancel').addEventListener('click', function () {
             dialog.remove();
+            document.removeEventListener('keydown', onAutoGenKey);
         });
 
         var keepDataCb = document.getElementById('cneKeepData');
@@ -7244,6 +7310,7 @@ window.ArbelCinematicEditor = (function () {
         document.getElementById('cneAutoGenGo').addEventListener('click', function () {
             var keepData = keepDataCb ? keepDataCb.checked : false;
             dialog.remove();
+            document.removeEventListener('keydown', onAutoGenKey);
             _autoGenerate(keepData);
         });
     }

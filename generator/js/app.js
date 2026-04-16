@@ -1020,6 +1020,21 @@
     els.backToConfig.addEventListener('click', function () { goToStep(2); });
     els.toDeploy.addEventListener('click', function () { goToStep(4); });
 
+    // GENERATOR badge in header: if on Publish step, go back to Edit (step 3); else go to latest reachable step
+    var genBadge = $('genBadge');
+    if (genBadge) {
+        var goHome = function () {
+            // If on Publish (step 4), step back to Edit; otherwise go to first reachable step
+            if (state.step === 4) { goToStep(3); }
+            else if (state.step === 0) { return; }
+            else { goToStep(state.step - 1); }
+        };
+        genBadge.addEventListener('click', goHome);
+        genBadge.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goHome(); }
+        });
+    }
+
     /* ─── COLOR PICKERS ─── */
     els.accentColor.addEventListener('input', function () {
         els.accentVal.textContent = els.accentColor.value;
@@ -1350,12 +1365,12 @@
     /* ─── DEPLOY ─── */
     function sanitizeRepoName(name) {
         var sanitized = name.toLowerCase().replace(/[^a-z0-9\-_.]/g, '-').replace(/-+/g, '-').replace(/^[-.]|[-.]$/g, '');
-        return sanitized.slice(0, 100) || 'my-site';
+        return sanitized.slice(0, 100) || 'my-portfolio';
     }
 
     function updateDeployUrl() {
         var user = els.deployUsername.textContent;
-        var repo = sanitizeRepoName(els.repoName.value || 'my-site');
+        var repo = sanitizeRepoName(els.repoName.value || 'my-portfolio');
         els.deployUrl.textContent = user + '.github.io/' + repo;
     }
 

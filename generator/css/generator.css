@@ -2669,3 +2669,11 @@ a:hover { text-decoration: underline; }
     .consent-overlay { display: none !important; }
     .gen-wizard { padding-top: 0; }
 }
+
+/* ─── Hide generator top chrome when full-screen builder (step 3: EDIT) is active ─── */
+/* Prevents avatar / GENERATOR badge from bleeding over cinematic editor modals.    */
+body:has(.gen-step[data-step="3"].active) .gen-header,
+body:has(.gen-step[data-step="3"].active) .gen-progress,
+body:has(.gen-step[data-step="3"].active) .gen-steps-nav { display: none !important; }
+body:has(.gen-step[data-step="3"].active) .gen-wizard { padding-top: 0 !important; }
+
