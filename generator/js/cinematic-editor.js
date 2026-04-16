@@ -22,6 +22,7 @@ window.ArbelCinematicEditor = (function () {
     var _selectedElementIds = [];
     var _overrides = {};
     var _zoom = 100;
+    var _panOffset = { x: 0, y: 0 };
     var _dragState = null;
     var _activeDevice = 'desktop';  // 'desktop' | 'tablet' | 'mobile'
     var _timelineOpen = false;
@@ -1010,6 +1011,7 @@ window.ArbelCinematicEditor = (function () {
         cancelBtn.textContent = 'Cancel';
         cancelBtn.addEventListener('click', function () {
             document.body.removeChild(overlay);
+            document.removeEventListener('keydown', onAddSceneKey);
         });
 
         var addBtn = document.createElement('button');
@@ -1022,6 +1024,7 @@ window.ArbelCinematicEditor = (function () {
             _scenes.push(scene);
             _selectScene(_scenes.length - 1, true);
             document.body.removeChild(overlay);
+            document.removeEventListener('keydown', onAddSceneKey);
         });
 
         btns.appendChild(cancelBtn);
@@ -1035,8 +1038,12 @@ window.ArbelCinematicEditor = (function () {
         document.body.appendChild(overlay);
 
         overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) document.body.removeChild(overlay);
+            if (e.target === overlay) { document.body.removeChild(overlay); document.removeEventListener('keydown', onAddSceneKey); }
         });
+
+        // Escape key to close
+        function onAddSceneKey(e) { if (e.key === 'Escape') { document.body.removeChild(overlay); document.removeEventListener('keydown', onAddSceneKey); } }
+        document.addEventListener('keydown', onAddSceneKey);
     }
 
     function _duplicateScene(idx) {
@@ -1212,8 +1219,10 @@ window.ArbelCinematicEditor = (function () {
             '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="cne-toolbar-btn" id="dlgPageCancel">Cancel</button><button class="cne-toolbar-btn cne-toolbar-btn--accent" id="dlgPageSave">Save</button></div>';
         overlay.appendChild(dialog);
         document.body.appendChild(overlay);
-        overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
-        dialog.querySelector('#dlgPageCancel').addEventListener('click', function () { overlay.remove(); });
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onSeoKey); } });
+        function onSeoKey(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onSeoKey); } }
+        document.addEventListener('keydown', onSeoKey);
+        dialog.querySelector('#dlgPageCancel').addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onSeoKey); });
         dialog.querySelector('#dlgPageSave').addEventListener('click', function () {
             _pushUndo();
             page.path = dialog.querySelector('#dlgPagePath').value.trim() || '/';
@@ -1796,6 +1805,13 @@ window.ArbelCinematicEditor = (function () {
         document.body.appendChild(overlay);
         renderIcons('');
         searchInput.focus();
+
+        // Escape key + backdrop click to close
+        function onKey(e) { if (e.key === 'Escape') { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); } }
+        document.addEventListener('keydown', onKey);
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) { document.body.removeChild(overlay); document.removeEventListener('keydown', onKey); }
+        });
     }
 
     function _insertIcon(pathD, size, color, name) {
@@ -2355,6 +2371,10 @@ window.ArbelCinematicEditor = (function () {
         tabs.forEach(function (tab) {
             tab.addEventListener('click', function () {
                 var target = tab.dataset.tab;
+                // Guard: don't switch to style/scroll/hover tabs when no element is selected
+                if ((target === 'style' || target === 'scroll' || target === 'hover') && !_selectedElementId) {
+                    return;
+                }
                 tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === target); });
                 panels.forEach(function (p) { p.classList.toggle('active', p.dataset.panel === target); });
             });
@@ -4132,6 +4152,13 @@ window.ArbelCinematicEditor = (function () {
                     frame.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
                     frame.classList.add('preview-' + _activeDevice);
                 }
+                // Reset zoom + pan on device switch
+                _zoom = 100;
+                _panOffset.x = 0;
+                _panOffset.y = 0;
+                _applyZoom();
+                var zoomVal = _qs('#cneZoomVal');
+                if (zoomVal) zoomVal.textContent = '100%';
                 // Auto-generate responsive overrides on first switch
                 if (_activeDevice !== 'desktop') {
                     _autoResponsive(_activeDevice);
@@ -4226,6 +4253,16 @@ window.ArbelCinematicEditor = (function () {
                 if (zoomVal) zoomVal.textContent = _zoom + '%';
             });
         }
+        // Click zoom label to reset zoom + pan
+        if (zoomVal) {
+            zoomVal.addEventListener('click', function () {
+                _zoom = 100;
+                _panOffset.x = 0;
+                _panOffset.y = 0;
+                _applyZoom();
+                zoomVal.textContent = '100%';
+            });
+        }
 
         // Ctrl + mouse wheel zoom on canvas
         var canvasArea = _container ? _container.querySelector('.cne-canvas-area') : null;
@@ -4243,7 +4280,6 @@ window.ArbelCinematicEditor = (function () {
             // Space + drag to pan
             var _panning = false;
             var _panStart = { x: 0, y: 0 };
-            var _panOffset = { x: 0, y: 0 };
 
             document.addEventListener('keydown', function (e) {
                 if (e.code === 'Space' && !_panning && _active) {
@@ -7563,8 +7599,7 @@ window.ArbelCinematicEditor = (function () {
     function _updateDirtyIndicator() {
         var brand = _qs('#cneBrand');
         if (brand) {
-            var name = _getBrandName();
-            brand.textContent = _projectDirty ? name + ' \u2022' : name;
+            brand.textContent = _getBrandName();
         }
         var dot = _qs('#cneUnsavedDot');
         if (dot) dot.style.display = _projectDirty ? '' : 'none';
