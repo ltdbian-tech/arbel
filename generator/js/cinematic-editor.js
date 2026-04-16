@@ -4238,10 +4238,15 @@ window.ArbelCinematicEditor = (function () {
                 e.preventDefault();
                 _showCommandPalette();
             }
-            // ? (Shift+/): Keyboard shortcut help (shows inside command palette)
+            // Ctrl/Cmd+F: Find & replace
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'f' || e.key === 'F') && !inInput) {
+                e.preventDefault();
+                _showFindReplace();
+            }
+            // ? (Shift+/): Keyboard shortcut help
             if (e.key === '?' && !inInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
                 e.preventDefault();
-                _showCommandPalette('?');
+                _showShortcutsSheet();
             }
         };
         document.addEventListener('keydown', _keydownHandler);
@@ -9424,6 +9429,8 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Start from a template\u2026', run: function () { _showStartersDialog(); } });
             cmds.push({ cat: 'Action', label: 'Projects dashboard\u2026', run: function () { _showProjectsDashboard(); } });
             cmds.push({ cat: 'Action', label: 'Asset library\u2026', run: function () { _showAssetLibrary(); } });
+            cmds.push({ cat: 'Action', label: 'Find & replace\u2026', kbd: 'Ctrl+F', run: function () { _showFindReplace(); } });
+            cmds.push({ cat: 'Action', label: 'Keyboard shortcuts', kbd: '?', run: function () { _showShortcutsSheet(); } });
             cmds.push({ cat: 'Action', label: 'Components\u2026', run: function () { _showComponentsDialog(); } });
             cmds.push({ cat: 'Action', label: 'Save selection as component\u2026', run: function () { _saveSelectionAsComponent(); } });
             cmds.push({ cat: 'Action', label: 'Version history\u2026', run: function () { _showVersionHistory(); } });
@@ -10167,6 +10174,242 @@ window.ArbelCinematicEditor = (function () {
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
+    /* ─── Find & Replace (text content across scenes) ─── */
+    function _findReplaceScan(find, caseSensitive, regex) {
+        var matches = [];
+        if (!find) return matches;
+        var re;
+        try {
+            if (regex) { re = new RegExp(find, caseSensitive ? 'g' : 'gi'); }
+            else {
+                var esc = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                re = new RegExp(esc, caseSensitive ? 'g' : 'gi');
+            }
+        } catch (e) { throw e; }
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            if (!Array.isArray(sc.elements)) continue;
+            for (var j = 0; j < sc.elements.length; j++) {
+                var el = sc.elements[j];
+                if (!el || typeof el.content !== 'string') continue;
+                re.lastIndex = 0;
+                if (re.test(el.content)) {
+                    matches.push({ sceneIdx: i, elementId: el.id, type: el.type || 'el', preview: el.content.slice(0, 80) });
+                }
+            }
+        }
+        return matches;
+    }
+
+    function _findReplaceApply(find, replace, caseSensitive, regex, targetIds) {
+        if (!find) return 0;
+        var re;
+        try {
+            if (regex) { re = new RegExp(find, caseSensitive ? 'g' : 'gi'); }
+            else {
+                var esc = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                re = new RegExp(esc, caseSensitive ? 'g' : 'gi');
+            }
+        } catch (e) { return 0; }
+        var replaced = 0;
+        var want = targetIds ? {} : null;
+        if (targetIds) targetIds.forEach(function (id) { want[id] = true; });
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            if (!Array.isArray(sc.elements)) continue;
+            for (var j = 0; j < sc.elements.length; j++) {
+                var el = sc.elements[j];
+                if (!el || typeof el.content !== 'string') continue;
+                if (want && !want[el.id]) continue;
+                var before = el.content;
+                re.lastIndex = 0;
+                if (!re.test(before)) continue;
+                re.lastIndex = 0;
+                var after = before.replace(re, replace);
+                if (after !== before) { el.content = after; replaced++; }
+            }
+        }
+        return replaced;
+    }
+
+    function _showFindReplace() {
+        var existing = document.getElementById('cneFindOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneFindOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(620px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Find & Replace</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">Search and replace text content across all scenes. Non-text elements are ignored.</p>';
+        var inputStyle = 'width:100%;box-sizing:border-box;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#eee;padding:9px 11px;font-family:inherit;font-size:.88rem';
+        var findRow = document.createElement('label');
+        findRow.style.cssText = 'display:block;margin-bottom:10px;font-size:.78rem;color:rgba(255,255,255,.6)';
+        findRow.innerHTML = '<div style="margin-bottom:4px">Find</div>';
+        var findInput = document.createElement('input');
+        findInput.type = 'text'; findInput.style.cssText = inputStyle;
+        findRow.appendChild(findInput);
+        box.appendChild(findRow);
+        var replaceRow = document.createElement('label');
+        replaceRow.style.cssText = 'display:block;margin-bottom:10px;font-size:.78rem;color:rgba(255,255,255,.6)';
+        replaceRow.innerHTML = '<div style="margin-bottom:4px">Replace with</div>';
+        var replaceInput = document.createElement('input');
+        replaceInput.type = 'text'; replaceInput.style.cssText = inputStyle;
+        replaceRow.appendChild(replaceInput);
+        box.appendChild(replaceRow);
+        var opts = document.createElement('div');
+        opts.style.cssText = 'display:flex;gap:14px;margin-bottom:12px;font-size:.8rem;color:rgba(255,255,255,.7)';
+        opts.innerHTML = '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="cneFrCase"> Match case</label>' +
+            '<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="cneFrRegex"> Regex</label>';
+        box.appendChild(opts);
+        var status = document.createElement('div');
+        status.style.cssText = 'font-size:.78rem;color:rgba(255,255,255,.5);margin-bottom:10px;min-height:1em';
+        box.appendChild(status);
+        var results = document.createElement('div');
+        results.style.cssText = 'max-height:240px;overflow:auto;border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:6px;margin-bottom:12px;display:none';
+        box.appendChild(results);
+
+        function runFind() {
+            results.innerHTML = '';
+            results.style.display = 'none';
+            var q = findInput.value;
+            if (!q) { status.textContent = ''; return; }
+            var cs = box.querySelector('#cneFrCase').checked;
+            var rx = box.querySelector('#cneFrRegex').checked;
+            var matches;
+            try { matches = _findReplaceScan(q, cs, rx); }
+            catch (e) { status.textContent = 'Invalid pattern: ' + e.message; status.style.color = '#ff6b6b'; return; }
+            status.style.color = 'rgba(255,255,255,.5)';
+            status.textContent = matches.length + ' match' + (matches.length === 1 ? '' : 'es') + ' across ' + new Set(matches.map(function (m) { return m.sceneIdx; })).size + ' scene(s).';
+            if (!matches.length) return;
+            results.style.display = 'block';
+            matches.slice(0, 40).forEach(function (m) {
+                var item = document.createElement('div');
+                item.style.cssText = 'padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.04);font-size:.78rem';
+                item.innerHTML = '<span style="color:rgba(255,255,255,.5)">Scene ' + (m.sceneIdx + 1) + ' \u00b7 ' + m.type + '</span> <span style="color:#ccc;margin-left:6px">' + _escapeHtml(m.preview) + (m.preview.length >= 80 ? '\u2026' : '') + '</span>';
+                results.appendChild(item);
+            });
+            if (matches.length > 40) {
+                var more = document.createElement('div');
+                more.style.cssText = 'padding:6px 8px;font-size:.72rem;color:rgba(255,255,255,.4);text-align:center';
+                more.textContent = '\u2026 and ' + (matches.length - 40) + ' more';
+                results.appendChild(more);
+            }
+        }
+
+        findInput.addEventListener('input', runFind);
+        opts.addEventListener('change', runFind);
+
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:8px';
+        var cancel = document.createElement('button');
+        cancel.className = 'gen-btn';
+        cancel.textContent = 'Close';
+        cancel.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        var replaceAll = document.createElement('button');
+        replaceAll.className = 'gen-btn gen-btn--primary';
+        replaceAll.textContent = 'Replace all';
+        replaceAll.addEventListener('click', function () {
+            var q = findInput.value;
+            if (!q) { status.textContent = 'Enter search text first.'; status.style.color = '#ff6b6b'; return; }
+            var cs = box.querySelector('#cneFrCase').checked;
+            var rx = box.querySelector('#cneFrRegex').checked;
+            var r = replaceInput.value;
+            var pre;
+            try { pre = _findReplaceScan(q, cs, rx); }
+            catch (e) { status.textContent = 'Invalid pattern: ' + e.message; status.style.color = '#ff6b6b'; return; }
+            if (!pre.length) { status.textContent = 'No matches to replace.'; return; }
+            if (!confirm('Replace ' + pre.length + ' match' + (pre.length === 1 ? '' : 'es') + '? This can be undone with Ctrl+Z.')) return;
+            _pushUndo();
+            var n = _findReplaceApply(q, r, cs, rx);
+            _renderSceneList();
+            _selectScene(_currentSceneIdx, true);
+            _notifyUpdate(true);
+            status.style.color = '#6ee7b7';
+            status.textContent = 'Replaced ' + n + ' occurrence' + (n === 1 ? '' : 's') + '.';
+            runFind();
+        });
+        btnRow.appendChild(cancel);
+        btnRow.appendChild(replaceAll);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        setTimeout(function () { findInput.focus(); }, 30);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    /* ─── Keyboard Shortcuts Cheat Sheet ─── */
+    function _showShortcutsSheet() {
+        var existing = document.getElementById('cneShortcutsOverlay');
+        if (existing) existing.remove();
+        var mac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+        var mod = mac ? '\u2318' : 'Ctrl';
+        var alt = mac ? '\u2325' : 'Alt';
+        var groups = [
+            { title: 'File', rows: [
+                ['Save', mod + '+S'],
+                ['Save as\u2026', mod + '+Shift+S'],
+                ['Command palette', mod + '+K']
+            ]},
+            { title: 'Edit', rows: [
+                ['Undo', mod + '+Z'],
+                ['Redo', mod + '+Shift+Z / ' + mod + '+Y'],
+                ['Delete selection', 'Delete / Backspace'],
+                ['Duplicate', mod + '+D'],
+                ['Alt-drag to duplicate', alt + ' + drag']
+            ]},
+            { title: 'Selection', rows: [
+                ['Multi-select', 'Shift + click'],
+                ['Select all in scene', mod + '+A'],
+                ['Deselect', 'Esc']
+            ]},
+            { title: 'Movement', rows: [
+                ['Nudge 1px', 'Arrow keys'],
+                ['Nudge 10px', 'Shift + arrow']
+            ]},
+            { title: 'Panels', rows: [
+                ['Find & replace', mod + '+F'],
+                ['Projects dashboard', 'Palette \u2192 "Projects"'],
+                ['Components', 'Palette \u2192 "Components"'],
+                ['Asset library', 'Palette \u2192 "Asset library"'],
+                ['Version history', 'Palette \u2192 "Version history"']
+            ]}
+        ];
+        var overlay = document.createElement('div');
+        overlay.id = 'cneShortcutsOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(620px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var html = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Keyboard Shortcuts</h2>' +
+            '<p style="margin:0 0 16px;font-size:.85rem;color:rgba(255,255,255,.55)">Press <kbd style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-family:inherit;font-size:.8rem">' + mod + '+K</kbd> any time for the command palette.</p>';
+        groups.forEach(function (g) {
+            html += '<div style="margin-bottom:14px"><div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-bottom:6px">' + g.title + '</div>';
+            g.rows.forEach(function (r) {
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.85rem">' +
+                    '<span>' + _escapeHtml(r[0]) + '</span>' +
+                    '<code style="background:rgba(255,255,255,.06);padding:2px 8px;border-radius:4px;font-size:.78rem;color:rgba(255,255,255,.85)">' + _escapeHtml(r[1]) + '</code>' +
+                    '</div>';
+            });
+            html += '</div>';
+        });
+        box.innerHTML = html;
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:8px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape' || e.key === '?') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
     /* ─── Starter Templates Gallery ─── */
     var _STARTER_TEMPLATES = [
         { id: 'agency',          label: 'Agency',          desc: 'Creative studio w/ work showcase',      scenes: ['hero', 'splitMedia', 'featureGrid', 'showcase', 'testimonial', 'ctaSection'] },
@@ -10431,6 +10674,8 @@ window.ArbelCinematicEditor = (function () {
         showStarters: _showStartersDialog,
         showProjectsDashboard: _showProjectsDashboard,
         showAssetLibrary: _showAssetLibrary,
+        showFindReplace: _showFindReplace,
+        showShortcuts: _showShortcutsSheet,
         showComponents: _showComponentsDialog,
         saveSelectionAsComponent: _saveSelectionAsComponent,
         showVersionHistory: _showVersionHistory,
