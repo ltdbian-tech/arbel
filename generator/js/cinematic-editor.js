@@ -9431,6 +9431,9 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Asset library\u2026', run: function () { _showAssetLibrary(); } });
             cmds.push({ cat: 'Action', label: 'Find & replace\u2026', kbd: 'Ctrl+F', run: function () { _showFindReplace(); } });
             cmds.push({ cat: 'Action', label: 'Accessibility audit\u2026', run: function () { _showA11yAudit(); } });
+            cmds.push({ cat: 'Action', label: 'SEO check\u2026', run: function () { _showSeoCheck(); } });
+            cmds.push({ cat: 'Action', label: 'Performance audit\u2026', run: function () { _showPerfAudit(); } });
+            cmds.push({ cat: 'Action', label: 'AI fill missing alt text', run: function () { _aiFillAltTexts(); } });
             cmds.push({ cat: 'Action', label: 'Keyboard shortcuts', kbd: '?', run: function () { _showShortcutsSheet(); } });
             cmds.push({ cat: 'Action', label: 'Components\u2026', run: function () { _showComponentsDialog(); } });
             cmds.push({ cat: 'Action', label: 'Save selection as component\u2026', run: function () { _saveSelectionAsComponent(); } });
@@ -10564,6 +10567,300 @@ window.ArbelCinematicEditor = (function () {
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
+    /* ─── SEO On-Page Checker ─── */
+    function _runSeoCheck() {
+        var issues = [];
+        var title = (document.getElementById('seoTitle') || {}).value || '';
+        var desc = (document.getElementById('seoDescription') || {}).value || '';
+        var ogImage = (document.getElementById('seoOgImage') || {}).value || '';
+        var canonical = (document.getElementById('seoCanonical') || {}).value || '';
+        var brand = _getBrandName() || '';
+        title = title.trim(); desc = desc.trim();
+
+        // Title
+        if (!title && !brand) issues.push({ level: 'error', where: 'Title', msg: 'No page title set. Add a brand name or custom SEO title.' });
+        else {
+            var t = title || brand;
+            if (t.length < 20) issues.push({ level: 'warn', where: 'Title', msg: 'Title is short (' + t.length + ' chars). 50\u201360 is ideal for search snippets.' });
+            else if (t.length > 70) issues.push({ level: 'warn', where: 'Title', msg: 'Title is long (' + t.length + ' chars). Google truncates around 60 chars.' });
+        }
+        // Description
+        if (!desc) issues.push({ level: 'warn', where: 'Description', msg: 'No meta description. Search engines will auto-generate one \u2014 prefer a curated ~155-char summary.' });
+        else {
+            if (desc.length < 70) issues.push({ level: 'warn', where: 'Description', msg: 'Description is short (' + desc.length + ' chars). 140\u2013160 is the sweet spot.' });
+            else if (desc.length > 160) issues.push({ level: 'warn', where: 'Description', msg: 'Description is long (' + desc.length + ' chars). Truncated in SERPs around 160 chars.' });
+        }
+        // OG image
+        if (!ogImage) issues.push({ level: 'warn', where: 'Social', msg: 'No Open Graph image. Shared links will be plain text without a preview card.' });
+        else if (!/^https?:\/\//i.test(ogImage) && ogImage.indexOf('data:image/') !== 0) {
+            issues.push({ level: 'warn', where: 'Social', msg: 'OG image should be an absolute https URL for reliable social previews.' });
+        }
+        // Canonical
+        if (canonical && !/^https?:\/\//i.test(canonical)) issues.push({ level: 'warn', where: 'Canonical', msg: 'Canonical URL should be absolute (https://...).' });
+
+        // Heading check — count H1s across scenes; warn if 0 or >1
+        var h1Count = 0, totalHeadings = 0;
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            if (!Array.isArray(sc.elements)) continue;
+            for (var j = 0; j < sc.elements.length; j++) {
+                var el = sc.elements[j];
+                if (!el || el.type !== 'heading') continue;
+                totalHeadings++;
+                var lv = parseInt((el.tag || 'h2').replace(/\D/g, ''), 10) || 2;
+                if (lv === 1) h1Count++;
+            }
+        }
+        if (h1Count === 0) issues.push({ level: 'warn', where: 'Content', msg: 'No H1 heading found. Add one prominent H1 per page for SEO clarity.' });
+        else if (h1Count > 1) issues.push({ level: 'warn', where: 'Content', msg: h1Count + ' H1 headings found. Use a single H1 per page.' });
+        if (totalHeadings === 0) issues.push({ level: 'warn', where: 'Content', msg: 'No headings at all. Add headings to help search engines understand structure.' });
+
+        // Image count without alt (quick cross-check)
+        var imgNoAlt = 0, imgTotal = 0;
+        for (var si = 0; si < _scenes.length; si++) {
+            var s2 = _scenes[si];
+            if (!Array.isArray(s2.elements)) continue;
+            for (var sj = 0; sj < s2.elements.length; sj++) {
+                var e2 = s2.elements[sj];
+                if (!e2 || e2.type !== 'image') continue;
+                imgTotal++;
+                if (!(e2.alt || '').trim()) imgNoAlt++;
+            }
+        }
+        if (imgNoAlt) issues.push({ level: 'warn', where: 'Content', msg: imgNoAlt + ' of ' + imgTotal + ' image' + (imgTotal === 1 ? '' : 's') + ' missing alt text. Alt text improves image SEO and accessibility.' });
+
+        return { issues: issues, title: title || brand, desc: desc, ogImage: ogImage };
+    }
+
+    function _showSeoCheck() {
+        var existing = document.getElementById('cneSeoOverlay');
+        if (existing) existing.remove();
+        var res = _runSeoCheck();
+        var issues = res.issues;
+        var overlay = document.createElement('div');
+        overlay.id = 'cneSeoOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(680px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var errs = issues.filter(function (x) { return x.level === 'error'; }).length;
+        var warns = issues.filter(function (x) { return x.level === 'warn'; }).length;
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">SEO Check</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">' +
+            (issues.length === 0 ? 'Looking great. No on-page SEO issues detected.'
+                : '<span style="color:#ff6b6b">' + errs + ' error' + (errs === 1 ? '' : 's') + '</span> and <span style="color:#ffb86b">' + warns + ' warning' + (warns === 1 ? '' : 's') + '</span>.') +
+            '</p>';
+        // Search preview
+        var preview = document.createElement('div');
+        preview.style.cssText = 'border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:rgba(255,255,255,.02)';
+        preview.innerHTML = '<div style="font-size:.7rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Search preview</div>' +
+            '<div style="color:#8ab4f8;font-size:1rem;line-height:1.3">' + _escapeHtml(res.title || 'Untitled page') + '</div>' +
+            '<div style="color:#81c995;font-size:.78rem;margin-top:2px">' + _escapeHtml((document.getElementById('seoCanonical') || {}).value || 'your-site.example.com') + '</div>' +
+            '<div style="color:rgba(255,255,255,.7);font-size:.8rem;margin-top:4px;line-height:1.4">' + _escapeHtml(res.desc || 'No description \u2014 a summary will appear here when set.') + '</div>';
+        box.appendChild(preview);
+        if (issues.length) {
+            var list = document.createElement('div');
+            list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+            issues.forEach(function (it) {
+                var color = it.level === 'error' ? '#ff6b6b' : '#ffb86b';
+                var row = document.createElement('div');
+                row.style.cssText = 'padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px;display:flex;gap:10px;align-items:flex-start';
+                row.innerHTML = '<span style="color:' + color + ';font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;min-width:60px;padding-top:2px">' + it.level + '</span>' +
+                    '<span style="flex:1;min-width:0"><div style="font-size:.84rem">' + _escapeHtml(it.msg) + '</div>' +
+                    '<div style="font-size:.7rem;color:rgba(255,255,255,.45);margin-top:2px">' + _escapeHtml(it.where) + '</div></span>';
+                list.appendChild(row);
+            });
+            box.appendChild(list);
+        }
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    /* ─── Performance Audit (total asset size + large-image warnings) ─── */
+    function _runPerfAudit() {
+        var assets = _collectProjectAssets();
+        var total = 0, inlineTotal = 0, inlineCount = 0, remoteCount = 0;
+        var largeAssets = [];
+        var LARGE_THRESH = 500 * 1024; // 500 KB
+        assets.forEach(function (a) {
+            if (a.size) { total += a.size; inlineTotal += a.size; inlineCount++; }
+            else remoteCount++;
+            if (a.size && a.size >= LARGE_THRESH) largeAssets.push(a);
+        });
+        largeAssets.sort(function (a, b) { return b.size - a.size; });
+        var issues = [];
+        if (inlineTotal > 2 * 1024 * 1024) {
+            issues.push({ level: 'error', msg: 'Project is heavy: ' + (inlineTotal / 1024 / 1024).toFixed(1) + ' MB of inline assets. Extract large images/videos to URLs to keep the initial HTML fast.' });
+        } else if (inlineTotal > 1 * 1024 * 1024) {
+            issues.push({ level: 'warn', msg: 'Inline assets total ' + (inlineTotal / 1024 / 1024).toFixed(1) + ' MB. Consider hosting large media externally.' });
+        }
+        largeAssets.slice(0, 6).forEach(function (a) {
+            issues.push({ level: 'warn', msg: 'Large ' + a.kind + ' (' + (a.size / 1024).toFixed(0) + ' KB) at ' + a.source + '. Compress or host externally.' });
+        });
+        // Scene count / element density
+        var totalEls = 0;
+        _scenes.forEach(function (s) { totalEls += (s.elements || []).length; });
+        if (totalEls > 200) issues.push({ level: 'warn', msg: totalEls + ' elements across ' + _scenes.length + ' scenes. Consider splitting into multiple pages for better runtime performance.' });
+        // Too many fonts?
+        var fontSet = {};
+        _scenes.forEach(function (s) {
+            (s.elements || []).forEach(function (el) {
+                if (el && el.style && el.style.fontFamily) {
+                    var m = String(el.style.fontFamily).split(',')[0].replace(/['"]/g, '').trim();
+                    if (m) fontSet[m] = true;
+                }
+            });
+        });
+        var fontCount = Object.keys(fontSet).length;
+        if (fontCount > 4) issues.push({ level: 'warn', msg: fontCount + ' distinct fonts used. 2\u20133 is optimal \u2014 each extra font adds network + render cost.' });
+        return { issues: issues, totalInline: inlineTotal, inlineCount: inlineCount, remoteCount: remoteCount, largeAssets: largeAssets };
+    }
+
+    function _showPerfAudit() {
+        var existing = document.getElementById('cnePerfOverlay');
+        if (existing) existing.remove();
+        var res = _runPerfAudit();
+        var overlay = document.createElement('div');
+        overlay.id = 'cnePerfOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(680px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var totalKb = Math.round(res.totalInline / 1024);
+        var totalLabel = totalKb >= 1024 ? (totalKb / 1024).toFixed(1) + ' MB' : totalKb + ' KB';
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Performance Audit</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">' +
+            res.inlineCount + ' inline asset' + (res.inlineCount === 1 ? '' : 's') + ' (' + totalLabel + ') \u00b7 ' +
+            res.remoteCount + ' remote URL' + (res.remoteCount === 1 ? '' : 's') + ' \u00b7 ' +
+            _scenes.length + ' scene' + (_scenes.length === 1 ? '' : 's') + '.</p>';
+        if (!res.issues.length) {
+            box.innerHTML += '<div style="padding:20px;text-align:center;color:#6ee7b7;border:1px solid rgba(110,231,183,.3);border-radius:8px;background:rgba(110,231,183,.05)">All good \u2014 project is lean and fast to load.</div>';
+        } else {
+            var list = document.createElement('div');
+            list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+            res.issues.forEach(function (it) {
+                var color = it.level === 'error' ? '#ff6b6b' : '#ffb86b';
+                var row = document.createElement('div');
+                row.style.cssText = 'padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px;display:flex;gap:10px;align-items:flex-start';
+                row.innerHTML = '<span style="color:' + color + ';font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;min-width:60px;padding-top:2px">' + it.level + '</span>' +
+                    '<span style="flex:1;font-size:.84rem;line-height:1.5">' + _escapeHtml(it.msg) + '</span>';
+                list.appendChild(row);
+            });
+            box.appendChild(list);
+        }
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    /* ─── AI Alt-Text Fill (auto-fills alt for images missing one) ─── */
+    function _aiFillAltTexts() {
+        var missing = [];
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            if (!Array.isArray(sc.elements)) continue;
+            for (var j = 0; j < sc.elements.length; j++) {
+                var el = sc.elements[j];
+                if (!el || el.type !== 'image') continue;
+                if (!(el.alt || '').trim() && el.src) missing.push({ el: el, sceneIdx: i });
+            }
+        }
+        if (!missing.length) { alert('All images already have alt text \u2014 nothing to do.'); return; }
+        if (!confirm('Generate alt text with AI for ' + missing.length + ' image' + (missing.length === 1 ? '' : 's') + '?\n\nNote: this uses your configured AI provider. Remote URLs are sent; inline data URLs are described from context only.')) return;
+
+        var km = window.ArbelKeyManager;
+        if (!km || !km.getKey) { alert('AI not configured. Set an API key in the AI settings first.'); return; }
+        var provider = km.getProvider ? km.getProvider('text') : 'groq';
+        var key = km.getKey ? km.getKey('text') : '';
+        if (!key) { alert('No AI API key set.'); return; }
+
+        var brand = _getBrandName() || 'the site';
+        var ctx = missing.map(function (m, idx) {
+            var sc = _scenes[m.sceneIdx];
+            var scContext = (sc.name || sc.template || 'scene');
+            // Find nearby text in same scene (first heading/text element)
+            var nearby = '';
+            for (var k = 0; k < sc.elements.length; k++) {
+                var oe = sc.elements[k];
+                if (oe && (oe.type === 'heading' || oe.type === 'text') && oe.content) {
+                    nearby = String(oe.content).replace(/<[^>]+>/g, '').slice(0, 100);
+                    break;
+                }
+            }
+            return (idx + 1) + '. Scene "' + scContext + '"' + (nearby ? ' — nearby text: "' + nearby + '"' : '') + ' — image URL: ' + (m.el.src || 'inline image');
+        }).join('\n');
+
+        var prompt = 'For a website called "' + brand + '", write concise alt text (under 100 chars each) for these images. Return ONLY a JSON array of strings in the same order, no markdown, no keys, just an array like ["alt 1", "alt 2"]. Describe what likely appears based on context.\n\n' + ctx;
+
+        var body, url, headers;
+        if (provider === 'gemini') {
+            url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key);
+            headers = { 'Content-Type': 'application/json' };
+            body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
+        } else {
+            url = 'https://api.groq.com/openai/v1/chat/completions';
+            headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key };
+            body = JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'user', content: prompt }], temperature: 0.4 });
+        }
+
+        var btnStatus = document.createElement('div');
+        btnStatus.style.cssText = 'position:fixed;top:20px;right:20px;padding:12px 18px;background:#15151f;border:1px solid rgba(108,92,231,.4);border-radius:8px;color:#eee;font-family:inherit;font-size:.85rem;z-index:10001;box-shadow:0 10px 30px rgba(0,0,0,.5)';
+        btnStatus.textContent = 'Generating alt text\u2026';
+        document.body.appendChild(btnStatus);
+
+        fetch(url, { method: 'POST', headers: headers, body: body })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var text = '';
+                if (provider === 'gemini') {
+                    text = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text || '';
+                } else {
+                    text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '';
+                }
+                // Extract first JSON array
+                var m = text.match(/\[[\s\S]*\]/);
+                if (!m) throw new Error('Could not parse AI response.');
+                var arr = JSON.parse(m[0]);
+                if (!Array.isArray(arr)) throw new Error('AI response is not a JSON array.');
+                _pushUndo();
+                var applied = 0;
+                for (var i = 0; i < missing.length && i < arr.length; i++) {
+                    if (typeof arr[i] === 'string' && arr[i].trim()) {
+                        missing[i].el.alt = arr[i].trim().slice(0, 140);
+                        applied++;
+                    }
+                }
+                _notifyUpdate(true);
+                btnStatus.textContent = 'Filled ' + applied + ' alt text' + (applied === 1 ? '' : 's') + ' \u2713';
+                btnStatus.style.borderColor = 'rgba(110,231,183,.5)';
+                setTimeout(function () { btnStatus.remove(); }, 2500);
+            })
+            .catch(function (err) {
+                btnStatus.textContent = 'Failed: ' + err.message;
+                btnStatus.style.borderColor = 'rgba(255,107,107,.5)';
+                setTimeout(function () { btnStatus.remove(); }, 3500);
+            });
+    }
+
     /* ─── Starter Templates Gallery ─── */
     var _STARTER_TEMPLATES = [
         { id: 'agency',          label: 'Agency',          desc: 'Creative studio w/ work showcase',      scenes: ['hero', 'splitMedia', 'featureGrid', 'showcase', 'testimonial', 'ctaSection'] },
@@ -10830,6 +11127,9 @@ window.ArbelCinematicEditor = (function () {
         showAssetLibrary: _showAssetLibrary,
         showFindReplace: _showFindReplace,
         showA11yAudit: _showA11yAudit,
+        showSeoCheck: _showSeoCheck,
+        showPerfAudit: _showPerfAudit,
+        aiFillAltTexts: _aiFillAltTexts,
         showShortcuts: _showShortcutsSheet,
         showComponents: _showComponentsDialog,
         saveSelectionAsComponent: _saveSelectionAsComponent,
