@@ -9431,6 +9431,7 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Asset library\u2026', run: function () { _showAssetLibrary(); } });
             cmds.push({ cat: 'Action', label: 'Find & replace\u2026', kbd: 'Ctrl+F', run: function () { _showFindReplace(); } });
             cmds.push({ cat: 'Action', label: 'Accessibility audit\u2026', run: function () { _showA11yAudit(); } });
+            cmds.push({ cat: 'Action', label: 'Site health\u2026', run: function () { _showSiteHealth(); } });
             cmds.push({ cat: 'Action', label: 'SEO check\u2026', run: function () { _showSeoCheck(); } });
             cmds.push({ cat: 'Action', label: 'Performance audit\u2026', run: function () { _showPerfAudit(); } });
             cmds.push({ cat: 'Action', label: 'Link audit\u2026', run: function () { _showLinkAudit(); } });
@@ -10860,6 +10861,84 @@ window.ArbelCinematicEditor = (function () {
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
+    /* ─── Site Health (unified dashboard of all audits) ─── */
+    function _computeHealthScore() {
+        var a11y = _runA11yAudit();
+        var seo = _runSeoCheck();
+        var perf = _runPerfAudit();
+        var links = _runLinkAudit();
+        function penalty(list) {
+            var p = 0;
+            list.forEach(function (x) { p += (x.level === 'error' ? 8 : 3); });
+            return p;
+        }
+        var total = penalty(a11y) + penalty(seo.issues) + penalty(perf.issues) + penalty(links);
+        var score = Math.max(0, 100 - total);
+        return { score: score, a11y: a11y, seo: seo.issues, perf: perf.issues, links: links };
+    }
+
+    function _showSiteHealth() {
+        var existing = document.getElementById('cneHealthOverlay');
+        if (existing) existing.remove();
+        var h = _computeHealthScore();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneHealthOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(640px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var color = h.score >= 90 ? '#6ee7b7' : h.score >= 70 ? '#ffb86b' : '#ff6b6b';
+        var label = h.score >= 90 ? 'Excellent' : h.score >= 70 ? 'Good' : h.score >= 50 ? 'Needs work' : 'Critical issues';
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Site Health</h2>' +
+            '<p style="margin:0 0 18px;font-size:.85rem;color:rgba(255,255,255,.55)">Aggregate health across accessibility, SEO, performance, and links.</p>' +
+            '<div style="display:flex;align-items:center;gap:20px;margin-bottom:20px;padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.02)">' +
+                '<div style="font-size:3.2rem;font-weight:700;color:' + color + ';line-height:1">' + h.score + '</div>' +
+                '<div><div style="font-size:.9rem;font-weight:600;color:' + color + '">' + label + '</div>' +
+                '<div style="font-size:.78rem;color:rgba(255,255,255,.5);margin-top:2px">Out of 100 \u2014 higher is better</div></div>' +
+            '</div>';
+        var cats = [
+            { title: 'Accessibility', items: h.a11y, fn: _showA11yAudit },
+            { title: 'SEO', items: h.seo, fn: _showSeoCheck },
+            { title: 'Performance', items: h.perf, fn: _showPerfAudit },
+            { title: 'Links', items: h.links, fn: _showLinkAudit }
+        ];
+        var grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px';
+        cats.forEach(function (c) {
+            var e = c.items.filter(function (x) { return x.level === 'error'; }).length;
+            var w = c.items.filter(function (x) { return x.level === 'warn'; }).length;
+            var card = document.createElement('button');
+            card.type = 'button';
+            card.style.cssText = 'text-align:left;padding:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:10px;cursor:pointer;color:inherit;font-family:inherit';
+            card.onmouseenter = function () { card.style.borderColor = 'rgba(108,92,231,.6)'; };
+            card.onmouseleave = function () { card.style.borderColor = 'rgba(255,255,255,.08)'; };
+            var statusColor = e > 0 ? '#ff6b6b' : w > 0 ? '#ffb86b' : '#6ee7b7';
+            var statusText = e > 0 ? e + ' error' + (e === 1 ? '' : 's') + (w ? ', ' + w + ' warn' : '') : w > 0 ? w + ' warning' + (w === 1 ? '' : 's') : 'All clear';
+            card.innerHTML = '<div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:4px">' + c.title + '</div>' +
+                '<div style="font-size:.92rem;color:' + statusColor + ';font-weight:500">' + statusText + '</div>' +
+                '<div style="font-size:.7rem;color:rgba(255,255,255,.4);margin-top:6px">View details \u2192</div>';
+            card.addEventListener('click', function () {
+                overlay.remove();
+                document.removeEventListener('keydown', onEsc);
+                c.fn();
+            });
+            grid.appendChild(card);
+        });
+        box.appendChild(grid);
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:20px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
     /* ─── AI Alt-Text Fill (auto-fills alt for images missing one) ─── */
     function _aiFillAltTexts() {
         var missing = [];
@@ -11221,6 +11300,7 @@ window.ArbelCinematicEditor = (function () {
         showAssetLibrary: _showAssetLibrary,
         showFindReplace: _showFindReplace,
         showA11yAudit: _showA11yAudit,
+        showSiteHealth: _showSiteHealth,
         showSeoCheck: _showSeoCheck,
         showPerfAudit: _showPerfAudit,
         showLinkAudit: _showLinkAudit,
