@@ -5528,6 +5528,27 @@ window.ArbelCinematicEditor = (function () {
     /* ─── Autosave System ─── */
     var _autosaveTimer = null;
     var _AUTOSAVE_KEY = 'arbel-cinematic-autosave';
+    var _AUTOSAVE_HISTORY_KEY = 'arbel-cinematic-history';
+    var _AUTOSAVE_HISTORY_MAX = 12;
+    var _AUTOSAVE_HISTORY_MIN_GAP_MS = 2 * 60 * 1000;  // coalesce within 2 min
+
+    function _pushHistorySnapshot(data) {
+        try {
+            var raw = localStorage.getItem(_AUTOSAVE_HISTORY_KEY);
+            var list = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(list)) list = [];
+            // Coalesce rapid edits: replace last entry if within min-gap
+            var now = data.timestamp || Date.now();
+            if (list.length && (now - (list[list.length - 1].timestamp || 0)) < _AUTOSAVE_HISTORY_MIN_GAP_MS) {
+                list[list.length - 1] = data;
+            } else {
+                list.push(data);
+            }
+            // Ring-buffer cap
+            while (list.length > _AUTOSAVE_HISTORY_MAX) list.shift();
+            localStorage.setItem(_AUTOSAVE_HISTORY_KEY, JSON.stringify(list));
+        } catch (ex) { /* quota — silently ignore */ }
+    }
 
     function _autosave() {
         try {
@@ -5544,6 +5565,7 @@ window.ArbelCinematicEditor = (function () {
                 timestamp: Date.now()
             };
             localStorage.setItem(_AUTOSAVE_KEY, JSON.stringify(data));
+            _pushHistorySnapshot(data);
         } catch (ex) { /* quota exceeded — silently ignore */ }
     }
 
@@ -9400,6 +9422,8 @@ window.ArbelCinematicEditor = (function () {
             // Actions
             cmds.push({ cat: 'Action', label: 'New project', run: function () { _newProject(); } });
             cmds.push({ cat: 'Action', label: 'Start from a template\u2026', run: function () { _showStartersDialog(); } });
+            cmds.push({ cat: 'Action', label: 'Version history\u2026', run: function () { _showVersionHistory(); } });
+            cmds.push({ cat: 'Action', label: 'Import brand kit\u2026', run: function () { _showBrandKitImport(); } });
             cmds.push({ cat: 'Action', label: 'AI rewrite current scene\u2026', run: function () { _aiRewriteCurrentScene(); } });
             cmds.push({ cat: 'Action', label: 'Save project', kbd: 'Ctrl+S', run: function () { _saveProject(); } });
             cmds.push({ cat: 'Action', label: 'Save project as\u2026', kbd: 'Ctrl+Shift+S', run: function () { _saveProjectAs(); } });
@@ -9510,6 +9534,140 @@ window.ArbelCinematicEditor = (function () {
         if (initialQuery && initialQuery !== '?') input.value = initialQuery;
         render(input.value);
         input.focus();
+    }
+
+    /* ─── Version History (restore any of the last N autosave snapshots) ─── */
+    function _showVersionHistory() {
+        var raw;
+        try { raw = localStorage.getItem(_AUTOSAVE_HISTORY_KEY); } catch (e) { raw = null; }
+        var list = [];
+        try { list = raw ? JSON.parse(raw) : []; } catch (e) { list = []; }
+        if (!Array.isArray(list)) list = [];
+        var existing = document.getElementById('cneHistoryOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneHistoryOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(540px,92vw);max-height:80vh;overflow:auto;color:#eee';
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.2rem">Version History</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">Up to ' + _AUTOSAVE_HISTORY_MAX + ' auto-saved snapshots. Restore any to replace the current project (previous state stored in undo).</p>';
+        if (!list.length) {
+            box.innerHTML += '<div style="text-align:center;padding:30px 0;color:rgba(255,255,255,.4)">No snapshots yet \u2014 keep editing and they\u2019ll appear here.</div>';
+        } else {
+            var ul = document.createElement('div');
+            ul.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+            list.slice().reverse().forEach(function (snap, idx) {
+                var row = document.createElement('button');
+                row.type = 'button';
+                row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px;color:inherit;cursor:pointer;font-family:inherit';
+                row.onmouseenter = function () { row.style.borderColor = 'rgba(108,92,231,.6)'; };
+                row.onmouseleave = function () { row.style.borderColor = 'rgba(255,255,255,.08)'; };
+                var when = new Date(snap.timestamp || 0);
+                var ago = _formatAgo(snap.timestamp || 0);
+                var sceneCount = Array.isArray(snap.scenes) ? snap.scenes.length : 0;
+                row.innerHTML = '<div style="text-align:left"><div style="font-size:.9rem;font-weight:500">' + (snap.meta && snap.meta.name ? _escapeHtml(snap.meta.name) : 'Untitled') + '</div>' +
+                    '<div style="font-size:.72rem;color:rgba(255,255,255,.45);margin-top:2px">' + when.toLocaleString() + ' \u2014 ' + sceneCount + ' scenes</div></div>' +
+                    '<span style="font-size:.72rem;color:rgba(255,255,255,.4);letter-spacing:.04em">' + ago + '</span>';
+                row.addEventListener('click', function () {
+                    if (!confirm('Restore this snapshot? Current project will be replaced (undo is preserved).')) return;
+                    _pushUndo();
+                    if (Array.isArray(snap.scenes)) _scenes = JSON.parse(JSON.stringify(snap.scenes));
+                    if (snap.overrides) _overrides = JSON.parse(JSON.stringify(snap.overrides));
+                    if (snap.designTokens) Object.keys(snap.designTokens).forEach(function (k) { if (_designTokens.hasOwnProperty(k)) _designTokens[k] = snap.designTokens[k]; });
+                    _selectedElementId = null;
+                    _selectedElementIds = [];
+                    _currentSceneIdx = 0;
+                    _renderSceneList();
+                    _selectScene(0, true);
+                    _notifyUpdate(true);
+                    overlay.remove();
+                    document.removeEventListener('keydown', onEsc);
+                });
+                ul.appendChild(row);
+            });
+            box.appendChild(ul);
+        }
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.style.cssText = 'margin-top:16px;float:right';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        box.appendChild(close);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    function _formatAgo(ts) {
+        if (!ts) return '';
+        var s = Math.floor((Date.now() - ts) / 1000);
+        if (s < 60) return s + 's ago';
+        if (s < 3600) return Math.floor(s / 60) + 'm ago';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+        return Math.floor(s / 86400) + 'd ago';
+    }
+
+    function _escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; });
+    }
+
+    /* ─── Brand Kit Import (paste JSON with colors + fonts) ─── */
+    function _showBrandKitImport() {
+        var existing = document.getElementById('cneBrandKitOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneBrandKitOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(560px,92vw);color:#eee';
+        var example = '{\n  "primary": "#6C5CE7",\n  "secondary": "#00cec9",\n  "bg": "#0a0a0f",\n  "surface": "#1a1a2e",\n  "text": "#f0f0f0",\n  "textMuted": "#888",\n  "headingFont": "\'Instrument Serif\', Georgia, serif",\n  "bodyFont": "\'Inter\', system-ui, sans-serif",\n  "baseSize": 16,\n  "scale": 1.25,\n  "radius": 8\n}';
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.2rem">Import Brand Kit</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">Paste a JSON object with any subset of design tokens. Only recognized keys are applied.</p>';
+        var ta = document.createElement('textarea');
+        ta.style.cssText = 'width:100%;min-height:240px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eee;padding:12px;font-family:"SF Mono","Consolas",monospace;font-size:.82rem;resize:vertical;box-sizing:border-box';
+        ta.placeholder = example;
+        box.appendChild(ta);
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:14px';
+        var cancel = document.createElement('button');
+        cancel.className = 'gen-btn';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        var apply = document.createElement('button');
+        apply.className = 'gen-btn gen-btn--primary';
+        apply.textContent = 'Apply Kit';
+        apply.addEventListener('click', function () {
+            var val = ta.value.trim();
+            if (!val) { alert('Paste a JSON kit first.'); return; }
+            var parsed;
+            try { parsed = JSON.parse(val); } catch (e) { alert('Invalid JSON: ' + e.message); return; }
+            if (!parsed || typeof parsed !== 'object') { alert('Kit must be a JSON object.'); return; }
+            _pushUndo();
+            var allowed = ['headingFont', 'bodyFont', 'baseSize', 'scale', 'primary', 'secondary', 'text', 'textMuted', 'bg', 'surface', 'spaceUnit', 'radius'];
+            var applied = 0;
+            allowed.forEach(function (k) {
+                if (parsed[k] !== undefined && parsed[k] !== null) {
+                    _designTokens[k] = parsed[k];
+                    applied++;
+                }
+            });
+            overlay.remove();
+            document.removeEventListener('keydown', onEsc);
+            if (typeof _syncTokenUI === 'function') { try { _syncTokenUI(); } catch (e) {} }
+            _notifyUpdate(true);
+            alert('Applied ' + applied + ' token' + (applied === 1 ? '' : 's') + '.');
+        });
+        btnRow.appendChild(cancel);
+        btnRow.appendChild(apply);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
     /* ─── Starter Templates Gallery ─── */
@@ -9774,6 +9932,8 @@ window.ArbelCinematicEditor = (function () {
         showCommandPalette: _showCommandPalette,
         showOnboarding: _showOnboardingTour,
         showStarters: _showStartersDialog,
+        showVersionHistory: _showVersionHistory,
+        showBrandKitImport: _showBrandKitImport,
         aiRewriteScene: _aiRewriteCurrentScene,
         getEmbedSnippet: function (siteUrl, opts) {
             // Produce an iframe embed snippet for the deployed site. Honors optional
