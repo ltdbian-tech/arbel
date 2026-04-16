@@ -521,7 +521,24 @@ window.ArbelCinematicCompiler = (function () {
             html += '<meta name="robots" content="noindex, nofollow">\n';
         }
         if (seo.canonical) html += '<link rel="canonical" href="' + escHref(seo.canonical) + '">\n';
-        if (seo.favicon) html += '<link rel="icon" href="' + escHref(seo.favicon) + '">\n';
+        if (seo.favicon) {
+            html += '<link rel="icon" href="' + escHref(seo.favicon) + '">\n';
+        } else {
+            // Auto-generate a minimalist SVG favicon from brand initial + primary color
+            try {
+                var initial = String(cfg.brandName || 'A').trim().charAt(0).toUpperCase() || 'A';
+                var accent = (cfg.designTokens && cfg.designTokens.primary) || (cfg.accent) || '#6C5CE7';
+                var bg = (cfg.designTokens && cfg.designTokens.bg) || '#0a0a0f';
+                // sanitize to hex-like color chars only
+                accent = String(accent).match(/^#[0-9a-fA-F]{3,8}$|^rgba?\([^)]+\)$/) ? accent : '#6C5CE7';
+                bg = String(bg).match(/^#[0-9a-fA-F]{3,8}$|^rgba?\([^)]+\)$/) ? bg : '#0a0a0f';
+                var svg = '<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 64 64\'>' +
+                    '<rect width=\'64\' height=\'64\' rx=\'12\' fill=\'' + bg + '\'/>' +
+                    '<text x=\'50%\' y=\'54%\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'system-ui,-apple-system,sans-serif\' font-size=\'36\' font-weight=\'700\' fill=\'' + accent + '\'>' + esc(initial) + '</text>' +
+                    '</svg>';
+                html += '<link rel="icon" href="data:image/svg+xml;utf8,' + encodeURIComponent(svg) + '">\n';
+            } catch (favErr) { /* skip auto-favicon on failure */ }
+        }
         // Open Graph
         html += '<meta property="og:type" content="website">\n';
         html += '<meta property="og:title" content="' + esc(seoTitle) + '">\n';
