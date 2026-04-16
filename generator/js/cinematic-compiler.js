@@ -394,6 +394,10 @@ window.ArbelCinematicCompiler = (function () {
         // M4: Export arbel.config.json (public metadata only — no sensitive data)
         files['arbel.config.json'] = _buildCineConfig(c);
 
+        // Auto-SEO: sitemap.xml + robots.txt
+        files['robots.txt'] = _buildRobots(c);
+        files['sitemap.xml'] = _buildSitemap(c);
+
         // P1: Build background animation JS for non-shader styles (reuses classic compiler)
         if (cat !== 'shader') {
             var animFile = ArbelCompiler.getAnimJsFile ? ArbelCompiler.getAnimJsFile(c.style) : 'particles.js';
@@ -493,7 +497,20 @@ window.ArbelCinematicCompiler = (function () {
 
         var seo = cfg.seo || {};
         var seoTitle = seo.title || cfg.brandName;
-        var seoDesc = seo.description || cfg.tagline || cfg.brandName;
+        // Auto-derive description from first scene text if not explicitly set
+        var autoDesc = '';
+        if (!seo.description && Array.isArray(scenes)) {
+            for (var si = 0; si < scenes.length && !autoDesc; si++) {
+                var els = (scenes[si].elements || []);
+                for (var ei = 0; ei < els.length && !autoDesc; ei++) {
+                    var t = (els[ei].text || '').trim();
+                    if (t && t.length > 20 && t.indexOf('<') < 0) {
+                        autoDesc = t.replace(/\s+/g, ' ').slice(0, 160);
+                    }
+                }
+            }
+        }
+        var seoDesc = seo.description || autoDesc || cfg.tagline || cfg.brandName;
 
         var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
         html += '<meta charset="UTF-8">\n';
@@ -791,6 +808,7 @@ window.ArbelCinematicCompiler = (function () {
             html += ' data-scene-index="' + i + '"';
             html += ' data-pin="' + (scene.pin !== false ? 'true' : 'false') + '"';
             html += ' data-duration="' + (scene.duration || 100) + '"';
+            if (scene.transition) html += ' data-transition="' + esc(scene.transition) + '"';
             html += revealSceneAttrs;
             if (sceneBg || revealVars) html += ' style="' + sceneBg + revealVars + '"';
             html += '>\n';
@@ -1307,6 +1325,31 @@ window.ArbelCinematicCompiler = (function () {
         // NOTE: Must NOT animate 'transform' — it would override GSAP xPercent/yPercent centering
         css += '@keyframes cne-hero-entrance { 0% { opacity: 0; filter: blur(8px); } 100% { opacity: 1; filter: blur(0); } }\n\n';
 
+        // Scene Transitions (on-enter, scroll-triggered via intersection observer in cinema.js)
+        css += '/* Scene Transitions */\n';
+        css += '.cne-scene[data-transition] { will-change: opacity, transform, filter; }\n';
+        css += '.cne-scene[data-transition]:not(.cne-trans-active) { opacity: 0; }\n';
+        css += '.cne-scene[data-transition="crossfade"] { transition: opacity .8s ease-out; }\n';
+        css += '.cne-scene[data-transition="crossfade"].cne-trans-active { opacity: 1; }\n';
+        css += '.cne-scene[data-transition="push-up"] { transition: opacity .7s ease-out, transform .7s cubic-bezier(.22,1,.36,1); transform: translateY(40px); }\n';
+        css += '.cne-scene[data-transition="push-up"].cne-trans-active { opacity: 1; transform: translateY(0); }\n';
+        css += '.cne-scene[data-transition="push-down"] { transition: opacity .7s ease-out, transform .7s cubic-bezier(.22,1,.36,1); transform: translateY(-40px); }\n';
+        css += '.cne-scene[data-transition="push-down"].cne-trans-active { opacity: 1; transform: translateY(0); }\n';
+        css += '.cne-scene[data-transition="zoom-in"] { transition: opacity .8s ease-out, transform .9s cubic-bezier(.22,1,.36,1); transform: scale(.92); }\n';
+        css += '.cne-scene[data-transition="zoom-in"].cne-trans-active { opacity: 1; transform: scale(1); }\n';
+        css += '.cne-scene[data-transition="zoom-out"] { transition: opacity .8s ease-out, transform .9s cubic-bezier(.22,1,.36,1); transform: scale(1.08); }\n';
+        css += '.cne-scene[data-transition="zoom-out"].cne-trans-active { opacity: 1; transform: scale(1); }\n';
+        css += '.cne-scene[data-transition="blur-out"] { transition: opacity .8s ease-out, filter .9s ease-out; filter: blur(14px); }\n';
+        css += '.cne-scene[data-transition="blur-out"].cne-trans-active { opacity: 1; filter: blur(0); }\n';
+        css += '.cne-scene[data-transition="split-reveal"] { clip-path: inset(45% 0 45% 0); transition: opacity .8s ease-out, clip-path 1s cubic-bezier(.77,0,.175,1); }\n';
+        css += '.cne-scene[data-transition="split-reveal"].cne-trans-active { opacity: 1; clip-path: inset(0 0 0 0); }\n';
+        css += '.cne-scene[data-transition="chromatic"] { transition: opacity .8s ease-out, filter .8s ease-out, transform .8s ease-out; filter: hue-rotate(90deg) saturate(1.6); transform: translateX(20px); }\n';
+        css += '.cne-scene[data-transition="chromatic"].cne-trans-active { opacity: 1; filter: none; transform: none; }\n';
+        css += '.cne-scene[data-transition="dolly-zoom"] { transition: opacity .9s ease-out, transform 1.1s cubic-bezier(.22,1,.36,1), filter .9s ease-out; transform: scale(.85) perspective(800px) translateZ(-60px); filter: blur(6px); }\n';
+        css += '.cne-scene[data-transition="dolly-zoom"].cne-trans-active { opacity: 1; transform: scale(1) perspective(800px) translateZ(0); filter: blur(0); }\n';
+        css += '@media (prefers-reduced-motion: reduce) { .cne-scene[data-transition] { transition: opacity .2s linear !important; transform: none !important; filter: none !important; clip-path: none !important; } }\n\n';
+
+
         // Responsive — tablet
         css += '@media (max-width: 768px) {\n';
         css += '  .cne-nav { padding: 1rem 1.2rem; }\n';
@@ -1492,10 +1535,26 @@ window.ArbelCinematicCompiler = (function () {
 
         // Main cinema init
         js += '/* Init cinema engine */\n';
+        js += '/* Scene Transitions (intersection-observer driven) */\n';
+        js += 'function initSceneTransitions(){\n';
+        js += '  var targets = document.querySelectorAll(".cne-scene[data-transition]");\n';
+        js += '  if(!targets.length || !("IntersectionObserver" in window)){\n';
+        js += '    // Fallback: reveal all immediately\n';
+        js += '    Array.prototype.forEach.call(targets, function(t){ t.classList.add("cne-trans-active"); });\n';
+        js += '    return;\n';
+        js += '  }\n';
+        js += '  var io = new IntersectionObserver(function(entries){\n';
+        js += '    entries.forEach(function(en){\n';
+        js += '      if(en.isIntersecting){ en.target.classList.add("cne-trans-active"); io.unobserve(en.target); }\n';
+        js += '    });\n';
+        js += '  }, { threshold: 0.18, rootMargin: "0px 0px -10% 0px" });\n';
+        js += '  Array.prototype.forEach.call(targets, function(t){ io.observe(t); });\n';
+        js += '}\n\n';
         js += 'function initCinema(){\n';
         js += '  gsap.registerPlugin(ScrollTrigger);\n';
         js += '  initLenis();\n';
-        js += '  initScrollProgress();\n\n';
+        js += '  initScrollProgress();\n';
+        js += '  initSceneTransitions();\n\n';
 
         js += '  var scenes = document.querySelectorAll(".cne-scene");\n';
         js += '  scenes.forEach(function(scene, sceneIdx){\n';
@@ -2620,6 +2679,55 @@ window.ArbelCinematicCompiler = (function () {
         });
         md += '\n---\n\nGenerated by [Arbel](https://arbel.live)\n';
         return md;
+    }
+
+    /* ─── robots.txt + sitemap.xml ─── */
+    function _buildRobots(cfg) {
+        var seo = cfg.seo || {};
+        // Respect explicit noindex signal
+        if (seo.index === false) {
+            return 'User-agent: *\nDisallow: /\n';
+        }
+        var host = '';
+        if (seo.canonical) {
+            try { host = new URL(seo.canonical).origin; } catch (e) { host = ''; }
+        }
+        var txt = 'User-agent: *\nAllow: /\n';
+        if (host) txt += '\nSitemap: ' + host + '/sitemap.xml\n';
+        else txt += '\nSitemap: /sitemap.xml\n';
+        return txt;
+    }
+
+    function _buildSitemap(cfg) {
+        var seo = cfg.seo || {};
+        var base = '';
+        if (seo.canonical) {
+            try { var u = new URL(seo.canonical); base = u.origin + u.pathname.replace(/\/$/, ''); } catch (e) {}
+        }
+        var urls = [];
+        // Home
+        urls.push(base + '/');
+        // Additional pages if multi-page project
+        if (Array.isArray(cfg.pages) && cfg.pages.length > 1) {
+            cfg.pages.forEach(function (p) {
+                var path = (p.path || '').replace(/^\//, '');
+                if (path && path !== 'index' && path !== 'index.html') {
+                    urls.push(base + '/' + path);
+                }
+            });
+        }
+        var now = new Date().toISOString().slice(0, 10);
+        var xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        urls.forEach(function (u) {
+            xml += '  <url>\n';
+            xml += '    <loc>' + esc(u) + '</loc>\n';
+            xml += '    <lastmod>' + now + '</lastmod>\n';
+            xml += '    <changefreq>monthly</changefreq>\n';
+            xml += '  </url>\n';
+        });
+        xml += '</urlset>\n';
+        return xml;
     }
 
     /* ─── Override applicator (same as classic) ─── */

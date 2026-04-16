@@ -3137,6 +3137,25 @@
                         </div>
                     </div>
 
+                    <div class="cne-section-label">SCENE TRANSITION</div>
+                    <div class="cne-row">
+                        <div class="cne-col" style="flex:1">
+                            <span class="cne-hint mono">On enter</span>
+                            <select class="gen-select" id="cneSceneTransition">
+                                <option value="">None (hard cut)</option>
+                                <option value="crossfade">Crossfade</option>
+                                <option value="push-up">Push Up</option>
+                                <option value="push-down">Push Down</option>
+                                <option value="zoom-in">Zoom In</option>
+                                <option value="zoom-out">Zoom Out</option>
+                                <option value="blur-out">Blur Out</option>
+                                <option value="split-reveal">Split Reveal</option>
+                                <option value="chromatic">Chromatic Shift</option>
+                                <option value="dolly-zoom">Dolly Zoom</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="cne-section-label">SCENE BACKGROUND</div>
                     <div class="cne-row">
                         <div class="cne-col">
@@ -3145,7 +3164,8 @@
                         </div>
                     </div>
                     <div class="cne-row" id="cneBg3dWarning" style="display:none">
-                        <span class="cne-hint mono" style="color:#f0c040;font-size:10px">&#9888; Background effect is active &mdash; set it to None to see this color</span>
+                        <span class="cne-hint mono" style="color:#f0c040;font-size:10px;flex:1">&#9888; Background effect is active &mdash; set it to None to see this color</span>
+                        <button class="gen-btn gen-btn--small" id="cneBg3dDisable" type="button" title="Disable background effect" style="margin-left:6px;padding:2px 8px;font-size:10px">Disable</button>
                     </div>
                     <div class="cne-row">
                         <div class="cne-col" style="flex:1">

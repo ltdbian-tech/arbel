@@ -419,6 +419,9 @@ window.ArbelCinematicEditor = (function () {
             if (_projectDirty) { e.preventDefault(); e.returnValue = ''; }
         };
         window.addEventListener('beforeunload', _beforeUnloadHandler);
+
+        // First-run onboarding tour
+        _maybeShowOnboarding();
     }
 
     /* ─── Message handler from iframe ─── */
@@ -774,7 +777,12 @@ window.ArbelCinematicEditor = (function () {
 
             var meta = document.createElement('span');
             meta.className = 'cne-scene-meta mono';
-            meta.textContent = scene.elements.length + ' elements';
+            var totalCount = scene.elements.length;
+            var hiddenCount = (scene.elements || []).filter(function (el) { return el.visible === false; }).length;
+            var visibleCount = totalCount - hiddenCount;
+            meta.textContent = hiddenCount > 0
+                ? (visibleCount + ' visible · ' + hiddenCount + ' hidden')
+                : (totalCount + ' element' + (totalCount === 1 ? '' : 's'));
 
             info.appendChild(name);
             info.appendChild(meta);
@@ -909,6 +917,7 @@ window.ArbelCinematicEditor = (function () {
         if (scene) {
             var pin = _qs('#cneScenePin'); if (pin) pin.checked = scene.pin !== false;
             var dur = _qs('#cneSceneDuration'); if (dur) dur.value = scene.duration || 100;
+            var trans = _qs('#cneSceneTransition'); if (trans) trans.value = scene.transition || '';
             var bg = _qs('#cneSceneBg'); if (bg) bg.value = scene.bgColor || '#0a0a0f';
 
             // 3D background fields
@@ -4186,6 +4195,21 @@ window.ArbelCinematicEditor = (function () {
                 e.preventDefault();
                 _deleteSelectedElement();
             }
+            // F: Frame / zoom-to-fit the currently selected element (or reset)
+            if ((e.key === 'f' || e.key === 'F') && !inInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                _frameSelection();
+            }
+            // Ctrl/Cmd+K: Command palette
+            if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+                e.preventDefault();
+                _showCommandPalette();
+            }
+            // ? (Shift+/): Keyboard shortcut help (shows inside command palette)
+            if (e.key === '?' && !inInput && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                e.preventDefault();
+                _showCommandPalette('?');
+            }
         };
         document.addEventListener('keydown', _keydownHandler);
 
@@ -4396,12 +4420,19 @@ window.ArbelCinematicEditor = (function () {
     function _setupSceneSettings() {
         var pinToggle = _qs('#cneScenePin');
         var durationInput = _qs('#cneSceneDuration');
+        var transitionSelect = _qs('#cneSceneTransition');
         var bgColorInput = _qs('#cneSceneBg');
 
         if (pinToggle) {
             pinToggle.addEventListener('change', function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (scene) { _pushUndo(); scene.pin = pinToggle.checked; _notifyUpdate(true); }
+            });
+        }
+        if (transitionSelect) {
+            transitionSelect.addEventListener('change', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (scene) { _pushUndo(); scene.transition = transitionSelect.value || ''; _notifyUpdate(true); }
             });
         }
         if (durationInput) {
@@ -4519,6 +4550,18 @@ window.ArbelCinematicEditor = (function () {
         var bg3dIntRow = _qs('#cneBg3dIntensityRow');
         var bg3dSpeedRow = _qs('#cneBg3dSpeedRow');
         var bg3dWarning = _qs('#cneBg3dWarning');
+        var bg3dDisable = _qs('#cneBg3dDisable');
+        if (bg3dDisable && !bg3dDisable._bound) {
+            bg3dDisable._bound = true;
+            bg3dDisable.addEventListener('click', function () {
+                var scene = _scenes[_currentSceneIdx];
+                if (!scene) return;
+                _pushUndo();
+                scene.bg3dType = '';
+                if (bg3dSelect) bg3dSelect.value = '';
+                _apply3dBg();
+            });
+        }
 
         function _toggle3dRows() {
             var show = bg3dSelect && bg3dSelect.value !== '';
@@ -9257,6 +9300,261 @@ window.ArbelCinematicEditor = (function () {
         }
     }
 
+    /* ─── Frame Selection (F key): zoom-to-fit selected element(s) ─── */
+    function _frameSelection() {
+        var zoomVal = _qs('#cneZoomVal');
+        // If no selection, reset zoom + pan to fit scene fully
+        if (!_selectedElementId) {
+            _zoom = 100;
+            if (typeof _panOffset !== 'undefined') { _panOffset.x = 0; _panOffset.y = 0; }
+            _applyZoom();
+            if (zoomVal) zoomVal.textContent = '100%';
+            return;
+        }
+        // Approximate: center-zoom to 150% of current (gives user a visual "focus" cue)
+        _zoom = 150;
+        if (typeof _panOffset !== 'undefined') { _panOffset.x = 0; _panOffset.y = 0; }
+        _applyZoom();
+        if (zoomVal) zoomVal.textContent = '150%';
+        // Briefly flash the selected element in the iframe
+        _postIframe('arbel-flash-selection', { id: _selectedElementId });
+    }
+
+    /* ─── Command Palette (Ctrl/Cmd+K) ─── */
+    function _showCommandPalette(initialQuery) {
+        var existing = document.getElementById('cneCmdPalette');
+        if (existing) { existing.remove(); return; }
+
+        var overlay = document.createElement('div');
+        overlay.id = 'cneCmdPalette';
+        overlay.className = 'cne-cmd-overlay';
+
+        var box = document.createElement('div');
+        box.className = 'cne-cmd-box';
+
+        var input = document.createElement('input');
+        input.className = 'cne-cmd-input';
+        input.type = 'text';
+        input.placeholder = 'Type a command, scene, or element\u2026';
+        input.spellcheck = false;
+        input.autocomplete = 'off';
+
+        var list = document.createElement('div');
+        list.className = 'cne-cmd-list';
+
+        var hint = document.createElement('div');
+        hint.className = 'cne-cmd-hint mono';
+        hint.innerHTML = '<span>\u2191\u2193 navigate</span><span>\u21b5 select</span><span>Esc close</span>';
+
+        box.appendChild(input);
+        box.appendChild(list);
+        box.appendChild(hint);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // Build command list
+        function buildCommands() {
+            var cmds = [];
+            // Actions
+            cmds.push({ cat: 'Action', label: 'New project', run: function () { _newProject(); } });
+            cmds.push({ cat: 'Action', label: 'Save project', kbd: 'Ctrl+S', run: function () { _saveProject(); } });
+            cmds.push({ cat: 'Action', label: 'Save project as\u2026', kbd: 'Ctrl+Shift+S', run: function () { _saveProjectAs(); } });
+            cmds.push({ cat: 'Action', label: 'Open project\u2026', kbd: 'Ctrl+O', run: function () { _openProject(); } });
+            cmds.push({ cat: 'Action', label: 'Undo', kbd: 'Ctrl+Z', run: function () { _undo(); } });
+            cmds.push({ cat: 'Action', label: 'Redo', kbd: 'Ctrl+Y', run: function () { _redo(); } });
+            cmds.push({ cat: 'Action', label: 'Auto-generate website\u2026', run: function () { _showAutoGenerateDialog(); } });
+            cmds.push({ cat: 'Action', label: 'AI Studio (media)\u2026', run: function () { _showAIGenerateDialog(); } });
+            cmds.push({ cat: 'Action', label: 'Insert SVG icon\u2026', run: function () { _showIconPickerDialog(); } });
+            cmds.push({ cat: 'Action', label: 'Reset zoom to 100%', kbd: 'F', run: function () { _zoom = 100; if (typeof _panOffset !== 'undefined') { _panOffset.x = 0; _panOffset.y = 0; } _applyZoom(); var zv = _qs('#cneZoomVal'); if (zv) zv.textContent = '100%'; } });
+            cmds.push({ cat: 'Action', label: 'Show onboarding tour', run: function () { try { localStorage.removeItem('arbel_onboarded'); } catch (e) {} _showOnboardingTour(); } });
+            cmds.push({ cat: 'Action', label: 'Toggle properties panel', run: function () { var b = _qs('#cneToggleProps'); if (b) b.click(); } });
+            cmds.push({ cat: 'Action', label: 'Refresh preview', run: function () { var b = _qs('#cneRefreshPreview'); if (b) b.click(); } });
+            // Scenes
+            _scenes.forEach(function (s, i) {
+                if (s.id === '_nav-overlay') return;
+                cmds.push({ cat: 'Scene', label: (i + 1) + '. ' + (s.name || 'Untitled'), run: function () { _selectScene(i, true); } });
+            });
+            // Elements in current scene
+            var scene = _scenes[_currentSceneIdx];
+            if (scene && scene.elements) {
+                scene.elements.forEach(function (el) {
+                    var label = (el.text || el.tag || 'element').toString().replace(/\s+/g, ' ').slice(0, 60);
+                    cmds.push({ cat: 'Element', label: label, sub: el.tag, run: function () {
+                        _selectedElementId = el.id;
+                        _selectedElementIds = [el.id];
+                        _updatePropertiesPanel({ id: el.id });
+                        var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+                        if (styleTab) styleTab.click();
+                        _postIframe('arbel-sync-selection', { ids: [el.id], id: el.id });
+                    }});
+                });
+            }
+            return cmds;
+        }
+
+        var allCmds = buildCommands();
+        var active = 0;
+
+        function fuzzy(q, str) {
+            q = q.toLowerCase(); str = str.toLowerCase();
+            if (!q) return 1;
+            if (str.indexOf(q) >= 0) return 100 - str.indexOf(q);
+            var qi = 0, score = 0;
+            for (var i = 0; i < str.length && qi < q.length; i++) {
+                if (str[i] === q[qi]) { score++; qi++; }
+            }
+            return qi === q.length ? score : 0;
+        }
+
+        function render(filter) {
+            list.innerHTML = '';
+            var items = allCmds
+                .map(function (c) { return { c: c, s: fuzzy(filter || '', c.cat + ' ' + c.label + ' ' + (c.sub || '')) }; })
+                .filter(function (x) { return x.s > 0; })
+                .sort(function (a, b) { return b.s - a.s; })
+                .slice(0, 60)
+                .map(function (x) { return x.c; });
+
+            if (items.length === 0) {
+                var empty = document.createElement('div');
+                empty.className = 'cne-cmd-empty mono';
+                empty.textContent = 'No matches';
+                list.appendChild(empty);
+                return;
+            }
+            active = Math.min(active, items.length - 1);
+            items.forEach(function (c, idx) {
+                var row = document.createElement('div');
+                row.className = 'cne-cmd-item' + (idx === active ? ' active' : '');
+                row.innerHTML = '<span class="cne-cmd-cat mono">' + c.cat + '</span><span class="cne-cmd-label">' + c.label.replace(/</g, '&lt;') + '</span>' + (c.kbd ? '<span class="cne-cmd-kbd mono">' + c.kbd + '</span>' : '');
+                row.addEventListener('click', function () { close(); c.run(); });
+                row.addEventListener('mouseenter', function () { active = idx; render(input.value); });
+                list.appendChild(row);
+            });
+            current = items;
+        }
+
+        var current = allCmds;
+
+        function close() {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            document.removeEventListener('keydown', onKey, true);
+        }
+        function onKey(e) {
+            if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+            if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(current.length - 1, active + 1); render(input.value); return; }
+            if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); render(input.value); return; }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var pick = current[active];
+                if (pick) { close(); pick.run(); }
+            }
+        }
+        document.addEventListener('keydown', onKey, true);
+
+        input.addEventListener('input', function () { active = 0; render(input.value); });
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+        if (initialQuery && initialQuery !== '?') input.value = initialQuery;
+        render(input.value);
+        input.focus();
+    }
+
+    /* ─── First-run Onboarding Tour ─── */
+    function _showOnboardingTour() {
+        var steps = [
+            { selector: '#cneSceneList', title: 'Scenes', body: 'Each scene is a full-screen chapter of your cinematic site. Click + to add, drag to reorder, double-click to rename.' },
+            { selector: '#cneAddElement', title: 'Add elements', body: 'Headings, images, buttons, 3D, SVG, forms \u2014 drop them onto the scene and drag to position.' },
+            { selector: '#cneRefreshPreview', title: 'Preview', body: 'Scroll the canvas to preview animations. Switch between Desktop, Tablet, Mobile at any time.' },
+            { selector: '#cneUndo', title: 'Undo anytime', body: 'Every change is reversible. Ctrl+Z to undo, Ctrl+Y to redo. Press Ctrl+K to open the command palette.' }
+        ];
+
+        var idx = 0;
+        var overlay = document.createElement('div');
+        overlay.className = 'cne-onboard-overlay';
+        var tip = document.createElement('div');
+        tip.className = 'cne-onboard-tip';
+        overlay.appendChild(tip);
+        document.body.appendChild(overlay);
+
+        function position(step) {
+            var target = document.querySelector(step.selector);
+            var rect = target ? target.getBoundingClientRect() : null;
+            if (!rect || rect.width === 0) {
+                tip.style.top = '50%';
+                tip.style.left = '50%';
+                tip.style.transform = 'translate(-50%, -50%)';
+                overlay.style.setProperty('--cut-x', '50%');
+                overlay.style.setProperty('--cut-y', '50%');
+                overlay.style.setProperty('--cut-r', '0px');
+                return;
+            }
+            var cx = rect.left + rect.width / 2;
+            var cy = rect.top + rect.height / 2;
+            overlay.style.setProperty('--cut-x', cx + 'px');
+            overlay.style.setProperty('--cut-y', cy + 'px');
+            overlay.style.setProperty('--cut-r', Math.max(rect.width, rect.height) / 2 + 24 + 'px');
+            // Position tip near target
+            var tipTop = rect.bottom + 16;
+            var tipLeft = Math.max(16, Math.min(window.innerWidth - 340, rect.left));
+            if (tipTop > window.innerHeight - 200) { tipTop = rect.top - 200; }
+            tip.style.top = tipTop + 'px';
+            tip.style.left = tipLeft + 'px';
+            tip.style.transform = 'none';
+        }
+
+        function render() {
+            var s = steps[idx];
+            tip.innerHTML =
+                '<div class="cne-onboard-step mono">Step ' + (idx + 1) + ' of ' + steps.length + '</div>' +
+                '<h3 class="cne-onboard-title">' + s.title + '</h3>' +
+                '<p class="cne-onboard-body">' + s.body + '</p>' +
+                '<div class="cne-onboard-actions">' +
+                    '<button class="cne-onboard-skip">Skip</button>' +
+                    (idx > 0 ? '<button class="cne-onboard-back">Back</button>' : '') +
+                    '<button class="cne-onboard-next">' + (idx === steps.length - 1 ? 'Finish' : 'Next') + '</button>' +
+                '</div>';
+            tip.querySelector('.cne-onboard-skip').addEventListener('click', finish);
+            var backBtn = tip.querySelector('.cne-onboard-back');
+            if (backBtn) backBtn.addEventListener('click', function () { idx--; render(); });
+            tip.querySelector('.cne-onboard-next').addEventListener('click', function () {
+                if (idx === steps.length - 1) finish();
+                else { idx++; render(); }
+            });
+            position(s);
+        }
+
+        function finish() {
+            try { localStorage.setItem('arbel_onboarded', '1'); } catch (e) {}
+            document.removeEventListener('keydown', onKey, true);
+            window.removeEventListener('resize', onResize);
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }
+
+        function onKey(e) {
+            if (e.key === 'Escape') { finish(); return; }
+            if (e.key === 'ArrowRight' || e.key === 'Enter') {
+                if (idx === steps.length - 1) finish(); else { idx++; render(); }
+            }
+            if (e.key === 'ArrowLeft' && idx > 0) { idx--; render(); }
+        }
+        function onResize() { render(); }
+        document.addEventListener('keydown', onKey, true);
+        window.addEventListener('resize', onResize);
+
+        render();
+    }
+
+    function _maybeShowOnboarding() {
+        try {
+            if (localStorage.getItem('arbel_onboarded') === '1') return;
+        } catch (e) { return; }
+        // Delay slightly so UI is settled
+        setTimeout(function () {
+            if (_active) _showOnboardingTour();
+        }, 800);
+    }
+
     /* ─── Public API ─── */
     return {
         init: init,
@@ -9269,6 +9567,8 @@ window.ArbelCinematicEditor = (function () {
         getCurrentSceneIdx: function () { return _currentSceneIdx; },
         getOverlayScript: _getOverlayScript,
         showAIDialog: _showAIGenerateDialog,
+        showCommandPalette: _showCommandPalette,
+        showOnboarding: _showOnboardingTour,
         updateContentFromCopy: updateContentFromCopy,
         destroy: function () {
             _active = false;
