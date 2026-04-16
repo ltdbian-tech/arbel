@@ -88,6 +88,10 @@
         seoOgImage: $('seoOgImage'),
         seoFavicon: $('seoFavicon'),
         seoIndex: $('seoIndex'),
+        // Integrations
+        intGaId: $('intGaId'),
+        intFormEndpoint: $('intFormEndpoint'),
+        intCustomHead: $('intCustomHead'),
         navToggle: $('navToggle'),
         editorNavToggle: $('editorNavToggle'),
         navDropdown: $('navDropdown'),
@@ -1184,6 +1188,19 @@
         };
     }
 
+    function _collectIntegrations() {
+        var ga = els.intGaId ? els.intGaId.value.trim() : '';
+        var form = els.intFormEndpoint ? els.intFormEndpoint.value.trim() : '';
+        var custom = els.intCustomHead ? els.intCustomHead.value : '';
+        // GA ID sanity check: must start with G- / UA- / AW- and be alphanumeric
+        if (ga && !/^(G-|UA-|AW-)[A-Z0-9-]{4,20}$/i.test(ga)) ga = '';
+        if (form && !_isValidUrl(form)) form = '';
+        // Strip obvious script-injection risks from custom head (block inline <script> executing arbitrary JS is desired
+        // for user-provided snippets, so we allow it but sanitize null bytes + frame-escape attempts)
+        custom = String(custom).replace(/\u0000/g, '').slice(0, 4000);
+        return { gaId: ga, formEndpoint: form, customHead: custom };
+    }
+
     function buildConfig() {
         var content = {};
         // Merge template content first (labels, nav, non-input keys)
@@ -1216,7 +1233,8 @@
             },
             sections: getActiveSections(),
             content: content,
-            seo: _collectSeo()
+            seo: _collectSeo(),
+            integrations: _collectIntegrations()
         };
 
         // If builder mode was used, override style to use the builder's first category preset
@@ -1561,6 +1579,7 @@
                 content: content,
                 templateContent: state.templateContent || null,
                 seo: _collectSeo(),
+                integrations: _collectIntegrations(),
                 particles: {
                     count: parseInt(els.particleCount.value, 10),
                     speed: parseFloat(els.particleSpeed.value),
@@ -1644,6 +1663,13 @@
             if (els.seoOgImage && c.seo.ogImage !== undefined) els.seoOgImage.value = c.seo.ogImage;
             if (els.seoFavicon && c.seo.favicon !== undefined) els.seoFavicon.value = c.seo.favicon;
             if (els.seoIndex && c.seo.index !== undefined) els.seoIndex.checked = c.seo.index;
+        }
+
+        // Integrations
+        if (c.integrations) {
+            if (els.intGaId && c.integrations.gaId !== undefined) els.intGaId.value = c.integrations.gaId;
+            if (els.intFormEndpoint && c.integrations.formEndpoint !== undefined) els.intFormEndpoint.value = c.integrations.formEndpoint;
+            if (els.intCustomHead && c.integrations.customHead !== undefined) els.intCustomHead.value = c.integrations.customHead;
         }
 
         // Particles
@@ -1907,6 +1933,9 @@
         if (els.seoOgImage) els.seoOgImage.value = '';
         if (els.seoFavicon) els.seoFavicon.value = '';
         if (els.seoIndex) els.seoIndex.checked = true;
+        if (els.intGaId) els.intGaId.value = '';
+        if (els.intFormEndpoint) els.intFormEndpoint.value = '';
+        if (els.intCustomHead) els.intCustomHead.value = '';
 
         // Reset particles
         els.particleCount.value = 80;
@@ -1933,7 +1962,7 @@
 
     /* ─── Wire dirty tracking to form inputs ─── */
     // Text inputs
-    ['brandName', 'tagline', 'contactEmail', 'seoTitle', 'seoDescription', 'seoCanonical', 'seoOgImage', 'seoFavicon'].forEach(function (id) {
+    ['brandName', 'tagline', 'contactEmail', 'seoTitle', 'seoDescription', 'seoCanonical', 'seoOgImage', 'seoFavicon', 'intGaId', 'intFormEndpoint', 'intCustomHead'].forEach(function (id) {
         var el = els[id];
         if (el) el.addEventListener('input', _markDirty);
     });

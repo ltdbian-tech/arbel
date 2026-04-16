@@ -618,6 +618,17 @@ window.ArbelCinematicCompiler = (function () {
         var fontFamilies = Object.keys(usedFonts).map(function (k) { return 'family=' + usedFonts[k]; }).join('&');
         html += '<link href="https://fonts.googleapis.com/css2?' + fontFamilies + '&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">\n';
         html += '<link rel="stylesheet" href="css/style.css">\n';
+        // Google Analytics (GA4) snippet if configured
+        var integrations = cfg.integrations || {};
+        if (integrations.gaId && /^(G-|UA-|AW-)[A-Za-z0-9-]{4,20}$/.test(integrations.gaId)) {
+            var gid = integrations.gaId;
+            html += '<script async src="https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(gid) + '"></' + 'script>\n';
+            html += '<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","' + gid.replace(/"/g, '') + '");</' + 'script>\n';
+        }
+        // User-supplied custom head (trusted; user owns the deployed site)
+        if (integrations.customHead) {
+            html += integrations.customHead + '\n';
+        }
         // Custom head injection (analytics, tracking pixels, etc.)
         if (cfg.editorOverrides && cfg.editorOverrides.customHead) {
             html += cfg.editorOverrides.customHead + '\n';
@@ -1015,9 +1026,12 @@ window.ArbelCinematicCompiler = (function () {
                     if (el.linkNewTab) html += ' target="_blank" rel="noopener noreferrer"';
                     html += '>' + esc(el.text) + '</a>\n';
                 } else if (tag === 'form') {
-                    var formAction = el.formAction ? escHref(el.formAction) : '';
+                    // Per-element formAction wins; else project-wide endpoint
+                    var projectEndpoint = (cfg.integrations && cfg.integrations.formEndpoint) ? cfg.integrations.formEndpoint : '';
+                    var formAction = el.formAction ? escHref(el.formAction) : (projectEndpoint ? escHref(projectEndpoint) : '');
                     var formMethod = (el.formMethod === 'GET') ? 'GET' : 'POST';
                     html += ' action="' + formAction + '" method="' + formMethod + '"';
+                    if (projectEndpoint && !el.formAction) html += ' data-arbel-form="global"';
                     html += '>\n';
                     var fields = el.formFields || [];
                     fields.forEach(function (field) {
@@ -1251,7 +1265,10 @@ window.ArbelCinematicCompiler = (function () {
         // Scenes
         css += '.cne-scenes { position: relative; z-index: 1; }\n';
         css += '.cne-scene { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }\n';
-        css += '.cne-element { position: absolute; z-index: var(--content-z, 1); }\n';
+        // Safety clamps so long copy never horizontally overflows the viewport,
+        // regardless of template defaults. Applies to every breakpoint.
+        css += '.cne-element { position: absolute; z-index: var(--content-z, 1); max-width: 96vw; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }\n';
+        css += '.cne-element img, .cne-element video { max-width: 100%; height: auto; display: block; }\n';
         css += '.cne-element[data-scroll] { will-change: transform, opacity; }\n';
         css += '.cne-scene-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; pointer-events: none; }\n';
         css += '.cne-el-bgvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; pointer-events: none; border-radius: inherit; }\n';
@@ -1550,11 +1567,35 @@ window.ArbelCinematicCompiler = (function () {
         js += '  }, { threshold: 0.18, rootMargin: "0px 0px -10% 0px" });\n';
         js += '  Array.prototype.forEach.call(targets, function(t){ io.observe(t); });\n';
         js += '}\n\n';
+        // AJAX form handler for forms pointing at JSON endpoints (Formspree, Getform, Basin, etc.)
+        js += '/* Forms — progressive enhancement (falls back to normal submit on failure) */\n';
+        js += 'function initForms(){\n';
+        js += '  var forms = document.querySelectorAll("form[action^=\\"https://\\"]");\n';
+        js += '  Array.prototype.forEach.call(forms, function(form){\n';
+        js += '    form.addEventListener("submit", function(ev){\n';
+        js += '      ev.preventDefault();\n';
+        js += '      var btn = form.querySelector(".cne-form-submit");\n';
+        js += '      var orig = btn ? btn.textContent : "";\n';
+        js += '      if(btn){ btn.disabled = true; btn.textContent = "Sending…"; }\n';
+        js += '      var data = new FormData(form);\n';
+        js += '      fetch(form.action, { method: form.method || "POST", body: data, headers: { "Accept": "application/json" } })\n';
+        js += '        .then(function(r){ if(!r.ok) throw new Error("submit failed"); return r.json().catch(function(){ return {}; }); })\n';
+        js += '        .then(function(){\n';
+        js += '          form.innerHTML = \'<p style="text-align:center;padding:1.5rem;font-size:1.05rem;opacity:.8">Thanks — we\\\'ll be in touch.</p>\';\n';
+        js += '        })\n';
+        js += '        .catch(function(){\n';
+        js += '          if(btn){ btn.disabled = false; btn.textContent = orig; }\n';
+        js += '          alert("Sorry, we couldn\\\'t submit the form. Please try again or email us directly.");\n';
+        js += '        });\n';
+        js += '    });\n';
+        js += '  });\n';
+        js += '}\n\n';
         js += 'function initCinema(){\n';
         js += '  gsap.registerPlugin(ScrollTrigger);\n';
         js += '  initLenis();\n';
         js += '  initScrollProgress();\n';
-        js += '  initSceneTransitions();\n\n';
+        js += '  initSceneTransitions();\n';
+        js += '  initForms();\n\n';
 
         js += '  var scenes = document.querySelectorAll(".cne-scene");\n';
         js += '  scenes.forEach(function(scene, sceneIdx){\n';

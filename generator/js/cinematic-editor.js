@@ -588,6 +588,32 @@ window.ArbelCinematicEditor = (function () {
             _dragUndoPushed = false;
             _updateTimeline();  // rebuild timeline once after drag ends
         }
+        if (d.type === 'arbel-alt-duplicate' && Array.isArray(d.originals)) {
+            // Alt+drag released — spawn duplicates at each original's starting pos,
+            // leaving the dragged elements at their new location.
+            var scene = _scenes[_currentSceneIdx];
+            if (scene) {
+                var newIds = [];
+                d.originals.forEach(function (o) {
+                    var src = null;
+                    for (var i = 0; i < scene.elements.length; i++) {
+                        if (scene.elements[i].id === o.id) { src = scene.elements[i]; break; }
+                    }
+                    if (!src) return;
+                    var dupe = JSON.parse(JSON.stringify(src));
+                    dupe.id = src.id.split('-').slice(0, -1).join('-') + '-' + Math.random().toString(36).substr(2, 4);
+                    dupe.style = dupe.style || {};
+                    dupe.style.top = o.origTop;
+                    dupe.style.left = o.origLeft;
+                    scene.elements.push(dupe);
+                    newIds.push(dupe.id);
+                });
+                if (newIds.length) {
+                    _renderSceneList();
+                    _notifyUpdate(true);
+                }
+            }
+        }
         if (d.type === 'arbel-resize-start') {
             _isDragging = true;
             if (!_resizeUndoPushed) {
@@ -1071,6 +1097,10 @@ window.ArbelCinematicEditor = (function () {
             var scene = ArbelCinematicCompiler.createScene(selectedTpl, _scenes.length);
             if (nameInput.value.trim()) scene.name = nameInput.value.trim();
             _scenes.push(scene);
+            // Auto-generate tablet + mobile overrides so the new scene renders
+            // correctly in every preview device without manual tweaking.
+            _autoResponsive('tablet');
+            _autoResponsive('mobile');
             _selectScene(_scenes.length - 1, true);
             document.body.removeChild(overlay);
             document.removeEventListener('keydown', onAddSceneKey);
@@ -1105,6 +1135,9 @@ window.ArbelCinematicEditor = (function () {
             el.id = el.id.split('-').slice(0, -1).join('-') + '-' + dupe.id.substr(-4);
         });
         _scenes.splice(idx + 1, 0, dupe);
+        // Regenerate responsive buckets so duplicated scene scales on new devices
+        _autoResponsive('tablet');
+        _autoResponsive('mobile');
         _selectScene(idx + 1, true);
     }
 
@@ -8349,7 +8382,7 @@ window.ArbelCinematicEditor = (function () {
             'if(selected.indexOf(el)<0){sel(el,e.shiftKey);}' +
             'var origins=[];' +
             'for(var i=0;i<selected.length;i++){origins.push({el:selected[i],origTop:selected[i].offsetTop,origLeft:selected[i].offsetLeft});}' +
-            'drag={el:el,startX:e.clientX,startY:e.clientY,origins:origins,moved:false};' +
+            'drag={el:el,startX:e.clientX,startY:e.clientY,origins:origins,moved:false,altMode:!!e.altKey};' +
             'e.preventDefault();' +
           '}else if(!el&&e.button===0){' +
             'marquee={startX:e.clientX,startY:e.clientY,div:null};' +
@@ -8464,6 +8497,15 @@ window.ArbelCinematicEditor = (function () {
           'posLbl.classList.remove("vis");hideSnap();' +
           'if(wasDrag){' +
             'posHandles(selected.length===1?primary:null);' +
+            /* Alt-drag: ask parent to clone the dragged set at their original positions */
+            'if(drag.altMode){' +
+              'var alts=[];' +
+              'for(var ai=0;ai<drag.origins.length;ai++){' +
+                'var oa=drag.origins[ai];' +
+                'alts.push({id:oa.el.getAttribute("data-arbel-id"),origTop:oa.origTop+"px",origLeft:oa.origLeft+"px"});' +
+              '}' +
+              'window.parent.postMessage({type:"arbel-alt-duplicate",originals:alts},"*");' +
+            '}' +
             'window.parent.postMessage({type:"arbel-move-end"},"*");' +
             'justDragged=true;' +
           '}' +
@@ -9367,6 +9409,14 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Insert SVG icon\u2026', run: function () { _showIconPickerDialog(); } });
             cmds.push({ cat: 'Action', label: 'Reset zoom to 100%', kbd: 'F', run: function () { _zoom = 100; if (typeof _panOffset !== 'undefined') { _panOffset.x = 0; _panOffset.y = 0; } _applyZoom(); var zv = _qs('#cneZoomVal'); if (zv) zv.textContent = '100%'; } });
             cmds.push({ cat: 'Action', label: 'Show onboarding tour', run: function () { try { localStorage.removeItem('arbel_onboarded'); } catch (e) {} _showOnboardingTour(); } });
+            cmds.push({ cat: 'Action', label: 'Copy embed snippet\u2026', run: function () {
+                var url = prompt('Deployed site URL to embed:', 'https://username.github.io/project/');
+                if (!url) return;
+                var snippet = window.ArbelCinematicEditor.getEmbedSnippet(url);
+                try {
+                    navigator.clipboard.writeText(snippet).then(function () { alert('Embed snippet copied to clipboard.'); });
+                } catch (e) { prompt('Copy this embed snippet:', snippet); }
+            } });
             cmds.push({ cat: 'Action', label: 'Toggle properties panel', run: function () { var b = _qs('#cneToggleProps'); if (b) b.click(); } });
             cmds.push({ cat: 'Action', label: 'Refresh preview', run: function () { var b = _qs('#cneRefreshPreview'); if (b) b.click(); } });
             // Scenes
@@ -9569,6 +9619,18 @@ window.ArbelCinematicEditor = (function () {
         showAIDialog: _showAIGenerateDialog,
         showCommandPalette: _showCommandPalette,
         showOnboarding: _showOnboardingTour,
+        getEmbedSnippet: function (siteUrl, opts) {
+            // Produce an iframe embed snippet for the deployed site. Honors optional
+            // width / height / scroll scene index.
+            opts = opts || {};
+            var safe = String(siteUrl || '').replace(/["<>]/g, '');
+            if (!/^https?:\/\//i.test(safe)) safe = 'https://' + safe.replace(/^\/\//, '');
+            var w = opts.width || '100%';
+            var h = opts.height || '640';
+            var scene = (typeof opts.scene === 'number') ? ('#scene-' + opts.scene) : '';
+            return '<iframe src="' + safe + scene + '" width="' + w + '" height="' + h +
+                '" style="border:0;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2)" loading="lazy" allow="autoplay; fullscreen"></iframe>';
+        },
         updateContentFromCopy: updateContentFromCopy,
         destroy: function () {
             _active = false;

@@ -317,6 +317,24 @@
                             </div>
                         </div>
 
+                        <!-- Integrations (analytics, forms, custom head) -->
+                        <div class="config-group">
+                            <h3 class="config-group-title mono">INTEGRATIONS</h3>
+                            <p class="config-hint">Connect analytics and form backends. Leave blank to skip.</p>
+                            <div class="field">
+                                <label class="field-label mono">GOOGLE ANALYTICS ID</label>
+                                <input type="text" id="intGaId" class="gen-input" placeholder="G-XXXXXXXXXX" maxlength="20">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">FORM ENDPOINT URL</label>
+                                <input type="url" id="intFormEndpoint" class="gen-input" placeholder="https://formspree.io/f/yourid">
+                            </div>
+                            <div class="field">
+                                <label class="field-label mono">CUSTOM HEAD SCRIPT</label>
+                                <textarea id="intCustomHead" class="gen-textarea" placeholder="<!-- Paste any additional <meta>, <link>, or <script> tags -->" rows="3"></textarea>
+                            </div>
+                        </div>
+
                         <!-- Particle Settings (shown only for particle styles) -->
                         <div class="config-group" id="particleConfig" style="display:none">
                             <h3 class="config-group-title mono">PARTICLE SETTINGS</h3>
