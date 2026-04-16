@@ -448,11 +448,14 @@ window.ArbelCinematicEditor = (function () {
 
         if (d.type === 'arbel-select') {
             _iframeTextUndoPushed = false; // reset on element switch
+            // Skip if re-selecting the same single element (prevents panel refresh during picker interactions)
+            var sameSelection = d.id && _selectedElementId === d.id && _selectedElementIds.length === 1 && (!d.ids || d.ids.length === 1);
             // Auto-switch scene if clicked element is in a different scene
             if (typeof d.sceneIndex === 'number' && d.sceneIndex >= 0 && d.sceneIndex !== _currentSceneIdx && d.sceneIndex < _scenes.length) {
                 _currentSceneIdx = d.sceneIndex;
                 _renderSceneList();
                 _renderElementList();
+                sameSelection = false; // scene changed, must refresh
             }
             _selectedElementId = d.id || null;
             _selectedElementIds = d.ids || (d.id ? [d.id] : []);
@@ -475,10 +478,13 @@ window.ArbelCinematicEditor = (function () {
                     }
                 }
             }
-            _updatePropertiesPanel(d);
-            // Auto-switch to Style tab when selecting an element
-            var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
-            if (styleTab) styleTab.click();
+            // Only refresh panel if selection actually changed
+            if (!sameSelection) {
+                _updatePropertiesPanel(d);
+                // Auto-switch to Style tab when selecting an element
+                var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+                if (styleTab) styleTab.click();
+            }
         }
         if (d.type === 'arbel-text-update' && d.id) {
             // Snapshot BEFORE the first inline text mutation from iframe
@@ -748,7 +754,7 @@ window.ArbelCinematicEditor = (function () {
 
             // Click to select
             item.addEventListener('click', function () {
-                _selectScene(i);
+                _selectScene(i, true);  // Always rerender when user clicks a scene
             });
 
             list.appendChild(item);
@@ -834,6 +840,12 @@ window.ArbelCinematicEditor = (function () {
             _syncRevealLayerUI();
         }
         _notifyUpdate(!!rerender);
+        // After rerender, scroll iframe to show this scene (with delay to allow iframe to load)
+        if (rerender) {
+            setTimeout(function () {
+                _postIframe('arbel-scroll-to-scene', { index: idx });
+            }, 600);
+        }
     }
 
     function _showAddSceneDialog() {
@@ -5687,7 +5699,7 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _selectAll() {
-        _postIframe('arbel-select-all', {});
+        _postIframe('arbel-select-all', { sceneIndex: _currentSceneIdx });
     }
 
     function _groupSelection() {
@@ -7895,6 +7907,8 @@ window.ArbelCinematicEditor = (function () {
         /* ── Double-click → inline text edit ── */
         'document.addEventListener("dblclick",function(e){' +
           'var el=e.target.closest("[data-arbel-edit=\\"text\\"]");' +
+          /* If primary (currently selected) element is editable, prefer it over e.target */
+          'if(primary&&primary.hasAttribute("data-arbel-edit")&&primary.contains(e.target)){el=primary;}' +
           'if(!el)return;e.preventDefault();startEdit(el);' +
         '},true);' +
 
@@ -8180,7 +8194,12 @@ window.ArbelCinematicEditor = (function () {
           'if(d.type==="arbel-select-by-id"){var el=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el){el.scrollIntoView({behavior:"smooth",block:"center"});sel(el,false)}}' +
           'if(d.type==="arbel-select-all"){' +
             'desel();' +
-            'document.querySelectorAll("[data-arbel-id]").forEach(function(el){selected.push(el);el.classList.add("arbel-sel");});' +
+            /* Scope selection to the current scene only (using sceneIndex from message or primary element) */
+            'var sceneIdx=d.sceneIndex;' +
+            'if(sceneIdx===undefined&&primary){var pSec=primary.closest("[data-scene-index]");if(pSec)sceneIdx=pSec.getAttribute("data-scene-index");}' +
+            'var scope=sceneIdx!==undefined?document.querySelector(\'[data-scene-index="\'+sceneIdx+\'"]\'):document;' +
+            'if(!scope)scope=document;' +
+            '(scope.querySelectorAll?scope:document).querySelectorAll("[data-arbel-id]").forEach(function(el){selected.push(el);el.classList.add("arbel-sel");});' +
             'if(selected.length>0){primary=selected[selected.length-1];posHandles(selected.length===1?primary:null);sendSel();}' +
           '}' +
           'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2){el2.style[d.prop]=d.value;if(primary===el2&&selected.length===1)posHandles(el2)}}' +
@@ -8195,6 +8214,11 @@ window.ArbelCinematicEditor = (function () {
               'if(d.revealInvert!==undefined)c.dataset.revealInvert=d.revealInvert;' +
             '});' +
           '}' +
+          'if(d.type==="arbel-scroll-to-scene"){' +
+            'var scn=document.querySelector(\'[data-scene-index="\'+d.index+\'"]\');' +
+            'if(scn){desel();scn.scrollIntoView({behavior:"smooth",block:"start"});}' +
+          '}' +
+          'if(d.type==="arbel-deselect-all"){desel();}' +
         '});' +
         /* ── Reposition handles on scroll ── */
         'window.addEventListener("scroll",function(){if(selected.length===1&&primary&&!resize&&document.contains(primary))posHandles(primary)},true);' +
@@ -8204,10 +8228,10 @@ window.ArbelCinematicEditor = (function () {
           'if(editing)return;' +
           'var k=e.key;var ctrl=e.ctrlKey||e.metaKey;' +
           'if(k==="Delete"||k==="Backspace"||k==="Escape"||(ctrl&&(k==="z"||k==="y"||k==="c"||k==="v"||k==="d"||k==="a"||k==="g"||k==="s"||k==="S"||k==="o"||k==="O"||k==="n"||k==="N"))){' +
-            'e.preventDefault();' +
+            'e.preventDefault();e.stopPropagation();' +
             'window.parent.postMessage({type:"arbel-key",key:k,ctrl:!!ctrl,shift:!!e.shiftKey,alt:!!e.altKey},"*");' +
           '}' +
-        '});' +
+        '},true);' +
         '})();';
     }
 
