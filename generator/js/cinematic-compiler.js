@@ -533,6 +533,35 @@ window.ArbelCinematicCompiler = (function () {
         html += '<meta name="twitter:title" content="' + esc(seoTitle) + '">\n';
         html += '<meta name="twitter:description" content="' + esc(seoDesc) + '">\n';
         if (seo.ogImage) html += '<meta name="twitter:image" content="' + escHref(seo.ogImage) + '">\n';
+        // JSON-LD structured data (Organization + WebSite) — helps rich search results
+        try {
+            var jsonld = {
+                '@context': 'https://schema.org',
+                '@graph': []
+            };
+            var orgNode = {
+                '@type': 'Organization',
+                '@id': (seo.canonical || '') + '#organization',
+                'name': cfg.brandName || 'Website',
+                'description': seoDesc
+            };
+            if (seo.canonical) orgNode.url = seo.canonical;
+            if (seo.ogImage) orgNode.logo = seo.ogImage;
+            if (cfg.integrations && Array.isArray(cfg.integrations.socialLinks)) {
+                orgNode.sameAs = cfg.integrations.socialLinks.filter(function (u) { return /^https?:\/\//.test(u); });
+            }
+            jsonld['@graph'].push(orgNode);
+            var siteNode = {
+                '@type': 'WebSite',
+                '@id': (seo.canonical || '') + '#website',
+                'name': seoTitle,
+                'description': seoDesc,
+                'publisher': { '@id': (seo.canonical || '') + '#organization' }
+            };
+            if (seo.canonical) siteNode.url = seo.canonical;
+            jsonld['@graph'].push(siteNode);
+            html += '<script type="application/ld+json">' + JSON.stringify(jsonld).replace(/</g, '\\u003c') + '</script>\n';
+        } catch (ldErr) { /* skip structured data on failure */ }
         html += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
         html += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
 
