@@ -430,10 +430,15 @@ window.ArbelCinematicEditor = (function () {
         if (!d || !d.type) return;
 
         // Overlay ready — scroll to pending scene
+        // Delay 150ms to fire AFTER preview.js 80ms scroll-restore
         if (d.type === 'arbel-overlay-ready') {
             if (_pendingScrollToScene >= 0) {
-                _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                var idx = _pendingScrollToScene;
                 _pendingScrollToScene = -1;
+                if (_scrollToSceneTimer) { clearTimeout(_scrollToSceneTimer); _scrollToSceneTimer = null; }
+                setTimeout(function () {
+                    _postIframe('arbel-scroll-to-scene', { index: idx });
+                }, 150);
             }
             return;
         }
@@ -828,6 +833,13 @@ window.ArbelCinematicEditor = (function () {
 
             // Click to select
             item.addEventListener('click', function () {
+                if (i === _currentSceneIdx) {
+                    // Already active — don't rebuild DOM (preserves dblclick rename),
+                    // but force iframe to scroll to correct scene for recovery
+                    _pendingScrollToScene = i;
+                    _postIframe('arbel-scroll-to-scene', { index: i });
+                    return;
+                }
                 _selectScene(i, true);  // Always rerender when user clicks a scene
             });
 
@@ -1361,7 +1373,8 @@ window.ArbelCinematicEditor = (function () {
             vis.innerHTML = el.visible === false ? '&#128065;&#824;' : '&#128065;';
             vis.addEventListener('click', function (e) {
                 e.stopPropagation();
-                el.visible = !el.visible;
+                _pushUndo();
+                el.visible = el.visible === false ? true : false;
                 _renderElementList();
                 _notifyUpdate(true);
             });
@@ -3462,7 +3475,10 @@ window.ArbelCinematicEditor = (function () {
     function _setScrollValues(prop, fromInput, toInput) {
         var el = _getSelectedElement();
         if (!el || !el.scroll) return;
-        if (el.scroll._presetId) delete el.scroll._presetId;
+        if (el.scroll._presetId) {
+            delete el.scroll._presetId;
+            var ps = _qs('#cneAnimPreset'); if (ps) ps.value = '';
+        }
         var from = fromInput ? parseFloat(fromInput.value) : 0;
         var to = toInput ? parseFloat(toInput.value) : 0;
         if (isNaN(from)) from = 0;
@@ -3474,7 +3490,10 @@ window.ArbelCinematicEditor = (function () {
     function _setScrollStringValues(prop, fromInput, toInput) {
         var el = _getSelectedElement();
         if (!el || !el.scroll) return;
-        if (el.scroll._presetId) delete el.scroll._presetId;
+        if (el.scroll._presetId) {
+            delete el.scroll._presetId;
+            var ps = _qs('#cneAnimPreset'); if (ps) ps.value = '';
+        }
         var from = fromInput ? fromInput.value.trim() : '';
         var to = toInput ? toInput.value.trim() : '';
         if (!from && !to) {
@@ -3488,7 +3507,10 @@ window.ArbelCinematicEditor = (function () {
     function _setScrollProp(prop, val) {
         var el = _getSelectedElement();
         if (!el || !el.scroll) return;
-        if (el.scroll._presetId) delete el.scroll._presetId;
+        if (el.scroll._presetId) {
+            delete el.scroll._presetId;
+            var ps = _qs('#cneAnimPreset'); if (ps) ps.value = '';
+        }
         el.scroll[prop] = val;
         _notifyUpdate(true);
     }
@@ -3883,6 +3905,7 @@ window.ArbelCinematicEditor = (function () {
         Object.keys(fields).forEach(function (key) {
             var el = fields[key];
             if (!el) return;
+            var isColor = el.type === 'color';
             el.addEventListener('input', function () {
                 _beginBurst('tokens');
                 var v = el.value;
@@ -3890,8 +3913,15 @@ window.ArbelCinematicEditor = (function () {
                 if (key === 'scale') v = parseFloat(v) || _designTokens[key];
                 _designTokens[key] = v;
                 _commitBurst('tokens', 600);
-                _notifyUpdate(true);
+                if (!isColor) _notifyUpdate(true);
             });
+            // Color inputs: only rerender on final pick (change) to avoid disrupting the native color picker
+            if (isColor) {
+                el.addEventListener('change', function () {
+                    _designTokens[key] = el.value;
+                    _notifyUpdate(true);
+                });
+            }
         });
 
         // Apply tokens to all elements button
@@ -8436,7 +8466,7 @@ window.ArbelCinematicEditor = (function () {
                  (parent already handled deselection in _selectScene) */
               'for(var si=0;si<selected.length;si++)selected[si].classList.remove("arbel-sel");' +
               'selected=[];primary=null;posHandles(null);' +
-              'scn.scrollIntoView({behavior:"smooth",block:"start"});' +
+              'scn.scrollIntoView({behavior:"instant",block:"start"});' +
             '}' +
           '}' +
           'if(d.type==="arbel-deselect-all"){desel();}' +
