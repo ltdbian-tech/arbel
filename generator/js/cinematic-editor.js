@@ -9433,6 +9433,7 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Accessibility audit\u2026', run: function () { _showA11yAudit(); } });
             cmds.push({ cat: 'Action', label: 'SEO check\u2026', run: function () { _showSeoCheck(); } });
             cmds.push({ cat: 'Action', label: 'Performance audit\u2026', run: function () { _showPerfAudit(); } });
+            cmds.push({ cat: 'Action', label: 'Link audit\u2026', run: function () { _showLinkAudit(); } });
             cmds.push({ cat: 'Action', label: 'AI fill missing alt text', run: function () { _aiFillAltTexts(); } });
             cmds.push({ cat: 'Action', label: 'Keyboard shortcuts', kbd: '?', run: function () { _showShortcutsSheet(); } });
             cmds.push({ cat: 'Action', label: 'Components\u2026', run: function () { _showComponentsDialog(); } });
@@ -10772,6 +10773,93 @@ window.ArbelCinematicEditor = (function () {
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
     }
 
+    /* ─── Link Audit (finds empty/suspicious links) ─── */
+    function _runLinkAudit() {
+        var issues = [];
+        for (var i = 0; i < _scenes.length; i++) {
+            var sc = _scenes[i];
+            if (!Array.isArray(sc.elements)) continue;
+            for (var j = 0; j < sc.elements.length; j++) {
+                var el = sc.elements[j];
+                if (!el) continue;
+                var isLink = el.type === 'button' || el.type === 'link' || el.tag === 'a' || el.href !== undefined;
+                if (!isLink) continue;
+                var where = 'Scene ' + (i + 1) + ' \u00b7 ' + (el.type || 'el');
+                var href = (el.href || '').trim();
+                var label = String(el.content || '').replace(/<[^>]+>/g, '').trim();
+                if (!href || href === '#') {
+                    issues.push({ level: 'warn', where: where, msg: 'Link "' + (label || '(no label)') + '" has no destination.', elementId: el.id, sceneIdx: i });
+                } else if (/^javascript:/i.test(href)) {
+                    issues.push({ level: 'error', where: where, msg: 'javascript: URLs are unsafe and will be blocked.', elementId: el.id, sceneIdx: i });
+                } else if (/^https?:\/\//i.test(href)) {
+                    if (/^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(href)) {
+                        issues.push({ level: 'error', where: where, msg: 'Link points to localhost \u2014 replace before publishing.', elementId: el.id, sceneIdx: i });
+                    } else if (/^http:\/\//i.test(href)) {
+                        issues.push({ level: 'warn', where: where, msg: 'Link uses http (not https) \u2014 browsers may warn users.', elementId: el.id, sceneIdx: i });
+                    }
+                } else if (href.indexOf('#') === 0 || href.indexOf('/') === 0 || href.indexOf('mailto:') === 0 || href.indexOf('tel:') === 0) {
+                    // Internal or mail/tel — OK
+                } else {
+                    issues.push({ level: 'warn', where: where, msg: 'Link "' + href + '" is not absolute (https://\u2026).', elementId: el.id, sceneIdx: i });
+                }
+            }
+        }
+        return issues;
+    }
+
+    function _showLinkAudit() {
+        var existing = document.getElementById('cneLinksOverlay');
+        if (existing) existing.remove();
+        var issues = _runLinkAudit();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneLinksOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(680px,92vw);max-height:86vh;overflow:auto;color:#eee;font-family:inherit';
+        var errs = issues.filter(function (x) { return x.level === 'error'; }).length;
+        var warns = issues.filter(function (x) { return x.level === 'warn'; }).length;
+        box.innerHTML = '<h2 style="margin:0 0 6px;font-size:1.25rem;letter-spacing:-0.01em">Link Audit</h2>' +
+            '<p style="margin:0 0 14px;font-size:.85rem;color:rgba(255,255,255,.55)">' +
+            (issues.length === 0 ? 'All links look good.' : '<span style="color:#ff6b6b">' + errs + ' error' + (errs === 1 ? '' : 's') + '</span> and <span style="color:#ffb86b">' + warns + ' warning' + (warns === 1 ? '' : 's') + '</span>.') + '</p>';
+        if (issues.length) {
+            var list = document.createElement('div');
+            list.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+            issues.forEach(function (it) {
+                var color = it.level === 'error' ? '#ff6b6b' : '#ffb86b';
+                var row = document.createElement('button');
+                row.type = 'button';
+                row.style.cssText = 'text-align:left;padding:10px 12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);border-radius:8px;color:inherit;cursor:pointer;font-family:inherit;display:flex;gap:10px;align-items:flex-start';
+                row.onmouseenter = function () { row.style.borderColor = 'rgba(108,92,231,.6)'; };
+                row.onmouseleave = function () { row.style.borderColor = 'rgba(255,255,255,.08)'; };
+                row.innerHTML = '<span style="color:' + color + ';font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;min-width:60px;padding-top:2px">' + it.level + '</span>' +
+                    '<span style="flex:1;min-width:0"><div style="font-size:.84rem">' + _escapeHtml(it.msg) + '</div>' +
+                    '<div style="font-size:.7rem;color:rgba(255,255,255,.45);margin-top:2px">' + _escapeHtml(it.where) + '</div></span>';
+                row.addEventListener('click', function () {
+                    overlay.remove();
+                    document.removeEventListener('keydown', onEsc);
+                    if (typeof it.sceneIdx === 'number') _selectScene(it.sceneIdx, true);
+                    if (it.elementId) { _selectedElementId = it.elementId; _selectedElementIds = [it.elementId]; }
+                    _notifyUpdate();
+                });
+                list.appendChild(row);
+            });
+            box.appendChild(list);
+        }
+        var footer = document.createElement('div');
+        footer.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end';
+        var close = document.createElement('button');
+        close.className = 'gen-btn';
+        close.textContent = 'Close';
+        close.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        footer.appendChild(close);
+        box.appendChild(footer);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
     /* ─── AI Alt-Text Fill (auto-fills alt for images missing one) ─── */
     function _aiFillAltTexts() {
         var missing = [];
@@ -10870,7 +10958,13 @@ window.ArbelCinematicEditor = (function () {
         { id: 'event',           label: 'Event',           desc: 'Countdown landing w/ speakers',          scenes: ['gradientHero', 'stats', 'featureGrid', 'ctaSection'] },
         { id: 'product-launch',  label: 'Product Launch',  desc: 'Big text, showcase, social proof',       scenes: ['bigText', 'hero', 'showcase', 'stats', 'testimonial', 'ctaSection'] },
         { id: 'consulting',      label: 'Consulting',      desc: 'Services, process, testimonials',        scenes: ['hero', 'featureGrid', 'splitMedia', 'testimonial', 'ctaSection'] },
-        { id: 'creative-studio', label: 'Creative Studio', desc: 'Bold typography, image reveals',         scenes: ['textReveal', 'bigText', 'imageReveal', 'showcase', 'marquee', 'ctaSection'] }
+        { id: 'creative-studio', label: 'Creative Studio', desc: 'Bold typography, image reveals',         scenes: ['textReveal', 'bigText', 'imageReveal', 'showcase', 'marquee', 'ctaSection'] },
+        { id: 'coming-soon',     label: 'Coming Soon',     desc: 'Single-scene waitlist page',             scenes: ['gradientHero', 'ctaSection'] },
+        { id: 'app-launch',      label: 'App Launch',      desc: 'Mobile app landing',                     scenes: ['hero', 'splitMedia', 'featureGrid', 'testimonial', 'stats', 'ctaSection'] },
+        { id: 'blog',            label: 'Blog',            desc: 'Article-focused layout',                 scenes: ['hero', 'textReveal', 'bigText', 'ctaSection'] },
+        { id: 'nonprofit',       label: 'Nonprofit',       desc: 'Mission, impact, donate',                scenes: ['hero', 'bigText', 'stats', 'testimonial', 'splitMedia', 'ctaSection'] },
+        { id: 'real-estate',     label: 'Real Estate',     desc: 'Property showcase',                      scenes: ['hero', 'showcase', 'imageReveal', 'featureGrid', 'ctaSection'] },
+        { id: 'fitness',         label: 'Fitness',         desc: 'Training / classes / membership',        scenes: ['bigText', 'hero', 'featureGrid', 'testimonial', 'stats', 'ctaSection'] }
     ];
 
     function _showStartersDialog() {
@@ -11129,6 +11223,7 @@ window.ArbelCinematicEditor = (function () {
         showA11yAudit: _showA11yAudit,
         showSeoCheck: _showSeoCheck,
         showPerfAudit: _showPerfAudit,
+        showLinkAudit: _showLinkAudit,
         aiFillAltTexts: _aiFillAltTexts,
         showShortcuts: _showShortcutsSheet,
         showComponents: _showComponentsDialog,
