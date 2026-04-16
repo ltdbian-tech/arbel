@@ -33,6 +33,7 @@ window.ArbelCinematicEditor = (function () {
     var _beforeUnloadHandler = null; // stored for cleanup in destroy
     var _scrollToSceneTimer = null;  // timer for deferred iframe scroll-to-scene
     var _dragSceneIdx = -1;          // drag source index for scene reorder
+    var _pendingScrollToScene = -1;  // scene index to scroll to when iframe is ready
 
     // ─── Project File State ───
     var _fileHandle = null;           // File System Access API handle
@@ -428,6 +429,15 @@ window.ArbelCinematicEditor = (function () {
         try { d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; }
         if (!d || !d.type) return;
 
+        // Overlay ready — scroll to pending scene
+        if (d.type === 'arbel-overlay-ready') {
+            if (_pendingScrollToScene >= 0) {
+                _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                _pendingScrollToScene = -1;
+            }
+            return;
+        }
+
         // Forward keyboard events from iframe to the parent keydown handler
         if (d.type === 'arbel-key') {
             // Handle Delete/Backspace directly for reliability (no activeElement dependency)
@@ -725,9 +735,11 @@ window.ArbelCinematicEditor = (function () {
             item.appendChild(thumb);
             item.appendChild(info);
 
-            // Double-click scene name to rename
-            name.addEventListener('dblclick', function (e) {
+            // Double-click scene item to rename (excluding action buttons)
+            item.addEventListener('dblclick', function (e) {
+                if (e.target.closest('.cne-scene-actions') || e.target.closest('.cne-scene-action-btn')) return;
                 e.stopPropagation();
+                e.preventDefault();
                 name.contentEditable = true;
                 name.focus();
                 var range = document.createRange();
@@ -821,6 +833,10 @@ window.ArbelCinematicEditor = (function () {
 
             list.appendChild(item);
         });
+
+        // Auto-scroll sidebar to show the active scene
+        var activeItem = list.querySelector('.cne-scene-item.active');
+        if (activeItem) activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
     function _selectScene(idx, rerender) {
@@ -902,12 +918,17 @@ window.ArbelCinematicEditor = (function () {
             _syncRevealLayerUI();
         }
         _notifyUpdate(!!rerender);
-        // After rerender, scroll iframe to show this scene (with delay to allow iframe to load)
+        // After rerender, scroll iframe to show this scene once overlay is ready
         if (rerender) {
             if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+            _pendingScrollToScene = idx;
+            // Fallback timer in case overlay-ready message doesn't arrive
             _scrollToSceneTimer = setTimeout(function () {
-                _postIframe('arbel-scroll-to-scene', { index: idx });
-            }, 600);
+                if (_pendingScrollToScene >= 0) {
+                    _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                    _pendingScrollToScene = -1;
+                }
+            }, 1200);
         }
     }
 
@@ -1563,7 +1584,10 @@ window.ArbelCinematicEditor = (function () {
             _selectedElementId = newEl.id;
             _selectedElementIds = [newEl.id];
             _renderElementList();
+            _renderSceneList();
             _updatePropertiesFromScene(newEl);
+            var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+            if (styleTab) styleTab.click();
             _notifyUpdate(true);
         }
     }
@@ -1787,7 +1811,10 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementId = newEl.id;
         _selectedElementIds = [newEl.id];
         _renderElementList();
+        _renderSceneList();
         _updatePropertiesFromScene(newEl);
+        var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+        if (styleTab) styleTab.click();
         _notifyUpdate(true);
     }
 
@@ -1828,7 +1855,10 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementId = newEl.id;
         _selectedElementIds = [newEl.id];
         _renderElementList();
+        _renderSceneList();
         _updatePropertiesFromScene(newEl);
+        var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+        if (styleTab) styleTab.click();
         _notifyUpdate(true);
     }
 
@@ -2296,7 +2326,11 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementId = newEl.id;
         _selectedElementIds = [newEl.id];
         _renderElementList();
+        _renderSceneList();
         _updatePropertiesFromScene(newEl);
+        // Auto-switch to Style tab so user can immediately style the new element
+        var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+        if (styleTab) styleTab.click();
         _notifyUpdate(true);
     }
 
@@ -3943,6 +3977,15 @@ window.ArbelCinematicEditor = (function () {
         if (refreshBtn) {
             refreshBtn.addEventListener('click', function () {
                 _notifyUpdate(true);
+                // Scroll to current scene after rerender
+                if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+                _pendingScrollToScene = _currentSceneIdx;
+                _scrollToSceneTimer = setTimeout(function () {
+                    if (_pendingScrollToScene >= 0) {
+                        _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                        _pendingScrollToScene = -1;
+                    }
+                }, 1200);
             });
         }
 
@@ -4076,9 +4119,13 @@ window.ArbelCinematicEditor = (function () {
                 _notifyUpdate(true);
                 // Scroll iframe to current scene after device rerender
                 if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+                _pendingScrollToScene = _currentSceneIdx;
                 _scrollToSceneTimer = setTimeout(function () {
-                    _postIframe('arbel-scroll-to-scene', { index: _currentSceneIdx });
-                }, 600);
+                    if (_pendingScrollToScene >= 0) {
+                        _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                        _pendingScrollToScene = -1;
+                    }
+                }, 1200);
             });
         });
     }
@@ -5591,6 +5638,7 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementIds = newIds;
         _selectedElementId = newIds[newIds.length - 1] || null;
         _renderElementList();
+        _renderSceneList();
         var el = _getSelectedElement();
         if (el) _updatePropertiesFromScene(el);
         _notifyUpdate(true);
@@ -5767,6 +5815,7 @@ window.ArbelCinematicEditor = (function () {
         _selectedElementId = null;
         _selectedElementIds = [];
         _renderElementList();
+        _renderSceneList();
         _clearProperties();
         _notifyUpdate(true);
     }
@@ -5853,7 +5902,16 @@ window.ArbelCinematicEditor = (function () {
         var elHeader = _qs('#cneElHeader');
         if (elHeader) elHeader.textContent = _selectedElementIds.length + ' elements selected';
         var propsContainer = _qs('#cnePropsContainer');
-        if (propsContainer) propsContainer.style.display = 'none';
+        if (propsContainer) {
+            // Keep the container visible so the header shows, but hide property sections
+            propsContainer.style.display = '';
+            for (var ci = 0; ci < propsContainer.children.length; ci++) {
+                var child = propsContainer.children[ci];
+                if (child.id !== 'cneElHeader' && child.id !== 'cneDeviceBadge') {
+                    child.style.display = 'none';
+                }
+            }
+        }
     }
 
     function _updatePropertiesFromScene(el) {
@@ -6290,7 +6348,10 @@ window.ArbelCinematicEditor = (function () {
         return {
             scenes: JSON.parse(JSON.stringify(_scenes)),
             overrides: JSON.parse(JSON.stringify(_overrides)),
-            designTokens: JSON.parse(JSON.stringify(_designTokens))
+            designTokens: JSON.parse(JSON.stringify(_designTokens)),
+            sceneIdx: _currentSceneIdx,
+            selId: _selectedElementId,
+            selIds: _selectedElementIds.slice()
         };
     }
 
@@ -6391,11 +6452,45 @@ window.ArbelCinematicEditor = (function () {
             _designTokens = state.designTokens;
             _syncTokenUI();
         }
+        // Restore scene index from snapshot
+        var restoreIdx = typeof state.sceneIdx === 'number' ? state.sceneIdx : _currentSceneIdx;
+        _currentSceneIdx = Math.min(restoreIdx, _scenes.length - 1);
         _renderSceneList();
-        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
+        // Restore element selection if the elements still exist
+        var scene = _scenes[_currentSceneIdx];
+        if (scene && state.selIds && state.selIds.length > 0) {
+            var validIds = state.selIds.filter(function (id) {
+                return scene.elements.some(function (el) { return el.id === id; });
+            });
+            if (validIds.length > 0) {
+                _selectedElementIds = validIds;
+                _selectedElementId = state.selId && validIds.indexOf(state.selId) >= 0 ? state.selId : validIds[validIds.length - 1];
+                _renderElementList();
+                var el = _getSelectedElement();
+                if (el) {
+                    _updatePropertiesFromScene(el);
+                    var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+                    if (styleTab) styleTab.click();
+                }
+                _notifyUpdate(true);
+                // Scroll after rerender
+                _pendingScrollToScene = _currentSceneIdx;
+                if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+                _scrollToSceneTimer = setTimeout(function () {
+                    if (_pendingScrollToScene >= 0) {
+                        _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                        _pendingScrollToScene = -1;
+                    }
+                }, 1200);
+            } else {
+                _selectScene(_currentSceneIdx, true);
+            }
+        } else {
+            _selectScene(_currentSceneIdx, true);
+        }
         // Safety: force a second rerender after a short delay to recover from
         // iframe blackout/corruption when undo restores a very different state
-        setTimeout(function () { _notifyUpdate(true); }, 200);
+        setTimeout(function () { _notifyUpdate(true); }, 300);
         _undoLocked = false;
         _updateUndoButtons();
     }
@@ -6428,9 +6523,42 @@ window.ArbelCinematicEditor = (function () {
             _designTokens = state.designTokens;
             _syncTokenUI();
         }
+        // Restore scene index from snapshot
+        var restoreIdx = typeof state.sceneIdx === 'number' ? state.sceneIdx : _currentSceneIdx;
+        _currentSceneIdx = Math.min(restoreIdx, _scenes.length - 1);
         _renderSceneList();
-        _selectScene(Math.min(_currentSceneIdx, _scenes.length - 1), true);
-        setTimeout(function () { _notifyUpdate(true); }, 200);
+        // Restore element selection if the elements still exist
+        var scene = _scenes[_currentSceneIdx];
+        if (scene && state.selIds && state.selIds.length > 0) {
+            var validIds = state.selIds.filter(function (id) {
+                return scene.elements.some(function (el) { return el.id === id; });
+            });
+            if (validIds.length > 0) {
+                _selectedElementIds = validIds;
+                _selectedElementId = state.selId && validIds.indexOf(state.selId) >= 0 ? state.selId : validIds[validIds.length - 1];
+                _renderElementList();
+                var el = _getSelectedElement();
+                if (el) {
+                    _updatePropertiesFromScene(el);
+                    var styleTab = _container ? _container.querySelector('.cne-prop-tab[data-tab="style"]') : null;
+                    if (styleTab) styleTab.click();
+                }
+                _notifyUpdate(true);
+                _pendingScrollToScene = _currentSceneIdx;
+                if (_scrollToSceneTimer) clearTimeout(_scrollToSceneTimer);
+                _scrollToSceneTimer = setTimeout(function () {
+                    if (_pendingScrollToScene >= 0) {
+                        _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
+                        _pendingScrollToScene = -1;
+                    }
+                }, 1200);
+            } else {
+                _selectScene(_currentSceneIdx, true);
+            }
+        } else {
+            _selectScene(_currentSceneIdx, true);
+        }
+        setTimeout(function () { _notifyUpdate(true); }, 300);
         _undoLocked = false;
         _updateUndoButtons();
     }
@@ -8325,6 +8453,7 @@ window.ArbelCinematicEditor = (function () {
             'window.parent.postMessage({type:"arbel-key",key:k,ctrl:!!ctrl,shift:!!e.shiftKey,alt:!!e.altKey},"*");' +
           '}' +
         '},true);' +
+        'window.parent.postMessage({type:"arbel-overlay-ready"},"*");' +
         '})();';
     }
 
