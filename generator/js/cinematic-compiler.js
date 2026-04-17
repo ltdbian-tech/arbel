@@ -873,7 +873,13 @@ window.ArbelCinematicCompiler = (function () {
         html += '<main class="cne-scenes">\n';
         scenes.forEach(function (scene, i) {
             var sceneBg = '';
-            if (scene.bgColor) sceneBg += 'background-color:' + esc(scene.bgColor) + ';';
+            // When a bg video is present, skip bgColor so the opaque colour
+            // doesn't sit ABOVE the video via the section's own background
+            // layer (it paints beneath positioned descendants, but an opaque
+            // bg-color combined with video that fails to autoplay leaves the
+            // user looking at a blank colour — emit black fallback instead).
+            if (scene.bgColor && !scene.bgVideo) sceneBg += 'background-color:' + esc(scene.bgColor) + ';';
+            else if (scene.bgVideo) sceneBg += 'background-color:#000;';
             if (scene.bgImage) {
                 var safeBgUrl = scene.bgImage.replace(/[\\"'<>()\n\r]/g, '').replace(/javascript\s*:/gi, '').replace(/expression\s*\(/gi, '');
                 if (/^(https?:\/\/|\/\/|\/|\.\/|\.\.\/|data:image\/)/i.test(safeBgUrl)) {
@@ -939,8 +945,9 @@ window.ArbelCinematicCompiler = (function () {
                 html += '    <div class="cne-bg3d-vignette" aria-hidden="true"></div>\n';
             }
 
-            // Video scroll layer
-            if (scene.videoScrollPreset) {
+            // Video scroll layer — suppress when a bg video or bg3d is set
+            // so multiple same-z-index layers don't paint over each other.
+            if (scene.videoScrollPreset && !scene.bgVideo && !scene.bg3dType) {
                 var vsC1 = esc(scene.videoScrollColor1 || '#6c5ce7');
                 var vsC2 = esc(scene.videoScrollColor2 || '#00cec9');
                 var vsOp = parseInt(scene.videoScrollOpacity) || 60;

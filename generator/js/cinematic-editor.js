@@ -1513,6 +1513,31 @@ window.ArbelCinematicEditor = (function () {
             var tagIcon = el.tag === 'img' ? '&#128247;' : el.tag === 'video' ? '&#127909;' : el.tag === 'a' ? '&#128279;' : el.tag;
             tagBadge.innerHTML = tagIcon;
 
+            // Visual swatch — shows element's bg-color / bg-image thumb / text
+            // colour so the element list reads like a proper layer organiser
+            // (user can identify each layer at a glance).
+            var swatch = document.createElement('span');
+            swatch.className = 'cne-el-swatch';
+            var _sw = (el.style && (el.style.background || el.style.backgroundColor)) || '';
+            var _swImg = (el.style && el.style.backgroundImage) || '';
+            if (_swImg && /url\(/i.test(_swImg)) {
+                swatch.style.backgroundImage = _swImg;
+                swatch.style.backgroundSize = 'cover';
+                swatch.style.backgroundPosition = 'center';
+            } else if (_sw) {
+                swatch.style.background = _sw;
+            } else if (el.tag === 'img' && el.src) {
+                swatch.style.backgroundImage = 'url("' + String(el.src).replace(/"/g, '\\"') + '")';
+                swatch.style.backgroundSize = 'cover';
+                swatch.style.backgroundPosition = 'center';
+            } else if (el.style && el.style.color) {
+                // text elements: swatch = text colour
+                swatch.style.background = el.style.color;
+            } else {
+                swatch.style.background = 'rgba(255,255,255,0.06)';
+            }
+            swatch.title = _swImg ? 'bg image' : (_sw || (el.style && el.style.color) || 'no bg');
+
             var nameSpan = document.createElement('span');
             nameSpan.className = 'cne-el-name';
             if (el.group) {
@@ -1606,6 +1631,7 @@ window.ArbelCinematicEditor = (function () {
 
             row.appendChild(tagBadge);
             row.appendChild(zBadge);
+            row.appendChild(swatch);
             row.appendChild(nameSpan);
             row.appendChild(actions);
             row.appendChild(vis);
@@ -4758,15 +4784,24 @@ window.ArbelCinematicEditor = (function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (!scene || !sceneBgVideoUpload.files || !sceneBgVideoUpload.files[0]) return;
                 var file = sceneBgVideoUpload.files[0];
-                if (file.size > 15 * 1024 * 1024) { alert('Video must be under 15MB'); return; }
+                // Raised from 15MB → 40MB. Most short looping bg clips compressed
+                // to H.264/VP9 fit well under 40MB; FileReader to data-URL in a
+                // modern browser handles this without the main thread stalling.
+                if (file.size > 40 * 1024 * 1024) { alert('Video must be under 40MB (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB). Compress or trim the clip and try again.'); sceneBgVideoUpload.value = ''; return; }
+                if (!/^video\//i.test(file.type)) { alert('That file is not a video. Pick an .mp4, .webm, or .mov file.'); sceneBgVideoUpload.value = ''; return; }
                 _pushUndo();
-                // Mutual exclusivity: clear bg image if setting video
+                // Mutual exclusivity: clear bg image + preset overlay if setting video
                 if (scene.bgImage) delete scene.bgImage;
+                if (scene.videoScrollPreset) delete scene.videoScrollPreset;
                 var reader = new FileReader();
                 reader.onload = function (e) {
                     scene.bgVideo = e.target.result;
                     _updateSceneBgStatus();
                     _notifyUpdate(true);
+                };
+                reader.onerror = function () {
+                    alert('Failed to read the video file. It may be corrupted or too large for the browser.');
+                    sceneBgVideoUpload.value = '';
                 };
                 reader.readAsDataURL(file);
             });

@@ -689,6 +689,18 @@
     flex-shrink: 0;
 }
 
+/* Visual layer swatch — background colour / image thumbnail / text colour
+   preview so the element list reads like a proper layer organiser. */
+.cne-el-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.12);
+    background-clip: padding-box;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.3) inset;
+}
+
 /* Drag-to-reorder styles */
 .cne-el-item[draggable] { cursor: grab; }
 .cne-el-item.cne-el-dragging { opacity: 0.35; }
