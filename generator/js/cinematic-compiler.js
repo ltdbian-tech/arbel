@@ -2881,6 +2881,23 @@ window.ArbelCinematicCompiler = (function () {
         js += '    tick();\n';
         js += '  });\n\n';
 
+        /* Layout refresh — keeps ScrollTrigger/Lenis in sync after resize,
+           device-mode switches, font loads, image loads, and editor re-renders */
+        js += '  window.__lenis = lenis;\n';
+        js += '  var _refreshLayout = function(){\n';
+        js += '    try{ if(window.ScrollTrigger && ScrollTrigger.refresh) ScrollTrigger.refresh(true); }catch(e){}\n';
+        js += '    try{ if(lenis && lenis.resize) lenis.resize(); }catch(e){}\n';
+        js += '  };\n';
+        js += '  window.__arbelRefreshLayout = _refreshLayout;\n';
+        js += '  var _rT = null;\n';
+        js += '  window.addEventListener("resize", function(){ if(_rT) clearTimeout(_rT); _rT = setTimeout(_refreshLayout, 80); });\n';
+        js += '  window.addEventListener("load", function(){ _refreshLayout(); setTimeout(_refreshLayout, 120); setTimeout(_refreshLayout, 500); });\n';
+        js += '  window.addEventListener("message", function(ev){ if(ev && ev.data && (ev.data.type === "arbel-refresh-layout" || ev.data.type === "arbel-refresh")) { _refreshLayout(); setTimeout(_refreshLayout, 120); setTimeout(_refreshLayout, 420); } });\n';
+        js += '  if(document.fonts && document.fonts.ready && document.fonts.ready.then){ document.fonts.ready.then(_refreshLayout); }\n';
+        js += '  setTimeout(_refreshLayout, 60);\n';
+        js += '  setTimeout(_refreshLayout, 300);\n';
+        js += '  setTimeout(_refreshLayout, 900);\n';
+
         js += '}\n';
         js += '})();\n';
 

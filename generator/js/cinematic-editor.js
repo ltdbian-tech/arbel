@@ -444,6 +444,11 @@ window.ArbelCinematicEditor = (function () {
                     _postIframe('arbel-scroll-to-scene', { index: idx });
                 }, 150);
             }
+            // Force a layout refresh shortly after overlay is ready so that
+            // ScrollTrigger pin positions + Lenis cache reflect the actual
+            // iframe viewport (prevents "hover-to-fix" alignment bug).
+            setTimeout(function () { _postIframe('arbel-refresh-layout', {}); }, 180);
+            setTimeout(function () { _postIframe('arbel-refresh-layout', {}); }, 600);
             return;
         }
 
@@ -552,6 +557,26 @@ window.ArbelCinematicEditor = (function () {
             if (posTop) posTop.value = d.top;
             if (posLeft) posLeft.value = d.left;
             _notifyUpdate(_activeDevice !== 'desktop');
+        }
+        if (d.type === 'arbel-promote-absolute' && d.id) {
+            // Persist forced-absolute positioning that the overlay applied when
+            // drag started on a static/relative element. Without this, the next
+            // re-render would strip position:absolute and the element would snap
+            // back to its flow position.
+            var scenePA = _scenes[_currentSceneIdx];
+            if (scenePA) {
+                for (var iPA = 0; iPA < scenePA.elements.length; iPA++) {
+                    if (scenePA.elements[iPA].id === d.id) {
+                        var bPA = _getStyleBucket(scenePA.elements[iPA]);
+                        bPA.position = 'absolute';
+                        if (d.top) bPA.top = d.top;
+                        if (d.left) bPA.left = d.left;
+                        if (d.width && !bPA.width) bPA.width = d.width;
+                        if (d.height && !bPA.height) bPA.height = d.height;
+                        break;
+                    }
+                }
+            }
         }
         if (d.type === 'arbel-multi-move' && d.moves) {
             _isDragging = true;
@@ -4311,7 +4336,15 @@ window.ArbelCinematicEditor = (function () {
                         _postIframe('arbel-scroll-to-scene', { index: _pendingScrollToScene });
                         _pendingScrollToScene = -1;
                     }
+                    // Force ScrollTrigger/Lenis to recompute pins + positions after
+                    // iframe has re-rendered at the new viewport width (prevents
+                    // "hover-to-fix" alignment flicker on device switch).
+                    _postIframe('arbel-refresh-layout', {});
                 }, 1200);
+                // Also post immediately + mid-transition so the CSS max-width
+                // transition (0.3s) and post-render both get a refresh.
+                setTimeout(function(){ _postIframe('arbel-refresh-layout', {}); }, 350);
+                setTimeout(function(){ _postIframe('arbel-refresh-layout', {}); }, 700);
             });
         });
     }
@@ -6853,7 +6886,20 @@ window.ArbelCinematicEditor = (function () {
         { name: 'Hologram',        bg: '#050a14', primary: '#4cc9f0', secondary: '#f72585', text: '#e8f4ff', surface: '#0d1830', accent2: '#b5179e' },
         { name: 'Chrome Dream',    bg: '#0a0a0f', primary: '#c0c0ff', secondary: '#e0e0e0', text: '#ffffff', surface: '#15152a', accent2: '#ffa8f8' },
         { name: 'Bio Lumin',       bg: '#030c08', primary: '#00ffa3', secondary: '#00d4ff', text: '#e8fff4', surface: '#081a14', accent2: '#a0ff84' },
-        { name: 'Solar Flare',     bg: '#0a0302', primary: '#ff6b00', secondary: '#ffd600', text: '#fff6e8', surface: '#1a0a04', accent2: '#ff3864' }
+        { name: 'Solar Flare',     bg: '#0a0302', primary: '#ff6b00', secondary: '#ffd600', text: '#fff6e8', surface: '#1a0a04', accent2: '#ff3864' },
+        /* ── Variety expansion (Batch 15) ── */
+        { name: 'Velvet Rouge',    bg: '#0c0408', primary: '#ff2d64', secondary: '#ff8fa3', text: '#fff0f4', surface: '#1a0812', accent2: '#c7184e' },
+        { name: 'Arctic Mint',     bg: '#04100e', primary: '#64ffda', secondary: '#80f0d0', text: '#e6fff9', surface: '#0a1e1a', accent2: '#a0f8e4' },
+        { name: 'Desert Dusk',     bg: '#100a06', primary: '#ff9a3c', secondary: '#ffcb7a', text: '#fff2e0', surface: '#1a1208', accent2: '#ff6f3c' },
+        { name: 'Monochrome Ink',  bg: '#06060a', primary: '#ffffff', secondary: '#c0c0d0', text: '#f6f6fa', surface: '#12121a', accent2: '#80809a' },
+        { name: 'Paper Cream',     bg: '#faf7f0', primary: '#2c2c2c', secondary: '#4a4a4a', text: '#1a1a1a', surface: '#fff9ec', accent2: '#b8804a' },
+        { name: 'Sky Morning',     bg: '#f0f8ff', primary: '#0369a1', secondary: '#06b6d4', text: '#0c1a2a', surface: '#e4f2fc', accent2: '#7dd3fc' },
+        { name: 'Sage Earth',      bg: '#f4f2ec', primary: '#4a6b3a', secondary: '#7a9362', text: '#2a3420', surface: '#e8e6dc', accent2: '#b4b884' },
+        { name: 'Peach Soft',      bg: '#fff4ee', primary: '#ea5a47', secondary: '#f6a192', text: '#3a1a14', surface: '#ffe9de', accent2: '#ffc3a8' },
+        { name: 'Deep Forest',     bg: '#030a07', primary: '#10b981', secondary: '#6ee7b7', text: '#e8fff4', surface: '#071a12', accent2: '#34d399' },
+        { name: 'Rust Copper',     bg: '#0e0705', primary: '#b45309', secondary: '#f59e0b', text: '#fff4e6', surface: '#1c100a', accent2: '#fbbf24' },
+        { name: 'Cosmic Grape',    bg: '#06031a', primary: '#a855f7', secondary: '#ec4899', text: '#f3e8ff', surface: '#0c0828', accent2: '#c084fc' },
+        { name: 'Ice Platinum',    bg: '#08090e', primary: '#e5e7eb', secondary: '#9ca3af', text: '#f9fafb', surface: '#14141e', accent2: '#cbd5e1' }
     ];
 
     /* Which scene templates go well together in a flow */
@@ -6879,7 +6925,18 @@ window.ArbelCinematicEditor = (function () {
         ['gradientHero', 'textReveal', 'marquee', 'bigText', 'featureGrid', 'stats', 'ctaSection'],
         ['hero', 'bigText', 'marquee', 'cardStack', 'showcase', 'ctaSection'],
         ['gradientHero', 'imageReveal', 'bigText', 'stats', 'testimonial', 'ctaSection'],
-        ['hero', 'textReveal', 'cardStack', 'marquee', 'featureGrid', 'ctaSection']
+        ['hero', 'textReveal', 'cardStack', 'marquee', 'featureGrid', 'ctaSection'],
+        /* ── Variety expansion (Batch 15) — 10 new rhythms ── */
+        ['hero', 'splitMedia', 'featureGrid', 'stats', 'testimonial', 'ctaSection'],
+        ['gradientHero', 'bigText', 'imageReveal', 'cardStack', 'stats', 'testimonial', 'ctaSection'],
+        ['hero', 'marquee', 'bigText', 'splitMedia', 'showcase', 'ctaSection'],
+        ['gradientHero', 'textReveal', 'splitMedia', 'marquee', 'cardStack', 'ctaSection'],
+        ['hero', 'featureGrid', 'marquee', 'imageReveal', 'testimonial', 'stats', 'ctaSection'],
+        ['gradientHero', 'cardStack', 'bigText', 'featureGrid', 'showcase', 'testimonial', 'ctaSection'],
+        ['hero', 'showcase', 'marquee', 'splitMedia', 'stats', 'ctaSection'],
+        ['gradientHero', 'splitMedia', 'textReveal', 'featureGrid', 'marquee', 'stats', 'testimonial', 'ctaSection'],
+        ['hero', 'imageReveal', 'featureGrid', 'bigText', 'cardStack', 'ctaSection'],
+        ['gradientHero', 'marquee', 'bigText', 'showcase', 'imageReveal', 'stats', 'ctaSection']
     ];
 
     /* Curated entrance animation sets — each is a cohesive visual style */
@@ -8499,6 +8556,24 @@ window.ArbelCinematicEditor = (function () {
           'var el=e.target.closest("[data-arbel-id]");' +
           'if(el&&e.button===0){' +
             'if(selected.indexOf(el)<0){sel(el,e.shiftKey);}' +
+            /* Force selected elements into absolute positioning so drag top/left take effect.
+               Fixes "some elements aren\'t draggable" — flex/static-positioned children
+               otherwise ignore top/left writes. We capture the current visual position
+               from offsetTop/Left before promoting. */
+            'for(var pi=0;pi<selected.length;pi++){' +
+              'var _pe=selected[pi];' +
+              'var _cs=getComputedStyle(_pe);' +
+              'if(_cs.position==="static"||_cs.position==="relative"){' +
+                'var _ot=_pe.offsetTop, _ol=_pe.offsetLeft;' +
+                'var _ow=_pe.offsetWidth, _oh=_pe.offsetHeight;' +
+                '_pe.style.position="absolute";' +
+                '_pe.style.top=_ot+"px";' +
+                '_pe.style.left=_ol+"px";' +
+                'if(!_pe.style.width) _pe.style.width=_ow+"px";' +
+                'if(!_pe.style.height) _pe.style.height=_oh+"px";' +
+                'window.parent.postMessage({type:"arbel-promote-absolute",id:_pe.getAttribute("data-arbel-id"),top:_ot+"px",left:_ol+"px",width:_ow+"px",height:_oh+"px"},"*");' +
+              '}' +
+            '}' +
             'var origins=[];' +
             'for(var i=0;i<selected.length;i++){origins.push({el:selected[i],origTop:selected[i].offsetTop,origLeft:selected[i].offsetLeft});}' +
             'drag={el:el,startX:e.clientX,startY:e.clientY,origins:origins,moved:false,altMode:!!e.altKey};' +
