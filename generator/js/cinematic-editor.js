@@ -358,8 +358,13 @@ window.ArbelCinematicEditor = (function () {
                 // ─── TABLET handling ───
                 else {
                     if (tplId === 'stats') {
-                        if (base === 'stat-1') { overrides.left = '8%'; overrides.width = '25%'; }
-                        else if (base === 'stat-3') { overrides.left = '60%'; overrides.width = '25%'; }
+                        if (base === 'stats-heading') { overrides.fontSize = '4vw'; overrides.width = '90%'; }
+                        else if (base === 'stat-1') { overrides.left = '6%'; overrides.width = '26%'; overrides.fontSize = '5.5vw'; }
+                        else if (base === 'stat-1-label') { overrides.left = '6%'; overrides.width = '26%'; overrides.fontSize = '0.75rem'; }
+                        else if (base === 'stat-2') { overrides.left = '37%'; overrides.width = '26%'; overrides.fontSize = '5.5vw'; }
+                        else if (base === 'stat-2-label') { overrides.left = '37%'; overrides.width = '26%'; overrides.fontSize = '0.75rem'; }
+                        else if (base === 'stat-3') { overrides.left = '68%'; overrides.width = '26%'; overrides.fontSize = '5.5vw'; }
+                        else if (base === 'stat-3-label') { overrides.left = '68%'; overrides.width = '26%'; overrides.fontSize = '0.75rem'; }
                     } else if (tplId === 'featureGrid') {
                         if (base === 'fg-card1') { overrides.width = '30%'; overrides.left = '2%'; }
                         else if (base === 'fg-c1-title') { overrides.left = '5%'; overrides.width = '24%'; }
@@ -5790,6 +5795,15 @@ window.ArbelCinematicEditor = (function () {
             }
         }
 
+        // When left/top is set (typed into the properties panel), strip any
+        // inherited translate(-50%) + margin:auto + right/bottom anchors from
+        // the active bucket so the user-entered coordinate lands cleanly.
+        // Mirrors the drag-path behavior so typing and dragging agree.
+        if ((prop === 'left' || prop === 'top' || prop === 'width' || prop === 'height')
+            && value !== '' && value !== undefined) {
+            _clearPositionConflicts(el, _getStyleBucket(el));
+        }
+
         if (_activeDevice === 'desktop') {
             _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
         }
@@ -7754,6 +7768,35 @@ window.ArbelCinematicEditor = (function () {
         _designTokens.text = palette.text;
         _designTokens.bg = palette.bg;
         _designTokens.surface = palette.surface;
+
+        // Font-pair variety — pick a random curated heading/body combo each
+        // generation so back-to-back "Generate" clicks don't all look the same.
+        var _FONT_PAIRS = [
+            { h: "'Instrument Serif', Georgia, serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Playfair Display', Georgia, serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Cormorant Garamond', Georgia, serif", b: "'Manrope', system-ui, sans-serif" },
+            { h: "'DM Serif Display', Georgia, serif", b: "'DM Sans', system-ui, sans-serif" },
+            { h: "'Fraunces', Georgia, serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Space Grotesk', system-ui, sans-serif", b: "'Space Grotesk', system-ui, sans-serif" },
+            { h: "'Syne', system-ui, sans-serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Bricolage Grotesque', system-ui, sans-serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Archivo Black', system-ui, sans-serif", b: "'Archivo', system-ui, sans-serif" },
+            { h: "'Unbounded', system-ui, sans-serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Big Shoulders Display', system-ui, sans-serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Bodoni Moda', Georgia, serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Crimson Pro', Georgia, serif", b: "'Work Sans', system-ui, sans-serif" },
+            { h: "'Libre Caslon Display', Georgia, serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Anton', system-ui, sans-serif", b: "'Inter', system-ui, sans-serif" },
+            { h: "'Bebas Neue', system-ui, sans-serif", b: "'Inter', system-ui, sans-serif" }
+        ];
+        var fp = _pick(_FONT_PAIRS);
+        _designTokens.headingFont = fp.h;
+        _designTokens.bodyFont = fp.b;
+        // Subtle type-scale + radius jitter for additional per-generation variety
+        var _scales = [1.2, 1.25, 1.333, 1.414, 1.5];
+        var _radii = [4, 6, 8, 12, 16, 20];
+        _designTokens.scale = _pick(_scales);
+        _designTokens.radius = _pick(_radii);
         _syncTokenUI();
 
         // Commit

@@ -631,6 +631,11 @@ window.ArbelCinematicCompiler = (function () {
             'Albert Sans': 'Albert+Sans:wght@300;400;500;600;700;800',
             'Onest': 'Onest:wght@300;400;500;600;700;800',
             'Geist': 'Geist:wght@300;400;500;600;700;800;900',
+            'Syne': 'Syne:wght@400;500;600;700;800',
+            'Bricolage Grotesque': 'Bricolage+Grotesque:wght@300;400;500;600;700;800',
+            'Unbounded': 'Unbounded:wght@300;400;500;600;700;800;900',
+            'Archivo': 'Archivo:wght@300;400;500;600;700;800;900',
+            'Big Shoulders Display': 'Big+Shoulders+Display:wght@300;400;500;600;700;800;900',
             // Serif
             'Playfair Display': 'Playfair+Display:wght@400;500;600;700;800;900',
             'DM Serif Display': 'DM+Serif+Display',
@@ -646,6 +651,8 @@ window.ArbelCinematicCompiler = (function () {
             'Bodoni Moda': 'Bodoni+Moda:wght@400;500;600;700;800;900',
             'Young Serif': 'Young+Serif',
             'Instrument Serif': 'Instrument+Serif:ital@0;1',
+            'Crimson Pro': 'Crimson+Pro:wght@300;400;500;600;700;800;900',
+            'Libre Caslon Display': 'Libre+Caslon+Display',
             // Display
             'Oswald': 'Oswald:wght@300;400;500;600;700',
             'Bebas Neue': 'Bebas+Neue',
@@ -683,6 +690,15 @@ window.ArbelCinematicCompiler = (function () {
                     });
                 }
             });
+        });
+        // Also pull fonts referenced by design tokens (heading/body) so
+        // randomized AI-picked pairs actually load from Google Fonts.
+        var _dtFontSrc = '' + ((cfg.designTokens && cfg.designTokens.headingFont) || '')
+            + ' ' + ((cfg.designTokens && cfg.designTokens.bodyFont) || '');
+        Object.keys(fontMap).forEach(function (name) {
+            if (_dtFontSrc.indexOf(name) >= 0) {
+                usedFonts[name] = fontMap[name];
+            }
         });
         var fontFamilies = Object.keys(usedFonts).map(function (k) { return 'family=' + usedFonts[k]; }).join('&');
         html += '<link href="https://fonts.googleapis.com/css2?' + fontFamilies + '&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">\n';
