@@ -1054,13 +1054,20 @@ window.ArbelCinematicCompiler = (function () {
                 var splitAttr = el.splitText ? ' data-split-text="true"' : '';
                 var parallaxAttr = el.parallax && el.parallax !== 1 ? ' data-parallax="' + parseFloat(el.parallax) + '"' : '';
 
-                // Responsive layout class
+                // Responsive layout class.
+                // IMPORTANT: elements with inline transform:translate(-50%) already
+                // self-center via GSAP xPercent/yPercent (see _buildCinemaJS). Do NOT
+                // tag them with .cne-r-center — that class forces left:0;right:0;
+                // margin:auto which combined with GSAP xPercent:-50 shifts the element
+                // LEFT by 50% of its own width on tablet/mobile (visible as heading
+                // text clipped off the left edge). Let the transform handle centering
+                // at every breakpoint.
                 var rCls = '';
                 var s = el.style || {};
                 var hasTransCenter = (s.transform || '').indexOf('-50%') >= 0;
                 var leftVal = parseFloat(s.left) || 0;
                 var widthVal = parseFloat(s.width) || 100;
-                if (hasTransCenter) { rCls = ' cne-r-center'; }
+                if (hasTransCenter) { rCls = ''; /* self-centering; no class needed */ }
                 else if (s.right && !s.left) { rCls = ' cne-r-right'; }
                 else if (leftVal >= 30 && s.textAlign === 'center') { rCls = ' cne-r-center'; }
                 else if (leftVal < 40 && widthVal < 55) { rCls = ' cne-r-left'; }
@@ -1468,6 +1475,31 @@ window.ArbelCinematicCompiler = (function () {
         css += '.cne-scene[data-transition="chromatic"].cne-trans-active { opacity: 1; filter: none; transform: none; }\n';
         css += '.cne-scene[data-transition="dolly-zoom"] { transition: opacity .9s ease-out, transform 1.1s cubic-bezier(.22,1,.36,1), filter .9s ease-out; transform: scale(.85) perspective(800px) translateZ(-60px); filter: blur(6px); }\n';
         css += '.cne-scene[data-transition="dolly-zoom"].cne-trans-active { opacity: 1; transform: scale(1) perspective(800px) translateZ(0); filter: blur(0); }\n';
+        // Expanded transition library
+        css += '.cne-scene[data-transition="slide-left"] { transition: opacity .7s ease-out, transform .8s cubic-bezier(.22,1,.36,1); transform: translateX(80px); }\n';
+        css += '.cne-scene[data-transition="slide-left"].cne-trans-active { opacity: 1; transform: translateX(0); }\n';
+        css += '.cne-scene[data-transition="slide-right"] { transition: opacity .7s ease-out, transform .8s cubic-bezier(.22,1,.36,1); transform: translateX(-80px); }\n';
+        css += '.cne-scene[data-transition="slide-right"].cne-trans-active { opacity: 1; transform: translateX(0); }\n';
+        css += '.cne-scene[data-transition="flip-x"] { transition: opacity .8s ease-out, transform 1s cubic-bezier(.22,1,.36,1); transform: perspective(1200px) rotateX(28deg); transform-origin: top; }\n';
+        css += '.cne-scene[data-transition="flip-x"].cne-trans-active { opacity: 1; transform: perspective(1200px) rotateX(0); }\n';
+        css += '.cne-scene[data-transition="flip-y"] { transition: opacity .8s ease-out, transform 1s cubic-bezier(.22,1,.36,1); transform: perspective(1200px) rotateY(32deg); transform-origin: left; }\n';
+        css += '.cne-scene[data-transition="flip-y"].cne-trans-active { opacity: 1; transform: perspective(1200px) rotateY(0); }\n';
+        css += '.cne-scene[data-transition="curtain-open"] { clip-path: inset(0 50% 0 50%); transition: opacity .6s ease-out, clip-path 1.2s cubic-bezier(.77,0,.175,1); }\n';
+        css += '.cne-scene[data-transition="curtain-open"].cne-trans-active { opacity: 1; clip-path: inset(0 0 0 0); }\n';
+        css += '.cne-scene[data-transition="iris"] { clip-path: circle(0% at 50% 50%); transition: opacity .5s ease-out, clip-path 1.1s cubic-bezier(.77,0,.175,1); }\n';
+        css += '.cne-scene[data-transition="iris"].cne-trans-active { opacity: 1; clip-path: circle(120% at 50% 50%); }\n';
+        css += '.cne-scene[data-transition="wipe-diagonal"] { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); transition: opacity .6s ease-out, clip-path 1s cubic-bezier(.77,0,.175,1); }\n';
+        css += '.cne-scene[data-transition="wipe-diagonal"].cne-trans-active { opacity: 1; clip-path: polygon(0 0, 140% 0, 100% 100%, 0 100%); }\n';
+        css += '.cne-scene[data-transition="glitch"] { transition: opacity .45s ease-out, transform .45s steps(4, end), filter .45s ease-out; transform: translateX(10px) skewX(-6deg); filter: hue-rotate(160deg) saturate(2); }\n';
+        css += '.cne-scene[data-transition="glitch"].cne-trans-active { opacity: 1; transform: translateX(0) skewX(0); filter: none; }\n';
+        css += '.cne-scene[data-transition="swirl"] { transition: opacity .8s ease-out, transform 1s cubic-bezier(.22,1,.36,1), filter .8s ease-out; transform: rotate(-14deg) scale(.88); filter: blur(8px); }\n';
+        css += '.cne-scene[data-transition="swirl"].cne-trans-active { opacity: 1; transform: rotate(0) scale(1); filter: none; }\n';
+        css += '.cne-scene[data-transition="rise"] { transition: opacity .9s ease-out, transform 1s cubic-bezier(.16,1,.3,1), filter .9s ease-out; transform: translateY(80px) scale(.97); filter: blur(10px); }\n';
+        css += '.cne-scene[data-transition="rise"].cne-trans-active { opacity: 1; transform: translateY(0) scale(1); filter: none; }\n';
+        css += '.cne-scene[data-transition="fall"] { transition: opacity .8s ease-out, transform .9s cubic-bezier(.16,1,.3,1), filter .9s ease-out; transform: translateY(-80px) scale(1.05); filter: blur(10px); }\n';
+        css += '.cne-scene[data-transition="fall"].cne-trans-active { opacity: 1; transform: translateY(0) scale(1); filter: none; }\n';
+        css += '.cne-scene[data-transition="vhs"] { transition: opacity .7s ease-out, transform .7s ease-out, filter .7s ease-out; transform: scaleY(.02); filter: brightness(2) contrast(2); }\n';
+        css += '.cne-scene[data-transition="vhs"].cne-trans-active { opacity: 1; transform: scaleY(1); filter: none; }\n';
         css += '@media (prefers-reduced-motion: reduce) { .cne-scene[data-transition] { transition: opacity .2s linear !important; transform: none !important; filter: none !important; clip-path: none !important; } }\n\n';
 
 
@@ -1556,10 +1588,46 @@ window.ArbelCinematicCompiler = (function () {
                 if (hs.color) { var hc = String(hs.color).replace(/[<>"'`;{}]/g, ''); rule += ' color: ' + hc + ';'; transProps.push('color'); }
                 if (hs.background) { var hb = String(hs.background).replace(/[<>"'`;{}]/g, ''); rule += ' background: ' + hb + ';'; transProps.push('background'); }
                 if (hs.boxShadow) { var hbs = String(hs.boxShadow).replace(/[<>"'`;{}]/g, ''); rule += ' box-shadow: ' + hbs + ';'; transProps.push('box-shadow'); }
+                // Filter-based hovers — compose cleanly over GSAP transforms
+                if (hs.blur !== undefined && hs.blur !== '') {
+                    var hbl = Math.max(0, Math.min(40, parseFloat(hs.blur) || 0));
+                    rule += ' filter: blur(' + hbl + 'px);'; transProps.push('filter');
+                }
+                if (hs.brightness !== undefined && hs.brightness !== '') {
+                    var hbr = Math.max(0, Math.min(3, parseFloat(hs.brightness) || 1));
+                    var existingF = rule.indexOf('filter:') >= 0;
+                    if (existingF) { rule = rule.replace(/filter:\s*([^;]+);/, 'filter: $1 brightness(' + hbr + ');'); }
+                    else { rule += ' filter: brightness(' + hbr + ');'; transProps.push('filter'); }
+                }
+                if (hs.saturate !== undefined && hs.saturate !== '') {
+                    var hsa = Math.max(0, Math.min(3, parseFloat(hs.saturate) || 1));
+                    var existingF2 = rule.indexOf('filter:') >= 0;
+                    if (existingF2) { rule = rule.replace(/filter:\s*([^;]+);/, 'filter: $1 saturate(' + hsa + ');'); }
+                    else { rule += ' filter: saturate(' + hsa + ');'; transProps.push('filter'); }
+                }
+                if (hs.letterSpacing !== undefined && hs.letterSpacing !== '') {
+                    var ls = String(hs.letterSpacing).replace(/[<>"'`;{}]/g, '');
+                    rule += ' letter-spacing: ' + ls + ';'; transProps.push('letter-spacing');
+                }
+                if (hs.borderColor) {
+                    var hbc = String(hs.borderColor).replace(/[<>"'`;{}]/g, '');
+                    rule += ' border-color: ' + hbc + ';'; transProps.push('border-color');
+                }
                 // Individual CSS transform properties — compose with GSAP's inline transform
                 if (hs.scale !== undefined && hs.scale !== '') { rule += ' scale: ' + hs.scale + ';'; transProps.push('scale'); }
                 if (hs.translateY !== undefined && hs.translateY !== '') { rule += ' translate: 0 ' + hs.translateY + 'px;'; transProps.push('translate'); }
+                if (hs.translateX !== undefined && hs.translateX !== '') {
+                    // Compose with any existing translate
+                    var ty = (hs.translateY !== undefined && hs.translateY !== '') ? hs.translateY : '0';
+                    rule = rule.replace(/translate:\s*0\s*[^;]+;/, '');
+                    rule += ' translate: ' + hs.translateX + 'px ' + ty + 'px;';
+                    if (transProps.indexOf('translate') < 0) transProps.push('translate');
+                }
                 if (hs.rotate !== undefined && hs.rotate !== '') { rule += ' rotate: ' + hs.rotate + 'deg;'; transProps.push('rotate'); }
+                if (hs.rotateX !== undefined && hs.rotateX !== '') { rule += ' rotate: x ' + hs.rotateX + 'deg;'; transProps.push('rotate'); }
+                if (hs.rotateY !== undefined && hs.rotateY !== '') { rule += ' rotate: y ' + hs.rotateY + 'deg;'; transProps.push('rotate'); }
+                if (hs.skewX !== undefined && hs.skewX !== '') { rule += ' --arbel-skewX: ' + hs.skewX + 'deg;'; }
+                if (hs.skewY !== undefined && hs.skewY !== '') { rule += ' --arbel-skewY: ' + hs.skewY + 'deg;'; }
                 if (rule) {
                     // Add property-specific transitions to avoid conflicting with GSAP scroll transforms
                     var transStr = transProps.map(function (p) { return p + ' ' + duration + 's ease'; }).join(', ');

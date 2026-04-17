@@ -3981,6 +3981,20 @@ window.ArbelCinematicEditor = (function () {
             _setHover('_duration', safe);
         });
 
+        // Expanded hover inputs
+        var hBlur = _qs('#cneHoverBlur');
+        if (hBlur) hBlur.addEventListener('input', function () { _setHover('blur', hBlur.value); });
+        var hBright = _qs('#cneHoverBrightness');
+        if (hBright) hBright.addEventListener('input', function () { _setHover('brightness', hBright.value); });
+        var hSat = _qs('#cneHoverSaturate');
+        if (hSat) hSat.addEventListener('input', function () { _setHover('saturate', hSat.value); });
+        var hLS = _qs('#cneHoverLetterSpacing');
+        if (hLS) hLS.addEventListener('input', function () { _setHover('letterSpacing', hLS.value); });
+        var hX = _qs('#cneHoverX');
+        if (hX) hX.addEventListener('input', function () { _setHover('translateX', hX.value); });
+        var hSkewX = _qs('#cneHoverSkewX');
+        if (hSkewX) hSkewX.addEventListener('input', function () { _setHover('skewX', hSkewX.value); });
+
         var hClear = _qs('#cneHoverClear');
         if (hClear) {
             hClear.addEventListener('click', function () {
@@ -4008,6 +4022,12 @@ window.ArbelCinematicEditor = (function () {
         var hRotate = _qs('#cneHoverRotate'); if (hRotate) hRotate.value = hs.rotate !== undefined ? hs.rotate : '';
         var hShadow = _qs('#cneHoverShadow'); if (hShadow) hShadow.value = hs.boxShadow || '';
         var hDuration = _qs('#cneHoverDuration'); if (hDuration) hDuration.value = hs._duration || '0.3';
+        var hBlur = _qs('#cneHoverBlur'); if (hBlur) hBlur.value = hs.blur !== undefined ? hs.blur : '';
+        var hBright = _qs('#cneHoverBrightness'); if (hBright) hBright.value = hs.brightness !== undefined ? hs.brightness : '';
+        var hSat = _qs('#cneHoverSaturate'); if (hSat) hSat.value = hs.saturate !== undefined ? hs.saturate : '';
+        var hLS = _qs('#cneHoverLetterSpacing'); if (hLS) hLS.value = hs.letterSpacing || '';
+        var hX = _qs('#cneHoverX'); if (hX) hX.value = hs.translateX !== undefined ? hs.translateX : '';
+        var hSkewX = _qs('#cneHoverSkewX'); if (hSkewX) hSkewX.value = hs.skewX !== undefined ? hs.skewX : '';
     }
 
     /* ─── Design Tokens Panel ─── */
