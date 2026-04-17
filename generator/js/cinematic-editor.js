@@ -156,6 +156,28 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /**
+     * Drop stale entries from _selectedElementIds and realign _selectedElementId
+     * after mutations (delete, undo, scene switch).  Prevents "ghost selection"
+     * bugs where the properties panel shows inputs bound to a deleted element.
+     */
+    function _validateSelection() {
+        var scene = _scenes[_currentSceneIdx];
+        if (!scene) {
+            _selectedElementId = null;
+            _selectedElementIds = [];
+            return;
+        }
+        _selectedElementIds = (_selectedElementIds || []).filter(function (id) {
+            return scene.elements.some(function (el) { return el.id === id; });
+        });
+        if (_selectedElementIds.length === 0) {
+            _selectedElementId = null;
+        } else if (_selectedElementIds.indexOf(_selectedElementId) < 0) {
+            _selectedElementId = _selectedElementIds[_selectedElementIds.length - 1];
+        }
+    }
+
+    /**
      * When the user writes a new top/left into a device-specific bucket,
      * clear properties from the SAME bucket that would fight the new
      * position on that breakpoint:
@@ -1018,7 +1040,11 @@ window.ArbelCinematicEditor = (function () {
     }
 
     function _selectScene(idx, rerender) {
-        if (idx < 0 || idx >= _scenes.length) return;
+        if (_scenes.length === 0) return;
+        // Clamp into valid range instead of silently failing so callers that
+        // pass stale indices (e.g. after a delete) still land on a real scene.
+        if (idx < 0) idx = 0;
+        if (idx >= _scenes.length) idx = _scenes.length - 1;
         _currentSceneIdx = idx;
         _selectedElementId = null;
         _selectedElementIds = [];
@@ -1239,6 +1265,7 @@ window.ArbelCinematicEditor = (function () {
         _pushUndo();
         _scenes.splice(idx, 1);
         if (_currentSceneIdx >= _scenes.length) _currentSceneIdx = _scenes.length - 1;
+        _validateSelection();
         _selectScene(_currentSceneIdx, true);
     }
 
@@ -5851,32 +5878,41 @@ window.ArbelCinematicEditor = (function () {
             };
         });
 
+        // Helper so every branch clears inherited transform(-50%)/right/bottom
+        // anchors after writing a new left/top — otherwise aligned elements
+        // can drift from the target edge when they had centering transforms.
+        function setPos(el, prop, value) {
+            var b = _getStyleBucket(el);
+            b[prop] = value;
+            _clearPositionConflicts(el, b);
+        }
+
         switch (mode) {
             case 'left':
                 var minL = Math.min.apply(null, rects.map(function (r) { return r.left; }));
-                rects.forEach(function (r) { _getStyleBucket(r.el).left = minL + 'px'; });
+                rects.forEach(function (r) { setPos(r.el, 'left', minL + 'px'); });
                 break;
             case 'center-h':
                 var centers = rects.map(function (r) { return r.left + r.width / 2; });
                 var avgC = centers.reduce(function (a, b) { return a + b; }, 0) / centers.length;
-                rects.forEach(function (r) { _getStyleBucket(r.el).left = Math.round(avgC - r.width / 2) + 'px'; });
+                rects.forEach(function (r) { setPos(r.el, 'left', Math.round(avgC - r.width / 2) + 'px'); });
                 break;
             case 'right':
                 var maxR = Math.max.apply(null, rects.map(function (r) { return r.left + r.width; }));
-                rects.forEach(function (r) { _getStyleBucket(r.el).left = (maxR - r.width) + 'px'; });
+                rects.forEach(function (r) { setPos(r.el, 'left', (maxR - r.width) + 'px'); });
                 break;
             case 'top':
                 var minT = Math.min.apply(null, rects.map(function (r) { return r.top; }));
-                rects.forEach(function (r) { _getStyleBucket(r.el).top = minT + 'px'; });
+                rects.forEach(function (r) { setPos(r.el, 'top', minT + 'px'); });
                 break;
             case 'center-v':
                 var middles = rects.map(function (r) { return r.top + r.height / 2; });
                 var avgM = middles.reduce(function (a, b) { return a + b; }, 0) / middles.length;
-                rects.forEach(function (r) { _getStyleBucket(r.el).top = Math.round(avgM - r.height / 2) + 'px'; });
+                rects.forEach(function (r) { setPos(r.el, 'top', Math.round(avgM - r.height / 2) + 'px'); });
                 break;
             case 'bottom':
                 var maxB = Math.max.apply(null, rects.map(function (r) { return r.top + r.height; }));
-                rects.forEach(function (r) { _getStyleBucket(r.el).top = (maxB - r.height) + 'px'; });
+                rects.forEach(function (r) { setPos(r.el, 'top', (maxB - r.height) + 'px'); });
                 break;
             case 'dist-h':
                 if (rects.length < 3) break;
@@ -5887,7 +5923,7 @@ window.ArbelCinematicEditor = (function () {
                 var x = rects[0].left;
                 rects.forEach(function (r, i) {
                     if (i > 0) { x += gap; }
-                    _getStyleBucket(r.el).left = Math.round(x) + 'px';
+                    setPos(r.el, 'left', Math.round(x) + 'px');
                     x += r.width;
                 });
                 break;
@@ -5900,12 +5936,19 @@ window.ArbelCinematicEditor = (function () {
                 var y = rects[0].top;
                 rects.forEach(function (r, i) {
                     if (i > 0) { y += gapV; }
-                    _getStyleBucket(r.el).top = Math.round(y) + 'px';
+                    setPos(r.el, 'top', Math.round(y) + 'px');
                     y += r.height;
                 });
                 break;
         }
         _notifyUpdate(true);
+    }
+
+    /** Safe numeric z-index read — handles "auto", "", and numeric strings. */
+    function _zIndexOf(el) {
+        var z = el && el.style && el.style.zIndex;
+        var n = parseInt(z, 10);
+        return isNaN(n) ? 0 : n;
     }
 
     /** Bring element to front (highest z-index in scene) */
@@ -5914,7 +5957,7 @@ window.ArbelCinematicEditor = (function () {
         if (!scene || !_selectedElementId) return;
         _pushUndo();
         var maxZ = 0;
-        scene.elements.forEach(function (e) { var z = parseInt(e.style && e.style.zIndex) || 0; if (z > maxZ) maxZ = z; });
+        scene.elements.forEach(function (e) { var z = _zIndexOf(e); if (z > maxZ) maxZ = z; });
         var el = _getSelectedElement();
         if (el) {
             if (!el.style) el.style = {};
@@ -5931,7 +5974,7 @@ window.ArbelCinematicEditor = (function () {
         if (!scene || !_selectedElementId) return;
         _pushUndo();
         var minZ = 999;
-        scene.elements.forEach(function (e) { var z = parseInt(e.style && e.style.zIndex) || 0; if (z < minZ) minZ = z; });
+        scene.elements.forEach(function (e) { var z = _zIndexOf(e); if (z < minZ) minZ = z; });
         var el = _getSelectedElement();
         if (el) {
             if (!el.style) el.style = {};
@@ -6861,6 +6904,7 @@ window.ArbelCinematicEditor = (function () {
         // Restore scene index from snapshot
         var restoreIdx = typeof state.sceneIdx === 'number' ? state.sceneIdx : _currentSceneIdx;
         _currentSceneIdx = Math.min(restoreIdx, _scenes.length - 1);
+        if (_currentSceneIdx < 0) _currentSceneIdx = 0;
         _renderSceneList();
         // Restore element selection if the elements still exist
         var scene = _scenes[_currentSceneIdx];
@@ -6889,9 +6933,11 @@ window.ArbelCinematicEditor = (function () {
                     }
                 }, 1200);
             } else {
+                _validateSelection();
                 _selectScene(_currentSceneIdx, true);
             }
         } else {
+            _validateSelection();
             _selectScene(_currentSceneIdx, true);
         }
         // Safety: force a second rerender after a short delay to recover from
@@ -6932,6 +6978,7 @@ window.ArbelCinematicEditor = (function () {
         // Restore scene index from snapshot
         var restoreIdx = typeof state.sceneIdx === 'number' ? state.sceneIdx : _currentSceneIdx;
         _currentSceneIdx = Math.min(restoreIdx, _scenes.length - 1);
+        if (_currentSceneIdx < 0) _currentSceneIdx = 0;
         _renderSceneList();
         // Restore element selection if the elements still exist
         var scene = _scenes[_currentSceneIdx];
