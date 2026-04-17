@@ -188,34 +188,38 @@ window.ArbelCinematicEditor = (function () {
      */
     function _clearPositionConflicts(el, bucket) {
         if (!bucket) return;
-        // Always neutralize conflicting anchors when a new top/left is written.
-        // (If the user wants right/bottom anchoring on that breakpoint they can
-        // re-enter it via the properties panel.)
-        if (bucket.right !== undefined) bucket.right = 'auto';
-        if (bucket.bottom !== undefined) bucket.bottom = 'auto';
-        // For non-desktop buckets, also strip any translate(-50%) centering
-        // inherited from the base style so the px-based position lands where
-        // the user dropped the element instead of being shifted by xPercent.
+        // Collect every aux prop we mutate so the caller (or this fn itself)
+        // can live-patch them into the iframe.  Without this, typing a new
+        // Top/Left on tablet/mobile only patched that one prop — leaving the
+        // inherited translate(-50%,-50%) / margin:auto / right:auto in place
+        // until the next full recompile, so overrides appeared not to save.
+        var patched = {};
+        if (bucket.right !== undefined) { bucket.right = 'auto'; patched.right = 'auto'; }
+        if (bucket.bottom !== undefined) { bucket.bottom = 'auto'; patched.bottom = 'auto'; }
         if (_activeDevice !== 'desktop') {
             var baseT = (el.style && el.style.transform) || '';
             if (baseT.indexOf('-50%') >= 0) {
-                // Preserve any non-centering transforms (rotate, scale)
                 var cleaned = baseT
                     .replace(/translate\(-50%\s*,\s*-50%\)/g, '')
                     .replace(/translateX\(-50%\)/g, '')
                     .replace(/translateY\(-50%\)/g, '')
                     .replace(/\s{2,}/g, ' ').trim();
                 bucket.transform = cleaned || 'none';
+                patched.transform = bucket.transform;
             }
-            // If base style anchors to right/bottom, override to auto so our
-            // left/top wins at this breakpoint.
-            if (el.style && el.style.right && bucket.right === undefined) bucket.right = 'auto';
-            if (el.style && el.style.bottom && bucket.bottom === undefined) bucket.bottom = 'auto';
-            // Neutralize margin:auto from the generic .cne-r-center/.cne-r-left/
-            // .cne-r-right responsive fallbacks so the user-chosen left lands
-            // exactly where they dragged it.
+            if (el.style && el.style.right && bucket.right === undefined) { bucket.right = 'auto'; patched.right = 'auto'; }
+            if (el.style && el.style.bottom && bucket.bottom === undefined) { bucket.bottom = 'auto'; patched.bottom = 'auto'; }
             bucket.marginLeft = '0';
             bucket.marginRight = '0';
+            patched.marginLeft = '0';
+            patched.marginRight = '0';
+        }
+        // Live-patch each cleared prop so the iframe reflects the fix
+        // immediately (no need to wait for next recompile).
+        if (el && el.id) {
+            Object.keys(patched).forEach(function (p) {
+                _postIframe('arbel-update-style', { id: el.id, prop: p, value: patched[p], device: _activeDevice });
+            });
         }
     }
 
@@ -728,6 +732,10 @@ window.ArbelCinematicEditor = (function () {
                         bucket.height = d.height;
                         bucket.top = d.top;
                         bucket.left = d.left;
+                        // Strip inherited -50% centering / right / bottom so
+                        // the new width/height + top/left land cleanly on
+                        // tablet/mobile (same rationale as drag path).
+                        _clearPositionConflicts(scene.elements[i], bucket);
                         break;
                     }
                 }
