@@ -2896,8 +2896,8 @@ window.ArbelCinematicEditor = (function () {
                 if (!_isFrameOrShape(el) || !frameUpload.files || !frameUpload.files[0]) return;
                 var file = frameUpload.files[0];
                 var isVid = /^video\//.test(file.type);
-                var maxSize = isVid ? 10 * 1024 * 1024 : 2 * 1024 * 1024;
-                if (file.size > maxSize) { alert(isVid ? 'Video must be under 10MB' : 'Image must be under 2MB'); return; }
+                var maxSize = isVid ? 40 * 1024 * 1024 : 10 * 1024 * 1024;
+                if (file.size > maxSize) { alert((isVid ? 'Video must be under 40MB' : 'Image must be under 10MB') + ' (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB)'); frameUpload.value = ''; return; }
                 _pushUndo();
                 el.frameMediaType = isVid ? 'video' : 'image';
                 var fmType = _qs('#cneFrameMediaType'); if (fmType) fmType.value = el.frameMediaType;
@@ -3071,7 +3071,8 @@ window.ArbelCinematicEditor = (function () {
             elBgUpload.addEventListener('change', function () {
                 if (!elBgUpload.files || !elBgUpload.files[0]) return;
                 var file = elBgUpload.files[0];
-                if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+                if (file.size > 10 * 1024 * 1024) { alert('Image must be under 10MB (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB)'); elBgUpload.value = ''; return; }
+                if (!/^image\//i.test(file.type)) { alert('That file is not an image.'); elBgUpload.value = ''; return; }
                 var el = _getSelectedElement();
                 if (!el) return;
                 _pushUndo();
@@ -3124,7 +3125,8 @@ window.ArbelCinematicEditor = (function () {
             elBgVideoUpload.addEventListener('change', function () {
                 if (!elBgVideoUpload.files || !elBgVideoUpload.files[0]) return;
                 var file = elBgVideoUpload.files[0];
-                if (file.size > 15 * 1024 * 1024) { alert('Video must be under 15MB'); return; }
+                if (file.size > 40 * 1024 * 1024) { alert('Video must be under 40MB (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB)'); elBgVideoUpload.value = ''; return; }
+                if (!/^video\//i.test(file.type)) { alert('That file is not a video.'); elBgVideoUpload.value = ''; return; }
                 var el = _getSelectedElement();
                 if (!el) return;
                 _pushUndo();
@@ -4775,7 +4777,8 @@ window.ArbelCinematicEditor = (function () {
                 var scene = _scenes[_currentSceneIdx];
                 if (!scene || !sceneBgUpload.files || !sceneBgUpload.files[0]) return;
                 var file = sceneBgUpload.files[0];
-                if (file.size > 3 * 1024 * 1024) { alert('Image must be under 3MB'); return; }
+                if (file.size > 10 * 1024 * 1024) { alert('Image must be under 10MB (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB). Compress or resize and try again.'); sceneBgUpload.value = ''; return; }
+                if (!/^image\//i.test(file.type)) { alert('That file is not an image.'); sceneBgUpload.value = ''; return; }
                 _pushUndo();
                 // Mutual exclusivity: clear video if setting image
                 if (scene.bgVideo) delete scene.bgVideo;
@@ -5341,8 +5344,8 @@ window.ArbelCinematicEditor = (function () {
                 (function (file) {
                     var isVideo = /^video\//.test(file.type);
                     var mediaType = isVideo ? 'video' : 'image';
-                    if (isVideo && file.size > 15 * 1024 * 1024) { alert('Video must be under 15MB'); pending--; return; }
-                    if (!isVideo && file.size > 5 * 1024 * 1024) { alert('Image must be under 5MB'); pending--; return; }
+                    if (isVideo && file.size > 40 * 1024 * 1024) { alert('Video must be under 40MB'); pending--; return; }
+                    if (!isVideo && file.size > 10 * 1024 * 1024) { alert('Image must be under 10MB'); pending--; return; }
                     var reader = new FileReader();
                     reader.onload = function (e) {
                         var newId = 'rl-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4);
