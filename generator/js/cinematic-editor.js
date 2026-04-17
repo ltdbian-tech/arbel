@@ -753,7 +753,15 @@ window.ArbelCinematicEditor = (function () {
                 for (var i = 0; i < scene.elements.length; i++) {
                     if (scene.elements[i].id === d.id) {
                         var bucket = _getStyleBucket(scene.elements[i]);
+                        // On non-desktop buckets, if transform is empty, seed
+                        // it from the desktop transform so we don't lose
+                        // translate(-50%, -50%) centering when writing a rotate
+                        // override at the media query (which emits with
+                        // !important and overwrites the inherited transform).
                         var cur = bucket.transform || '';
+                        if (!cur && _activeDevice !== 'desktop' && scene.elements[i].style && scene.elements[i].style.transform) {
+                            cur = scene.elements[i].style.transform;
+                        }
                         cur = cur.replace(/rotate\([^)]+\)/, '').trim();
                         bucket.transform = (cur + ' rotate(' + d.deg + 'deg)').trim();
                         break;
@@ -5885,6 +5893,10 @@ window.ArbelCinematicEditor = (function () {
             var b = _getStyleBucket(el);
             b[prop] = value;
             _clearPositionConflicts(el, b);
+            // Live-patch iframe so alignment takes effect instantly on every
+            // device without forcing a full recompile (which would reset
+            // scroll position on tablet/mobile).
+            _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value, device: _activeDevice });
         }
 
         switch (mode) {
@@ -5941,7 +5953,9 @@ window.ArbelCinematicEditor = (function () {
                 });
                 break;
         }
-        _notifyUpdate(true);
+        // setPos already live-patches each element; skip the full recompile
+        // so scroll stays put on tablet/mobile.
+        _notifyUpdate(false);
     }
 
     /** Safe numeric z-index read — handles "auto", "", and numeric strings. */
@@ -5964,7 +5978,10 @@ window.ArbelCinematicEditor = (function () {
             el.style.zIndex = String(maxZ + 1);
             var zInput = _qs('#cneZIndex');
             if (zInput) zInput.value = el.style.zIndex;
-            _notifyUpdate(true);
+            // Live-patch the iframe so we never force a full recompile that
+            // would reset scroll to scene 0 on tablet/mobile.
+            _postIframe('arbel-update-style', { id: el.id, prop: 'zIndex', value: el.style.zIndex, device: _activeDevice });
+            _notifyUpdate(false);
         }
     }
 
@@ -5981,7 +5998,8 @@ window.ArbelCinematicEditor = (function () {
             el.style.zIndex = String(Math.max(0, minZ - 1));
             var zInput = _qs('#cneZIndex');
             if (zInput) zInput.value = el.style.zIndex;
-            _notifyUpdate(true);
+            _postIframe('arbel-update-style', { id: el.id, prop: 'zIndex', value: el.style.zIndex, device: _activeDevice });
+            _notifyUpdate(false);
         }
     }
 
@@ -8797,9 +8815,15 @@ window.ArbelCinematicEditor = (function () {
             'var a=Math.atan2(e.clientY-rotating.cy,e.clientX-rotating.cx);' +
             'var deg=rotating.startDeg+(a-rotating.startAngle)*180/Math.PI;' +
             'if(e.shiftKey)deg=Math.round(deg/15)*15;' +
+            /* Prefer inline transform; fall back to computed transform so we
+               preserve translate(-50%,-50%) centering (from @media rules on
+               non-desktop) when rotating. Use setProperty(important) so the
+               rotate beats responsive @media transforms during live drag. */
             'var cur=rotating.el.style.transform||"";' +
+            'if(!cur){var _ctm=getComputedStyle(rotating.el).transform;if(_ctm&&_ctm!=="none")cur=_ctm;}' +
             'cur=cur.replace(/rotate\\([^)]+\\)/,"").trim();' +
-            'rotating.el.style.transform=(cur+" rotate("+deg.toFixed(1)+"deg)").trim();' +
+            'var _newT=(cur+" rotate("+deg.toFixed(1)+"deg)").trim();' +
+            'rotating.el.style.setProperty("transform",_newT,"important");' +
             'posHandles(rotating.el);' +
             'posLbl.textContent=deg.toFixed(1)+"\u00B0";posLbl.classList.add("vis");' +
             'window.parent.postMessage({type:"arbel-rotate",id:rotating.el.getAttribute("data-arbel-id"),deg:deg.toFixed(1)},"*");' +
