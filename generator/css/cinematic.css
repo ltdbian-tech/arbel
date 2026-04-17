@@ -48,10 +48,27 @@
     border-bottom: 1px solid var(--border);
     gap: 8px;
     overflow-x: auto;
-    scrollbar-width: none;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.2) transparent;
     flex-shrink: 0;
 }
-.cne-toolbar::-webkit-scrollbar { display: none; }
+.cne-toolbar::-webkit-scrollbar { height: 4px; background: transparent; }
+.cne-toolbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 2px; }
+.cne-toolbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
+
+/* Compact toolbar at narrow widths so all buttons (Deploy, FX, BUILD, etc.)
+   remain reachable without awkward scrolling. */
+@media (max-width: 1400px) {
+    .cne-toolbar { gap: 4px; padding: 0 8px; }
+    .cne-toolbar-left, .cne-toolbar-center, .cne-toolbar-right { gap: 3px; }
+    .cne-toolbar-btn { padding: 5px 7px; font-size: 0.6rem; min-height: 30px; }
+    .cne-toolbar-divider { height: 20px; margin: 0 2px; }
+    .cne-toolbar-brand { max-width: 100px; font-size: 0.7rem; }
+}
+@media (max-width: 1200px) {
+    .cne-toolbar-brand { display: none; }
+}
 
 .cne-toolbar-left,
 .cne-toolbar-center,
@@ -716,17 +733,18 @@
     padding: 24px;
 }
 .cne-preview-frame {
-    width: 100%;
+    width: 1440px;
     max-width: 1440px;
     aspect-ratio: 16/9;
     background: var(--bg);
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: 0 8px 40px rgba(0,0,0,0.4);
-    transition: max-width 0.3s var(--ease);
+    transition: max-width 0.3s var(--ease), width 0.3s var(--ease);
+    flex-shrink: 0;
 }
-.cne-preview-frame.tablet, .cne-preview-frame.preview-tablet { max-width: 768px; aspect-ratio: 4/3; margin: 0 auto; }
-.cne-preview-frame.mobile, .cne-preview-frame.preview-mobile { max-width: 390px; aspect-ratio: 9/17; margin: 0 auto; }
+.cne-preview-frame.tablet, .cne-preview-frame.preview-tablet { width: 768px; max-width: 768px; aspect-ratio: 4/3; margin: 0 auto; }
+.cne-preview-frame.mobile, .cne-preview-frame.preview-mobile { width: 390px; max-width: 390px; aspect-ratio: 9/17; margin: 0 auto; }
 .cne-preview-frame iframe {
     width: 100%;
     height: 100%;

@@ -740,6 +740,22 @@ window.ArbelCinematicEditor = (function () {
 
         // Breadcrumb project rename (double-click to edit)
         _setupBrandRename();
+
+        // Fit preview to canvas on initial open and on window/container resize
+        // so the 1440px desktop frame always renders fully visible (no clipping
+        // at right edge on narrow screens).
+        setTimeout(_fitPreviewToCanvas, 60);
+        setTimeout(_fitPreviewToCanvas, 400);
+        var _fitResizeT = null;
+        window.addEventListener('resize', function () {
+            if (_fitResizeT) clearTimeout(_fitResizeT);
+            _fitResizeT = setTimeout(function () {
+                // Only auto-fit if user hasn't manually zoomed beyond fit
+                var fit = _computeFitZoom();
+                if (_zoom <= fit + 2 && _zoom >= fit - 2) _fitPreviewToCanvas();
+                _postIframe('arbel-refresh-layout', {});
+            }, 150);
+        });
     }
 
     /* ─── Brand Rename (Breadcrumb) ─── */
@@ -4306,13 +4322,16 @@ window.ArbelCinematicEditor = (function () {
                     frame.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
                     frame.classList.add('preview-' + _activeDevice);
                 }
-                // Reset zoom + pan on device switch
+                // Reset zoom + pan on device switch — use fit-to-canvas so
+                // the 1440/768/390px frame always renders fully visible on
+                // narrow screens instead of being clipped at the right edge.
                 _zoom = 100;
                 _panOffset.x = 0;
                 _panOffset.y = 0;
                 _applyZoom();
+                _fitPreviewToCanvas();
                 var zoomVal = _qs('#cneZoomVal');
-                if (zoomVal) zoomVal.textContent = '100%';
+                if (zoomVal) zoomVal.textContent = _zoom + '%';
                 // Auto-generate responsive overrides on first switch
                 if (_activeDevice !== 'desktop') {
                     _autoResponsive(_activeDevice);
@@ -4497,6 +4516,33 @@ window.ArbelCinematicEditor = (function () {
             frame.style.transform = 'scale(' + (_zoom / 100) + ')';
             frame.style.transformOrigin = 'top center';
         }
+    }
+
+    /* Compute a fit-to-canvas zoom percentage so the 1440px desktop / 768px
+       tablet / 390px mobile frame always fits inside the canvas-area with
+       a 24px breathing margin. Returns the integer zoom % (max 100). */
+    function _computeFitZoom() {
+        var canvas = _container && _container.querySelector('.cne-canvas-area');
+        var frame = _qs('#cnePreviewFrame');
+        if (!canvas || !frame) return 100;
+        var deviceW = _activeDevice === 'mobile' ? 390 : (_activeDevice === 'tablet' ? 768 : 1440);
+        var avail = canvas.clientWidth - 48; /* 24px padding each side */
+        if (avail <= 0) return 100;
+        var pct = Math.floor((avail / deviceW) * 100);
+        if (pct > 100) pct = 100;
+        if (pct < 25) pct = 25;
+        return pct;
+    }
+
+    /* Reset zoom to fit-to-canvas and refresh layout. Called on initial load,
+       device switch, and container resize. */
+    function _fitPreviewToCanvas() {
+        _zoom = _computeFitZoom();
+        _panOffset.x = 0;
+        _panOffset.y = 0;
+        _applyZoom();
+        var zoomVal = _qs('#cneZoomVal');
+        if (zoomVal) zoomVal.textContent = _zoom + '%';
     }
 
     /* ─── Scene Settings ─── */
