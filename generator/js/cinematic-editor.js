@@ -142,6 +142,24 @@ window.ArbelCinematicEditor = (function () {
     function _qs(sel, ctx) { return (ctx || document).querySelector(sel); }
     function _qsa(sel, ctx) { return (ctx || document).querySelectorAll(sel); }
 
+    /** Small inline toast — used for soft user feedback (e.g. "select an
+     *  element first") without spawning a modal alert. Auto-dismisses. */
+    function _toast(msg, ms) {
+        try {
+            var t = document.getElementById('cneToast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'cneToast';
+                t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,20,28,0.95);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-family:system-ui,sans-serif;z-index:99999;border:1px solid rgba(108,92,231,0.4);box-shadow:0 8px 24px rgba(0,0,0,0.4);pointer-events:none;opacity:0;transition:opacity 0.2s';
+                document.body.appendChild(t);
+            }
+            t.textContent = msg;
+            t.style.opacity = '1';
+            clearTimeout(t._timer);
+            t._timer = setTimeout(function () { t.style.opacity = '0'; }, ms || 2200);
+        } catch (e) { /* non-fatal */ }
+    }
+
     /** Return the correct style bucket for the active breakpoint. */
     function _getStyleBucket(el) {
         if (_activeDevice === 'tablet') {
@@ -2628,8 +2646,11 @@ window.ArbelCinematicEditor = (function () {
         tabs.forEach(function (tab) {
             tab.addEventListener('click', function () {
                 var target = tab.dataset.tab;
-                // Guard: don't switch to style/scroll/hover tabs when no element is selected
+                // Style/scroll/hover require a selected element. Show a hint
+                // instead of silently ignoring the click so the user knows
+                // WHY the tab won't open.
                 if ((target === 'style' || target === 'scroll' || target === 'hover') && !_selectedElementId) {
+                    _toast('Select an element first to edit ' + target.toUpperCase());
                     return;
                 }
                 tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.tab === target); });
@@ -2684,7 +2705,9 @@ window.ArbelCinematicEditor = (function () {
                 var el = _getSelectedElement();
                 if (!el || !imgUpload.files || !imgUpload.files[0]) return;
                 var file = imgUpload.files[0];
-                if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB'); return; }
+                // Raised 2MB → 10MB so typical GIFs + hi-res photos work.
+                if (file.size > 10 * 1024 * 1024) { alert('Image must be under 10MB (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB). Compress or resize and try again.'); imgUpload.value = ''; return; }
+                if (!/^image\//i.test(file.type)) { alert('That file is not an image. Pick a .jpg, .png, .gif, .webp, or .svg.'); imgUpload.value = ''; return; }
                 _pushUndo();
                 var reader = new FileReader();
                 reader.onload = function (e) {
@@ -2693,6 +2716,7 @@ window.ArbelCinematicEditor = (function () {
                     if (srcInput) srcInput.value = '(uploaded)';
                     _notifyUpdate(true);
                 };
+                reader.onerror = function () { alert('Failed to read image file.'); imgUpload.value = ''; };
                 reader.readAsDataURL(file);
             });
         }
@@ -2737,7 +2761,8 @@ window.ArbelCinematicEditor = (function () {
                 var el = _getSelectedElement();
                 if (!el || !videoUpload.files || !videoUpload.files[0]) return;
                 var file = videoUpload.files[0];
-                if (file.size > 10 * 1024 * 1024) { alert('Video must be under 10MB'); return; }
+                if (file.size > 40 * 1024 * 1024) { alert('Video must be under 40MB (yours is ' + (file.size/1024/1024).toFixed(1) + 'MB). Compress or trim.'); videoUpload.value = ''; return; }
+                if (!/^video\//i.test(file.type)) { alert('That file is not a video.'); videoUpload.value = ''; return; }
                 _pushUndo();
                 var reader = new FileReader();
                 reader.onload = function (e) {
@@ -2746,6 +2771,7 @@ window.ArbelCinematicEditor = (function () {
                     if (srcInput) srcInput.value = '(uploaded)';
                     _notifyUpdate(true);
                 };
+                reader.onerror = function () { alert('Failed to read video file.'); videoUpload.value = ''; };
                 reader.readAsDataURL(file);
             });
         }
