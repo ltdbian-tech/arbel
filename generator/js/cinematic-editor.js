@@ -604,7 +604,7 @@ window.ArbelCinematicEditor = (function () {
             var posLeft = _qs('#cnePosLeft');
             if (posTop) posTop.value = d.top;
             if (posLeft) posLeft.value = d.left;
-            _notifyUpdate(_activeDevice !== 'desktop');
+            _notifyUpdate(false);
         }
         if (d.type === 'arbel-promote-absolute' && d.id) {
             // Persist forced-absolute positioning that the overlay applied when
@@ -656,7 +656,7 @@ window.ArbelCinematicEditor = (function () {
                 if (posTop) posTop.value = pm.top;
                 if (posLeft) posLeft.value = pm.left;
             }
-            _notifyUpdate(_activeDevice !== 'desktop');
+            _notifyUpdate(false);
         }
         if (d.type === 'arbel-move-end') {
             _isDragging = false;
@@ -718,7 +718,7 @@ window.ArbelCinematicEditor = (function () {
             if (posH) posH.value = d.height;
             if (posT) posT.value = d.top;
             if (posL) posL.value = d.left;
-            _notifyUpdate(_activeDevice !== 'desktop');
+            _notifyUpdate(false);
         }
         if (d.type === 'arbel-resize-end') {
             _isDragging = false;
@@ -738,7 +738,7 @@ window.ArbelCinematicEditor = (function () {
                     }
                 }
             }
-            _notifyUpdate(_activeDevice !== 'desktop');
+            _notifyUpdate(false);
         }
         if (d.type === 'arbel-deselect') {
             _iframeTextUndoPushed = false; // reset on deselect
@@ -5806,9 +5806,15 @@ window.ArbelCinematicEditor = (function () {
 
         if (_activeDevice === 'desktop') {
             _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '' });
+        } else {
+            /* Tablet/mobile: live-patch with !important so we never need to
+               trigger a full iframe recompile on every edit.  This keeps
+               scroll position + scene visible (fixes "preview jumps back to
+               first scene on every edit" on tab/phone). */
+            _postIframe('arbel-update-style', { id: el.id, prop: prop, value: value || '', device: _activeDevice });
         }
         _commitBurst('style', 600);
-        _notifyUpdate(_activeDevice !== 'desktop');
+        _notifyUpdate(false);
     }
 
     /** Build combined CSS transform from 3D inputs and apply */
@@ -8720,11 +8726,11 @@ window.ArbelCinematicEditor = (function () {
               'if(_cs.position==="static"||_cs.position==="relative"){' +
                 'var _ot=_pe.offsetTop, _ol=_pe.offsetLeft;' +
                 'var _ow=_pe.offsetWidth, _oh=_pe.offsetHeight;' +
-                '_pe.style.position="absolute";' +
-                '_pe.style.top=_ot+"px";' +
-                '_pe.style.left=_ol+"px";' +
-                'if(!_pe.style.width) _pe.style.width=_ow+"px";' +
-                'if(!_pe.style.height) _pe.style.height=_oh+"px";' +
+                '_pe.style.setProperty("position","absolute","important");' +
+                '_pe.style.setProperty("top",_ot+"px","important");' +
+                '_pe.style.setProperty("left",_ol+"px","important");' +
+                'if(!_pe.style.width) _pe.style.setProperty("width",_ow+"px","important");' +
+                'if(!_pe.style.height) _pe.style.setProperty("height",_oh+"px","important");' +
                 'window.parent.postMessage({type:"arbel-promote-absolute",id:_pe.getAttribute("data-arbel-id"),top:_ot+"px",left:_ol+"px",width:_ow+"px",height:_oh+"px"},"*");' +
               '}' +
             '}' +
@@ -8759,8 +8765,8 @@ window.ArbelCinematicEditor = (function () {
             'if(h.indexOf("w")>=0){nw=Math.max(20,resize.origW-dx);nl=resize.origL+dx;}' +
             'if(h.indexOf("s")>=0)nh=Math.max(20,resize.origH+dy);' +
             'if(h.indexOf("n")>=0){nh=Math.max(20,resize.origH-dy);nt=resize.origT+dy;}' +
-            'resize.el.style.width=nw+"px";resize.el.style.height=nh+"px";' +
-            'resize.el.style.top=nt+"px";resize.el.style.left=nl+"px";' +
+            'resize.el.style.setProperty("width",nw+"px","important");resize.el.style.setProperty("height",nh+"px","important");' +
+            'resize.el.style.setProperty("top",nt+"px","important");resize.el.style.setProperty("left",nl+"px","important");' +
             'posHandles(resize.el);' +
             'posLbl.textContent=nw+" \u00D7 "+nh;posLbl.classList.add("vis");' +
             'window.parent.postMessage({type:"arbel-resize",' +
@@ -8794,7 +8800,7 @@ window.ArbelCinematicEditor = (function () {
           'for(var j=0;j<drag.origins.length;j++){' +
             'var oj=drag.origins[j];' +
             'var ft=oj.origTop+dy+snapDy,fl=oj.origLeft+dx+snapDx;' +
-            'oj.el.style.top=ft+"px";oj.el.style.left=fl+"px";' +
+            'oj.el.style.setProperty("top",ft+"px","important");oj.el.style.setProperty("left",fl+"px","important");' +
             'moves.push({id:oj.el.getAttribute("data-arbel-id"),top:ft+"px",left:fl+"px"});' +
           '}' +
           'posLbl.textContent="top: "+moves[0].top+"  left: "+moves[0].left;posLbl.classList.add("vis");' +
@@ -8837,7 +8843,7 @@ window.ArbelCinematicEditor = (function () {
             'var finalMoves=[];' +
             'for(var i=0;i<drag.origins.length;i++){' +
               'var oi=drag.origins[i];' +
-              'finalMoves.push({id:oi.el.getAttribute("data-arbel-id"),top:oi.el.style.top,left:oi.el.style.left});' +
+              'finalMoves.push({id:oi.el.getAttribute("data-arbel-id"),top:oi.el.style.top||getComputedStyle(oi.el).top,left:oi.el.style.left||getComputedStyle(oi.el).left});' +
             '}' +
             'if(finalMoves.length)window.parent.postMessage({type:"arbel-multi-move",moves:finalMoves},"*");' +
           '}' +
@@ -8982,7 +8988,19 @@ window.ArbelCinematicEditor = (function () {
             '(scope.querySelectorAll?scope:document).querySelectorAll("[data-arbel-id]").forEach(function(el){selected.push(el);el.classList.add("arbel-sel");});' +
             'if(selected.length>0){primary=selected[selected.length-1];posHandles(selected.length===1?primary:null);sendSel();}' +
           '}' +
-          'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2){el2.style[d.prop]=d.value;if(primary===el2&&selected.length===1)posHandles(el2)}}' +
+          'if(d.type==="arbel-update-style"){var el2=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el2){' +
+            /* On non-desktop devices the compiled CSS emits responsive rules inside
+               @media queries; plain inline style is weaker than an !important
+               @media rule for the same prop.  Use setProperty with "important"
+               priority so live edits beat stale responsive CSS until next
+               recompile. On desktop keep classic assignment. */
+            'if(d.device&&d.device!=="desktop"){' +
+              'var _p=d.prop.replace(/([A-Z])/g,"-$1").toLowerCase();' +
+              'if(d.value===""||d.value==null)el2.style.removeProperty(_p);' +
+              'else el2.style.setProperty(_p,d.value,"important");' +
+            '}else{el2.style[d.prop]=d.value;}' +
+            'if(primary===el2&&selected.length===1)posHandles(el2)' +
+          '}}' +
           'if(d.type==="arbel-update-text"){var el3=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el3)el3.textContent=d.text}' +
           'if(d.type==="arbel-edit-text"){var el4=document.querySelector(\'[data-arbel-id="\'+d.id+\'"]\');if(el4&&el4.hasAttribute("data-arbel-edit"))startEdit(el4)}' +
           'if(d.type==="arbel-update-reveal"){' +
