@@ -156,6 +156,48 @@ window.ArbelCinematicEditor = (function () {
     }
 
     /**
+     * When the user writes a new top/left into a device-specific bucket,
+     * clear properties from the SAME bucket that would fight the new
+     * position on that breakpoint:
+     *   - translate(-50%) centering shifts the element by half its width/height
+     *   - right/bottom anchors conflict with the new left/top
+     * Desktop bucket is left alone; users who drag on desktop explicitly opt
+     * into the new coords there too.
+     */
+    function _clearPositionConflicts(el, bucket) {
+        if (!bucket) return;
+        // Always neutralize conflicting anchors when a new top/left is written.
+        // (If the user wants right/bottom anchoring on that breakpoint they can
+        // re-enter it via the properties panel.)
+        if (bucket.right !== undefined) bucket.right = 'auto';
+        if (bucket.bottom !== undefined) bucket.bottom = 'auto';
+        // For non-desktop buckets, also strip any translate(-50%) centering
+        // inherited from the base style so the px-based position lands where
+        // the user dropped the element instead of being shifted by xPercent.
+        if (_activeDevice !== 'desktop') {
+            var baseT = (el.style && el.style.transform) || '';
+            if (baseT.indexOf('-50%') >= 0) {
+                // Preserve any non-centering transforms (rotate, scale)
+                var cleaned = baseT
+                    .replace(/translate\(-50%\s*,\s*-50%\)/g, '')
+                    .replace(/translateX\(-50%\)/g, '')
+                    .replace(/translateY\(-50%\)/g, '')
+                    .replace(/\s{2,}/g, ' ').trim();
+                bucket.transform = cleaned || 'none';
+            }
+            // If base style anchors to right/bottom, override to auto so our
+            // left/top wins at this breakpoint.
+            if (el.style && el.style.right && bucket.right === undefined) bucket.right = 'auto';
+            if (el.style && el.style.bottom && bucket.bottom === undefined) bucket.bottom = 'auto';
+            // Neutralize margin:auto from the generic .cne-r-center/.cne-r-left/
+            // .cne-r-right responsive fallbacks so the user-chosen left lands
+            // exactly where they dragged it.
+            bucket.marginLeft = '0';
+            bucket.marginRight = '0';
+        }
+    }
+
+    /**
      * Auto-generate responsive overrides for elements — template-aware.
      * Knows how to stack multi-column layouts (stats, featureGrid, splitMedia)
      * vertically on mobile and adjust positioning/sizes for tablet.
@@ -548,6 +590,7 @@ window.ArbelCinematicEditor = (function () {
                         var bucket = _getStyleBucket(scene.elements[i]);
                         bucket.top = d.top;
                         bucket.left = d.left;
+                        _clearPositionConflicts(scene.elements[i], bucket);
                         break;
                     }
                 }
@@ -573,6 +616,7 @@ window.ArbelCinematicEditor = (function () {
                         if (d.left) bPA.left = d.left;
                         if (d.width && !bPA.width) bPA.width = d.width;
                         if (d.height && !bPA.height) bPA.height = d.height;
+                        _clearPositionConflicts(scenePA.elements[iPA], bPA);
                         break;
                     }
                 }
@@ -593,6 +637,7 @@ window.ArbelCinematicEditor = (function () {
                             var bucket = _getStyleBucket(scene.elements[i]);
                             bucket.top = mv.top;
                             bucket.left = mv.left;
+                            _clearPositionConflicts(scene.elements[i], bucket);
                             break;
                         }
                     }
