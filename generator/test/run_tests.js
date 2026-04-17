@@ -937,6 +937,43 @@ test('embed src must be https (localhost rejected)', () => {
 });
 
 // ─────────────────────────────────────────────
+//  FUTURISTIC BG3D (Batch 14)
+// ─────────────────────────────────────────────
+console.log('\n🌌  Futuristic 3D Effects');
+
+['plasma-field','holo-grid','neon-rings','quantum-dots','cyber-scan','liquid-metal','portal','nebula-drift','digital-rain','ribbon-flow','light-leaks','crystal-lattice'].forEach((t) => {
+    test('bg3d type "' + t + '" compiles and renders in DOM builder', () => {
+        const cfg = Object.assign({}, CIN_BASE);
+        cfg.scenes = [{ id: 's1', name: 'T', template: 'blank', duration: 100, pin: true,
+            bg3dType: t, bg3dColor1: '#6c5ce7', bg3dColor2: '#00cec9', bg3dIntensity: 6, bg3dSpeed: 'medium',
+            elements: [] }];
+        const f = ArbelCinematicCompiler.compile(cfg);
+        const h = f['index.html'];
+        assert(h.indexOf('data-bg3d="' + t + '"') >= 0, 'HTML must emit data-bg3d=' + t);
+        const mainJs = f['js/cinema.js'] || f['js/main.js'] || '';
+        assert(mainJs.indexOf('type === "' + t + '"') >= 0, 'JS builder must handle type ' + t);
+    });
+});
+
+test('futuristic bg3d CSS keyframes present', () => {
+    const f = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE));
+    const css = f['css/style.css'];
+    ['cne-plasma-swirl','cne-holo-scan','cne-ring-pulse','cne-qdot-blink','cne-scan-sweep','cne-liquid-rot','cne-portal-spin','cne-nebula-drift','cne-rain-fall','cne-ribbon-wave','cne-leak-shift','cne-crystal-twinkle'].forEach((kf) => {
+        assert(css.indexOf('@keyframes ' + kf) >= 0, 'missing keyframe: ' + kf);
+    });
+});
+
+test('digital-rain does not emit raw HTML into JS payload (XSS-safe glyph set)', () => {
+    const f = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE));
+    const mainJs = f['js/cinema.js'] || '';
+    // Glyph set must not contain angle brackets or script markers
+    const glyphMatch = mainJs.match(/var glyphs = "([^"]+)"/);
+    if (glyphMatch) {
+        assert(glyphMatch[1].indexOf('<') < 0 && glyphMatch[1].indexOf('>') < 0, 'digital-rain glyphs contain HTML');
+    }
+});
+
+// ─────────────────────────────────────────────
 //  SUMMARY
 // ─────────────────────────────────────────────
 console.log('\n' + '─'.repeat(55));

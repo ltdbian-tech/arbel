@@ -6830,7 +6830,18 @@ window.ArbelCinematicEditor = (function () {
         { name: 'Electric Indigo', bg: '#08061a', primary: '#5f27cd', secondary: '#341f97', text: '#e8e0ff', surface: '#140e30', accent2: '#706fd3' },
         { name: 'Mint Fresh',      bg: '#060e0c', primary: '#0be881', secondary: '#67e480', text: '#e8fff4', surface: '#0c201a', accent2: '#a3f7bf' },
         { name: 'Sunset Blaze',    bg: '#100808', primary: '#eb3b5a', secondary: '#f7b731', text: '#fff0e8', surface: '#1e0e10', accent2: '#fc5c65' },
-        { name: 'Steel Modern',    bg: '#0c0c10', primary: '#576574', secondary: '#8395a7', text: '#f0f0f0', surface: '#161620', accent2: '#c8c8d4' }
+        { name: 'Steel Modern',    bg: '#0c0c10', primary: '#576574', secondary: '#8395a7', text: '#f0f0f0', surface: '#161620', accent2: '#c8c8d4' },
+        /* ── Futuristic (Batch 14) ── */
+        { name: 'Cyber Noir',      bg: '#04040a', primary: '#00fff0', secondary: '#ff00a8', text: '#e8faff', surface: '#0a0a18', accent2: '#7b61ff' },
+        { name: 'Holo Violet',     bg: '#05031a', primary: '#b14aff', secondary: '#4affd7', text: '#f2e8ff', surface: '#0d0830', accent2: '#ff6bcb' },
+        { name: 'Plasma Drift',    bg: '#090316', primary: '#ff2e97', secondary: '#7c4dff', text: '#ffe9f5', surface: '#14072a', accent2: '#ffb86b' },
+        { name: 'Neural Net',      bg: '#030712', primary: '#22d3ee', secondary: '#a855f7', text: '#e0f2fe', surface: '#0a1424', accent2: '#4ade80' },
+        { name: 'Quantum Blue',    bg: '#030816', primary: '#3b82f6', secondary: '#60a5fa', text: '#e0f2ff', surface: '#0a1428', accent2: '#93c5fd' },
+        { name: 'Neo Tokyo',       bg: '#0a0410', primary: '#ff3864', secondary: '#00f0ff', text: '#ffedf2', surface: '#160820', accent2: '#ffe135' },
+        { name: 'Hologram',        bg: '#050a14', primary: '#4cc9f0', secondary: '#f72585', text: '#e8f4ff', surface: '#0d1830', accent2: '#b5179e' },
+        { name: 'Chrome Dream',    bg: '#0a0a0f', primary: '#c0c0ff', secondary: '#e0e0e0', text: '#ffffff', surface: '#15152a', accent2: '#ffa8f8' },
+        { name: 'Bio Lumin',       bg: '#030c08', primary: '#00ffa3', secondary: '#00d4ff', text: '#e8fff4', surface: '#081a14', accent2: '#a0ff84' },
+        { name: 'Solar Flare',     bg: '#0a0302', primary: '#ff6b00', secondary: '#ffd600', text: '#fff6e8', surface: '#1a0a04', accent2: '#ff3864' }
     ];
 
     /* Which scene templates go well together in a flow */
@@ -6851,7 +6862,12 @@ window.ArbelCinematicEditor = (function () {
         ['hero', 'imageReveal', 'stats', 'textReveal', 'ctaSection'],
         ['gradientHero', 'featureGrid', 'testimonial', 'bigText', 'ctaSection'],
         ['hero', 'bigText', 'splitMedia', 'imageReveal', 'featureGrid', 'ctaSection'],
-        ['gradientHero', 'cardStack', 'marquee', 'stats', 'testimonial', 'ctaSection']
+        ['gradientHero', 'cardStack', 'marquee', 'stats', 'testimonial', 'ctaSection'],
+        /* ── Futuristic flows (Batch 14) ── */
+        ['gradientHero', 'textReveal', 'marquee', 'bigText', 'featureGrid', 'stats', 'ctaSection'],
+        ['hero', 'bigText', 'marquee', 'cardStack', 'showcase', 'ctaSection'],
+        ['gradientHero', 'imageReveal', 'bigText', 'stats', 'testimonial', 'ctaSection'],
+        ['hero', 'textReveal', 'cardStack', 'marquee', 'featureGrid', 'ctaSection']
     ];
 
     /* Curated entrance animation sets — each is a cohesive visual style */
@@ -6876,7 +6892,13 @@ window.ArbelCinematicEditor = (function () {
         ['rotateIn', 'rotateInLeft', 'swingIn', 'flipInX', 'flipInY'],
         /* Mixed Premium */
         ['cinematicFade', 'blurInUp', 'scaleInUp', 'clipRevealUp', 'fadeInUp'],
-        ['blurInScale', 'cinematicReveal', 'perspective3D', 'fadeInUp', 'scaleIn']
+        ['blurInScale', 'cinematicReveal', 'perspective3D', 'fadeInUp', 'scaleIn'],
+        /* Futuristic (Batch 14) — recombine existing primitives into bolder sequences */
+        ['blurInScale', 'perspective3D', 'cinematicReveal', 'clipRevealUp', 'blurIn'],
+        ['blurIn', 'flip3DX', 'cinematicReveal', 'clipRevealLeft', 'scaleInUp'],
+        ['cinematicReveal', 'blurInUp', 'perspective3D', 'clipRevealUp', 'flip3DY'],
+        ['cubeRotate', 'flip3DX', 'doorOpen', 'swingDoor', 'perspective3D'],
+        ['scaleIn', 'blurInScale', 'cinematicFade', 'clipRevealUp', 'pivotIn']
     ];
 
     /* 3D background effect options with varied intensity/speed combos */
@@ -6894,7 +6916,32 @@ window.ArbelCinematicEditor = (function () {
         { type: 'starfield', intensity: '6', speed: 'medium' },
         { type: 'starfield', intensity: '8', speed: 'fast' },
         { type: 'wave-grid', intensity: '5', speed: 'medium' },
-        { type: 'wave-grid', intensity: '7', speed: 'fast' }
+        { type: 'wave-grid', intensity: '7', speed: 'fast' },
+        /* Futuristic (Batch 14) */
+        { type: 'plasma-field', intensity: '6', speed: 'slow' },
+        { type: 'plasma-field', intensity: '8', speed: 'medium' },
+        { type: 'holo-grid', intensity: '5', speed: 'medium' },
+        { type: 'holo-grid', intensity: '7', speed: 'fast' },
+        { type: 'neon-rings', intensity: '6', speed: 'medium' },
+        { type: 'neon-rings', intensity: '8', speed: 'fast' },
+        { type: 'quantum-dots', intensity: '6', speed: 'medium' },
+        { type: 'quantum-dots', intensity: '8', speed: 'fast' },
+        { type: 'cyber-scan', intensity: '5', speed: 'medium' },
+        { type: 'cyber-scan', intensity: '7', speed: 'fast' },
+        { type: 'liquid-metal', intensity: '6', speed: 'slow' },
+        { type: 'liquid-metal', intensity: '8', speed: 'medium' },
+        { type: 'portal', intensity: '6', speed: 'medium' },
+        { type: 'portal', intensity: '8', speed: 'fast' },
+        { type: 'nebula-drift', intensity: '6', speed: 'slow' },
+        { type: 'nebula-drift', intensity: '8', speed: 'medium' },
+        { type: 'digital-rain', intensity: '6', speed: 'medium' },
+        { type: 'digital-rain', intensity: '8', speed: 'fast' },
+        { type: 'ribbon-flow', intensity: '5', speed: 'medium' },
+        { type: 'ribbon-flow', intensity: '7', speed: 'fast' },
+        { type: 'light-leaks', intensity: '4', speed: 'slow' },
+        { type: 'light-leaks', intensity: '6', speed: 'medium' },
+        { type: 'crystal-lattice', intensity: '6', speed: 'medium' },
+        { type: 'crystal-lattice', intensity: '8', speed: 'fast' }
     ];
 
     /* Content variations for template placeholder text */
@@ -7438,8 +7485,8 @@ window.ArbelCinematicEditor = (function () {
             templates = flow.slice(0, sceneCount);
         }
 
-        // Pick which scenes get 3D backgrounds (3-5 scenes for more cinematic feel)
-        var bg3dCount = 3 + Math.floor(Math.random() * 3); // 3-5
+        // Pick which scenes get 3D backgrounds (4-6 scenes for a more cinematic, futuristic feel)
+        var bg3dCount = 4 + Math.floor(Math.random() * 3); // 4-6
         bg3dCount = Math.min(bg3dCount, templates.length);
         var bg3dIndices = [0]; // hero always gets one
         if (templates.length > 2) bg3dIndices.push(templates.length - 1);
@@ -7448,7 +7495,11 @@ window.ArbelCinematicEditor = (function () {
             bg3dIndices.push(otherIndices[b]);
         }
 
-        // Shuffle available 3D effects
+        // Shuffle available 3D effects. Bias the hero toward the futuristic set
+        // so AI-generated sites land on a high-impact look out of the box.
+        var _FUTURISTIC_BG3D = ['plasma-field','holo-grid','neon-rings','quantum-dots','cyber-scan','liquid-metal','portal','nebula-drift','digital-rain','ribbon-flow','light-leaks','crystal-lattice'];
+        var futuristicPool = _BG3D_OPTIONS.filter(function (o) { return _FUTURISTIC_BG3D.indexOf(o.type) !== -1; });
+        var heroBg3d = futuristicPool.length ? _pick(futuristicPool) : null;
         var bg3dPool = _shuffle(_BG3D_OPTIONS);
 
         // Build the scenes with per-scene animation variety
@@ -7482,7 +7533,8 @@ window.ArbelCinematicEditor = (function () {
 
             // Apply 3D background to selected scenes
             if (bg3dIndices.indexOf(idx) !== -1) {
-                _apply3DBackground(scene, bg3dPool[idx % bg3dPool.length], palette);
+                var pick = (idx === 0 && heroBg3d) ? heroBg3d : bg3dPool[idx % bg3dPool.length];
+                _apply3DBackground(scene, pick, palette);
             }
 
             newScenes.push(scene);
