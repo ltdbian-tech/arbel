@@ -1726,13 +1726,18 @@ window.ArbelCinematicCompiler = (function () {
         js += '      if(!sd) return;\n\n';
 
         // Preserve CSS translate centering by converting to GSAP xPercent/yPercent
-        js += '      /* Preserve CSS translate centering */\n';
+        js += '      /* Preserve CSS translate centering — convert to GSAP xPercent/yPercent.\n';
+        js += '         Do NOT clear style.transform afterward: gsap.set() already wrote a\n';
+        js += '         correct inline transform, and clearing it strips the centering and\n';
+        js += '         resets GSAP\'s internal xPercent cache to 0, causing subsequent\n';
+        js += '         gsap.from() / tl.fromTo() tweens to render at left:50% without the\n';
+        js += '         -50% translate — elements end up visually shifted to the right. */\n';
         js += '      var inT = el.style.transform || "";\n';
         js += '      var hasXCenter = inT.indexOf("translateX(-50%)") >= 0 || inT.indexOf("translate(-50%") >= 0;\n';
-        js += '      var hasYCenter = inT.indexOf("translateY(-50%)") >= 0 || inT.indexOf("translate(-50%,-50%)") >= 0 || inT.indexOf("translate(-50%, -50%)") >= 0;\n';
-        js += '      if(hasXCenter) gsap.set(el, { xPercent: -50 });\n';
-        js += '      if(hasYCenter) gsap.set(el, { yPercent: -50 });\n';
-        js += '      if(hasXCenter || hasYCenter) el.style.transform = "";\n\n';
+        js += '      var hasYCenter = inT.indexOf("translateY(-50%)") >= 0 || /translate\\(-50%\\s*,\\s*-50%\\)/.test(inT);\n';
+        js += '      if(hasXCenter && hasYCenter) gsap.set(el, { xPercent: -50, yPercent: -50 });\n';
+        js += '      else if(hasXCenter) gsap.set(el, { xPercent: -50 });\n';
+        js += '      else if(hasYCenter) gsap.set(el, { yPercent: -50 });\n\n';
 
         // Split text handling
         js += '      /* Split text if flagged */\n';
