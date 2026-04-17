@@ -11,6 +11,58 @@ window.ArbelDeploy = (function () {
 
     var API = 'https://api.github.com';
 
+    /**
+     * Extract large embedded data: URIs from file contents into separate
+     * binary files.  GitHub's Contents/blob API rejects payloads roughly
+     * over 40 MB ("Sorry, your input was too large to process"), and when
+     * users upload a bg video it gets baked into the HTML as a base64
+     * data-URI that can easily push a single file past that limit.
+     *
+     * For every data:(image|video)/...;base64,... occurrence above the
+     * threshold we:
+     *   1. write a new binary file at assets/embed-{n}.{ext}
+     *   2. replace the data-URI in the original text with the relative path
+     *   3. emit the binary as a separate files entry with _binary: true
+     *
+     * Returns { files, binaryFiles } — binaries are uploaded with
+     * base64 encoding; text files stay utf-8.
+     */
+    function _extractLargeEmbeds(files) {
+        var THRESHOLD = 512 * 1024; // bytes (data-URI length, not decoded)
+        var binaryFiles = {};
+        var counter = 0;
+        var mimeExt = {
+            'image/png': 'png', 'image/jpeg': 'jpg', 'image/jpg': 'jpg',
+            'image/gif': 'gif', 'image/webp': 'webp', 'image/svg+xml': 'svg',
+            'video/mp4': 'mp4', 'video/webm': 'webm', 'video/ogg': 'ogv',
+            'video/quicktime': 'mov'
+        };
+        var out = {};
+        Object.keys(files).forEach(function (path) {
+            var content = files[path];
+            if (typeof content !== 'string' || content.length < THRESHOLD) {
+                out[path] = content;
+                return;
+            }
+            // Only rewrite HTML/CSS/JS — never mutate already-binary content
+            if (!/\.(html?|css|js|json|svg|xml|txt|md)$/i.test(path)) {
+                out[path] = content;
+                return;
+            }
+            var re = /data:([\w+/-]+);base64,([A-Za-z0-9+/=]+)/g;
+            content = content.replace(re, function (match, mime, b64) {
+                if (match.length < THRESHOLD) return match;
+                var ext = mimeExt[mime.toLowerCase()] || 'bin';
+                counter++;
+                var fname = 'assets/embed-' + counter + '.' + ext;
+                binaryFiles[fname] = b64; // already base64
+                return fname;
+            });
+            out[path] = content;
+        });
+        return { files: out, binaryFiles: binaryFiles };
+    }
+
     /** Helper: call GitHub API */
     function _gh(method, path, token, body) {
         var opts = {
@@ -113,18 +165,26 @@ window.ArbelDeploy = (function () {
 
                 var parentSha = ref.object.sha;
 
-                // 4. Create blobs for each file
-                var filePaths = Object.keys(files);
-                var blobPromises = filePaths.map(function (path) {
+                // Extract oversized data-URIs into separate binary assets so
+                // no single blob exceeds GitHub's 40 MB JSON input limit.
+                var split = _extractLargeEmbeds(files);
+                var textFiles = split.files;
+                var binaryFiles = split.binaryFiles;
+
+                var textBlobs = Object.keys(textFiles).map(function (path) {
                     return _gh('POST', '/repos/' + owner + '/' + repoName + '/git/blobs', token, {
-                        content: files[path],
+                        content: textFiles[path],
                         encoding: 'utf-8'
-                    }).then(function (blob) {
-                        return { path: path, sha: blob.sha };
-                    });
+                    }).then(function (blob) { return { path: path, sha: blob.sha }; });
+                });
+                var binBlobs = Object.keys(binaryFiles).map(function (path) {
+                    return _gh('POST', '/repos/' + owner + '/' + repoName + '/git/blobs', token, {
+                        content: binaryFiles[path],
+                        encoding: 'base64'
+                    }).then(function (blob) { return { path: path, sha: blob.sha }; });
                 });
 
-                return Promise.all(blobPromises).then(function (blobs) {
+                return Promise.all(textBlobs.concat(binBlobs)).then(function (blobs) {
                     return { blobs: blobs, parentSha: parentSha };
                 });
             })
@@ -201,12 +261,17 @@ window.ArbelDeploy = (function () {
         var token = opts.token;
         var owner = opts.owner;
         var repoName = opts.repoName;
-        var files = opts.files;
+        // Apply the same data-URI extraction the initial deploy uses.
+        var split = _extractLargeEmbeds(opts.files);
+        var files = split.files;
+        var binaryFiles = split.binaryFiles;
         var progress = opts.onProgress || function () {};
         var filePaths = Object.keys(files);
+        var binPaths = Object.keys(binaryFiles);
+        var totalPaths = filePaths.length + binPaths.length;
         var completed = 0;
 
-        progress(0, filePaths.length, 'Updating files...');
+        progress(0, totalPaths, 'Updating files...');
 
         // Get current main branch SHA
         return _gh('GET', '/repos/' + owner + '/' + repoName + '/git/ref/heads/main', token)
@@ -217,17 +282,28 @@ window.ArbelDeploy = (function () {
                 return _gh('GET', '/repos/' + owner + '/' + repoName + '/git/commits/' + latestSha, token);
             })
             .then(function (commit) {
-                // Create new blobs
-                var blobPromises = filePaths.map(function (path) {
+                // Create new blobs — text + extracted binary assets
+                var textBlobs = filePaths.map(function (path) {
                     return _gh('POST', '/repos/' + owner + '/' + repoName + '/git/blobs', token, {
                         content: files[path],
                         encoding: 'utf-8'
                     }).then(function (blob) {
                         completed++;
-                        progress(completed, filePaths.length + 2, 'Uploading: ' + path);
+                        progress(completed, totalPaths + 2, 'Uploading: ' + path);
                         return { path: path, sha: blob.sha };
                     });
                 });
+                var binBlobs = binPaths.map(function (path) {
+                    return _gh('POST', '/repos/' + owner + '/' + repoName + '/git/blobs', token, {
+                        content: binaryFiles[path],
+                        encoding: 'base64'
+                    }).then(function (blob) {
+                        completed++;
+                        progress(completed, totalPaths + 2, 'Uploading: ' + path);
+                        return { path: path, sha: blob.sha };
+                    });
+                });
+                var blobPromises = textBlobs.concat(binBlobs);
 
                 return Promise.all(blobPromises).then(function (blobs) {
                     return { blobs: blobs, parentSha: commit.sha, treeSha: commit.tree.sha };
