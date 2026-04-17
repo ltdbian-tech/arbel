@@ -268,6 +268,37 @@
     line-height: 1.5;
     margin: 0 0 18px;
 }
+.cne-autogen-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 14px;
+}
+.cne-autogen-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.cne-autogen-field > span {
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.cne-autogen-field input {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    color: #f0f0f0;
+    font-size: 0.85rem;
+}
+.cne-autogen-field input:focus {
+    outline: none;
+    border-color: rgba(108, 92, 231, 0.7);
+}
 .cne-autogen-hint {
     font-size: 0.7rem;
     color: rgba(255,255,255,0.35);
@@ -433,13 +464,16 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     margin-bottom: 8px;
-    cursor: pointer;
+    cursor: grab;
     transition: all 0.15s;
     position: relative;
     display: flex;
     gap: 10px;
     align-items: center;
 }
+.cne-scene-item:active,
+.cne-scene-item.cne-scene-dragging { cursor: grabbing; opacity: 0.55; }
+.cne-scene-item.cne-scene-dragover { border-color: var(--accent, #6c5ce7); box-shadow: 0 0 0 2px rgba(108,92,231,0.25); }
 .cne-scene-card:hover,
 .cne-scene-item:hover {
     border-color: var(--border-hover);

@@ -4063,6 +4063,18 @@ window.ArbelCinematicEditor = (function () {
                 if (tokPanel) tokPanel.classList.add('active');
             });
         }
+
+        // Find & Replace toolbar button
+        var frBtn = _qs('#cneFindReplace');
+        if (frBtn) frBtn.addEventListener('click', function () { _showFindReplace(); });
+
+        // Version History toolbar button
+        var vhBtn = _qs('#cneVersionHistory');
+        if (vhBtn) vhBtn.addEventListener('click', function () { _showVersionHistory(); });
+
+        // Marketplace toolbar button
+        var mpBtn = _qs('#cneMarketplace');
+        if (mpBtn) mpBtn.addEventListener('click', function () { _showMarketplace(); });
     }
 
     function _applyTokensToAll() {
@@ -7407,6 +7419,10 @@ window.ArbelCinematicEditor = (function () {
             return s.elements && s.elements.some(function (e) { return e.text && e.text.trim(); });
         });
 
+        // Pre-fill from existing project-level fields
+        var curBrand = (document.querySelector('#brandName') || {}).value || '';
+        var curTag = (document.querySelector('#tagline') || {}).value || '';
+
         var dialog = document.createElement('div');
         dialog.id = 'cneAutoGenDialog';
         dialog.className = 'cne-autogen-dialog';
@@ -7417,6 +7433,16 @@ window.ArbelCinematicEditor = (function () {
                     '<h3>Auto-Generate Website</h3>' +
                 '</div>' +
                 '<p class="cne-autogen-desc">Creates a complete multi-scene cinematic website using your brand info with randomized design, layout, 3D effects, and animations.</p>' +
+                '<div class="cne-autogen-fields">' +
+                    '<label class="cne-autogen-field">' +
+                        '<span>Brand name</span>' +
+                        '<input type="text" id="cneAutoGenBrand" class="gen-input" placeholder="My Site" value="' + String(curBrand).replace(/"/g, '&quot;') + '" maxlength="120">' +
+                    '</label>' +
+                    '<label class="cne-autogen-field">' +
+                        '<span>Tagline</span>' +
+                        '<input type="text" id="cneAutoGenTagline" class="gen-input" placeholder="Crafting digital experiences" value="' + String(curTag).replace(/"/g, '&quot;') + '" maxlength="200">' +
+                    '</label>' +
+                '</div>' +
                 (hasData ?
                     '<label class="cne-autogen-toggle">' +
                         '<input type="checkbox" id="cneKeepData" ' + (_keepDataToggle ? 'checked' : '') + '>' +
@@ -7459,6 +7485,20 @@ window.ArbelCinematicEditor = (function () {
 
         document.getElementById('cneAutoGenGo').addEventListener('click', function () {
             var keepData = keepDataCb ? keepDataCb.checked : false;
+            // Persist brand/tagline from dialog back to the project fields so
+            // _getBrandInfo() picks them up and the compiler emits them too.
+            var brandInp = document.getElementById('cneAutoGenBrand');
+            var tagInp = document.getElementById('cneAutoGenTagline');
+            var brandFld = document.querySelector('#brandName');
+            var tagFld = document.querySelector('#tagline');
+            if (brandInp && brandFld && brandInp.value.trim()) {
+                brandFld.value = brandInp.value.trim();
+                try { brandFld.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+            }
+            if (tagInp && tagFld && tagInp.value.trim()) {
+                tagFld.value = tagInp.value.trim();
+                try { tagFld.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+            }
             dialog.remove();
             document.removeEventListener('keydown', onAutoGenKey);
             _autoGenerate(keepData);
