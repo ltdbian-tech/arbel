@@ -1,0 +1,17 @@
+{
+  "id": "scene-hero-neon",
+  "kind": "scene",
+  "name": "Neon Hero",
+  "scene": {
+    "name": "Neon Hero",
+    "template": "hero",
+    "duration": 120,
+    "pin": true,
+    "bg3dType": "aurora",
+    "elements": [
+      { "id": "nh-tag", "tag": "span", "text": "ARBEL // NEON", "style": { "fontSize": "0.7rem", "letterSpacing": "0.4em", "textTransform": "uppercase", "color": "rgba(255,255,255,0.45)", "position": "absolute", "top": "28%", "left": "50%", "transform": "translateX(-50%)", "textAlign": "center" }, "scroll": { "opacity": [1, 0], "y": [0, -40], "start": 0.4, "end": 0.8 } },
+      { "id": "nh-title", "tag": "h1", "text": "Glow Beyond.", "style": { "fontSize": "8vw", "fontWeight": "800", "color": "#ffffff", "position": "absolute", "top": "40%", "left": "50%", "transform": "translate(-50%,-50%)", "textAlign": "center", "width": "80%", "letterSpacing": "-0.03em", "lineHeight": "1.05", "textShadow": "0 0 40px rgba(100,108,255,0.5)" }, "scroll": { "opacity": [1, 0], "y": [0, -120], "start": 0.3, "end": 0.8 } },
+      { "id": "nh-sub", "tag": "p", "text": "Scroll-driven aurora for brands built after dark.", "style": { "fontSize": "1.2rem", "color": "rgba(255,255,255,0.55)", "position": "absolute", "top": "58%", "left": "50%", "transform": "translateX(-50%)", "textAlign": "center", "width": "45%", "lineHeight": "1.7", "fontWeight": "300" }, "scroll": { "opacity": [1, 0], "y": [0, -80], "start": 0.35, "end": 0.85 } }
+    ]
+  }
+}

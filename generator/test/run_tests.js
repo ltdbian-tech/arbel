@@ -621,12 +621,16 @@ test('svg sanitizes script injection', () => {
     const cfg = Object.assign({}, CIN_BASE);
     cfg.scenes = [{ id: 's1', name: 'Test', template: 'blank', duration: 100, pin: true,
         elements: [{ id: 'svg-1', tag: 'div', text: '',
-            svgContent: '<svg><script>alert("xss")</script><circle cx="50" cy="50" r="40"/></svg>',
+            svgContent: '<svg><script>alert("xss")</script><circle cx="50" cy="50" r="40" onclick="bad()"/></svg>',
             style: { position: 'absolute', top: '20%', left: '50%' },
             visible: true }]
     }];
     const f = ArbelCinematicCompiler.compile(cfg);
-    assert(f['index.html'].indexOf('<script>') < 0, 'SVG script tag not stripped');
+    const out = f['index.html'];
+    assert(out.indexOf('alert("xss")') < 0, 'SVG script payload leaked');
+    assert(!/<\s*script[^>]*>\s*alert/i.test(out), 'SVG script tag around payload not stripped');
+    assert(!/onclick\s*=/i.test(out), 'SVG inline event handler not stripped');
+    assert(out.indexOf('<circle') >= 0, 'Legitimate SVG shape was removed');
 });
 
 test('embed element compiles', () => {
@@ -853,6 +857,83 @@ test('data URL in element background-image compiles correctly', () => {
     }];
     const f = ArbelCinematicCompiler.compile(cfg);
     assert(f['index.html'].indexOf('data:image/png;base64,') >= 0, 'data URL in element bg should compile');
+});
+
+// ─────────────────────────────────────────────
+//  SECURITY (CSP, PWA, sanitization, URL schemes)
+// ─────────────────────────────────────────────
+console.log('\n🔒  Security & PWA');
+
+test('compiled HTML emits Content-Security-Policy meta', () => {
+    const f = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE));
+    const h = f['index.html'];
+    assert(/<meta\s+http-equiv=["']Content-Security-Policy["']/i.test(h), 'CSP meta missing');
+    assert(h.indexOf("object-src 'none'") >= 0, 'CSP should forbid object-src');
+    assert(h.indexOf("base-uri 'self'") >= 0, 'CSP should lock base-uri');
+});
+
+test('CSP allows our known CDNs', () => {
+    const h = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE))['index.html'];
+    assert(h.indexOf('cdnjs.cloudflare.com') >= 0, 'CSP should allow cdnjs');
+    assert(h.indexOf('unpkg.com') >= 0, 'CSP should allow unpkg');
+    assert(h.indexOf('fonts.googleapis.com') >= 0, 'CSP should allow fonts.googleapis.com');
+});
+
+test('Referrer-Policy meta emitted', () => {
+    const h = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE))['index.html'];
+    assert(/<meta\s+name=["']referrer["']/i.test(h), 'referrer meta missing');
+});
+
+test('PWA manifest file emitted & linked', () => {
+    const f = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE));
+    assert(f['manifest.webmanifest'], 'manifest.webmanifest missing');
+    assert(f['index.html'].indexOf('<link rel="manifest"') >= 0, 'manifest link missing in HTML');
+    const m = JSON.parse(f['manifest.webmanifest']);
+    assert(m.name && m.icons && m.icons.length > 0, 'manifest must have name + icons');
+    assert(m.display === 'standalone', 'manifest display should be standalone');
+});
+
+test('service worker emitted with versioned cache', () => {
+    const f = ArbelCinematicCompiler.compile(Object.assign({}, CIN_BASE));
+    assert(f['sw.js'], 'sw.js missing');
+    assert(/CACHE\s*=\s*"arbel-\d+"/.test(f['sw.js']), 'SW cache should be versioned');
+    assert(f['sw.js'].indexOf('fetch') >= 0 && f['sw.js'].indexOf('install') >= 0, 'SW must hook install + fetch');
+    assert(f['index.html'].indexOf('navigator.serviceWorker.register') >= 0, 'HTML must register SW');
+});
+
+test('SVG sanitizer blocks foreignObject + inline events', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'T', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'svg-evil', tag: 'div',
+            svgContent: '<svg><foreignObject><iframe src="https://evil.example"></iframe></foreignObject><a href="javascript:alert(1)"><circle onmouseover="bad()"/></a></svg>',
+            style: { position: 'absolute' }, visible: true }]
+    }];
+    const out = ArbelCinematicCompiler.compile(cfg)['index.html'];
+    assert(out.indexOf('foreignObject') < 0, 'foreignObject must be stripped');
+    assert(out.indexOf('<iframe src="https://evil.example"') < 0, 'iframe inside SVG must be stripped');
+    assert(!/onmouseover\s*=/i.test(out), 'event handler must be stripped');
+    assert(!/href\s*=\s*["']?\s*javascript:/i.test(out), 'javascript: href must be blocked');
+});
+
+test('escHref blocks javascript: and vbscript: schemes (via element href)', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'T', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'a1', tag: 'a', text: 'click', href: 'javascript:alert(1)',
+            style: { position: 'absolute' }, visible: true }]
+    }];
+    const out = ArbelCinematicCompiler.compile(cfg)['index.html'];
+    assert(!/href\s*=\s*["']?\s*javascript:/i.test(out), 'javascript: href must be sanitized');
+});
+
+test('embed src must be https (localhost rejected)', () => {
+    const cfg = Object.assign({}, CIN_BASE);
+    cfg.scenes = [{ id: 's1', name: 'T', template: 'blank', duration: 100, pin: true,
+        elements: [{ id: 'e1', tag: 'div', embedUrl: 'http://localhost:8080/evil',
+            style: { position: 'absolute' }, visible: true }]
+    }];
+    const out = ArbelCinematicCompiler.compile(cfg)['index.html'];
+    assert(out.indexOf('localhost:8080') < 0, 'localhost embed must be rejected');
+    assert(out.indexOf('<iframe src="http:') < 0, 'non-https iframe must be rejected');
 });
 
 // ─────────────────────────────────────────────

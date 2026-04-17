@@ -398,6 +398,10 @@ window.ArbelCinematicCompiler = (function () {
         files['robots.txt'] = _buildRobots(c);
         files['sitemap.xml'] = _buildSitemap(c);
 
+        // PWA: manifest + service worker
+        files['manifest.webmanifest'] = _buildManifest(c);
+        files['sw.js'] = _buildServiceWorker(c);
+
         // P1: Build background animation JS for non-shader styles (reuses classic compiler)
         if (cat !== 'shader') {
             var animFile = ArbelCompiler.getAnimJsFile ? ArbelCompiler.getAnimJsFile(c.style) : 'particles.js';
@@ -515,6 +519,25 @@ window.ArbelCinematicCompiler = (function () {
         var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
         html += '<meta charset="UTF-8">\n';
         html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+        // Security: Content-Security-Policy — blocks most XSS, allows our known CDNs + inline needed by gtag/JSON-LD.
+        // Users may override by supplying their own CSP via integrations.customHead.
+        html += '<meta http-equiv="Content-Security-Policy" content="'
+            + "default-src 'self'; "
+            + "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://www.googletagmanager.com https://www.google-analytics.com; "
+            + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            + "font-src 'self' https://fonts.gstatic.com data:; "
+            + "img-src 'self' data: blob: https:; "
+            + "media-src 'self' blob: https:; "
+            + "connect-src 'self' https:; "
+            + "frame-src 'self' https:; "
+            + "object-src 'none'; "
+            + "base-uri 'self'; "
+            + "form-action 'self' https:"
+            + '">\n';
+        html += '<meta name="referrer" content="strict-origin-when-cross-origin">\n';
+        // PWA link
+        html += '<link rel="manifest" href="manifest.webmanifest">\n';
+        html += '<meta name="theme-color" content="' + esc(((cfg.designTokens && cfg.designTokens.primary) || cfg.accent || '#6C5CE7')) + '">\n';
         html += '<title>' + esc(seoTitle) + '</title>\n';
         html += '<meta name="description" content="' + esc(seoDesc) + '">\n';
         if (!seo.index && seo.index !== undefined) {
@@ -1128,10 +1151,17 @@ window.ArbelCinematicCompiler = (function () {
                         html += '>' + elBgVidHtml + frameInner + '</' + tag + '>\n';
                     // SVG illustration (shapes without media)
                     } else if (el.svgContent) {
-                        // Sanitize SVG: strip scripts and event handlers
-                        var safeSvg = el.svgContent
-                            .replace(/<script[\s\S]*?<\/script>/gi, '')
-                            .replace(/\bon\w+\s*=/gi, 'data-removed=');
+                        // Sanitize SVG: strip scripts, event handlers, foreignObject, and
+                        // javascript:/data: URLs in href/xlink:href. Defense-in-depth — the
+                        // CSP meta already blocks inline script execution, this prevents
+                        // the payload from even reaching the DOM.
+                        var safeSvg = String(el.svgContent)
+                            .replace(/<\s*script\b[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+                            .replace(/<\s*script\b[^>]*>/gi, '')
+                            .replace(/<\s*foreignObject\b[\s\S]*?<\s*\/\s*foreignObject\s*>/gi, '')
+                            .replace(/<\s*(iframe|object|embed|link|meta|style)\b[\s\S]*?>/gi, '')
+                            .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+                            .replace(/\s(xlink:href|href)\s*=\s*("\s*javascript:[^"]*"|'\s*javascript:[^']*'|\s*javascript:[^\s>]+)/gi, '');
                         html += '>' + elBgVidHtml + safeSvg + '</' + tag + '>\n';
                     // iFrame embed (YouTube, Vimeo, etc.)
                     } else if (el.embedUrl && /^https:\/\//.test(el.embedUrl)) {
@@ -1201,6 +1231,8 @@ window.ArbelCinematicCompiler = (function () {
 
         html += '<script src="js/cinema.js"><\/script>\n';
         html += '<script src="js/main.js"><\/script>\n';
+        // PWA: register service worker (best-effort, only on http(s))
+        html += '<script>if("serviceWorker" in navigator && /^https?:/.test(location.protocol)){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}<\/script>\n';
 
         // Custom body-end injection (third-party scripts, chat widgets, etc.)
         if (cfg.editorOverrides && cfg.editorOverrides.customBodyEnd) {
@@ -2768,9 +2800,72 @@ window.ArbelCinematicCompiler = (function () {
         return md;
     }
 
+    /* ─── PWA: manifest.webmanifest + sw.js ─── */
+    function _buildManifest(cfg) {
+        var name = cfg.brandName || 'Site';
+        var tokens = cfg.designTokens || {};
+        var theme = tokens.primary || cfg.accent || '#6C5CE7';
+        var bg = tokens.bg || cfg.bgColor || '#0a0a0f';
+        // safe-chars only (sanity); escHref protects at emit site too
+        if (!/^#[0-9a-fA-F]{3,8}$/.test(theme)) theme = '#6C5CE7';
+        if (!/^#[0-9a-fA-F]{3,8}$/.test(bg)) bg = '#0a0a0f';
+        var initial = String(name).trim().charAt(0).toUpperCase() || 'A';
+        // Inline SVG icon (same pattern as auto-favicon)
+        function svgIcon(size) {
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size + '">' +
+                '<rect width="' + size + '" height="' + size + '" rx="' + Math.round(size * 0.22) + '" fill="' + bg + '"/>' +
+                '<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-size="' + Math.round(size * 0.55) + '" font-weight="700" fill="' + theme + '">' + esc(initial) + '</text>' +
+                '</svg>';
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+        var manifest = {
+            name: name,
+            short_name: name.slice(0, 12),
+            start_url: './',
+            scope: './',
+            display: 'standalone',
+            orientation: 'portrait-primary',
+            background_color: bg,
+            theme_color: theme,
+            description: (cfg.seo && cfg.seo.description) || cfg.tagline || name,
+            icons: [
+                { src: svgIcon(192), sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
+                { src: svgIcon(512), sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+            ]
+        };
+        return JSON.stringify(manifest, null, 2);
+    }
+
+    function _buildServiceWorker(cfg) {
+        // Cache-first for static assets; network-first for HTML.
+        // Versioned so updates invalidate old caches on compile.
+        var ver = 'arbel-' + Date.now();
+        var sw = '';
+        sw += '/* Arbel PWA service worker — generated */\n';
+        sw += 'var CACHE = "' + ver + '";\n';
+        sw += 'var PRECACHE = ["./", "index.html", "css/style.css", "js/cinema.js", "js/main.js", "manifest.webmanifest"];\n';
+        sw += 'self.addEventListener("install", function(e){ e.waitUntil(caches.open(CACHE).then(function(c){ return c.addAll(PRECACHE).catch(function(){}); }).then(function(){ return self.skipWaiting(); })); });\n';
+        sw += 'self.addEventListener("activate", function(e){ e.waitUntil(caches.keys().then(function(keys){ return Promise.all(keys.filter(function(k){ return k !== CACHE; }).map(function(k){ return caches.delete(k); })); }).then(function(){ return self.clients.claim(); })); });\n';
+        sw += 'self.addEventListener("fetch", function(e){\n';
+        sw += '  var req = e.request;\n';
+        sw += '  if (req.method !== "GET") return;\n';
+        sw += '  var url = new URL(req.url);\n';
+        sw += '  // Never cache cross-origin third-party requests (CDN libs, analytics) — let network handle\n';
+        sw += '  if (url.origin !== location.origin) return;\n';
+        sw += '  var isHTML = req.mode === "navigate" || (req.headers.get("accept") || "").indexOf("text/html") >= 0;\n';
+        sw += '  if (isHTML) {\n';
+        sw += '    // Network-first for HTML — get freshest content\n';
+        sw += '    e.respondWith(fetch(req).then(function(r){ var c = r.clone(); caches.open(CACHE).then(function(cc){ cc.put(req, c).catch(function(){}); }); return r; }).catch(function(){ return caches.match(req).then(function(m){ return m || caches.match("index.html"); }); }));\n';
+        sw += '  } else {\n';
+        sw += '    // Cache-first for static assets\n';
+        sw += '    e.respondWith(caches.match(req).then(function(m){ return m || fetch(req).then(function(r){ if (r && r.status === 200 && r.type === "basic") { var c = r.clone(); caches.open(CACHE).then(function(cc){ cc.put(req, c).catch(function(){}); }); } return r; }); }));\n';
+        sw += '  }\n';
+        sw += '});\n';
+        return sw;
+    }
+
     /* ─── robots.txt + sitemap.xml ─── */
-    function _buildRobots(cfg) {
-        var seo = cfg.seo || {};
+    function _buildRobots(cfg) {        var seo = cfg.seo || {};
         // Respect explicit noindex signal
         if (seo.index === false) {
             return 'User-agent: *\nDisallow: /\n';

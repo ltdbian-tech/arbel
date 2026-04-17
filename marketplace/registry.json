@@ -1,0 +1,28 @@
+{
+  "$schema": "https://arbel.live/marketplace/schema.json",
+  "version": 1,
+  "updated": "2024-04-17",
+  "notes": "Arbel Marketplace registry. Items are reviewed & vetted before merge. Safe fields only: scenes/elements/tokens/components. customHead/inline scripts are stripped on install.",
+  "items": [
+    {
+      "id": "scene-hero-neon",
+      "kind": "scene",
+      "name": "Neon Hero",
+      "author": "Arbel",
+      "tags": ["hero", "dark", "neon"],
+      "description": "Glass-morphism hero with animated aurora backdrop.",
+      "url": "scenes/hero-neon.json",
+      "preview": ""
+    },
+    {
+      "id": "kit-monochrome",
+      "kind": "brandKit",
+      "name": "Monochrome Pro",
+      "author": "Arbel",
+      "tags": ["minimal", "monochrome"],
+      "description": "Editorial monochrome design-token kit.",
+      "url": "kits/monochrome.json",
+      "preview": ""
+    }
+  ]
+}

@@ -9441,6 +9441,7 @@ window.ArbelCinematicEditor = (function () {
             cmds.push({ cat: 'Action', label: 'Save selection as component\u2026', run: function () { _saveSelectionAsComponent(); } });
             cmds.push({ cat: 'Action', label: 'Version history\u2026', run: function () { _showVersionHistory(); } });
             cmds.push({ cat: 'Action', label: 'Import brand kit\u2026', run: function () { _showBrandKitImport(); } });
+            cmds.push({ cat: 'Action', label: 'Marketplace\u2026', run: function () { _showMarketplace(); } });
             cmds.push({ cat: 'Action', label: 'AI rewrite current scene\u2026', run: function () { _aiRewriteCurrentScene(); } });
             cmds.push({ cat: 'Action', label: 'Save project', kbd: 'Ctrl+S', run: function () { _saveProject(); } });
             cmds.push({ cat: 'Action', label: 'Save project as\u2026', kbd: 'Ctrl+Shift+S', run: function () { _saveProjectAs(); } });
@@ -9663,13 +9664,12 @@ window.ArbelCinematicEditor = (function () {
             try { parsed = JSON.parse(val); } catch (e) { alert('Invalid JSON: ' + e.message); return; }
             if (!parsed || typeof parsed !== 'object') { alert('Kit must be a JSON object.'); return; }
             _pushUndo();
-            var allowed = ['headingFont', 'bodyFont', 'baseSize', 'scale', 'primary', 'secondary', 'text', 'textMuted', 'bg', 'surface', 'spaceUnit', 'radius'];
+            // Defense-in-depth: route through shared token sanitizer.
+            var safe = _sanitizeTokens(parsed);
             var applied = 0;
-            allowed.forEach(function (k) {
-                if (parsed[k] !== undefined && parsed[k] !== null) {
-                    _designTokens[k] = parsed[k];
-                    applied++;
-                }
+            Object.keys(safe).forEach(function (k) {
+                _designTokens[k] = safe[k];
+                applied++;
             });
             overlay.remove();
             document.removeEventListener('keydown', onEsc);
@@ -9685,6 +9685,279 @@ window.ArbelCinematicEditor = (function () {
         function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
         document.addEventListener('keydown', onEsc);
         overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+    }
+
+    /* ─── Shared import sanitizer ─────────────────────────────────
+       Runs on every JSON object that enters from an untrusted source
+       (brand-kit paste, project file open, marketplace install).
+       Defense-in-depth: even if upstream review fails, hostile payloads
+       cannot execute scripts in editor or the compiled site.
+    */
+    function _isSafeUrl(u) {
+        if (!u || typeof u !== 'string') return false;
+        var s = u.replace(/[\x00-\x1f]+/g, '').trim();
+        if (/^\s*(javascript|vbscript|file)\s*:/i.test(s)) return false;
+        if (/^data:/i.test(s) && !/^data:(image|video)\//i.test(s)) return false;
+        return true;
+    }
+    function _sanitizeString(s, max) {
+        if (s === undefined || s === null) return '';
+        var out = String(s);
+        // Strip NULs and control chars that can break HTML context
+        out = out.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+        // Strip <script> blocks and inline event handlers as belt-and-suspenders
+        // (compiler's esc() already escapes, but this blocks them from ever entering state)
+        out = out.replace(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '');
+        out = out.replace(/<\s*script\b[^>]*>/gi, '');
+        out = out.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^>\s]+)/gi, '');
+        if (max && out.length > max) out = out.slice(0, max);
+        return out;
+    }
+    function _sanitizeStyle(style) {
+        if (!style || typeof style !== 'object') return {};
+        var out = {};
+        Object.keys(style).forEach(function (k) {
+            if (!/^[a-zA-Z-]+$/.test(k)) return; // drop weird keys
+            var v = style[k];
+            if (v === null || v === undefined) return;
+            v = String(v).replace(/[\x00-\x1f]+/g, '');
+            // Block CSS expressions / javascript: urls inside url()
+            if (/expression\s*\(|javascript\s*:|vbscript\s*:/i.test(v)) return;
+            if (v.length > 1000) return;
+            out[k] = v;
+        });
+        return out;
+    }
+    function _sanitizeElement(el) {
+        if (!el || typeof el !== 'object') return null;
+        var safe = {};
+        // Whitelist fields — unknown keys are discarded
+        var strFields = ['id', 'tag', 'text', 'href', 'src', 'formAction', 'embedUrl', 'lottieUrl', 'frameSrc', 'alt', 'name'];
+        strFields.forEach(function (f) {
+            if (el[f] !== undefined) safe[f] = _sanitizeString(el[f], 5000);
+        });
+        // URL fields must pass _isSafeUrl
+        ['href', 'src', 'formAction', 'embedUrl', 'lottieUrl', 'frameSrc'].forEach(function (f) {
+            if (safe[f] && !_isSafeUrl(safe[f])) delete safe[f];
+        });
+        safe.style = _sanitizeStyle(el.style);
+        if (el.hoverStyle) safe.hoverStyle = _sanitizeStyle(el.hoverStyle);
+        if (el.scroll && typeof el.scroll === 'object') {
+            // Re-parse scroll values through JSON to drop non-serializable bits
+            try { safe.scroll = JSON.parse(JSON.stringify(el.scroll)); } catch (e) {}
+        }
+        if (typeof el.parallax === 'number') safe.parallax = el.parallax;
+        if (el.splitText === true) safe.splitText = true;
+        if (el.visible === false) safe.visible = false;
+        if (el.locked === true) safe.locked = true;
+        if (!safe.tag) safe.tag = 'div';
+        if (!safe.id) safe.id = 'el-' + Math.random().toString(36).slice(2, 9);
+        return safe;
+    }
+    function _sanitizeScene(scene) {
+        if (!scene || typeof scene !== 'object') return null;
+        var out = {};
+        out.id = _sanitizeString(scene.id || 'scene-' + Math.random().toString(36).slice(2, 8), 80);
+        out.name = _sanitizeString(scene.name || 'Scene', 120);
+        out.template = _sanitizeString(scene.template || '', 40);
+        out.duration = Math.max(20, Math.min(500, parseInt(scene.duration, 10) || 100));
+        out.pin = scene.pin !== false;
+        out.bgColor = _sanitizeString(scene.bgColor || '', 40);
+        out.bgImage = _isSafeUrl(scene.bgImage) ? _sanitizeString(scene.bgImage, 2000) : '';
+        out.bg3dType = _sanitizeString(scene.bg3dType || '', 40);
+        out.elements = Array.isArray(scene.elements)
+            ? scene.elements.map(_sanitizeElement).filter(function (x) { return x; })
+            : [];
+        return out;
+    }
+    function _sanitizeTokens(t) {
+        if (!t || typeof t !== 'object') return {};
+        var allowed = ['headingFont', 'bodyFont', 'baseSize', 'scale', 'primary', 'secondary', 'text', 'textMuted', 'bg', 'surface', 'spaceUnit', 'radius'];
+        var out = {};
+        allowed.forEach(function (k) {
+            if (t[k] === undefined || t[k] === null) return;
+            if (k === 'baseSize' || k === 'scale' || k === 'radius' || k === 'spaceUnit') {
+                var n = parseFloat(t[k]);
+                if (isFinite(n)) out[k] = n;
+            } else {
+                out[k] = _sanitizeString(t[k], 200);
+            }
+        });
+        return out;
+    }
+    // Sanitize a full project payload. Strips any customHead/customBodyEnd
+    // that might have slipped in from an untrusted source.
+    function _sanitizeProject(proj) {
+        if (!proj || typeof proj !== 'object') return null;
+        var out = {};
+        if (proj.meta && typeof proj.meta === 'object') {
+            out.meta = {
+                name: _sanitizeString(proj.meta.name || '', 120),
+                brandName: _sanitizeString(proj.meta.brandName || '', 120),
+                version: _sanitizeString(proj.meta.version || '', 20)
+            };
+        }
+        out.scenes = Array.isArray(proj.scenes)
+            ? proj.scenes.map(_sanitizeScene).filter(function (s) { return s; })
+            : [];
+        if (proj.designTokens) out.designTokens = _sanitizeTokens(proj.designTokens);
+        // Explicitly drop editorOverrides.customHead / customBodyEnd / customCSS
+        // when the project did not originate from a trusted local source.
+        // _loadProjectData callers decide whether to preserve overrides by flag.
+        if (proj.pages && Array.isArray(proj.pages)) {
+            out.pages = proj.pages.map(function (p) {
+                if (!p || typeof p !== 'object') return null;
+                return {
+                    id: _sanitizeString(p.id || '', 80),
+                    name: _sanitizeString(p.name || 'Page', 120),
+                    path: _sanitizeString(p.path || '/', 200),
+                    scenes: Array.isArray(p.scenes)
+                        ? p.scenes.map(_sanitizeScene).filter(function (s) { return s; })
+                        : []
+                };
+            }).filter(function (p) { return p; });
+        }
+        return out;
+    }
+
+    /* ─── Marketplace ─────────────────────────────────────────────
+       Curated registry hosted in the Arbel GitHub repo. URL is
+       HARDCODED — the editor never fetches from user-supplied URLs.
+       Every downloaded payload flows through _sanitizeProject /
+       _sanitizeScene / _sanitizeTokens before it touches state.
+    */
+    var _MARKETPLACE_BASE = 'https://raw.githubusercontent.com/ltdbian-tech/arbel/master/marketplace/';
+    var _MARKETPLACE_REGISTRY_URL = _MARKETPLACE_BASE + 'registry.json';
+
+    function _marketplaceFetch(relativeUrl) {
+        // Hard guard: the relative path must not escape the marketplace folder
+        var rel = String(relativeUrl || '').replace(/^\/+/, '');
+        if (rel.indexOf('..') >= 0 || /^https?:/i.test(rel) || /^\/\//.test(rel)) {
+            return Promise.reject(new Error('Unsafe marketplace path'));
+        }
+        var full = _MARKETPLACE_BASE + rel;
+        return fetch(full, { credentials: 'omit', cache: 'no-cache' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
+    }
+
+    function _showMarketplace() {
+        var existing = document.getElementById('cneMarketplaceOverlay');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'cneMarketplaceOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#15151f;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:26px 28px;width:min(780px,94vw);max-height:86vh;overflow:auto;color:#eee';
+
+        var head = document.createElement('div');
+        head.innerHTML = '<h2 style="margin:0 0 4px;font-size:1.25rem;letter-spacing:-0.01em">Marketplace</h2>' +
+            '<p style="margin:0 0 16px;font-size:.82rem;color:rgba(255,255,255,.55)">Curated, reviewed templates & kits. Every item is sanitized on install \u2014 no scripts, no tracking, no surprises.</p>';
+        box.appendChild(head);
+
+        var list = document.createElement('div');
+        list.textContent = 'Loading\u2026';
+        list.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px';
+        box.appendChild(list);
+
+        var closeRow = document.createElement('div');
+        closeRow.style.cssText = 'display:flex;justify-content:flex-end;margin-top:16px';
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'gen-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', function () { overlay.remove(); document.removeEventListener('keydown', onEsc); });
+        closeRow.appendChild(closeBtn);
+        box.appendChild(closeRow);
+
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+        document.addEventListener('keydown', onEsc);
+        overlay.addEventListener('click', function (e) { if (e.target === overlay) { overlay.remove(); document.removeEventListener('keydown', onEsc); } });
+
+        // Fetch registry
+        fetch(_MARKETPLACE_REGISTRY_URL, { credentials: 'omit', cache: 'no-cache' })
+            .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+            .then(function (reg) {
+                if (!reg || !Array.isArray(reg.items)) throw new Error('Malformed registry');
+                list.innerHTML = '';
+                if (!reg.items.length) {
+                    list.innerHTML = '<div style="grid-column:1/-1;padding:22px;text-align:center;opacity:.55">No items yet. Check back soon.</div>';
+                    return;
+                }
+                reg.items.forEach(function (it) {
+                    if (!it || typeof it !== 'object') return;
+                    var card = document.createElement('div');
+                    card.style.cssText = 'background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px';
+                    var kindBadge = _escapeHtml(String(it.kind || 'item'));
+                    var tagBits = Array.isArray(it.tags) ? it.tags.slice(0, 4).map(function (t) { return '<span style="font-size:.65rem;padding:2px 6px;background:rgba(255,255,255,.06);border-radius:4px;opacity:.7">' + _escapeHtml(String(t)) + '</span>'; }).join(' ') : '';
+                    card.innerHTML =
+                        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+                        '  <div style="font-size:.95rem;font-weight:600">' + _escapeHtml(String(it.name || 'Item')) + '</div>' +
+                        '  <span style="font-size:.6rem;padding:2px 7px;background:rgba(100,108,255,.15);color:#9ea6ff;border-radius:4px;letter-spacing:.05em;text-transform:uppercase">' + kindBadge + '</span>' +
+                        '</div>' +
+                        '<div style="font-size:.78rem;color:rgba(255,255,255,.55);line-height:1.45;min-height:2.6em">' + _escapeHtml(String(it.description || '')) + '</div>' +
+                        '<div style="display:flex;flex-wrap:wrap;gap:4px">' + tagBits + '</div>';
+                    var btn = document.createElement('button');
+                    btn.className = 'gen-btn gen-btn--primary';
+                    btn.style.cssText = 'margin-top:6px';
+                    btn.textContent = 'Install';
+                    btn.addEventListener('click', function () {
+                        btn.disabled = true;
+                        btn.textContent = 'Installing\u2026';
+                        _marketplaceFetch(it.url).then(function (payload) {
+                            _installMarketplaceItem(it, payload);
+                            btn.textContent = 'Installed \u2713';
+                            setTimeout(function () { btn.disabled = false; btn.textContent = 'Install again'; }, 1500);
+                        }).catch(function (err) {
+                            btn.disabled = false;
+                            btn.textContent = 'Install';
+                            alert('Could not install: ' + (err && err.message ? err.message : 'unknown error'));
+                        });
+                    });
+                    card.appendChild(btn);
+                    list.appendChild(card);
+                });
+            })
+            .catch(function (err) {
+                list.innerHTML = '<div style="grid-column:1/-1;padding:22px;text-align:center;color:#f88">Couldn\'t load marketplace: ' + _escapeHtml(err && err.message ? err.message : 'unknown') + '</div>';
+            });
+    }
+
+    function _installMarketplaceItem(meta, payload) {
+        if (!meta || !payload) throw new Error('Empty payload');
+        var kind = meta.kind;
+        _pushUndo();
+        if (kind === 'scene') {
+            var scene = _sanitizeScene(payload.scene || payload);
+            if (!scene) throw new Error('Invalid scene payload');
+            // Unique id
+            scene.id = 'scene-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+            _scenes.push(scene);
+            _currentSceneIdx = _scenes.length - 1;
+            _renderSceneList && _renderSceneList();
+            _renderElementList && _renderElementList();
+            _notifyUpdate(true);
+        } else if (kind === 'brandKit') {
+            var tokens = _sanitizeTokens(payload.tokens || payload);
+            Object.keys(tokens).forEach(function (k) { _designTokens[k] = tokens[k]; });
+            if (typeof _syncTokenUI === 'function') { try { _syncTokenUI(); } catch (e) {} }
+            _notifyUpdate(true);
+        } else if (kind === 'component') {
+            // Treat as a single element group — future extension
+            var el = _sanitizeElement(payload.element || payload);
+            if (!el) throw new Error('Invalid component');
+            var cur = _scenes[_currentSceneIdx];
+            if (!cur) throw new Error('No scene selected');
+            el.id = 'el-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+            cur.elements.push(el);
+            _notifyUpdate(true);
+        } else {
+            throw new Error('Unsupported kind: ' + kind);
+        }
     }
 
     /* ─── Multi-Project Dashboard (localStorage-backed named projects) ─── */
@@ -11310,6 +11583,7 @@ window.ArbelCinematicEditor = (function () {
         saveSelectionAsComponent: _saveSelectionAsComponent,
         showVersionHistory: _showVersionHistory,
         showBrandKitImport: _showBrandKitImport,
+        showMarketplace: _showMarketplace,
         aiRewriteScene: _aiRewriteCurrentScene,
         getEmbedSnippet: function (siteUrl, opts) {
             // Produce an iframe embed snippet for the deployed site. Honors optional
