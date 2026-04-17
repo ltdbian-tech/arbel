@@ -1018,6 +1018,17 @@ window.ArbelCinematicCompiler = (function () {
                 var validTags = ['h1','h2','h3','p','span','div','img','video','a','form','section','header','footer','nav','ul','li','ol'];
                 var tag = (validTags.indexOf(el.tag) >= 0) ? el.tag : 'div';
                 var style = '';
+                // When the element has a background (image/video/colour) or
+                // a border-radius, clip its children + bg to its own border
+                // box so bg-video / gradients don't bleed outside the
+                // element's visible bounds. We inject into the compiled
+                // style string only \u2014 never mutate el.style (shared ref).
+                var _hasElBg = el.bgVideo
+                    || (el.style && (el.style.backgroundImage || el.style.background || el.style.backgroundColor || el.style.borderRadius));
+                if (_hasElBg) {
+                    if (!el.style || el.style.overflow === undefined) style += 'overflow:hidden;';
+                    if (!el.style || !el.style.position) style += 'position:relative;';
+                }
                 if (el.style) {
                     Object.keys(el.style).forEach(function (prop) {
                         var val = String(el.style[prop]);
