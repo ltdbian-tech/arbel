@@ -1,548 +1,589 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Healing Hands — Modern Healthcare Clinic</title>
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Healing Hands — Family Care That Feels Human</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FBFDFC;
+  --surface:#FFFFFF;
+  --mint:#D8F0E5;
+  --mint-2:#B6E3CE;
+  --mint-deep:#2E8F6B;
+  --navy:#0C2E4A;
+  --navy-2:#1A4870;
+  --ink:#0A1824;
+  --muted:#607687;
+  --line:#E3EAEE;
+  --warm:#FFE7D1;
+  --coral:#FF8B6A;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --shadow:0 30px 60px rgba(12,46,74,.08);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'Manrope',system-ui,sans-serif;font-weight:400;line-height:1.6;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--mint-2);color:var(--navy)}
 
-    :root {
-      --bg: #020508;
-      --fg: #EDF4F8;
-      --accent: #2BBFCC;
-      --accent2: #4A90D9;
-      --muted: rgba(237,244,248,0.5);
-      --border: rgba(237,244,248,0.07);
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
-      --mono: 'Courier New', Courier, monospace;
-    }
+/* ── ANNOUNCEMENT BAR ── */
+.bar{background:var(--navy);color:#fff;padding:.7rem 1.5rem;text-align:center;font-size:.8rem;font-weight:500;letter-spacing:.01em;position:relative;z-index:200}
+.bar span{opacity:.9}
+.bar a{color:var(--mint-2);text-decoration:none;font-weight:600;margin-left:.5rem}
+.bar a::after{content:' →'}
 
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--fg); font-family: 'Arial', 'Helvetica Neue', sans-serif; overflow-x: hidden; cursor: none; }
+/* ── NAV ── */
+.nav{
+  position:sticky;top:0;z-index:100;background:rgba(251,253,252,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.1rem 2.5rem;
+}
+.brand{display:flex;align-items:center;gap:.7rem;font-weight:700;font-size:1.2rem;letter-spacing:-.01em;color:var(--navy)}
+.brand-mark{
+  width:38px;height:38px;border-radius:12px;background:var(--navy);display:grid;place-items:center;
+  position:relative;box-shadow:0 4px 12px rgba(12,46,74,.2);
+}
+.brand-mark::before,.brand-mark::after{content:'';position:absolute;background:var(--mint-2);border-radius:2px}
+.brand-mark::before{width:16px;height:3px}
+.brand-mark::after{width:3px;height:16px}
+.nav-links{display:flex;gap:2rem;font-size:.92rem;font-weight:500}
+.nav-links a{color:var(--ink);text-decoration:none;padding:.4rem 0;position:relative;transition:color .3s}
+.nav-links a:hover{color:var(--mint-deep)}
+.nav-right{display:flex;align-items:center;gap:1rem}
+.phone{display:flex;align-items:center;gap:.5rem;color:var(--navy);font-weight:600;font-size:.92rem;text-decoration:none}
+.phone-ic{width:34px;height:34px;border-radius:50%;background:var(--mint);display:grid;place-items:center;color:var(--mint-deep);font-weight:700}
+.btn{
+  padding:.85rem 1.5rem;border-radius:999px;font-weight:600;font-size:.92rem;cursor:pointer;border:none;
+  transition:all .3s var(--ease);letter-spacing:-.005em;
+}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-2);transform:translateY(-1px);box-shadow:0 10px 24px rgba(12,46,74,.2)}
+.btn-mint{background:var(--mint-2);color:var(--navy)}
+.btn-mint:hover{background:var(--mint-deep);color:#fff}
+.btn-white{background:#fff;color:var(--navy);border:1px solid var(--line)}
+.btn-white:hover{border-color:var(--navy);transform:translateY(-1px)}
 
-    /* ── CURSOR ───────────────────────────────── */
-    #c-dot {
-      width: 5px; height: 5px;
-      background: var(--accent); border-radius: 50%;
-      position: fixed; top: 0; left: 0;
-      transform: translate(-50%,-50%);
-      pointer-events: none; z-index: 9999;
-    }
-    #c-ring {
-      width: 28px; height: 28px;
-      border: 1px solid rgba(43,191,204,0.4); border-radius: 50%;
-      position: fixed; top: 0; left: 0;
-      transform: translate(-50%,-50%);
-      pointer-events: none; z-index: 9998;
-      transition: width 0.35s var(--ease), height 0.35s var(--ease), border-color 0.3s;
-    }
-    #c-ring.is-hover { width: 46px; height: 46px; border-color: var(--accent); }
+/* ── HERO ── */
+.hero{
+  padding:4rem 2.5rem 5rem;display:grid;grid-template-columns:1.1fr 1fr;gap:4rem;align-items:center;position:relative;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:.6rem;padding:.5rem 1rem;border-radius:999px;
+  background:var(--mint);color:var(--mint-deep);font-size:.78rem;font-weight:600;letter-spacing:.01em;margin-bottom:1.8rem;
+}
+.hero-tag .pulse{width:8px;height:8px;border-radius:50%;background:var(--mint-deep);position:relative}
+.hero-tag .pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:var(--mint-deep);opacity:.35;animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{transform:scale(.8);opacity:.5}100%{transform:scale(2.2);opacity:0}}
+.hero h1{
+  font-family:'Instrument Serif',serif;font-weight:400;
+  font-size:clamp(3rem,7vw,6rem);line-height:1;letter-spacing:-.025em;color:var(--navy);
+}
+.hero h1 .it{font-style:italic;color:var(--mint-deep)}
+.hero h1 .und{position:relative;white-space:nowrap}
+.hero h1 .und::after{content:'';position:absolute;left:0;right:0;bottom:.04em;height:.12em;background:var(--mint-2);border-radius:4px;z-index:-1}
+.hero p{margin-top:1.6rem;font-size:1.1rem;color:var(--muted);max-width:520px;line-height:1.7}
+.hero-ctas{margin-top:2.2rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
+.hero-trust{margin-top:3rem;display:flex;align-items:center;gap:1rem}
+.avatars{display:flex}
+.av{width:44px;height:44px;border-radius:50%;border:3px solid #fff;margin-left:-10px;background:linear-gradient(135deg,var(--mint-2),var(--navy));box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.av:nth-child(1){margin-left:0;background:linear-gradient(135deg,#FFD1B8,#FF8B6A)}
+.av:nth-child(2){background:linear-gradient(135deg,#B6E3CE,#2E8F6B)}
+.av:nth-child(3){background:linear-gradient(135deg,#C6D8F0,#1A4870)}
+.av:nth-child(4){background:linear-gradient(135deg,#F0DCB6,#C69748);display:grid;place-items:center;color:#fff;font-weight:700;font-size:.75rem}
+.trust-text{font-size:.9rem}
+.trust-text strong{display:block;color:var(--navy);font-weight:700}
+.trust-text span{color:var(--muted);font-size:.85rem}
 
-    /* ── NAV ──────────────────────────────────── */
-    nav {
-      position: fixed; inset: 0 0 auto; z-index: 200;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 2rem 4rem;
-    }
-    nav::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(2,5,8,0.92), transparent);
-      pointer-events: none;
-    }
-    .nav-back {
-      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em;
-      color: var(--muted); text-decoration: none; position: relative; transition: color 0.3s;
-    }
-    .nav-back:hover { color: var(--fg); }
-    .nav-logo {
-      font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.18em;
-      color: var(--fg); text-decoration: none; position: relative;
-    }
-    .nav-logo span { color: var(--accent); }
-    .nav-cta {
-      display: inline-flex; align-items: center; gap: 0.8rem;
-      padding: 0.65rem 1.5rem; background: var(--accent); color: var(--bg);
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
-      text-decoration: none; position: relative;
-      transition: transform 0.3s var(--ease), box-shadow 0.3s;
-    }
-    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(43,191,204,0.4); }
+/* hero visual - card stack + metrics */
+.hero-visual{position:relative;aspect-ratio:5/6;display:grid;place-items:center}
+.hero-bg-blob{
+  position:absolute;inset:5% 0 0 5%;border-radius:60% 40% 55% 45%/50% 55% 45% 50%;
+  background:linear-gradient(135deg,var(--mint-2),var(--mint));
+  z-index:0;animation:blob 14s ease-in-out infinite;
+}
+@keyframes blob{0%,100%{border-radius:60% 40% 55% 45%/50% 55% 45% 50%}50%{border-radius:45% 55% 40% 60%/55% 45% 60% 40%}}
+.doc-card{
+  position:relative;z-index:2;width:80%;max-width:380px;
+  background:#fff;border-radius:28px;padding:2rem;box-shadow:var(--shadow);
+}
+.doc-photo{
+  width:100%;aspect-ratio:5/4;border-radius:20px;
+  background:linear-gradient(135deg,#FFE0C8 0%,#FFB38C 60%,#D9896A 100%);
+  position:relative;overflow:hidden;margin-bottom:1.2rem;
+}
+.doc-photo::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 50% 35%,#FFCDB1 0%,#D9896A 35%,transparent 36%),
+    radial-gradient(ellipse at 50% 85%,#FFFFFF 0%,#FFFFFF 45%,transparent 46%),
+    radial-gradient(ellipse at 50% 75%,#1A4870 0%,#1A4870 30%,transparent 31%);
+}
+.doc-photo::after{
+  content:'';position:absolute;top:30%;left:50%;transform:translateX(-50%);
+  width:45%;height:12%;background:#3A2418;border-radius:50% 50% 20% 20%;
+}
+.doc-info{display:flex;justify-content:space-between;align-items:center}
+.doc-info h4{font-weight:700;font-size:1.05rem;color:var(--navy);letter-spacing:-.01em}
+.doc-info p{font-size:.82rem;color:var(--muted);margin-top:.1rem}
+.doc-badge{padding:.35rem .7rem;background:var(--mint);color:var(--mint-deep);border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em}
+.doc-card .slot{
+  margin-top:1.2rem;padding:.9rem 1rem;background:var(--bg);border-radius:14px;
+  display:flex;justify-content:space-between;align-items:center;font-size:.85rem;
+}
+.doc-card .slot span{color:var(--muted)}
+.doc-card .slot strong{color:var(--navy);font-weight:700}
+.floater{position:absolute;z-index:3;background:#fff;border-radius:18px;padding:1rem 1.2rem;box-shadow:0 20px 40px rgba(12,46,74,.12);display:flex;align-items:center;gap:.9rem}
+.float-1{top:8%;left:-4%;animation:floatA 5s ease-in-out infinite}
+.float-2{bottom:12%;right:-6%;animation:floatA 5s ease-in-out infinite .8s}
+@keyframes floatA{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.float-ic{width:40px;height:40px;border-radius:12px;background:var(--mint);color:var(--mint-deep);display:grid;place-items:center;font-weight:700;font-size:1.1rem}
+.float-2 .float-ic{background:var(--warm);color:var(--coral)}
+.floater strong{display:block;font-weight:700;color:var(--navy);font-size:.9rem}
+.floater span{font-size:.75rem;color:var(--muted)}
 
-    /* ── HERO ─────────────────────────────────── */
-    .hero {
-      height: 100vh; min-height: 700px;
-      display: flex; flex-direction: column; justify-content: flex-end;
-      padding: 0 4rem 7rem;
-      position: relative; overflow: hidden;
-    }
-    .hero-ambient {
-      position: absolute; inset: 0;
-      background:
-        radial-gradient(ellipse 55% 55% at 75% 25%, rgba(74,144,217,0.12) 0%, transparent 65%),
-        radial-gradient(ellipse 50% 50% at 20% 70%, rgba(43,191,204,0.1) 0%, transparent 65%);
-    }
-    .hero-grid {
-      position: absolute; inset: 0;
-      background-image:
-        linear-gradient(rgba(43,191,204,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(43,191,204,0.025) 1px, transparent 1px);
-      background-size: 80px 80px;
-    }
-    .hero-pulse {
-      position: absolute; top: 30%; left: 65%;
-      transform: translate(-50%, -50%);
-    }
-    .pulse-ring {
-      position: absolute; border: 1px solid rgba(43,191,204,0.15);
-      border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%);
-      animation: pulseOut 3.5s ease-out infinite;
-    }
-    .pulse-ring:nth-child(1) { width: 200px; height: 200px; animation-delay: 0s; }
-    .pulse-ring:nth-child(2) { width: 400px; height: 400px; animation-delay: 1.1s; }
-    .pulse-ring:nth-child(3) { width: 600px; height: 600px; animation-delay: 2.2s; }
-    .pulse-core {
-      position: absolute; width: 12px; height: 12px;
-      background: var(--accent); border-radius: 50%;
-      top: 50%; left: 50%; transform: translate(-50%,-50%);
-      box-shadow: 0 0 20px rgba(43,191,204,0.8);
-    }
-    .hero-eyebrow {
-      font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.22em;
-      color: var(--accent); margin-bottom: 1.5rem;
-      opacity: 0; animation: fadeUp 1s var(--ease) 0.3s forwards;
-    }
-    .hero-title {
-      font-size: clamp(5rem, 12vw, 12rem); font-weight: 900;
-      line-height: 0.88; letter-spacing: -0.03em; text-transform: uppercase;
-      opacity: 0; animation: fadeUp 1.2s var(--ease) 0.5s forwards;
-    }
-    .hero-title .accent { color: var(--accent); }
-    .hero-bottom {
-      display: flex; align-items: flex-end; justify-content: space-between;
-      margin-top: 3rem; gap: 4rem;
-      opacity: 0; animation: fadeUp 1s var(--ease) 0.9s forwards;
-    }
-    .hero-desc {
-      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em;
-      color: var(--muted); max-width: 500px; line-height: 1.9;
-    }
-    .hero-book-block { text-align: right; flex-shrink: 0; }
-    .hero-book-label {
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
-      color: var(--muted); margin-bottom: 1rem;
-    }
-    .btn-book {
-      display: inline-flex; align-items: center; gap: 1.2rem;
-      padding: 1rem 2.5rem; background: var(--accent); color: var(--bg);
-      font-family: var(--mono); font-size: 0.65rem; letter-spacing: 0.15em;
-      text-decoration: none; font-weight: 700;
-      transition: transform 0.3s var(--ease), box-shadow 0.3s;
-    }
-    .btn-book:hover { transform: translateY(-3px); box-shadow: 0 16px 50px rgba(43,191,204,0.5); }
+/* ── STATS STRIP ── */
+.stats{padding:3rem 2.5rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface)}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;max-width:1200px;margin:0 auto}
+.stat .num{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,4vw,3.6rem);line-height:1;color:var(--navy);letter-spacing:-.02em}
+.stat .num .it{font-style:italic;color:var(--mint-deep)}
+.stat .lbl{font-size:.85rem;color:var(--muted);margin-top:.5rem;font-weight:500}
 
-    /* ── TRUST BAR ────────────────────────────── */
-    .trust-bar {
-      display: flex; gap: 2px; padding: 0 0;
-      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    }
-    .trust-item {
-      flex: 1; padding: 2rem 3rem;
-      display: flex; align-items: center; gap: 1.5rem;
-      border-right: 1px solid var(--border);
-      transition: background 0.3s;
-    }
-    .trust-item:hover { background: rgba(43,191,204,0.03); }
-    .trust-item:last-child { border-right: none; }
-    .trust-icon { font-size: 1.8rem; opacity: 0.7; }
-    .trust-num { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.04em; color: var(--accent); line-height: 1; }
-    .trust-label { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.12em; color: var(--muted); margin-top: 0.3rem; }
+/* ── SECTIONS ── */
+.section{padding:7rem 2.5rem}
+.section-max{max-width:1280px;margin:0 auto}
+.section-head{text-align:center;max-width:720px;margin:0 auto 4rem}
+.eyebrow{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-radius:999px;background:var(--mint);color:var(--mint-deep);font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:1.2rem}
+.h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,4.5vw,3.8rem);line-height:1.02;letter-spacing:-.02em;color:var(--navy)}
+.h2 .it{font-style:italic;color:var(--mint-deep)}
+.sub{margin-top:1.2rem;color:var(--muted);font-size:1.05rem}
 
-    /* ── SERVICES ─────────────────────────────── */
-    .section { padding: 9rem 4rem; }
-    .s-label { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em; color: var(--accent); margin-bottom: 1rem; }
-    .s-title { font-size: clamp(3rem, 6.5vw, 6.5rem); font-weight: 900; line-height: 0.92; letter-spacing: -0.03em; text-transform: uppercase; margin-bottom: 5rem; }
+/* services grid */
+.services{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
+.service{
+  background:#fff;border:1px solid var(--line);border-radius:24px;padding:2rem;
+  position:relative;overflow:hidden;transition:all .5s var(--ease);cursor:pointer;
+}
+.service:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:transparent}
+.service-ic{
+  width:58px;height:58px;border-radius:18px;background:var(--mint);color:var(--mint-deep);
+  display:grid;place-items:center;margin-bottom:1.4rem;
+  font-family:'Instrument Serif',serif;font-style:italic;font-size:1.8rem;font-weight:400;
+  transition:all .5s var(--ease);
+}
+.service:hover .service-ic{background:var(--navy);color:#fff;transform:rotate(-6deg)}
+.service:nth-child(2) .service-ic{background:#FFE7D1;color:var(--coral)}
+.service:nth-child(2):hover .service-ic{background:var(--coral);color:#fff}
+.service:nth-child(4) .service-ic{background:#E6EEF8;color:var(--navy-2)}
+.service:nth-child(4):hover .service-ic{background:var(--navy-2);color:#fff}
+.service:nth-child(5) .service-ic{background:#F3E6F8;color:#7A4BB8}
+.service:nth-child(5):hover .service-ic{background:#7A4BB8;color:#fff}
+.service:nth-child(6) .service-ic{background:#FFF2CC;color:#C69748}
+.service:nth-child(6):hover .service-ic{background:#C69748;color:#fff}
+.service h3{font-weight:700;font-size:1.25rem;color:var(--navy);margin-bottom:.6rem;letter-spacing:-.01em}
+.service p{color:var(--muted);font-size:.95rem;line-height:1.6}
+.service-tags{margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.5rem}
+.service-tags span{font-size:.72rem;padding:.25rem .7rem;background:var(--bg);border-radius:999px;color:var(--muted);font-weight:500}
+.service-link{margin-top:1.2rem;display:inline-flex;align-items:center;gap:.4rem;color:var(--navy);font-weight:700;font-size:.88rem;text-decoration:none;transition:gap .3s}
+.service:hover .service-link{gap:.8rem;color:var(--mint-deep)}
 
-    .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; }
-    .service-card {
-      padding: 3.5rem; position: relative; overflow: hidden;
-      background: rgba(237,244,248,0.02); border: 1px solid var(--border);
-      transition: background 0.4s, border-color 0.4s;
-    }
-    .service-card:hover { background: rgba(43,191,204,0.04); border-color: rgba(43,191,204,0.2); }
-    .service-card::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 70% 60% at 0% 0%, rgba(43,191,204,0.08), transparent);
-      opacity: 0; transition: opacity 0.4s;
-    }
-    .service-card:hover::before { opacity: 1; }
-    .sc-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem; }
-    .sc-icon { font-size: 2.5rem; }
-    .sc-num {
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em;
-      color: rgba(43,191,204,0.4);
-    }
-    .sc-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 1rem; }
-    .sc-body { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted); line-height: 1.85; margin-bottom: 2rem; }
-    .sc-link {
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.15em;
-      color: var(--accent); text-decoration: none;
-      border-bottom: 1px solid rgba(43,191,204,0.3); padding-bottom: 3px;
-      display: inline-block;
-      opacity: 0; transform: translateX(-8px);
-      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
-    }
-    .service-card:hover .sc-link { opacity: 1; transform: translateX(0); }
+/* ── DOCTORS ── */
+.doctors{background:linear-gradient(180deg,var(--bg) 0%,var(--mint) 100%);padding:7rem 2.5rem}
+.doc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem;margin-top:3rem}
+.doctor{
+  background:#fff;border-radius:24px;overflow:hidden;position:relative;
+  transition:transform .5s var(--ease);cursor:pointer;
+}
+.doctor:hover{transform:translateY(-8px)}
+.doctor-img{
+  aspect-ratio:3/4;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,var(--mint) 0%,var(--mint-2) 100%);
+}
+.doctor-img::before{
+  content:'';position:absolute;left:50%;top:15%;transform:translateX(-50%);
+  width:42%;aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 50% 40%,#FFCDB1,#D9896A);
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+.doctor-img::after{
+  content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:72%;height:50%;background:#fff;border-radius:45% 45% 0 0;
+}
+.doctor:nth-child(2) .doctor-img{background:linear-gradient(180deg,#FFE7D1,#FFB38C)}
+.doctor:nth-child(2) .doctor-img::before{background:radial-gradient(circle at 50% 40%,#F4C3A6,#A66A48)}
+.doctor:nth-child(3) .doctor-img{background:linear-gradient(180deg,#E6EEF8,#B6CCE3)}
+.doctor:nth-child(3) .doctor-img::before{background:radial-gradient(circle at 50% 40%,#FFD7BC,#BA7E5C)}
+.doctor:nth-child(4) .doctor-img{background:linear-gradient(180deg,#F3E6F8,#D4B8E0)}
+.doctor:nth-child(4) .doctor-img::before{background:radial-gradient(circle at 50% 40%,#E8B49A,#8E5A44)}
+.doctor-info{padding:1.4rem 1.4rem 1.6rem}
+.doctor-info h4{font-weight:700;color:var(--navy);font-size:1.1rem;letter-spacing:-.01em}
+.doctor-spec{color:var(--mint-deep);font-size:.85rem;font-weight:600;margin-top:.15rem}
+.doctor-meta{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
+.doctor-meta strong{color:var(--navy);font-weight:700}
 
-    /* ── DIVIDER ──────────────────────────────── */
-    .divider { height: 1px; background: var(--border); margin: 0 4rem; }
+/* ── SYMPTOM CHECKER ── */
+.checker{padding:7rem 2.5rem}
+.checker-wrap{
+  background:var(--navy);color:#fff;border-radius:36px;padding:4.5rem 3rem;
+  display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;overflow:hidden;
+}
+.checker-wrap::before{content:'';position:absolute;top:-200px;right:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(182,227,206,.25),transparent 70%)}
+.checker-wrap .eyebrow{background:rgba(182,227,206,.15);color:var(--mint-2)}
+.checker-wrap h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,4vw,3.4rem);line-height:1.02;letter-spacing:-.02em;position:relative}
+.checker-wrap h2 .it{font-style:italic;color:var(--mint-2)}
+.checker-wrap p{color:rgba(255,255,255,.72);margin-top:1rem;font-size:1rem;position:relative}
+.checker-features{margin-top:2rem;display:flex;flex-direction:column;gap:.8rem;position:relative}
+.checker-features li{list-style:none;display:flex;align-items:center;gap:.8rem;font-size:.95rem}
+.checker-features li::before{content:'✓';width:24px;height:24px;border-radius:50%;background:var(--mint-2);color:var(--navy);display:grid;place-items:center;font-weight:700;font-size:.75rem;flex-shrink:0}
+.checker-form{
+  background:#fff;border-radius:24px;padding:2rem;color:var(--ink);position:relative;
+}
+.form-step{font-size:.72rem;letter-spacing:.14em;color:var(--mint-deep);font-weight:700;text-transform:uppercase;margin-bottom:.6rem}
+.checker-form h3{font-weight:700;color:var(--navy);font-size:1.25rem;margin-bottom:1.2rem;letter-spacing:-.01em}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.5rem}
+.opt{
+  padding:.9rem;border-radius:14px;border:1.5px solid var(--line);background:#fff;cursor:pointer;
+  font-weight:600;font-size:.88rem;color:var(--navy);text-align:left;display:flex;align-items:center;gap:.7rem;
+  transition:all .3s var(--ease);
+}
+.opt:hover{border-color:var(--mint-deep);background:var(--mint)}
+.opt.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.opt .em{font-size:1.2rem}
+.progress{height:6px;background:var(--line);border-radius:999px;overflow:hidden;margin-bottom:1.2rem}
+.progress-fill{height:100%;width:60%;background:linear-gradient(90deg,var(--mint-deep),var(--mint-2));border-radius:999px}
 
-    /* ── HOW IT WORKS ─────────────────────────── */
-    .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 5rem; }
-    .step-card {
-      padding: 3rem; border: 1px solid var(--border); position: relative;
-      transition: border-color 0.4s, background 0.4s;
-    }
-    .step-card:hover { background: rgba(43,191,204,0.03); border-color: rgba(43,191,204,0.15); }
-    .step-num-big {
-      font-size: 5rem; font-weight: 900; letter-spacing: -0.05em;
-      color: rgba(43,191,204,0.1); line-height: 1; margin-bottom: 1.5rem;
-    }
-    .step-title { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 1rem; text-transform: uppercase; }
-    .step-body { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted); line-height: 1.85; }
-    .step-connector {
-      position: absolute; top: 3.5rem; right: -1px;
-      width: 1px; height: 40px; background: var(--accent); opacity: 0.2;
-    }
+/* ── TESTIMONIAL ── */
+.testi{padding:7rem 2.5rem;background:var(--surface)}
+.testi-wrap{max-width:1000px;margin:0 auto;text-align:center;position:relative}
+.testi-stars{font-size:1.2rem;letter-spacing:.15em;color:#F5B82E;margin-bottom:1.2rem}
+.testi-quote{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(1.6rem,3.2vw,2.6rem);line-height:1.3;color:var(--navy);letter-spacing:-.015em}
+.testi-quote .it{font-style:italic;color:var(--mint-deep)}
+.testi-author{margin-top:2rem;display:inline-flex;align-items:center;gap:1rem}
+.testi-av{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FFE0C8,#D9896A)}
+.testi-author div{text-align:left}
+.testi-author strong{display:block;color:var(--navy);font-weight:700}
+.testi-author span{color:var(--muted);font-size:.85rem}
 
-    /* ── TEAM ─────────────────────────────────── */
-    .team-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 5rem; }
-    .doc-card {
-      aspect-ratio: 3/4; position: relative; overflow: hidden;
-      background: rgba(237,244,248,0.02); border: 1px solid var(--border);
-      display: flex; flex-direction: column; justify-content: flex-end;
-      transition: border-color 0.4s;
-    }
-    .doc-card:hover { border-color: rgba(43,191,204,0.2); }
-    .doc-art {
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      transition: transform 0.8s var(--ease);
-    }
-    .doc-card:hover .doc-art { transform: scale(1.03); }
-    .doc-initials {
-      font-size: 5rem; font-weight: 900; letter-spacing: -0.05em;
-      color: rgba(43,191,204,0.08);
-    }
-    .doc-glow {
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 60% at 50% 30%, rgba(43,191,204,0.07), transparent);
-      opacity: 0; transition: opacity 0.5s;
-    }
-    .doc-card:hover .doc-glow { opacity: 1; }
-    .doc-foot {
-      position: relative; z-index: 1; padding: 2rem;
-      background: linear-gradient(to top, rgba(2,5,8,1) 0%, transparent 100%);
-    }
-    .doc-name { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.3rem; }
-    .doc-role { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.15em; color: var(--accent); }
+/* ── INSURANCE ── */
+.insurance{padding:5rem 2.5rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.insurance-wrap{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:3rem;align-items:center}
+.insurance h4{font-weight:700;color:var(--navy);font-size:1.05rem;letter-spacing:-.01em}
+.insurance p{color:var(--muted);font-size:.85rem;margin-top:.2rem}
+.logos{display:grid;grid-template-columns:repeat(6,1fr);gap:2rem;align-items:center}
+.logo{
+  font-weight:700;letter-spacing:-.02em;color:var(--muted);font-size:1.1rem;text-align:center;
+  padding:1rem;border:1px dashed var(--line);border-radius:12px;transition:all .3s;
+}
+.logo:hover{color:var(--navy);border-color:var(--navy);border-style:solid}
 
-    /* ── BOOKING CTA ──────────────────────────── */
-    .booking-cta {
-      padding: 10rem 4rem; text-align: center; position: relative;
-    }
-    .booking-cta::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(43,191,204,0.07), transparent);
-    }
-    .bc-big {
-      font-size: clamp(4rem, 10vw, 10rem); font-weight: 900;
-      line-height: 0.9; letter-spacing: -0.04em; text-transform: uppercase;
-      position: relative; margin-bottom: 3rem;
-    }
-    .bc-big span { color: var(--accent); }
-    .bc-sub {
-      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
-      color: var(--muted); position: relative; margin-bottom: 1.5rem;
-    }
-    .bc-availability {
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
-      color: rgba(43,191,204,0.6);
-      position: relative; margin-bottom: 3.5rem;
-    }
-    .bc-availability::before { content: '● '; color: var(--accent); }
-    .bc-btn {
-      position: relative; display: inline-flex; align-items: center; gap: 1.5rem;
-      padding: 1.2rem 3.5rem; background: var(--accent); color: var(--bg);
-      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
-      text-decoration: none; font-weight: 700;
-      transition: transform 0.3s var(--ease), box-shadow 0.3s;
-    }
-    .bc-btn:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(43,191,204,0.5); }
+/* ── CTA ── */
+.cta{padding:7rem 2.5rem}
+.cta-wrap{
+  background:linear-gradient(135deg,var(--mint) 0%,var(--mint-2) 100%);
+  border-radius:36px;padding:5rem 3rem;text-align:center;position:relative;overflow:hidden;
+}
+.cta-wrap::before{content:'';position:absolute;top:-150px;left:-150px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,.3);filter:blur(60px)}
+.cta-wrap::after{content:'';position:absolute;bottom:-150px;right:-150px;width:400px;height:400px;border-radius:50%;background:rgba(46,143,107,.3);filter:blur(60px)}
+.cta-wrap > *{position:relative}
+.cta-wrap h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,4.5vw,3.8rem);line-height:1;letter-spacing:-.02em;color:var(--navy);margin-bottom:1rem}
+.cta-wrap h2 .it{font-style:italic}
+.cta-wrap p{color:var(--navy-2);font-size:1.05rem;max-width:560px;margin:0 auto 2.2rem}
+.cta-ctas{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
 
-    /* ── FOOTER ───────────────────────────────── */
-    footer {
-      border-top: 1px solid var(--border); padding: 3rem 4rem;
-      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2rem;
-    }
-    .f-brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -0.01em; }
-    .f-brand span { color: var(--accent); }
-    .f-credit { font-family: var(--mono); font-size: 0.56rem; letter-spacing: 0.15em; color: var(--muted); text-align: center; }
-    .f-credit a { color: var(--accent); text-decoration: none; }
-    .f-links { display: flex; gap: 2rem; justify-content: flex-end; }
-    .f-links a { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; color: var(--muted); text-decoration: none; transition: color 0.3s; }
-    .f-links a:hover { color: var(--fg); }
+/* ── FOOTER ── */
+footer{background:var(--navy);color:#fff;padding:5rem 2.5rem 2rem}
+.foot-top{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1.2fr;gap:3rem;margin-bottom:3rem}
+.foot-brand .brand{color:#fff}
+.foot-brand .brand-mark{background:var(--mint-2)}
+.foot-brand .brand-mark::before,.foot-brand .brand-mark::after{background:var(--navy)}
+.foot-brand p{margin-top:1rem;color:rgba(255,255,255,.7);font-size:.92rem;max-width:260px}
+.foot-col h5{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mint-2);margin-bottom:1.2rem;font-weight:700}
+.foot-col a{display:block;color:rgba(255,255,255,.8);text-decoration:none;padding:.35rem 0;font-size:.92rem;transition:color .3s}
+.foot-col a:hover{color:var(--mint-2)}
+.foot-contact{font-size:.92rem;color:rgba(255,255,255,.8);line-height:1.8}
+.foot-contact strong{display:block;color:#fff;font-weight:700;margin-bottom:.4rem}
+.foot-bot{max-width:1280px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-size:.82rem;color:rgba(255,255,255,.5)}
 
-    /* ── ANIMATIONS ───────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes pulseOut {
-      0%   { transform: translate(-50%,-50%) scale(0.4); opacity: 0.6; }
-      100% { transform: translate(-50%,-50%) scale(1);   opacity: 0; }
-    }
+/* reveal */
+.r{opacity:0;transform:translateY(24px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.r.in{opacity:1;transform:none}
 
-    /* ── SCROLL REVEAL ────────────────────────── */
-    .rev { opacity: 0; transform: translateY(50px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
-    .rev.in { opacity: 1; transform: translateY(0); }
-    .rev.d1 { transition-delay: 0.1s; }
-    .rev.d2 { transition-delay: 0.22s; }
-    .rev.d3 { transition-delay: 0.34s; }
-    .rev.d4 { transition-delay: 0.46s; }
-  </style>
+@media(max-width:980px){
+  .nav{padding:1rem 1.2rem}.nav-links{display:none}.phone{display:none}
+  .hero{grid-template-columns:1fr;padding:3rem 1.2rem 4rem;gap:3rem}
+  .section,.doctors,.checker,.testi,.cta{padding:4.5rem 1.2rem}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:2rem}
+  .services{grid-template-columns:1fr;gap:1rem}
+  .doc-grid{grid-template-columns:1fr 1fr}
+  .checker-wrap{grid-template-columns:1fr;padding:3rem 1.5rem;gap:2.5rem}
+  .insurance-wrap{grid-template-columns:1fr;gap:1.5rem}.logos{grid-template-columns:repeat(3,1fr)}
+  .cta-wrap{padding:3.5rem 1.5rem;border-radius:24px}
+  .foot-top{grid-template-columns:1fr 1fr;gap:2rem}
+  .foot-bot{flex-direction:column;text-align:center}
+}
+</style>
 </head>
 <body>
 
-  <div id="c-dot"></div>
-  <div id="c-ring"></div>
+<div class="bar"><span>🩺 Accepting new patients — same-day appointments available Monday–Saturday</span><a href="#book">Book now</a></div>
 
-  <nav>
-    <a href="/" class="nav-back">← ARBEL PORTFOLIO</a>
-    <a href="#" class="nav-logo">HEALING <span>HANDS</span></a>
-    <a href="#book" class="nav-cta">BOOK APPOINTMENT →</a>
-  </nav>
+<nav class="nav">
+  <div class="brand"><div class="brand-mark"></div>Healing Hands</div>
+  <div class="nav-links">
+    <a href="#services">Services</a>
+    <a href="#doctors">Our doctors</a>
+    <a href="#checker">Symptom checker</a>
+    <a href="#testi">Patients</a>
+    <a href="#insurance">Insurance</a>
+  </div>
+  <div class="nav-right">
+    <a href="tel:+441173456789" class="phone"><span class="phone-ic">☎</span><span>0117 345 6789</span></a>
+    <button class="btn btn-primary">Book visit</button>
+  </div>
+</nav>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-ambient"></div>
-    <div class="hero-grid"></div>
-    <div class="hero-pulse">
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-ring"></div>
-      <div class="pulse-core"></div>
+<section class="hero">
+  <div>
+    <div class="hero-tag"><span class="pulse"></span>Same-day appointments available today</div>
+    <h1>Family care<br>that <span class="it">feels</span><br><span class="und">human again.</span></h1>
+    <p>A modern clinic where your GP actually remembers your name, same-day visits are the rule, and your data stays out of a black box. Run by doctors, not by a spreadsheet.</p>
+    <div class="hero-ctas">
+      <button class="btn btn-primary">Book a 15-min visit</button>
+      <button class="btn btn-white">See our doctors</button>
     </div>
-    <div class="hero-eyebrow">MODERN HEALTHCARE &nbsp;·&nbsp; SINCE 2018 &nbsp;·&nbsp; EST. LONDON</div>
-    <h1 class="hero-title">CARE<br><span class="accent">RE-</span><br>IMAGINED</h1>
-    <div class="hero-bottom">
-      <p class="hero-desc">A new standard in primary care. Bringing together world-class specialists, lightning-fast booking, and a clinic experience designed for how people actually live.</p>
-      <div class="hero-book-block">
-        <div class="hero-book-label">NEXT AVAILABLE: TODAY</div>
-        <a href="#book" class="btn-book">BOOK NOW →</a>
+    <div class="hero-trust">
+      <div class="avatars"><div class="av"></div><div class="av"></div><div class="av"></div><div class="av">+9k</div></div>
+      <div class="trust-text"><strong>Trusted by 9,200+ families</strong><span>4.9 / 5 on Google · 2,413 reviews</span></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-bg-blob"></div>
+    <div class="floater float-1"><div class="float-ic">✓</div><div><strong>Appointment confirmed</strong><span>Today · 3:40 PM</span></div></div>
+    <div class="doc-card">
+      <div class="doc-photo"></div>
+      <div class="doc-info">
+        <div><h4>Dr. Amelia Chen</h4><p>Family medicine · 12 yrs</p></div>
+        <div class="doc-badge">Available</div>
       </div>
+      <div class="slot"><span>Next slot</span><strong>Today · 3:40 PM</strong></div>
     </div>
-  </section>
+    <div class="floater float-2"><div class="float-ic">♥</div><div><strong>No wait room queue</strong><span>Avg visit: 18 min</span></div></div>
+  </div>
+</section>
 
-  <!-- TRUST BAR -->
-  <div class="trust-bar rev">
-    <div class="trust-item rev d1">
-      <div class="trust-icon">🏥</div>
-      <div>
-        <div class="trust-num">12K+</div>
-        <div class="trust-label">PATIENTS SERVED</div>
-      </div>
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat r"><div class="num">9,200<span class="it">+</span></div><div class="lbl">Families we care for across Bristol</div></div>
+    <div class="stat r"><div class="num">18 <span class="it">min</span></div><div class="lbl">Average appointment length — not 7</div></div>
+    <div class="stat r"><div class="num">24<span class="it">/</span>7</div><div class="lbl">Message your GP directly, any time</div></div>
+    <div class="stat r"><div class="num">94<span class="it">%</span></div><div class="lbl">Same-day visits booked when asked</div></div>
+  </div>
+</section>
+
+<section class="section" id="services">
+  <div class="section-max">
+    <div class="section-head r">
+      <div class="eyebrow">What we treat</div>
+      <h2 class="h2">Full-service care,<br>under <span class="it">one calm roof</span>.</h2>
+      <p class="sub">From your 6-month-old's sniffle to your 68-year-old father's annual check. No referral loops, no maze of buildings — just one team that already knows you.</p>
     </div>
-    <div class="trust-item rev d2">
-      <div class="trust-icon">⭐</div>
-      <div>
-        <div class="trust-num">4.9</div>
-        <div class="trust-label">AVERAGE RATING</div>
+    <div class="services">
+      <div class="service r">
+        <div class="service-ic">A</div>
+        <h3>Family medicine</h3>
+        <p>Your GP, on call. Same doctor every visit so nothing gets lost between the lines on a form.</p>
+        <div class="service-tags"><span>Annual check-ups</span><span>Sick visits</span><span>Chronic care</span></div>
+        <a href="#" class="service-link">Learn more →</a>
       </div>
-    </div>
-    <div class="trust-item rev d3">
-      <div class="trust-icon">⏱</div>
-      <div>
-        <div class="trust-num">&lt;10 min</div>
-        <div class="trust-label">AVERAGE WAIT TIME</div>
+      <div class="service r">
+        <div class="service-ic">B</div>
+        <h3>Paediatrics</h3>
+        <p>From newborn check-ups to teenage health. A kid-friendly clinic that doesn't feel like a waiting room.</p>
+        <div class="service-tags"><span>Vaccinations</span><span>Developmental</span><span>Allergy testing</span></div>
+        <a href="#" class="service-link">Learn more →</a>
       </div>
-    </div>
-    <div class="trust-item rev d4">
-      <div class="trust-icon">🩺</div>
-      <div>
-        <div class="trust-num">40+</div>
-        <div class="trust-label">SPECIALIST DOCTORS</div>
+      <div class="service r">
+        <div class="service-ic">C</div>
+        <h3>Women's health</h3>
+        <p>Gynaecology, maternity planning, menopause care. Compassionate and comprehensive, never rushed.</p>
+        <div class="service-tags"><span>Screenings</span><span>Contraception</span><span>Fertility</span></div>
+        <a href="#" class="service-link">Learn more →</a>
+      </div>
+      <div class="service r">
+        <div class="service-ic">D</div>
+        <h3>Mental wellness</h3>
+        <p>Talk therapy, medication reviews, and proper referrals. Because bodies and minds aren't two separate offices.</p>
+        <div class="service-tags"><span>Therapy</span><span>Anxiety &amp; mood</span><span>Sleep</span></div>
+        <a href="#" class="service-link">Learn more →</a>
+      </div>
+      <div class="service r">
+        <div class="service-ic">E</div>
+        <h3>Diagnostics lab</h3>
+        <p>In-clinic blood work, ultrasound, and ECG. Most results back within 24 hours, read by your own doctor.</p>
+        <div class="service-tags"><span>Blood panels</span><span>Imaging</span><span>Allergy</span></div>
+        <a href="#" class="service-link">Learn more →</a>
+      </div>
+      <div class="service r">
+        <div class="service-ic">F</div>
+        <h3>Preventive &amp; wellness</h3>
+        <p>Annual reviews, nutrition, physio, and travel health. The kind of care that keeps you out of hospital.</p>
+        <div class="service-tags"><span>Nutrition</span><span>Physiotherapy</span><span>Vaccinations</span></div>
+        <a href="#" class="service-link">Learn more →</a>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- SERVICES -->
-  <section class="section" id="services">
-    <div class="rev"><div class="s-label">— 01 / SERVICES</div></div>
-    <div class="rev"><h2 class="s-title">CARE FOR<br>EVERY NEED</h2></div>
-    <div class="services-grid">
-      <div class="service-card rev d1">
-        <div class="sc-head">
-          <div class="sc-icon">🫀</div>
-          <div class="sc-num">01</div>
-        </div>
-        <div class="sc-title">General Practice</div>
-        <div class="sc-body">Same-day GP appointments with experienced physicians. From routine checkups to urgent care, we're here when you need us — without the wait.</div>
-        <a href="#book" class="sc-link">BOOK NOW →</a>
-      </div>
-      <div class="service-card rev d2">
-        <div class="sc-head">
-          <div class="sc-icon">🧠</div>
-          <div class="sc-num">02</div>
-        </div>
-        <div class="sc-title">Mental Wellness</div>
-        <div class="sc-body">Compassionate, evidence-based mental health support. Our therapists and psychiatrists work together to provide genuinely holistic care.</div>
-        <a href="#book" class="sc-link">BOOK NOW →</a>
-      </div>
-      <div class="service-card rev d1">
-        <div class="sc-head">
-          <div class="sc-icon">🦴</div>
-          <div class="sc-num">03</div>
-        </div>
-        <div class="sc-title">Specialist Referrals</div>
-        <div class="sc-body">Direct access to 25+ specialties — cardiology, dermatology, orthopaedics and more. Referred same week, not the same month.</div>
-        <a href="#book" class="sc-link">BOOK NOW →</a>
-      </div>
-      <div class="service-card rev d2">
-        <div class="sc-head">
-          <div class="sc-icon">👶</div>
-          <div class="sc-num">04</div>
-        </div>
-        <div class="sc-title">Paediatrics</div>
-        <div class="sc-body">Dedicated paediatric care from newborn to adolescent. A calm, child-friendly environment and paediatricians who take the time to listen.</div>
-        <a href="#book" class="sc-link">BOOK NOW →</a>
-      </div>
+<section class="doctors" id="doctors">
+  <div class="section-max">
+    <div class="section-head r">
+      <div class="eyebrow">Meet the team</div>
+      <h2 class="h2">Four doctors.<br><span class="it">One hundred</span> years of care.</h2>
+      <p class="sub">A small, deliberately kept-small team so nobody falls through the cracks. Every doctor has at least ten years of clinical experience and a reason to be here that isn't a bonus scheme.</p>
     </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- HOW IT WORKS -->
-  <section class="section">
-    <div class="rev"><div class="s-label">— 02 / HOW IT WORKS</div></div>
-    <div class="rev"><h2 class="s-title">HEALTHCARE<br>MADE SIMPLE</h2></div>
-    <div class="steps-row">
-      <div class="step-card rev d1">
-        <div class="step-num-big">01</div>
-        <div class="step-title">Book Online</div>
-        <div class="step-body">Choose a service, select a time that works for you, and confirm in under 30 seconds. Same-day slots are almost always available.</div>
-        <div class="step-connector"></div>
-      </div>
-      <div class="step-card rev d2">
-        <div class="step-num-big">02</div>
-        <div class="step-title">See Your Doctor</div>
-        <div class="step-body">Walk in on time and see a qualified clinician within minutes. No crowded waiting rooms, no chasing appointments. Just care.</div>
-        <div class="step-connector"></div>
-      </div>
-      <div class="step-card rev d3">
-        <div class="step-num-big">03</div>
-        <div class="step-title">Follow-Up Care</div>
-        <div class="step-body">Receive your care plan digitally, schedule follow-ups, and message your doctor directly — all from the Healing Hands app.</div>
-      </div>
-    </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <!-- TEAM -->
-  <section class="section">
-    <div class="rev"><div class="s-label">— 03 / OUR TEAM</div></div>
-    <div class="rev"><h2 class="s-title">WORLD-CLASS<br>CLINICIANS</h2></div>
-    <div class="team-grid">
-      <div class="doc-card rev d1">
-        <div class="doc-art">
-          <div class="doc-initials">SA</div>
-        </div>
-        <div class="doc-glow"></div>
-        <div class="doc-foot">
-          <div class="doc-name">Dr. Sarah Amir</div>
-          <div class="doc-role">GENERAL PRACTITIONER · 14 YRS</div>
+    <div class="doc-grid">
+      <div class="doctor r">
+        <div class="doctor-img"></div>
+        <div class="doctor-info">
+          <h4>Dr. Amelia Chen</h4>
+          <div class="doctor-spec">Family medicine · MBBS, MRCGP</div>
+          <div class="doctor-meta"><span>12 years</span><strong>Available today</strong></div>
         </div>
       </div>
-      <div class="doc-card rev d2">
-        <div class="doc-art">
-          <div class="doc-initials">JO</div>
-        </div>
-        <div class="doc-glow"></div>
-        <div class="doc-foot">
-          <div class="doc-name">Dr. James Osei</div>
-          <div class="doc-role">CARDIOLOGIST · 18 YRS</div>
+      <div class="doctor r">
+        <div class="doctor-img"></div>
+        <div class="doctor-info">
+          <h4>Dr. Marcus Olawale</h4>
+          <div class="doctor-spec">Paediatrics · MBBS, FRCPCH</div>
+          <div class="doctor-meta"><span>14 years</span><strong>Tue · Thu · Sat</strong></div>
         </div>
       </div>
-      <div class="doc-card rev d3">
-        <div class="doc-art">
-          <div class="doc-initials">ML</div>
-        </div>
-        <div class="doc-glow"></div>
-        <div class="doc-foot">
-          <div class="doc-name">Dr. Maya Lin</div>
-          <div class="doc-role">PAEDIATRICIAN · 11 YRS</div>
+      <div class="doctor r">
+        <div class="doctor-img"></div>
+        <div class="doctor-info">
+          <h4>Dr. Sofia Ramírez</h4>
+          <div class="doctor-spec">Women's health · MD, MRCOG</div>
+          <div class="doctor-meta"><span>16 years</span><strong>Available Fri</strong></div>
         </div>
       </div>
-      <div class="doc-card rev d4">
-        <div class="doc-art">
-          <div class="doc-initials">RK</div>
-        </div>
-        <div class="doc-glow"></div>
-        <div class="doc-foot">
-          <div class="doc-name">Dr. Ravi Kumar</div>
-          <div class="doc-role">PSYCHIATRIST · 16 YRS</div>
+      <div class="doctor r">
+        <div class="doctor-img"></div>
+        <div class="doctor-info">
+          <h4>Dr. James Patel</h4>
+          <div class="doctor-spec">Mental wellness · MBChB, MRCPsych</div>
+          <div class="doctor-meta"><span>11 years</span><strong>Mon · Wed</strong></div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- BOOKING CTA -->
-  <section class="booking-cta" id="book">
-    <h2 class="bc-big rev">YOUR HEALTH<br><span>STARTS NOW</span></h2>
-    <p class="bc-sub rev">FIRST APPOINTMENT? WE'LL WAIVE THE BOOKING FEE.</p>
-    <p class="bc-availability rev">APPOINTMENTS AVAILABLE TODAY · MONDAY – SUNDAY · 07:00 – 22:00</p>
-    <a href="#" onclick="return false" class="bc-btn rev">BOOK YOUR APPOINTMENT →</a>
-  </section>
-
-  <footer>
-    <div class="f-brand">HEALING <span>HANDS</span></div>
-    <div class="f-credit">A project by <a href="/">ARBEL.LIVE</a></div>
-    <div class="f-links">
-      <a href="#" onclick="return false">PATIENT LOGIN</a>
-      <a href="#" onclick="return false">CAREERS</a>
-      <a href="#" onclick="return false">CONTACT</a>
+<section class="checker" id="checker">
+  <div class="section-max">
+    <div class="checker-wrap r">
+      <div>
+        <div class="eyebrow">Not sure if you should book?</div>
+        <h2>Free <span class="it">symptom checker</span>,<br>answered by a human doctor.</h2>
+        <p>Tell us what's going on in three questions. A duty GP reads every answer and tells you within 15 minutes whether you need a visit, a test, or just a good night's sleep.</p>
+        <ul class="checker-features">
+          <li>Answered by a real GP, not a chatbot</li>
+          <li>Average response under 15 minutes, 8am–8pm</li>
+          <li>Completely free — no sign-up, no card needed</li>
+        </ul>
+      </div>
+      <div class="checker-form">
+        <div class="form-step">Step 2 of 3</div>
+        <h3>How long have you had these symptoms?</h3>
+        <div class="options">
+          <button class="opt"><span class="em">⏱</span>Under 24 hours</button>
+          <button class="opt on"><span class="em">📅</span>2–4 days</button>
+          <button class="opt"><span class="em">🗓</span>About a week</button>
+          <button class="opt"><span class="em">🕰</span>Over a week</button>
+        </div>
+        <div class="progress"><div class="progress-fill"></div></div>
+        <button class="btn btn-primary" style="width:100%">Continue →</button>
+      </div>
     </div>
-  </footer>
+  </div>
+</section>
 
-  <script>
-    // Cursor
-    const dot  = document.getElementById('c-dot');
-    const ring = document.getElementById('c-ring');
-    let mx = 0, my = 0, rx = 0, ry = 0;
-    document.addEventListener('mousemove', e => {
-      mx = e.clientX; my = e.clientY;
-      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-    });
-    (function loop() {
-      rx += (mx - rx) * 0.1; ry += (my - ry) * 0.1;
-      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-      requestAnimationFrame(loop);
-    })();
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => ring.classList.add('is-hover'));
-      el.addEventListener('mouseleave', () => ring.classList.remove('is-hover'));
-    });
+<section class="testi" id="testi">
+  <div class="testi-wrap r">
+    <div class="eyebrow">What patients say</div>
+    <div class="testi-stars">★ ★ ★ ★ ★</div>
+    <p class="testi-quote">"My son had a rash on a Saturday morning. I messaged the clinic at 9:02, had a video call at 9:25, and the <span class="it">prescription was at our pharmacy</span> before lunch. That's what healthcare should feel like."</p>
+    <div class="testi-author">
+      <div class="testi-av"></div>
+      <div><strong>Priya Desai</strong><span>Mother of two · patient since 2022</span></div>
+    </div>
+  </div>
+</section>
 
-    // Scroll reveal
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-    }, { threshold: 0.1 });
-    document.querySelectorAll('.rev').forEach(el => obs.observe(el));
-  </script>
+<section class="insurance" id="insurance">
+  <div class="insurance-wrap">
+    <div>
+      <h4>We accept every major UK insurer</h4>
+      <p>Plus self-pay with transparent, fixed-price visits from £65.</p>
+    </div>
+    <div class="logos">
+      <div class="logo">Bupa</div>
+      <div class="logo">AXA</div>
+      <div class="logo">Vitality</div>
+      <div class="logo">Aviva</div>
+      <div class="logo">WPA</div>
+      <div class="logo">Cigna</div>
+    </div>
+  </div>
+</section>
+
+<section class="cta" id="book">
+  <div class="cta-wrap r">
+    <div class="eyebrow">Take the first step</div>
+    <h2>Book a visit <span class="it">today</span>.<br>Meet your new GP this week.</h2>
+    <p>Registration takes 90 seconds. First visit is free for new patients this month — for kids, adults, and everyone in between.</p>
+    <div class="cta-ctas">
+      <button class="btn btn-primary">Book a free first visit</button>
+      <button class="btn btn-white">Call 0117 345 6789</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-top">
+    <div class="foot-brand">
+      <div class="brand" style="color:#fff"><div class="brand-mark"></div>Healing Hands</div>
+      <p>A modern family clinic in Bristol, UK. Run by doctors, owned by doctors, answerable only to patients.</p>
+    </div>
+    <div class="foot-col"><h5>Care</h5><a href="#">Family medicine</a><a href="#">Paediatrics</a><a href="#">Women's health</a><a href="#">Mental wellness</a><a href="#">Diagnostics</a></div>
+    <div class="foot-col"><h5>Clinic</h5><a href="#">Our doctors</a><a href="#">Insurance</a><a href="#">Prices</a><a href="#">Careers</a><a href="#">Reviews</a></div>
+    <div class="foot-col"><h5>Patients</h5><a href="#">Book a visit</a><a href="#">Patient portal</a><a href="#">Symptom checker</a><a href="#">Request records</a></div>
+    <div class="foot-contact">
+      <h5 style="color:var(--mint-2);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:1.2rem">Visit us</h5>
+      <strong>28 Park Street<br>Bristol BS1 5JA</strong>
+      Mon–Fri · 8am–8pm<br>Sat · 9am–4pm<br>Emergencies · 24/7
+    </div>
+  </div>
+  <div class="foot-bot">
+    <span>© 2026 Healing Hands Clinic · CQC registered · GMC 4482310</span>
+    <span>🔒 Your data stays in the UK. Always.</span>
+  </div>
+</footer>
+
+<script>
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.1});
+  document.querySelectorAll('.r').forEach(el=>io.observe(el));
+  // symptom checker toggle
+  document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  }));
+</script>
 </body>
 </html>

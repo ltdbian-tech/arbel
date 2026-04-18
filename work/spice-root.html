@@ -1,542 +1,445 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Spice Root — Single-Origin Artisan Spices</title>
-  <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Spice Root — Field-to-Jar Apothecary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@400;600&family=Caveat:wght@500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#F4EEDC;
+  --paper-2:#ECE3C9;
+  --ink:#2A1810;
+  --ink-soft:#5B3E2A;
+  --saffron:#D97F1E;
+  --chili:#B23A1A;
+  --cardamom:#5E6B3A;
+  --clove:#3E2417;
+  --gold:#A8782C;
+  --line:rgba(42,24,16,0.18);
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Fraunces',Georgia,serif;
+  font-weight:400;
+  overflow-x:hidden;
+  line-height:1.55;
+  position:relative;
+}
+/* paper grain */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;opacity:.35;mix-blend-mode:multiply;
+  background-image:
+    radial-gradient(circle at 20% 30%,rgba(62,36,23,.08) 0,transparent 2px),
+    radial-gradient(circle at 80% 70%,rgba(62,36,23,.06) 0,transparent 2px),
+    radial-gradient(circle at 50% 90%,rgba(62,36,23,.07) 0,transparent 2px);
+  background-size:7px 7px,11px 11px,13px 13px;
+}
+::selection{background:var(--chili);color:var(--paper)}
 
-    :root {
-      --bg: #080402;
-      --fg: #F2EBD9;
-      --accent: #E8841A;
-      --accent2: #B03020;
-      --muted: rgba(242,235,217,0.5);
-      --border: rgba(242,235,217,0.08);
-      --ease: cubic-bezier(0.16, 1, 0.3, 1);
-      --mono: 'Courier New', Courier, monospace;
-    }
+/* ── NAV ── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.4rem 3rem;
+  background:linear-gradient(180deg,rgba(244,238,220,.95) 0%,rgba(244,238,220,.6) 70%,transparent);
+  backdrop-filter:blur(6px);
+}
+.brand{display:flex;align-items:center;gap:.7rem;font-weight:700;letter-spacing:.02em;font-size:1.1rem}
+.brand-seal{
+  width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,var(--saffron),var(--chili) 70%);
+  display:grid;place-items:center;color:var(--paper);font-family:'Fraunces';font-style:italic;font-weight:700;font-size:1rem;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.2),0 2px 8px rgba(178,58,26,.25);
+}
+.nav-links{display:flex;gap:2.2rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;text-transform:uppercase;letter-spacing:.18em}
+.nav-links a{color:var(--ink);text-decoration:none;position:relative;padding:.3rem 0}
+.nav-links a::after{content:'';position:absolute;left:0;bottom:0;width:0;height:1px;background:var(--chili);transition:width .4s var(--ease)}
+.nav-links a:hover::after{width:100%}
+.nav-cta{
+  font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  padding:.7rem 1.2rem;border:1px solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);cursor:pointer;
+  transition:all .4s var(--ease);
+}
+.nav-cta:hover{background:var(--ink);color:var(--paper)}
 
-    html { scroll-behavior: smooth; }
-    body { background: var(--bg); color: var(--fg); font-family: 'Georgia', 'Times New Roman', serif; overflow-x: hidden; cursor: none; }
+/* ── HERO ── */
+.hero{
+  min-height:100vh;padding:7rem 3rem 4rem;
+  display:grid;grid-template-columns:1.3fr 1fr;gap:4rem;align-items:center;position:relative;
+}
+.hero-tag{
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:2rem;display:flex;align-items:center;gap:1rem;
+}
+.hero-tag::before{content:'';width:40px;height:1px;background:var(--ink-soft)}
+.hero-title{
+  font-family:'Fraunces';font-weight:300;font-size:clamp(3rem,8vw,7.2rem);line-height:.92;letter-spacing:-.03em;
+}
+.hero-title .italic{font-style:italic;color:var(--chili);font-weight:500}
+.hero-title .amp{font-style:italic;font-weight:400;color:var(--saffron)}
+.hero-sub{
+  margin-top:2rem;max-width:480px;font-size:1.1rem;color:var(--ink-soft);
+}
+.hero-meta{margin-top:3rem;display:flex;gap:2.5rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.18em;text-transform:uppercase}
+.hero-meta div span{display:block;font-family:'Fraunces';font-size:2rem;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:500;margin-top:.3rem}
+.hero-visual{position:relative;aspect-ratio:3/4;display:grid;place-items:center}
+.jar{
+  width:82%;aspect-ratio:3/4;position:relative;
+  background:linear-gradient(180deg,#3a2418 0%,#1a0e08 100%);
+  border-radius:14px 14px 50% 50%/14px 14px 10% 10%;
+  box-shadow:inset 6px 0 20px rgba(255,255,255,.08),inset -6px 0 20px rgba(0,0,0,.5),0 40px 80px rgba(62,36,23,.35);
+  animation:jarFloat 6s ease-in-out infinite;
+}
+.jar::before{
+  content:'';position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+  width:70%;height:32px;background:linear-gradient(180deg,var(--gold),#6b4a1a);border-radius:6px 6px 3px 3px;
+  box-shadow:0 3px 8px rgba(0,0,0,.3),inset 0 2px 0 rgba(255,255,255,.2);
+}
+.jar-label{
+  position:absolute;top:34%;left:12%;right:12%;bottom:18%;
+  background:var(--paper);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.4rem;text-align:center;
+  transform:rotate(-1deg);box-shadow:0 2px 0 rgba(0,0,0,.05);
+}
+.jar-label h4{font-family:'Fraunces';font-style:italic;font-weight:500;font-size:1.4rem;color:var(--chili);margin-bottom:.3rem}
+.jar-label .lat{font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.8rem}
+.jar-label .divider{width:30px;height:1px;background:var(--ink);margin:.4rem 0}
+.jar-label .origin{font-family:'Caveat';font-size:1rem;color:var(--ink);margin-top:.4rem}
+.hero-scribble{position:absolute;top:8%;right:-4%;font-family:'Caveat';font-size:1.3rem;color:var(--saffron);transform:rotate(8deg);max-width:160px;line-height:1.2}
+.hero-scribble::before{content:'';position:absolute;left:-40px;top:50%;width:35px;height:1px;background:var(--saffron)}
+@keyframes jarFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-12px) rotate(1deg)}}
 
-    /* ── CURSOR ───────────────────────────────── */
-    #c-dot {
-      width: 6px; height: 6px;
-      background: var(--accent); border-radius: 50%;
-      position: fixed; top: 0; left: 0;
-      transform: translate(-50%,-50%);
-      pointer-events: none; z-index: 9999;
-    }
-    #c-ring {
-      width: 32px; height: 32px;
-      border: 1px solid rgba(232,132,26,0.5); border-radius: 50%;
-      position: fixed; top: 0; left: 0;
-      transform: translate(-50%,-50%);
-      pointer-events: none; z-index: 9998;
-      transition: width 0.35s var(--ease), height 0.35s var(--ease), border-color 0.3s;
-    }
-    #c-ring.is-hover { width: 50px; height: 50px; border-color: var(--accent); }
+/* ── TICKER ── */
+.ticker{
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:1.4rem 0;overflow:hidden;background:var(--paper-2);
+}
+.ticker-track{display:flex;gap:3rem;animation:tick 40s linear infinite;white-space:nowrap}
+.ticker-item{font-family:'Fraunces';font-style:italic;font-size:1.4rem;color:var(--ink);display:flex;align-items:center;gap:3rem}
+.ticker-item::after{content:'✦';color:var(--saffron);font-style:normal}
+@keyframes tick{to{transform:translateX(-50%)}}
 
-    /* ── NAV ──────────────────────────────────── */
-    nav {
-      position: fixed; inset: 0 0 auto; z-index: 200;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 2rem 4rem;
-    }
-    nav::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(to bottom, rgba(8,4,2,0.9) 0%, transparent 100%);
-      pointer-events: none;
-    }
-    .nav-back {
-      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.15em;
-      color: var(--muted); text-decoration: none;
-      position: relative; transition: color 0.3s;
-    }
-    .nav-back:hover { color: var(--fg); }
-    .nav-logo {
-      font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.18em;
-      color: var(--fg); text-decoration: none; position: relative;
-    }
-    .nav-links { display: flex; gap: 2.5rem; list-style: none; position: relative; }
-    .nav-links a {
-      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em;
-      color: var(--muted); text-decoration: none; transition: color 0.3s;
-    }
-    .nav-links a:hover { color: var(--fg); }
+/* ── GALLERY ── */
+.section{padding:8rem 3rem;position:relative}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:4rem;gap:3rem;flex-wrap:wrap}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;color:var(--chili);margin-bottom:1rem;display:flex;align-items:center;gap:.8rem}
+.eyebrow::before{content:'';width:8px;height:8px;background:var(--chili);border-radius:50%}
+.section-title{font-family:'Fraunces';font-weight:300;font-size:clamp(2.2rem,5vw,4rem);line-height:1;letter-spacing:-.02em;max-width:600px}
+.section-title em{font-style:italic;color:var(--chili)}
+.section-lead{max-width:380px;color:var(--ink-soft);font-size:1rem}
 
-    /* ── HERO ─────────────────────────────────── */
-    .hero {
-      height: 100vh; min-height: 700px;
-      display: flex; flex-direction: column; justify-content: flex-end;
-      padding: 0 4rem 6rem;
-      position: relative; overflow: hidden;
-    }
-    .hero-ambient {
-      position: absolute; inset: 0; pointer-events: none;
-      background:
-        radial-gradient(ellipse 70% 50% at 65% 35%, rgba(232,132,26,0.13) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(176,48,32,0.08) 0%, transparent 60%);
-    }
-    .hero-bigtext {
-      position: absolute; right: 2rem; top: 50%;
-      transform: translateY(-50%);
-      font-size: clamp(10rem, 22vw, 22rem); font-weight: 900;
-      color: rgba(232,132,26,0.05); letter-spacing: -0.05em;
-      line-height: 1; user-select: none; pointer-events: none;
-      text-transform: uppercase;
-    }
-    .hero-eyebrow {
-      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.22em;
-      color: var(--accent); margin-bottom: 1.5rem;
-      opacity: 0; animation: fadeUp 1s var(--ease) 0.3s forwards;
-    }
-    .hero-title {
-      font-size: clamp(5.5rem, 13vw, 14rem); font-weight: 900;
-      line-height: 0.88; letter-spacing: -0.04em; text-transform: uppercase;
-      opacity: 0; animation: fadeUp 1.2s var(--ease) 0.5s forwards;
-    }
-    .hero-title em { font-style: italic; color: var(--accent); }
-    .hero-bottom {
-      display: flex; align-items: flex-end; justify-content: space-between;
-      margin-top: 3rem;
-      opacity: 0; animation: fadeUp 1s var(--ease) 0.85s forwards;
-    }
-    .hero-desc {
-      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em;
-      color: var(--muted); max-width: 420px; line-height: 1.9;
-    }
-    .hero-cta {
-      display: inline-flex; align-items: center; gap: 1.2rem;
-      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
-      color: var(--bg); background: var(--accent);
-      text-decoration: none; padding: 1rem 2.2rem;
-      transition: transform 0.3s var(--ease), box-shadow 0.3s;
-    }
-    .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 16px 50px rgba(232,132,26,0.45); }
-    .hero-scroll-tag {
-      position: absolute; right: 4rem; bottom: 6rem;
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em;
-      color: var(--muted); writing-mode: vertical-rl;
-      opacity: 0; animation: fadeIn 1s var(--ease) 1.3s forwards;
-    }
+.spice-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;
+}
+.spice-card{
+  position:relative;aspect-ratio:3/4;border-radius:4px;overflow:hidden;cursor:pointer;
+  background:var(--clove);
+  transition:transform .6s var(--ease),box-shadow .6s var(--ease);
+}
+.spice-card:hover{transform:translateY(-8px);box-shadow:0 30px 60px rgba(62,36,23,.3)}
+.spice-bg{position:absolute;inset:0;opacity:.9;transition:transform .8s var(--ease)}
+.spice-card:hover .spice-bg{transform:scale(1.08)}
+.spice-card:nth-child(1) .spice-bg{background:radial-gradient(ellipse at 40% 40%,#D97F1E 0%,#8B4A12 55%,#3E2417 100%)}
+.spice-card:nth-child(2) .spice-bg{background:radial-gradient(ellipse at 50% 50%,#C23C1E 0%,#6B1E0F 60%,#2A0E08 100%)}
+.spice-card:nth-child(3) .spice-bg{background:radial-gradient(ellipse at 60% 40%,#D4B24A 0%,#8C6A20 60%,#402B10 100%)}
+.spice-card:nth-child(4) .spice-bg{background:radial-gradient(ellipse at 50% 50%,#6D7F3F 0%,#3E4620 60%,#1A1F0E 100%)}
+.spice-card:nth-child(5) .spice-bg{background:radial-gradient(ellipse at 50% 50%,#5E3218 0%,#3E1F0E 60%,#1A0E06 100%)}
+.spice-card:nth-child(6) .spice-bg{background:radial-gradient(ellipse at 40% 50%,#C8843A 0%,#7A4A1C 60%,#2E1A0A 100%)}
+.spice-grain{position:absolute;inset:0;background-image:radial-gradient(circle at 30% 40%,rgba(255,255,255,.12) 0,transparent 1px),radial-gradient(circle at 70% 60%,rgba(0,0,0,.3) 0,transparent 1px);background-size:4px 4px,6px 6px;mix-blend-mode:overlay}
+.spice-info{
+  position:absolute;inset:0;padding:1.8rem;color:var(--paper);display:flex;flex-direction:column;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.7) 100%);
+}
+.spice-top{display:flex;justify-content:space-between;align-items:flex-start;font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;opacity:.85}
+.spice-num{font-family:'Fraunces';font-size:2rem;opacity:.4}
+.spice-bot h3{font-family:'Fraunces';font-weight:300;font-size:2rem;line-height:1.05;margin-bottom:.4rem}
+.spice-bot h3 em{font-style:italic;color:var(--saffron)}
+.spice-bot p{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.spice-flavor{
+  position:absolute;top:1.8rem;left:1.8rem;right:1.8rem;
+  opacity:0;transform:translateY(-8px);transition:all .5s var(--ease);
+  font-family:'Caveat';font-size:1.4rem;color:var(--paper);pointer-events:none;
+}
+.spice-card:hover .spice-flavor{opacity:1;transform:translateY(0)}
 
-    /* ── MARQUEE ──────────────────────────────── */
-    .marquee {
-      overflow: hidden; padding: 1.6rem 0;
-      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    }
-    .marquee-track {
-      display: flex; gap: 3.5rem; white-space: nowrap;
-      animation: marquee 18s linear infinite; width: max-content;
-    }
-    .marquee-track span {
-      font-size: clamp(1.5rem, 3vw, 3rem); font-weight: 900;
-      text-transform: uppercase; letter-spacing: -0.02em;
-      color: rgba(242,235,217,0.07);
-    }
-    .marquee-track span.sep { color: var(--accent); opacity: 0.6; }
+/* ── PROCESS ── */
+.process{background:var(--ink);color:var(--paper);padding:8rem 3rem}
+.process .eyebrow{color:var(--saffron)}
+.process .section-title{color:var(--paper)}
+.process .section-title em{color:var(--saffron)}
+.process .section-lead{color:rgba(244,238,220,.6)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;margin-top:3rem;position:relative}
+.steps::before{content:'';position:absolute;top:42px;left:5%;right:5%;height:1px;background:rgba(244,238,220,.2);z-index:0}
+.step{position:relative;z-index:1}
+.step-num{
+  width:84px;height:84px;border-radius:50%;background:var(--ink);border:1px solid rgba(244,238,220,.3);
+  display:grid;place-items:center;font-family:'Fraunces';font-style:italic;font-size:2rem;color:var(--saffron);
+  margin-bottom:1.8rem;transition:all .5s var(--ease);
+}
+.step:hover .step-num{background:var(--saffron);color:var(--ink);border-color:var(--saffron);transform:scale(1.08)}
+.step h4{font-family:'Fraunces';font-weight:400;font-size:1.3rem;margin-bottom:.6rem}
+.step p{color:rgba(244,238,220,.55);font-size:.9rem;line-height:1.6}
+.step-meta{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--saffron);margin-bottom:.6rem;display:block}
 
-    /* ── FEATURED ─────────────────────────────── */
-    .section { padding: 9rem 4rem; }
-    .s-label {
-      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.22em;
-      color: var(--accent); margin-bottom: 1rem;
-    }
-    .s-title {
-      font-size: clamp(3rem, 7vw, 7rem); font-weight: 900;
-      line-height: 0.92; letter-spacing: -0.03em; text-transform: uppercase;
-      margin-bottom: 5rem;
-    }
-    .products-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px;
-    }
-    .product-card {
-      position: relative; aspect-ratio: 2/3; overflow: hidden;
-    }
-    .product-card-bg {
-      position: absolute; inset: 0;
-      transition: transform 0.9s var(--ease);
-    }
-    .product-card:hover .product-card-bg { transform: scale(1.06); }
-    .pc-bg-1 { background: linear-gradient(160deg, #2A1408 0%, #5C2A0A 55%, #150802 100%); }
-    .pc-bg-2 { background: linear-gradient(160deg, #1C0808 0%, #480C0C 55%, #0A0202 100%); }
-    .pc-bg-3 { background: linear-gradient(160deg, #1A1205 0%, #3C2808 55%, #080402 100%); }
-    .product-glow {
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 60% at 50% 40%, rgba(232,132,26,0.12), transparent);
-      opacity: 0; transition: opacity 0.5s;
-    }
-    .product-card:hover .product-glow { opacity: 1; }
-    .product-icon {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -55%);
-      font-size: 5.5rem; opacity: 0.18;
-      transition: opacity 0.5s, transform 0.7s var(--ease);
-    }
-    .product-card:hover .product-icon { opacity: 0.28; transform: translate(-50%,-60%) rotate(-8deg) scale(0.9); }
-    .product-tag {
-      position: absolute; top: 1.8rem; left: 1.8rem;
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em;
-      color: var(--accent); border: 1px solid rgba(232,132,26,0.4);
-      padding: 0.3rem 0.7rem;
-    }
-    .product-price-tag {
-      position: absolute; top: 1.8rem; right: 1.8rem;
-      font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.1em;
-      color: var(--muted);
-    }
-    .product-foot {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 2.5rem 2rem 2rem;
-      background: linear-gradient(to top, rgba(8,4,2,0.97) 0%, transparent 100%);
-    }
-    .product-name-lg {
-      font-size: 1.6rem; font-weight: 800;
-      letter-spacing: -0.02em; line-height: 1; margin-bottom: 0.6rem;
-    }
-    .product-origin-tag {
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em; color: var(--accent);
-    }
-    .product-add {
-      display: block; margin-top: 1.2rem;
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.12em;
-      color: var(--fg); text-decoration: none;
-      border-top: 1px solid rgba(242,235,217,0.12); padding-top: 1rem;
-      opacity: 0; transform: translateY(6px);
-      transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
-    }
-    .product-card:hover .product-add { opacity: 1; transform: translateY(0); }
+/* ── RECIPE ── */
+.recipe{padding:8rem 3rem;background:var(--paper-2)}
+.recipe-wrap{display:grid;grid-template-columns:1.1fr 1fr;gap:5rem;align-items:center}
+.recipe-visual{
+  aspect-ratio:4/5;background:linear-gradient(135deg,#8B4A12 0%,#3E2417 100%);
+  border-radius:4px;position:relative;overflow:hidden;box-shadow:0 40px 80px rgba(62,36,23,.3);
+}
+.recipe-visual::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 30%,rgba(217,127,30,.4) 0%,transparent 50%),
+             radial-gradient(circle at 70% 70%,rgba(178,58,26,.35) 0%,transparent 50%);
+}
+.recipe-visual::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle,rgba(0,0,0,.4) 1px,transparent 1.5px);
+  background-size:14px 14px;opacity:.5;
+}
+.recipe-overlay{
+  position:absolute;bottom:2rem;left:2rem;right:2rem;color:var(--paper);
+  font-family:'Caveat';font-size:1.8rem;line-height:1.2;
+}
+.recipe-overlay::before{content:'"';font-family:'Fraunces';font-style:italic;font-size:5rem;line-height:0;position:absolute;top:1rem;left:-1rem;opacity:.4}
+.recipe h3{font-family:'Fraunces';font-weight:300;font-size:clamp(1.8rem,3.5vw,3rem);line-height:1.05;letter-spacing:-.02em;margin-bottom:1.5rem}
+.recipe h3 em{font-style:italic;color:var(--chili)}
+.recipe-tag{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--chili);margin-bottom:1.2rem}
+.ingredients{margin:2rem 0;border-top:1px solid var(--line)}
+.ingredient{
+  display:grid;grid-template-columns:50px 1fr auto;gap:1.2rem;align-items:center;
+  padding:1rem 0;border-bottom:1px solid var(--line);font-size:1rem;
+}
+.ingredient .n{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--ink-soft);letter-spacing:.1em}
+.ingredient .name em{font-style:italic;color:var(--chili)}
+.ingredient .qty{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--ink-soft);letter-spacing:.08em}
 
-    /* ── DIVIDER ──────────────────────────────── */
-    .divider { height: 1px; background: var(--border); margin: 0 4rem; }
+/* ── STORY ── */
+.story{padding:10rem 3rem;position:relative}
+.story-wrap{max-width:900px;margin:0 auto;text-align:center}
+.story-quote{font-family:'Fraunces';font-weight:300;font-style:italic;font-size:clamp(1.8rem,4vw,3.2rem);line-height:1.2;letter-spacing:-.015em}
+.story-quote em{color:var(--chili);font-style:italic}
+.story-author{margin-top:2.5rem;font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-soft)}
+.story-author span{display:block;font-family:'Caveat';font-size:1.6rem;color:var(--chili);letter-spacing:0;text-transform:none;margin-bottom:.4rem}
 
-    /* ── STORY ────────────────────────────────── */
-    .story {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 8rem; padding: 9rem 4rem; align-items: center;
-    }
-    .story-heading {
-      font-size: clamp(3rem, 5.5vw, 5.5rem); font-weight: 900;
-      line-height: 0.95; letter-spacing: -0.03em;
-      text-transform: uppercase; margin-bottom: 2.5rem;
-    }
-    .story-heading em { color: var(--accent); font-style: italic; }
-    .story-body { color: var(--muted); line-height: 1.95; margin-bottom: 1.5rem; font-size: 0.98rem; }
-    .story-stats { display: flex; gap: 3.5rem; margin-top: 3rem; }
-    .stat { display: block; }
-    .stat-n {
-      font-size: 3.2rem; font-weight: 900; letter-spacing: -0.04em;
-      color: var(--accent); line-height: 1;
-    }
-    .stat-l {
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.18em;
-      color: var(--muted); margin-top: 0.4rem;
-    }
-    .story-vis {
-      position: relative; aspect-ratio: 4/5;
-      background: linear-gradient(160deg, #1E0E04 0%, #3C2008 60%, #0A0402 100%);
-      overflow: hidden; display: flex; align-items: center; justify-content: center;
-    }
-    .story-vis-icon {
-      font-size: 9rem; opacity: 0.2;
-      position: relative; z-index: 1;
-      animation: floatY 4s ease-in-out infinite;
-    }
-    .story-vis::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 70% 70% at 50% 40%, rgba(232,132,26,0.18), transparent);
-    }
-    .story-vis-label {
-      position: absolute; bottom: 2rem; left: 50%;
-      transform: translateX(-50%);
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.2em;
-      color: var(--muted); text-align: center; white-space: nowrap;
-    }
+/* ── CTA ── */
+.cta{
+  padding:8rem 3rem;background:var(--chili);color:var(--paper);position:relative;overflow:hidden;
+}
+.cta::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 20% 30%,rgba(217,127,30,.3) 0%,transparent 50%),
+             radial-gradient(circle at 80% 80%,rgba(62,36,23,.4) 0%,transparent 55%);
+}
+.cta-inner{position:relative;max-width:900px;margin:0 auto;text-align:center}
+.cta h2{font-family:'Fraunces';font-weight:300;font-size:clamp(2.5rem,6vw,5rem);line-height:1;letter-spacing:-.025em;margin-bottom:1.5rem}
+.cta h2 em{font-style:italic}
+.cta p{color:rgba(244,238,220,.85);font-size:1.1rem;max-width:560px;margin:0 auto 3rem}
+.cta-btn{
+  display:inline-flex;align-items:center;gap:1rem;padding:1.4rem 2.6rem;background:var(--paper);color:var(--chili);
+  border:none;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:.8rem;letter-spacing:.22em;text-transform:uppercase;
+  cursor:pointer;transition:all .4s var(--ease);
+}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 20px 40px rgba(0,0,0,.25)}
+.cta-btn .arrow{transition:transform .4s var(--ease)}
+.cta-btn:hover .arrow{transform:translateX(6px)}
 
-    /* ── PROCESS ──────────────────────────────── */
-    .process { padding: 9rem 4rem; }
-    .process-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 5rem; }
-    .process-step {
-      padding: 3rem; background: rgba(242,235,217,0.02);
-      border: 1px solid var(--border);
-      transition: background 0.4s, border-color 0.4s;
-      position: relative; overflow: hidden;
-    }
-    .process-step:hover { background: rgba(232,132,26,0.04); border-color: rgba(232,132,26,0.2); }
-    .process-step::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 60% at 50% 0%, rgba(232,132,26,0.08), transparent);
-      opacity: 0; transition: opacity 0.4s;
-    }
-    .process-step:hover::before { opacity: 1; }
-    .step-num {
-      font-size: 4rem; font-weight: 900; letter-spacing: -0.05em;
-      color: rgba(232,132,26,0.15); line-height: 1; margin-bottom: 2rem;
-    }
-    .step-title {
-      font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em;
-      text-transform: uppercase; margin-bottom: 1rem;
-    }
-    .step-body { color: var(--muted); font-size: 0.9rem; line-height: 1.8; font-family: var(--mono); font-size: 0.7rem; }
+/* ── FOOTER ── */
+footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--paper)}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.foot-brand{max-width:320px}
+.foot-brand p{margin-top:1rem;color:var(--ink-soft);font-size:.9rem}
+.foot-col h5{font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.24em;text-transform:uppercase;margin-bottom:1.2rem;color:var(--ink-soft)}
+.foot-col a{display:block;color:var(--ink);text-decoration:none;padding:.4rem 0;font-size:.95rem;transition:color .3s}
+.foot-col a:hover{color:var(--chili)}
+.foot-bot{display:flex;justify-content:space-between;align-items:center;padding-top:2rem;border-top:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
 
-    /* ── CTA CLOSER ───────────────────────────── */
-    .closer {
-      padding: 10rem 4rem; text-align: center; position: relative;
-    }
-    .closer::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(232,132,26,0.08), transparent);
-    }
-    .closer-big {
-      font-size: clamp(5rem, 13vw, 14rem); font-weight: 900;
-      line-height: 0.9; letter-spacing: -0.05em; text-transform: uppercase;
-      position: relative; margin-bottom: 3rem;
-    }
-    .closer-big em { color: var(--accent); font-style: italic; display: block; }
-    .closer-sub {
-      font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.15em;
-      color: var(--muted); margin-bottom: 3.5rem; position: relative;
-    }
-    .closer-btn {
-      position: relative; display: inline-flex; align-items: center; gap: 1.5rem;
-      padding: 1.2rem 3.5rem; background: var(--accent); color: var(--bg);
-      font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.15em;
-      text-decoration: none;
-      transition: transform 0.3s var(--ease), box-shadow 0.3s;
-    }
-    .closer-btn:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(232,132,26,0.5); }
+/* reveal */
+.r{opacity:0;transform:translateY(30px);transition:opacity 1s var(--ease),transform 1s var(--ease)}
+.r.in{opacity:1;transform:none}
 
-    /* ── FOOTER ───────────────────────────────── */
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 3rem 4rem;
-      display: grid; grid-template-columns: 1fr auto 1fr;
-      align-items: center; gap: 2rem;
-    }
-    .f-brand {
-      font-size: 1.4rem; font-weight: 900;
-      letter-spacing: -0.02em; text-transform: uppercase;
-    }
-    .f-credit {
-      font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.15em;
-      color: var(--muted); text-align: center;
-    }
-    .f-credit a { color: var(--accent); text-decoration: none; }
-    .f-links { display: flex; gap: 2rem; justify-content: flex-end; }
-    .f-links a {
-      font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.1em;
-      color: var(--muted); text-decoration: none; transition: color 0.3s;
-    }
-    .f-links a:hover { color: var(--fg); }
-
-    /* ── ANIMATIONS ───────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-    @keyframes marquee {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-50%); }
-    }
-    @keyframes floatY {
-      0%, 100% { transform: translateY(0); }
-      50%       { transform: translateY(-12px); }
-    }
-
-    /* ── SCROLL REVEAL ────────────────────────── */
-    .rev { opacity: 0; transform: translateY(50px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
-    .rev.in { opacity: 1; transform: translateY(0); }
-    .rev.d1 { transition-delay: 0.1s; }
-    .rev.d2 { transition-delay: 0.22s; }
-    .rev.d3 { transition-delay: 0.34s; }
-  </style>
+@media(max-width:900px){
+  .nav{padding:1rem 1.2rem}
+  .nav-links{display:none}
+  .hero{grid-template-columns:1fr;padding:6rem 1.2rem 3rem;gap:3rem}
+  .section,.process,.recipe,.story,.cta{padding:5rem 1.2rem}
+  .spice-grid{grid-template-columns:1fr 1fr;gap:1rem}
+  .steps{grid-template-columns:1fr 1fr;gap:2.5rem}
+  .steps::before{display:none}
+  .recipe-wrap{grid-template-columns:1fr;gap:3rem}
+  .foot-grid{grid-template-columns:1fr 1fr;gap:2rem}
+}
+</style>
 </head>
 <body>
 
-  <div id="c-dot"></div>
-  <div id="c-ring"></div>
+<nav class="nav">
+  <div class="brand"><div class="brand-seal">s</div>The Spice Root<span style="font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.2em;opacity:.5;margin-left:.4rem">EST. 2017</span></div>
+  <div class="nav-links">
+    <a href="#collection">Collection</a>
+    <a href="#process">Harvest</a>
+    <a href="#recipes">Recipes</a>
+    <a href="#story">Story</a>
+  </div>
+  <button class="nav-cta">Shop Jars →</button>
+</nav>
 
-  <nav>
-    <a href="/" class="nav-back">← ARBEL PORTFOLIO</a>
-    <a href="#" class="nav-logo">THE SPICE ROOT</a>
-    <ul class="nav-links">
-      <li><a href="#collection">SHOP</a></li>
-      <li><a href="#story">OUR STORY</a></li>
-      <li><a href="#process">SOURCING</a></li>
-    </ul>
-  </nav>
-
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-ambient"></div>
-    <div class="hero-bigtext">SR</div>
-    <div class="hero-eyebrow">EST. 2019 &nbsp;·&nbsp; ARTISAN SPICES &nbsp;·&nbsp; GLOBAL ORIGINS</div>
-    <h1 class="hero-title">THE<br><em>SPICE</em><br>ROOT</h1>
-    <div class="hero-bottom">
-      <p class="hero-desc">Single-origin spices sourced from the world's most extraordinary growing regions. Fire, earth, and memory — bottled.</p>
-      <a href="#collection" class="hero-cta">EXPLORE COLLECTION →</a>
-    </div>
-    <span class="hero-scroll-tag">SCROLL TO DISCOVER</span>
-  </section>
-
-  <!-- MARQUEE -->
-  <div class="marquee">
-    <div class="marquee-track">
-      <span>SINGLE ORIGIN</span><span class="sep">✦</span>
-      <span>HAND HARVESTED</span><span class="sep">✦</span>
-      <span>SMALL BATCH</span><span class="sep">✦</span>
-      <span>DIRECT TRADE</span><span class="sep">✦</span>
-      <span>FAMILY FARMS</span><span class="sep">✦</span>
-      <span>SINGLE ORIGIN</span><span class="sep">✦</span>
-      <span>HAND HARVESTED</span><span class="sep">✦</span>
-      <span>SMALL BATCH</span><span class="sep">✦</span>
-      <span>DIRECT TRADE</span><span class="sep">✦</span>
-      <span>FAMILY FARMS</span><span class="sep">✦</span>
+<section class="hero">
+  <div>
+    <div class="hero-tag">Field-to-jar • Since 2017</div>
+    <h1 class="hero-title">Slow&nbsp;spice,<br><span class="italic">loud</span> <span class="amp">&amp;</span> honest<br>flavour.</h1>
+    <p class="hero-sub">Single-origin spices sourced from seventeen family farms across Kerala, Madagascar and Oaxaca. Ground weekly. Never blended to disappear.</p>
+    <div class="hero-meta">
+      <div>Farms<span>17</span></div>
+      <div>Varieties<span>42</span></div>
+      <div>Batch size<span>80 jars</span></div>
     </div>
   </div>
-
-  <!-- COLLECTION -->
-  <section class="section" id="collection">
-    <div class="rev"><div class="s-label">— 01 / COLLECTION</div></div>
-    <div class="rev"><h2 class="s-title">CURATED<br>COLLECTION</h2></div>
-    <div class="products-grid">
-      <div class="product-card rev d1">
-        <div class="product-card-bg pc-bg-1"></div>
-        <div class="product-glow"></div>
-        <div class="product-icon">🌶</div>
-        <div class="product-tag">NEW SEASON</div>
-        <div class="product-price-tag">$28</div>
-        <div class="product-foot">
-          <div class="product-name-lg">Kashmiri Chili</div>
-          <div class="product-origin-tag">ORIGIN: KASHMIR VALLEY, INDIA</div>
-          <a href="#" onclick="return false" class="product-add">ADD TO CART →</a>
-        </div>
-      </div>
-      <div class="product-card rev d2">
-        <div class="product-card-bg pc-bg-2"></div>
-        <div class="product-glow"></div>
-        <div class="product-icon">🌿</div>
-        <div class="product-tag">BEST SELLER</div>
-        <div class="product-price-tag">$34</div>
-        <div class="product-foot">
-          <div class="product-name-lg">Smoked Cardamom</div>
-          <div class="product-origin-tag">ORIGIN: KERALAN HIGHLANDS</div>
-          <a href="#" onclick="return false" class="product-add">ADD TO CART →</a>
-        </div>
-      </div>
-      <div class="product-card rev d3">
-        <div class="product-card-bg pc-bg-3"></div>
-        <div class="product-glow"></div>
-        <div class="product-icon">✦</div>
-        <div class="product-tag">RARE RESERVE</div>
-        <div class="product-price-tag">$42</div>
-        <div class="product-foot">
-          <div class="product-name-lg">Midnight Saffron</div>
-          <div class="product-origin-tag">ORIGIN: MASHHAD, IRAN</div>
-          <a href="#" onclick="return false" class="product-add">ADD TO CART →</a>
-        </div>
+  <div class="hero-visual">
+    <div class="jar">
+      <div class="jar-label">
+        <div class="lat">Curcuma Longa · No. 07</div>
+        <h4>Solar Turmeric</h4>
+        <div class="divider"></div>
+        <div class="origin">Sun-dried in Wayanad,<br>stone-ground Tuesdays</div>
       </div>
     </div>
-  </section>
+    <div class="hero-scribble">hand-labelled by the farmer's daughter</div>
+  </div>
+</section>
 
-  <div class="divider"></div>
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="ticker-item">Kashmiri Ember</span>
+    <span class="ticker-item">Arctic Cardamom</span>
+    <span class="ticker-item">Malabar Ghost</span>
+    <span class="ticker-item">Solar Turmeric</span>
+    <span class="ticker-item">Crimson Tikka</span>
+    <span class="ticker-item">Zero-Meridian</span>
+    <span class="ticker-item">Kashmiri Ember</span>
+    <span class="ticker-item">Arctic Cardamom</span>
+    <span class="ticker-item">Malabar Ghost</span>
+    <span class="ticker-item">Solar Turmeric</span>
+    <span class="ticker-item">Crimson Tikka</span>
+    <span class="ticker-item">Zero-Meridian</span>
+  </div>
+</div>
 
-  <!-- STORY -->
-  <section class="story" id="story">
-    <div class="story-text">
-      <div class="rev"><div class="s-label">— 02 / OUR STORY</div></div>
-      <h2 class="story-heading rev">BORN FROM<br><em>FIRE &</em><br>EARTH</h2>
-      <p class="story-body rev">The Spice Root was founded on a single principle: the world's greatest flavors deserve the world's greatest stage. We travel to the most remote farms, highest mountain plateaus, and oldest spice markets to bring back what cannot be found anywhere else.</p>
-      <p class="story-body rev">Every jar carries a story — a farmer's craft, a region's terroir, centuries of tradition. We bottle that story for your kitchen.</p>
-      <div class="story-stats rev">
-        <div class="stat"><div class="stat-n">40+</div><div class="stat-l">COUNTRIES SOURCED</div></div>
-        <div class="stat"><div class="stat-n">12</div><div class="stat-l">ACTIVE FARMS</div></div>
-        <div class="stat"><div class="stat-n">2K+</div><div class="stat-l">HAPPY KITCHENS</div></div>
-      </div>
+<section class="section" id="collection">
+  <div class="section-head r">
+    <div>
+      <div class="eyebrow">The Collection · 2026</div>
+      <h2 class="section-title">Six single-origin spices,<br>each with a <em>postcode</em>.</h2>
     </div>
-    <div class="story-vis rev">
-      <div class="story-vis-icon">🫙</div>
-      <div class="story-vis-label">HAND-PACKED IN SMALL BATCHES</div>
+    <p class="section-lead">Every jar names the farm, the field, the harvest week. Because "imported" on a label tells you nothing worth knowing.</p>
+  </div>
+  <div class="spice-grid">
+    <article class="spice-card r"><div class="spice-bg"></div><div class="spice-grain"></div>
+      <div class="spice-info"><div class="spice-top"><span>Kerala · IN</span><span class="spice-num">01</span></div><div class="spice-bot"><h3>Solar <em>Turmeric</em></h3><p>Sun-cured · 4.2% curcumin</p></div></div>
+      <div class="spice-flavor">earthy, golden, almost honeyed</div>
+    </article>
+    <article class="spice-card r"><div class="spice-bg"></div><div class="spice-grain"></div>
+      <div class="spice-info"><div class="spice-top"><span>Kashmir · IN</span><span class="spice-num">02</span></div><div class="spice-bot"><h3>Kashmiri <em>Ember</em></h3><p>Cold-stored · low pungency</p></div></div>
+      <div class="spice-flavor">smoky, velvet-red, forgiving</div>
+    </article>
+    <article class="spice-card r"><div class="spice-bg"></div><div class="spice-grain"></div>
+      <div class="spice-info"><div class="spice-top"><span>Guatemala · GT</span><span class="spice-num">03</span></div><div class="spice-bot"><h3>Arctic <em>Cardamom</em></h3><p>Green pods · hand-split</p></div></div>
+      <div class="spice-flavor">eucalyptus, citrus peel, mountain</div>
+    </article>
+    <article class="spice-card r"><div class="spice-bg"></div><div class="spice-grain"></div>
+      <div class="spice-info"><div class="spice-top"><span>Madagascar · MG</span><span class="spice-num">04</span></div><div class="spice-bot"><h3>Zero <em>Meridian</em></h3><p>Vanilla bean · tahitensis</p></div></div>
+      <div class="spice-flavor">custardy, dark rum, tobacco leaf</div>
+    </article>
+    <article class="spice-card r"><div class="spice-bg"></div><div class="spice-grain"></div>
+      <div class="spice-info"><div class="spice-top"><span>Malabar · IN</span><span class="spice-num">05</span></div><div class="spice-bot"><h3>Malabar <em>Ghost</em></h3><p>Tellicherry pepper · XL grade</p></div></div>
+      <div class="spice-flavor">pine, cedar, afterburn heat</div>
+    </article>
+    <article class="spice-card r"><div class="spice-bg"></div><div class="spice-grain"></div>
+      <div class="spice-info"><div class="spice-top"><span>Oaxaca · MX</span><span class="spice-num">06</span></div><div class="spice-bot"><h3>Crimson <em>Tikka</em></h3><p>Blended · 9 ingredients</p></div></div>
+      <div class="spice-flavor">warm, terracotta-sweet, generous</div>
+    </article>
+  </div>
+</section>
+
+<section class="process" id="process">
+  <div class="section-head r">
+    <div>
+      <div class="eyebrow">How it lands on your shelf</div>
+      <h2 class="section-title">From monsoon soil<br>to your <em>Tuesday curry</em>.</h2>
     </div>
-  </section>
+    <p class="section-lead">No warehouses, no years of shelf-life. Four steps, eleven days, one jar.</p>
+  </div>
+  <div class="steps">
+    <div class="step r"><span class="step-meta">Step 01 · Day 0</span><div class="step-num">i</div><h4>Harvest</h4><p>The farmer picks only when the plant asks. We pay premium for imperfect timing.</p></div>
+    <div class="step r"><span class="step-meta">Step 02 · Day 3</span><div class="step-num">ii</div><h4>Slow-dry</h4><p>Sun and shade, never kilns. Moisture drops 72% → 8% over 72 hours.</p></div>
+    <div class="step r"><span class="step-meta">Step 03 · Day 9</span><div class="step-num">iii</div><h4>Stone-grind</h4><p>80-jar batches on Tuesdays. Grinding generates no heat. Flavour stays put.</p></div>
+    <div class="step r"><span class="step-meta">Step 04 · Day 11</span><div class="step-num">iv</div><h4>Ship warm</h4><p>Sealed within 48 hours of grinding. Delivered before the aroma forgets itself.</p></div>
+  </div>
+</section>
 
-  <div class="divider"></div>
-
-  <!-- PROCESS -->
-  <section class="process" id="process">
-    <div class="rev"><div class="s-label">— 03 / SOURCING</div></div>
-    <div class="rev"><h2 class="s-title">FROM FIELD<br>TO JAR</h2></div>
-    <div class="process-grid">
-      <div class="process-step rev d1">
-        <div class="step-num">01</div>
-        <div class="step-title">Source</div>
-        <div class="step-body">We travel directly to origin farms, building relationships with growers who share our obsession with quality. No middlemen. No compromise.</div>
-      </div>
-      <div class="process-step rev d2">
-        <div class="step-num">02</div>
-        <div class="step-title">Harvest</div>
-        <div class="step-body">Every spice is hand-harvested at peak season. Timing is everything — a day too early or too late changes the entire flavor profile.</div>
-      </div>
-      <div class="process-step rev d3">
-        <div class="step-num">03</div>
-        <div class="step-title">Deliver</div>
-        <div class="step-body">Vacuum-sealed within 48 hours of harvest and shipped directly to your door. Maximum potency. Zero compromise on freshness.</div>
-      </div>
+<section class="recipe" id="recipes">
+  <div class="recipe-wrap">
+    <div class="recipe-visual r">
+      <div class="recipe-overlay">the kind of dinner that makes people text the next morning</div>
     </div>
-  </section>
-
-  <!-- CLOSER CTA -->
-  <section class="closer">
-    <h2 class="closer-big rev">TASTE<br><em>THE WORLD</em></h2>
-    <p class="closer-sub rev">FREE SHIPPING OVER $75 &nbsp;·&nbsp; SAME-DAY DISPATCH &nbsp;·&nbsp; 30-DAY RETURNS</p>
-    <a href="#collection" class="closer-btn rev">SHOP ALL SPICES →</a>
-  </section>
-
-  <footer>
-    <div class="f-brand">The Spice Root</div>
-    <div class="f-credit">A project by <a href="/">ARBEL.LIVE</a></div>
-    <div class="f-links">
-      <a href="#" onclick="return false">INSTAGRAM</a>
-      <a href="#" onclick="return false">WHOLESALE</a>
-      <a href="#" onclick="return false">CONTACT</a>
+    <div class="r">
+      <div class="recipe-tag">Recipe No. 014 · Weeknight</div>
+      <h3>30-minute <em>tikka</em><br>you won't apologise for.</h3>
+      <p style="color:var(--ink-soft);margin-bottom:1rem">A proper masala in the time it takes to wash the rice. Uses three Spice Root jars and whatever chicken you've got.</p>
+      <div class="ingredients">
+        <div class="ingredient"><span class="n">01</span><span class="name">Crimson <em>Tikka</em> masala</span><span class="qty">2 tbsp</span></div>
+        <div class="ingredient"><span class="n">02</span><span class="name">Kashmiri <em>Ember</em> chilli</span><span class="qty">1 tsp</span></div>
+        <div class="ingredient"><span class="n">03</span><span class="name">Arctic <em>Cardamom</em>, bruised</span><span class="qty">4 pods</span></div>
+        <div class="ingredient"><span class="n">04</span><span class="name">Greek yogurt, full-fat</span><span class="qty">200g</span></div>
+        <div class="ingredient"><span class="n">05</span><span class="name">Chicken thigh, bone-in</span><span class="qty">600g</span></div>
+        <div class="ingredient"><span class="n">06</span><span class="name">Garlic, crushed with salt</span><span class="qty">4 cloves</span></div>
+      </div>
+      <button class="nav-cta" style="margin-top:1rem">Read the method →</button>
     </div>
-  </footer>
+  </div>
+</section>
 
-  <script>
-    // Cursor
-    const dot  = document.getElementById('c-dot');
-    const ring = document.getElementById('c-ring');
-    let mx = 0, my = 0, rx = 0, ry = 0;
-    document.addEventListener('mousemove', e => {
-      mx = e.clientX; my = e.clientY;
-      dot.style.left = mx + 'px'; dot.style.top = my + 'px';
-    });
-    (function loop() {
-      rx += (mx - rx) * 0.1; ry += (my - ry) * 0.1;
-      ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
-      requestAnimationFrame(loop);
-    })();
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => ring.classList.add('is-hover'));
-      el.addEventListener('mouseleave', () => ring.classList.remove('is-hover'));
-    });
+<section class="story" id="story">
+  <div class="story-wrap r">
+    <div class="eyebrow" style="justify-content:center">A note from the founder</div>
+    <p class="story-quote">"We started The Spice Root because supermarket jars had <em>forgotten the farmers</em>. Everything we sell has a first name, a harvest date, and a story we can repeat back to you on a phone call."</p>
+    <p class="story-author"><span>Ayesha Menon</span>Founder · based in Kochi &amp; Bristol</p>
+  </div>
+</section>
 
-    // Scroll reveal
-    const obs = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-    }, { threshold: 0.12 });
-    document.querySelectorAll('.rev').forEach(el => obs.observe(el));
-  </script>
+<section class="cta">
+  <div class="cta-inner r">
+    <div class="eyebrow" style="color:rgba(244,238,220,.7);justify-content:center">Start here</div>
+    <h2>The <em>starter</em> six —<br>half the price of getting it wrong.</h2>
+    <p>Six 60g jars, travel-sized, in a hand-tied cotton roll. Enough for a month of experimenting. Free shipping to 14 countries.</p>
+    <button class="cta-btn">Order the starter roll · £42 <span class="arrow">→</span></button>
+  </div>
+</section>
+
+<footer>
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <div class="brand"><div class="brand-seal">s</div>The Spice Root</div>
+      <p>Single-origin, small-batch, stone-ground. Shipped from Bristol every Thursday.</p>
+    </div>
+    <div class="foot-col"><h5>Shop</h5><a href="#">Collection</a><a href="#">Starter roll</a><a href="#">Gift cards</a><a href="#">Subscription</a></div>
+    <div class="foot-col"><h5>Learn</h5><a href="#">Harvest journal</a><a href="#">Recipes</a><a href="#">Sourcing</a><a href="#">FAQ</a></div>
+    <div class="foot-col"><h5>Say hello</h5><a href="#">hello@spiceroot.co</a><a href="#">Instagram</a><a href="#">Substack</a><a href="#">Stockists</a></div>
+  </div>
+  <div class="foot-bot"><span>© 2026 The Spice Root Ltd · VAT GB 384 221 004</span><span>Built in Kochi &amp; Bristol</span></div>
+</footer>
+
+<script>
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+  document.querySelectorAll('.r').forEach(el=>io.observe(el));
+</script>
 </body>
 </html>
