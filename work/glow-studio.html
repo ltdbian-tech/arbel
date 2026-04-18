@@ -345,16 +345,16 @@ footer{padding:5rem 3rem 2rem;position:relative;z-index:2;border-top:1px solid v
 <nav class="nav">
   <div class="brand"><span class="brand-orb"></span>Glow <em>Studio</em></div>
   <div class="nav-pill">
-    <a class="on" data-hov>Home</a>
-    <a data-hov>Ritual</a>
-    <a data-hov>Shop</a>
-    <a data-hov>Formulas</a>
-    <a data-hov>Journal</a>
+    <a class="on" data-hov href="#home">Home</a>
+    <a data-hov href="#ritual">Ritual</a>
+    <a data-hov href="#shop">Shop</a>
+    <a data-hov href="#formulas">Formulas</a>
+    <a data-hov href="#cta">Journal</a>
   </div>
-  <button class="nav-cta" data-hov><span class="dot"></span>Book consult</button>
+  <button class="nav-cta" data-hov data-scroll="#cta"><span class="dot"></span>Book consult</button>
 </nav>
 
-<section class="hero">
+<section class="hero" id="home">
   <div>
     <div class="hero-intro"><span class="pill">new · Vol. 08</span>Small-batch · Derm-led · East London</div>
     <h1 class="hero-title">
@@ -363,8 +363,8 @@ footer{padding:5rem 3rem 2rem;position:relative;z-index:2;border-top:1px solid v
     </h1>
     <p class="hero-sub">Eight minimal formulas, each built around what your barrier is actually missing. No 23-step routines, no molecule-of-the-month. Just quiet results you'll feel by week three.</p>
     <div class="hero-ctas">
-      <button class="btn-liquid" data-hov><span>Take the 2-min skin test →</span></button>
-      <button class="btn-ghost" data-hov><span class="play">▶</span>Watch the ritual</button>
+      <button class="btn-liquid" data-hov data-scroll="#ritual"><span>Take the 2-min skin test →</span></button>
+      <button class="btn-ghost" data-hov data-scroll="#ritual"><span class="play">▶</span>Watch the ritual</button>
     </div>
     <div class="hero-stats">
       <div>Formulas<strong>08</strong></div>
@@ -481,12 +481,12 @@ footer{padding:5rem 3rem 2rem;position:relative;z-index:2;border-top:1px solid v
   </div>
 </section>
 
-<section class="cta">
+<section class="cta" id="cta">
   <div class="cta-inner r">
     <div class="eye">Start here</div>
     <h2>Try the <em>ritual set</em>.<br>Thirty days, risk-free.</h2>
     <p>All four ritual essentials in travel sizes, plus a private 20-minute call with one of our in-house dermatologists. Keep it, love it, or return it empty.</p>
-    <button class="btn-dark" data-hov>Try the ritual set · £78<span class="arr">→</span></button>
+    <button class="btn-dark" data-hov id="ritualBtn"><span id="ritualTxt">Try the ritual set · £78</span><span class="arr">→</span></button>
   </div>
 </section>
 
@@ -512,7 +512,17 @@ footer{padding:5rem 3rem 2rem;position:relative;z-index:2;border-top:1px solid v
   let mx=innerWidth/2,my=innerHeight/2,gx=mx,gy=my;
   window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cm.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`});
   (function loop(){gx+=(mx-gx)*.09;gy+=(my-gy)*.09;cg.style.transform=`translate(${gx}px,${gy}px) translate(-50%,-50%)`;requestAnimationFrame(loop)})();
-  document.querySelectorAll('[data-hov],button,a').forEach(el=>{el.addEventListener('mouseenter',()=>cm.classList.add('hov'));el.addEventListener('mouseleave',()=>cm.classList.remove('hov'))});
+  document.addEventListener('mouseover',e=>{if(e.target.closest('[data-hov],button,a,.tilt,.rit-card,.ing-row,.foot-col a'))cm.classList.add('hov')});
+  document.addEventListener('mouseout',e=>{if(e.target.closest('[data-hov],button,a,.tilt,.rit-card,.ing-row,.foot-col a'))cm.classList.remove('hov')});
+
+  // ── Smooth scroll
+  function goTo(sel){const t=document.querySelector(sel);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}
+  document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const h=a.getAttribute('href');if(h&&h.length>1){e.preventDefault();goTo(h);document.querySelectorAll('.nav-pill a').forEach(x=>x.classList.remove('on'));a.classList.add('on')}}));
+  document.querySelectorAll('[data-scroll]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();goTo(b.dataset.scroll)}));
+
+  // ── Ritual button mock order state
+  const rb=document.getElementById('ritualBtn'),rt=document.getElementById('ritualTxt');
+  if(rb)rb.addEventListener('click',()=>{rt.textContent='Reserved ✓ check your email';rb.style.pointerEvents='none';setTimeout(()=>{rt.textContent='Try the ritual set · £78';rb.style.pointerEvents=''},3200)});
 
   // ── Bottle 3D tilt
   const stage=document.getElementById('bstage'),bot=document.getElementById('bot');
@@ -538,10 +548,10 @@ footer{padding:5rem 3rem 2rem;position:relative;z-index:2;border-top:1px solid v
   // autoplay ritual
   setInterval(()=>{idx=(idx+1)%cards.length;layout()},5500);
 
-  // ── 3D tilt product cards
+  // ── 3D tilt product cards (only after reveal is done)
   document.querySelectorAll('.tilt').forEach(card=>{
-    card.addEventListener('mousemove',e=>{const r=card.getBoundingClientRect();const nx=(e.clientX-r.left)/r.width-.5;const ny=(e.clientY-r.top)/r.height-.5;card.style.transform=`rotateY(${nx*18}deg) rotateX(${-ny*14}deg) translateY(-8px)`});
-    card.addEventListener('mouseleave',()=>card.style.transform='');
+    card.addEventListener('mousemove',e=>{if(!card.classList.contains('in'))return;const r=card.getBoundingClientRect();const nx=(e.clientX-r.left)/r.width-.5;const ny=(e.clientY-r.top)/r.height-.5;card.style.transform=`rotateY(${nx*18}deg) rotateX(${-ny*14}deg) translateY(-8px)`});
+    card.addEventListener('mouseleave',()=>{card.style.transform=''});
   });
 
   // ── Reveal

@@ -213,7 +213,7 @@ body{
 .docs{padding:7rem 2rem;max-width:1500px;margin:0 auto}
 .docs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;perspective:1400px}
 .doc{aspect-ratio:3/4;border-radius:18px;position:relative;transform-style:preserve-3d;transition:transform .9s var(--ease);cursor:pointer}
-.doc:hover{transform:rotateY(180deg)}
+.doc:hover,.doc.flipped{transform:rotateY(180deg)}
 .doc-f,.doc-b{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;overflow:hidden}
 .doc-f{background:linear-gradient(180deg,var(--sky),var(--mint));display:flex;flex-direction:column;justify-content:flex-end;padding:1.4rem;border:1px solid var(--line)}
 .doc-f::before{content:'';position:absolute;top:1rem;right:1rem;font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.2em;color:var(--teal-deep);background:#fff;padding:.3rem .6rem;border-radius:4px;font-weight:700}
@@ -342,22 +342,22 @@ footer{background:var(--navy);color:#A0B5CC;padding:4rem 2rem 2rem;position:rela
 <nav class="nav">
   <div class="brand"><span class="brand-mark"></span><div>Meridian Health<small>CLINIC · EST 2012</small></div></div>
   <div class="nav-links">
-    <a class="on">Home</a><a>Services</a><a>Specialists</a><a>Patient portal</a><a>Research</a><a>Contact</a>
+    <a class="on" href="#home">Home</a><a href="#services">Services</a><a href="#specialists">Specialists</a><a href="#book">Patient portal</a><a href="#dna">Research</a><a href="#book">Contact</a>
   </div>
   <div class="nav-right">
-    <div class="nav-phone"><span class="c">☎</span>0203 992 1144</div>
-    <button class="btn-book">Book now<span class="arr">→</span></button>
+    <div class="nav-phone"><span class="c">☺</span>0203 992 1144</div>
+    <button class="btn-book" data-scroll="#book">Book now<span class="arr">→</span></button>
   </div>
 </nav>
 
-<section class="hero">
+<section class="hero" id="home">
   <div>
     <div class="hero-tag"><b>Now accepting</b>New patients · Central London &amp; Canary Wharf</div>
     <h1 class="hero-title">Precision care, engineered with <em>empathy</em>.</h1>
     <p class="hero-sub">A multi-specialty clinic built around the radical idea that world-class medicine should also feel human. Same-day appointments, 45-minute consults, and a team that actually remembers your name.</p>
     <div class="hero-actions">
-      <button class="btn-primary">Book your consultation<span class="arr">→</span></button>
-      <button class="btn-outline"><span>▶</span>Tour the clinic · 90s</button>
+      <button class="btn-primary" data-scroll="#book">Book your consultation<span class="arr">→</span></button>
+      <button class="btn-outline" data-scroll="#dna"><span>▶</span>Tour the clinic · 90s</button>
     </div>
     <div class="hero-trust">
       <div class="hero-avatars">
@@ -433,7 +433,7 @@ footer{background:var(--navy);color:#A0B5CC;padding:4rem 2rem 2rem;position:rela
     <div class="r"><h2 class="h2">One clinic.<br>Every specialist you might <em>actually</em> need.</h2></div>
     <p class="lead r">From annual screenings to complex cardiology, our team covers 14 specialties under one roof — and they all talk to each other. No more repeating your story.</p>
   </div>
-  <div class="hex-grid">
+  <div class="hex-grid" id="servicesGrid">
     <div class="hex r"><div class="hex-num">01 / Cardiology<span class="tag">New</span></div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><h3>Heart &amp; <em>Cardiovascular</em></h3><p>Full cardiac screening, ECG, echo, and 24/7 arrhythmia monitoring with our tenured consultants.</p><div class="hex-meta"><span>From £220</span><span class="ar">Book consult →</span></div></div>
     <div class="hex r"><div class="hex-num">02 / Dermatology</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><h3>Skin <em>Precision</em></h3><p>AI-assisted mole mapping, mohs surgery, and medical-grade aesthetics — led by Dr. Cohen.</p><div class="hex-meta"><span>From £180</span><span class="ar">Book consult →</span></div></div>
     <div class="hex r"><div class="hex-num">03 / Paediatrics</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z"/></svg></div><h3><em>Children's</em> wellness</h3><p>A warm, unhurried practice for ages 0–16 with dedicated family rooms and no waiting room.</p><div class="hex-meta"><span>From £145</span><span class="ar">Book consult →</span></div></div>
@@ -447,7 +447,7 @@ footer{background:var(--navy);color:#A0B5CC;padding:4rem 2rem 2rem;position:rela
   </div>
 </section>
 
-<section class="dna">
+<section class="dna" id="dna">
   <div class="r">
     <div class="eye">The Meridian Method</div>
     <h2 class="h2">Your health, <em>read</em><br>down to the molecule.</h2>
@@ -504,7 +504,7 @@ footer{background:var(--navy);color:#A0B5CC;padding:4rem 2rem 2rem;position:rela
       </div>
       <div class="field"><label>Appointment type</label><select><option>In-person · Canary Wharf</option><option>In-person · Marylebone</option><option>Video consultation</option><option>Home visit (+£45)</option></select></div>
       <div class="field"><label>Your full name</label><input type="text" placeholder="e.g. Sarah Kim"></div>
-      <button class="book-cta">Continue to step 03 <span class="arr">→</span></button>
+      <button class="book-cta" id="bookCta"><span id="bookCtaTxt">Continue to step 03</span> <span class="arr">→</span></button>
     </div>
   </div>
 </section>
@@ -581,6 +581,47 @@ footer{background:var(--navy);color:#A0B5CC;padding:4rem 2rem 2rem;position:rela
     document.querySelectorAll('[data-c]').forEach(x=>x.classList.remove('sel'));
     c.classList.add('sel');
   }));
+
+  // smooth-scroll for nav anchors and [data-scroll] buttons
+  function goTo(sel){const t=document.querySelector(sel);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}
+  document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const h=a.getAttribute('href');if(h&&h.length>1){e.preventDefault();goTo(h);document.querySelectorAll('.nav-links a').forEach(x=>x.classList.remove('on'));a.classList.add('on')}}));
+  document.querySelectorAll('[data-scroll]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();goTo(b.dataset.scroll)}));
+
+  // hex service tiles: clicking scrolls to #book
+  document.querySelectorAll('.hex').forEach(h=>h.addEventListener('click',()=>goTo('#book')));
+
+  // doctor cards: click toggles flip (so it works on touch + as a tap)
+  document.querySelectorAll('.doc').forEach(d=>{
+    d.addEventListener('click',e=>{
+      // if clicking the Book button on the back, go to booking instead
+      if(e.target.closest('.bk')){e.stopPropagation();goTo('#book');return}
+      d.classList.toggle('flipped');
+    });
+  });
+
+  // book wizard: advance steps on continue click
+  const bookCta=document.getElementById('bookCta'),bookCtaTxt=document.getElementById('bookCtaTxt');
+  const steps=[...document.querySelectorAll('.book-step')];
+  const stepLabels=['Pick a time that works','Your details','Confirm & pay','Confirmed ✓'];
+  const stepPNums=['Step 02 · 04','Step 03 · 04','Step 04 · 04','Complete'];
+  const stepCtas=['Continue to step 03','Continue to step 04','Confirm booking','Book another'];
+  const pnumEl=document.querySelector('.book-form .pnum');
+  const bfH3=document.querySelector('.book-form h3');
+  let cur=1;
+  if(bookCta)bookCta.addEventListener('click',e=>{
+    e.preventDefault();
+    if(cur>=steps.length){ // reset
+      cur=1;
+      steps.forEach((s,i)=>{s.className='book-step'+(i<1?' done':i===1?' on':'')});
+      if(pnumEl)pnumEl.textContent=stepPNums[0];if(bfH3)bfH3.textContent=stepLabels[0];bookCtaTxt.textContent=stepCtas[0];return;
+    }
+    steps[cur].classList.remove('on');steps[cur].classList.add('done');
+    cur++;
+    if(cur<steps.length){steps[cur].classList.add('on')}
+    if(pnumEl)pnumEl.textContent=stepPNums[Math.min(cur-1,stepPNums.length-1)];
+    if(bfH3)bfH3.textContent=stepLabels[Math.min(cur-1,stepLabels.length-1)];
+    bookCtaTxt.textContent=stepCtas[Math.min(cur-1,stepCtas.length-1)];
+  });
 
   // count-up
   const ease=t=>1-Math.pow(1-t,3);

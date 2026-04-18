@@ -115,8 +115,7 @@ body.is-ready .hero-meta{opacity:1;transform:none}
 /* 3D JAR */
 .stage{position:relative;aspect-ratio:3/4;display:grid;place-items:center;transform-style:preserve-3d}
 .stage-floor{position:absolute;bottom:10%;left:10%;right:10%;height:40px;background:radial-gradient(ellipse,rgba(232,132,26,.3) 0%,transparent 70%);filter:blur(20px);transform:rotateX(70deg);z-index:0}
-.jar-wrap{position:relative;width:66%;aspect-ratio:1/1.6;transform-style:preserve-3d;animation:jarFloat 7s var(--ease) infinite;will-change:transform}
-@keyframes jarFloat{0%,100%{transform:translateY(0) rotateY(var(--ry,0deg))}50%{transform:translateY(-18px) rotateY(var(--ry,0deg))}}
+.jar-wrap{position:relative;width:66%;aspect-ratio:1/1.6;transform-style:preserve-3d;will-change:transform}
 .jar-cap{position:absolute;top:-6%;left:17%;right:17%;height:14%;transform-style:preserve-3d}
 .jar-cap::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#D9A33F 0%,#8B6820 40%,#5B4210 100%);border-radius:8px 8px 3px 3px;box-shadow:inset 0 3px 0 rgba(255,255,255,.3),inset 0 -3px 6px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.5)}
 .jar-cap::after{content:'';position:absolute;inset:-2% 4% auto 4%;height:30%;background:linear-gradient(180deg,rgba(255,255,255,.4),transparent);border-radius:4px 4px 0 0}
@@ -362,10 +361,10 @@ footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--
     <span class="brand-txt">The Spice <em>Root</em></span>
   </div>
   <div class="nav-links">
-    <a data-hov>Chapter I · Collection</a>
-    <a data-hov>Chapter II · Harvest</a>
-    <a data-hov>Chapter III · Recipes</a>
-    <a data-hov>Chapter IV · Story</a>
+    <a data-hov href="#gallery">Chapter I · Collection</a>
+    <a data-hov href="#process">Chapter II · Harvest</a>
+    <a data-hov href="#recipe">Chapter III · Recipes</a>
+    <a data-hov href="#story">Chapter IV · Story</a>
   </div>
   <div class="nav-right">
     <span class="nav-time">Bristol · <span id="clock">11:24</span></span>
@@ -502,7 +501,7 @@ footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--
   </div>
 </section>
 
-<section class="process">
+<section class="process" id="process">
   <div class="smoke">
     <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
       <defs>
@@ -536,7 +535,7 @@ footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--
   </div>
 </section>
 
-<section class="recipe">
+<section class="recipe" id="recipe">
   <div class="recipe-inner">
     <div class="recipe-visual r">
       <div class="recipe-num">014</div>
@@ -557,13 +556,13 @@ footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--
       </div>
       <div class="recipe-footer">
         <span class="recipe-time">Active time · <em>12 min</em> &nbsp;·&nbsp; Total · <em>30 min</em></span>
-        <button class="btn-line" data-hov>Read the method<span class="arrow">→</span></button>
+        <button class="btn-line" data-hov data-scroll="#cta">Read the method<span class="arrow">→</span></button>
       </div>
     </div>
   </div>
 </section>
 
-<section class="story">
+<section class="story" id="story">
   <div class="story-bg"></div>
   <div class="story-inner r">
     <div class="story-eye">Chapter IV · A note from the founder</div>
@@ -572,13 +571,13 @@ footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--
   </div>
 </section>
 
-<section class="cta">
+<section class="cta" id="cta">
   <div class="cta-wrap r">
     <div class="cta-inner">
       <div class="cta-eye">Begin here</div>
       <h2>The starter <em>six</em> —<br>half the price of<br>getting it wrong.</h2>
       <p>Six 60g jars, travel-sized, in a hand-tied cotton roll. Enough for a month of real experimenting. Free shipping to 14 countries.</p>
-      <button class="cta-btn" data-hov><span>Order the starter roll · £42</span><span class="arrow">→</span></button>
+      <button class="cta-btn" data-hov id="orderBtn"><span id="orderTxt">Order the starter roll · £42</span><span class="arrow">→</span></button>
     </div>
   </div>
 </section>
@@ -617,17 +616,28 @@ footer{padding:4rem 3rem 2rem;border-top:1px solid var(--line);background:var(--
   window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cd.style.transform=`translate(${mx}px,${my}px) translate(-50%,-50%)`});
   function cursLoop(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;cr.style.transform=`translate(${rx}px,${ry}px) translate(-50%,-50%)`;requestAnimationFrame(cursLoop)}
   cursLoop();
-  document.querySelectorAll('[data-hov],button,a').forEach(el=>{el.addEventListener('mouseenter',()=>cr.classList.add('hov'));el.addEventListener('mouseleave',()=>cr.classList.remove('hov'))});
+  // broadened hover targets via event delegation
+  document.addEventListener('mouseover',e=>{if(e.target.closest('[data-hov],button,a,.gal-card,.ing,.step,.prod,.foot-col a'))cr.classList.add('hov')});
+  document.addEventListener('mouseout',e=>{if(e.target.closest('[data-hov],button,a,.gal-card,.ing,.step,.prod,.foot-col a'))cr.classList.remove('hov')});
 
-  // ── Jar 3D rotate on mouse
+  // ── Smooth-scroll for anchors & [data-scroll]
+  function goTo(sel){const t=document.querySelector(sel);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}
+  document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{const h=a.getAttribute('href');if(h&&h.length>1){e.preventDefault();goTo(h)}}));
+  document.querySelectorAll('[data-scroll]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();goTo(b.dataset.scroll)}));
+
+  // ── Order button mock state
+  const ob=document.getElementById('orderBtn'),ot=document.getElementById('orderTxt');
+  if(ob)ob.addEventListener('click',()=>{ot.textContent='Reserved ✓  check your email';ob.style.pointerEvents='none';setTimeout(()=>{ot.textContent='Order the starter roll · £42';ob.style.pointerEvents=''},3200)});
+
+  // ── Jar 3D rotate on mouse + float (combined in JS so they don't fight)
   const stage=document.getElementById('stage'),jar=document.getElementById('jar');
   let jry=0,jrx=0,tjry=-12,tjrx=4;
-  stage.addEventListener('mousemove',e=>{
+  // listen on window so mouse outside the stage area still drives subtle rotation
+  window.addEventListener('mousemove',e=>{
     const r=stage.getBoundingClientRect();const nx=(e.clientX-r.left)/r.width-.5;const ny=(e.clientY-r.top)/r.height-.5;
-    tjry=-22+nx*40;tjrx=4-ny*18;
+    tjry=-12+Math.max(-1,Math.min(1,nx))*28;tjrx=4-Math.max(-1,Math.min(1,ny))*18;
   });
-  stage.addEventListener('mouseleave',()=>{tjry=-12;tjrx=4});
-  function jarLoop(){jry+=(tjry-jry)*.07;jrx+=(tjrx-jrx)*.07;jar.style.transform=`rotateY(${jry}deg) rotateX(${jrx}deg)`;jar.style.setProperty('--ry',jry+'deg');requestAnimationFrame(jarLoop)}
+  function jarLoop(){jry+=(tjry-jry)*.07;jrx+=(tjrx-jrx)*.07;const fy=Math.sin(performance.now()/1600)*10;jar.style.transform=`translateY(${fy}px) rotateY(${jry}deg) rotateX(${jrx}deg)`;requestAnimationFrame(jarLoop)}
   jarLoop();
 
   // ── Ingredient checkboxes
