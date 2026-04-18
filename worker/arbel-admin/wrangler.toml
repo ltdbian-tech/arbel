@@ -1,0 +1,13 @@
+name = "arbel-admin"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# ─── Required secrets (set via `wrangler secret put`) ────────────
+# wrangler secret put ANALYTICS_SALT     # long random string — salts visitor + IP hashes
+# wrangler secret put ADMIN_TOKEN        # the token YOU type to log in to /admin
+# wrangler secret put SESSION_SECRET     # long random string — signs session cookies
+
+# ─── Analytics KV namespace ──────────────────────────────────────
+[[kv_namespaces]]
+binding = "ANALYTICS"
+id = "af0dda409f1742f48baa494a55073ec6"

@@ -50,7 +50,7 @@
                 tz: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
                 dev: document.body.classList.contains('dev-unlocked') ? 1 : 0
             };
-            fetch('https://arbel-auth.ltdb.workers.dev/api/track', {
+            fetch('https://arbel-admin.realskullmusic.workers.dev/api/track', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

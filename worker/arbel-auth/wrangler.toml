@@ -3,20 +3,7 @@ main = "src/index.js"
 compatibility_date = "2024-01-01"
 
 [vars]
-# Non-secret env vars (none needed at the moment)
+# Non-secret env vars go here (none needed)
 
-# ─── Required secrets (set via `wrangler secret put`) ────────────
-# wrangler secret put GITHUB_CLIENT_ID
-# wrangler secret put GITHUB_CLIENT_SECRET
-# wrangler secret put ANALYTICS_SALT     # long random string — salts visitor + IP hashes
-# wrangler secret put ADMIN_TOKEN        # the token YOU type to log in to /admin
-# wrangler secret put SESSION_SECRET     # long random string — signs session cookies
-#
-# ─── Analytics KV namespace ──────────────────────────────────────
-# Create once:
-#   npx wrangler kv namespace create ANALYTICS
-# Then paste the returned id below and uncomment this block.
-# [[kv_namespaces]]
-# binding = "ANALYTICS"
-# id = "REPLACE_WITH_KV_NAMESPACE_ID"
-
+# Secrets are set via: wrangler secret put GITHUB_CLIENT_ID
+# and: wrangler secret put GITHUB_CLIENT_SECRET
