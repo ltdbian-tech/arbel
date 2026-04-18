@@ -51,6 +51,43 @@ const ADMIN_LIMIT_PER_MIN = 10;
 const LOGIN_MAX_FAILS = 5;
 const LOGIN_LOCKOUT_SEC = 3600;     // 1 hour lockout
 const SESSION_TTL_SEC = 12 * 3600;  // 12 hours
+const MAX_BODY_BYTES = 4 * 1024;    // 4 KB cap on any JSON body
+const SESSION_COOKIE = '__Host-arbel_sess';
+const HONEYPOT_PATHS = [
+    '/.env', '/.git/config', '/wp-admin', '/wp-login.php', '/xmlrpc.php',
+    '/.aws/credentials', '/admin.php', '/phpmyadmin', '/wp-config.php',
+    '/config.php', '/server-status', '/.DS_Store', '/backup.sql'
+];
+
+/* Read JSON body with strict size cap (defends against memory abuse) */
+async function readJsonCapped(request) {
+    const lenHeader = request.headers.get('Content-Length');
+    if (lenHeader && parseInt(lenHeader, 10) > MAX_BODY_BYTES) {
+        return { error: 'Body too large', status: 413 };
+    }
+    try {
+        const text = await request.text();
+        if (text.length > MAX_BODY_BYTES) return { error: 'Body too large', status: 413 };
+        if (!text) return { body: {} };
+        return { body: JSON.parse(text) };
+    } catch (e) {
+        return { error: 'Invalid JSON', status: 400 };
+    }
+}
+
+/* Strict same-origin / allow-list check on Origin OR Referer header */
+function isSameOrigin(request) {
+    const origin = request.headers.get('Origin');
+    if (origin) return ALLOWED_ORIGINS.includes(origin) || origin === new URL(request.url).origin;
+    const referer = request.headers.get('Referer');
+    if (referer) {
+        try {
+            const r = new URL(referer).origin;
+            return ALLOWED_ORIGINS.includes(r) || r === new URL(request.url).origin;
+        } catch { return false; }
+    }
+    return false;
+}
 
 /* ─── Helpers ─────────────────────────────────────────────────── */
 
@@ -127,22 +164,24 @@ function base64UrlEncode(bytes) {
 }
 
 async function makeSession(env, ipHash) {
+    if (!env.SESSION_SECRET) throw new Error('SESSION_SECRET not configured');
     const exp = Math.floor(Date.now() / 1000) + SESSION_TTL_SEC;
     const nonce = crypto.randomUUID().replace(/-/g, '');
     const payload = `${exp}.${ipHash}.${nonce}`;
-    const sig = await hmacSign(env.SESSION_SECRET || 'no-secret', payload);
+    const sig = await hmacSign(env.SESSION_SECRET, payload);
     return { cookie: `${payload}.${sig}`, exp };
 }
 
 async function verifySession(env, cookieValue, ipHash) {
     if (!cookieValue) return false;
+    if (!env.SESSION_SECRET) return false; // FAIL CLOSED if secret missing
     const parts = cookieValue.split('.');
     if (parts.length !== 4) return false;
     const [expStr, sessIp, nonce, sig] = parts;
     const exp = parseInt(expStr, 10);
     if (!exp || exp < Math.floor(Date.now() / 1000)) return false;
     if (!constantTimeEqual(sessIp, ipHash)) return false; // bind session to IP
-    const expected = await hmacSign(env.SESSION_SECRET || 'no-secret', `${expStr}.${sessIp}.${nonce}`);
+    const expected = await hmacSign(env.SESSION_SECRET, `${expStr}.${sessIp}.${nonce}`);
     return constantTimeEqual(sig, expected);
 }
 
@@ -200,6 +239,15 @@ export default {
             return new Response(null, { status: 204, headers: corsHeaders(origin, m) });
         }
 
+        // Honeypot — auto-ban scanners hitting common-vuln paths
+        if (HONEYPOT_PATHS.includes(url.pathname.toLowerCase())) {
+            try {
+                const ipHash = await getIpHash(request, env);
+                if (env.ANALYTICS) await env.ANALYTICS.put(`lock:${ipHash}`, '1', { expirationTtl: LOGIN_LOCKOUT_SEC });
+            } catch { }
+            return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+        }
+
         try {
             // Public
             if (url.pathname === '/api/track' && request.method === 'POST') {
@@ -231,7 +279,8 @@ export default {
    ══════════════════════════════════════════════════════════════════ */
 
 async function handleTrack(request, env, origin) {
-    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    // Require an Origin header AND that it be in allow-list (rejects raw bots)
+    if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
         return jsonResponse({ error: 'Origin not allowed' }, 403, origin);
     }
     if (!env.ANALYTICS) return jsonResponse({ ok: true, stored: false }, 200, origin);
@@ -241,11 +290,17 @@ async function handleTrack(request, env, origin) {
     const salt = env.ANALYTICS_SALT || 'arbel-default-salt';
     const ipHash = (await sha256Hex(ip + '|' + salt)).slice(0, 16);
 
+    // Block requests from honeypot-banned IPs
+    if (await isLockedOut(env, ipHash)) {
+        return jsonResponse({ error: 'Forbidden' }, 403, origin);
+    }
+
     const allowed = await rateLimit(env, 't', ipHash, TRACK_LIMIT_PER_MIN);
     if (!allowed) return jsonResponse({ error: 'Rate limit' }, 429, origin);
 
-    let body = {};
-    try { body = await request.json(); } catch { }
+    const r = await readJsonCapped(request);
+    if (r.error) return jsonResponse({ error: r.error }, r.status, origin);
+    const body = r.body;
 
     const country = request.cf && request.cf.country
         ? String(request.cf.country).slice(0, 2).toUpperCase() : 'XX';
@@ -259,7 +314,11 @@ async function handleTrack(request, env, origin) {
         incrKV(env.ANALYTICS, dk + ':c:' + country, 1),
         incrKV(env.ANALYTICS, 'total:pv', 1)
     ];
-    if (body && body.dev === 1) ops.push(incrKV(env.ANALYTICS, dk + ':dev', 1));
+    // Dev counter only counts when request comes from same-origin admin host.
+    // Stat pollution from public pages is no longer trusted.
+    if (body && body.dev === 1 && origin === new URL(request.url).origin) {
+        ops.push(incrKV(env.ANALYTICS, dk + ':dev', 1));
+    }
 
     const vKey = dk + ':v:' + shortHash;
     const seen = await env.ANALYTICS.get(vKey);
@@ -291,6 +350,15 @@ async function getIpHash(request, env) {
 }
 
 async function handleAdminLogin(request, env) {
+    // Defense-in-depth: require same-origin (worker host) Origin/Referer.
+    // SameSite=Strict already prevents cross-site cookies, but this also blocks
+    // attackers who try to fish creds from a malicious page.
+    if (!isSameOrigin(request)) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), {
+            status: 403, headers: { 'Content-Type': 'application/json' }
+        });
+    }
+
     const ipHash = await getIpHash(request, env);
 
     // Per-IP rate limit
@@ -311,8 +379,11 @@ async function handleAdminLogin(request, env) {
         });
     }
 
-    let body;
-    try { body = await request.json(); } catch { return new Response('{}', { status: 400 }); }
+    const r = await readJsonCapped(request);
+    if (r.error) return new Response(JSON.stringify({ error: r.error }), {
+        status: r.status, headers: { 'Content-Type': 'application/json' }
+    });
+    const body = r.body;
 
     // Constant-time comparison
     const ok = constantTimeEqual(String(body.token || ''), env.ADMIN_TOKEN);
@@ -324,8 +395,11 @@ async function handleAdminLogin(request, env) {
     }
     await clearLoginFails(env, ipHash);
     const { cookie, exp } = await makeSession(env, ipHash);
+    // __Host- prefix: requires Secure, Path=/, no Domain. Browser refuses to
+    // accept this cookie from any other host (defends against subdomain
+    // takeover and cookie-injection attacks).
     const cookieHeader =
-        `arbel_sess=${cookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_TTL_SEC}`;
+        `${SESSION_COOKIE}=${cookie}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_TTL_SEC}`;
     return new Response(JSON.stringify({ ok: true, exp }), {
         status: 200,
         headers: {
@@ -336,18 +410,21 @@ async function handleAdminLogin(request, env) {
 }
 
 async function handleAdminLogout(request, env) {
+    // Clear both new and legacy cookie names so existing sessions terminate cleanly.
     return new Response(JSON.stringify({ ok: true }), {
         status: 200,
-        headers: {
-            'Content-Type': 'application/json',
-            'Set-Cookie': 'arbel_sess=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0'
-        }
+        headers: new Headers([
+            ['Content-Type', 'application/json'],
+            ['Set-Cookie', `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`],
+            ['Set-Cookie', 'arbel_sess=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0']
+        ])
     });
 }
 
 async function isAdmin(request, env) {
     const ipHash = await getIpHash(request, env);
-    const sess = getCookie(request, 'arbel_sess');
+    // Prefer the hardened __Host- cookie, fall back to legacy name during rollover.
+    const sess = getCookie(request, SESSION_COOKIE) || getCookie(request, 'arbel_sess');
     return await verifySession(env, sess, ipHash);
 }
 

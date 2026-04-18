@@ -59,19 +59,31 @@ export default {
 };
 
 async function handleCallback(request, env, origin) {
-    if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    // Require a known origin (no anonymous bots; prevents code-replay from
+    // attacker-controlled domains that don't send Origin).
+    if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
         return jsonResponse({ error: 'Origin not allowed' }, 403, origin);
+    }
+
+    // Strict 4 KB body cap (defense vs. memory abuse / log spam).
+    var lenHeader = request.headers.get('Content-Length');
+    if (lenHeader && parseInt(lenHeader, 10) > 4096) {
+        return jsonResponse({ error: 'Body too large' }, 413, origin);
     }
 
     var body;
     try {
-        body = await request.json();
+        var text = await request.text();
+        if (text.length > 4096) {
+            return jsonResponse({ error: 'Body too large' }, 413, origin);
+        }
+        body = JSON.parse(text);
     } catch (e) {
         return jsonResponse({ error: 'Invalid request body' }, 400, origin);
     }
 
     var code = body.code;
-    if (!code || typeof code !== 'string' || code.length > 200 || !/^[a-f0-9]+$/.test(code)) {
+    if (!code || typeof code !== 'string' || code.length > 200 || !/^[a-zA-Z0-9_-]+$/.test(code)) {
         return jsonResponse({ error: 'Invalid authorization code' }, 400, origin);
     }
 
