@@ -1,0 +1,83 @@
+ARBEL PROPRIETARY SOFTWARE LICENSE
+Copyright (c) 2026 Arbel Live Technologies. All Rights Reserved.
+
+================================================================================
+NOTICE: THIS IS NOT OPEN-SOURCE SOFTWARE.
+================================================================================
+
+This repository and all of its contents (including but not limited to source
+code, HTML, CSS, JavaScript, Cloudflare Worker code, design assets, brand
+assets, templates, scenes, marketplace kits, AI prompts, prompt structures,
+documentation, configuration, and the name and logo "Arbel") (collectively,
+the "Software") are the exclusive proprietary property of Arbel Live
+Technologies ("Arbel"), and are protected by copyright, trade-secret,
+trademark, database-right, and unfair-competition laws of India and every
+country that recognises analogous protection through the Berne Convention,
+TRIPS, the WIPO Copyright Treaty, and other international instruments.
+
+NO LICENSE IS GRANTED, expressly, impliedly, by estoppel, or otherwise, to
+any person to use, copy, reproduce, modify, merge, publish, distribute,
+sublicense, sell, lease, lend, mirror, rehost, fork, archive, scrape,
+reverse-engineer, disassemble, decompile, decrypt, decode, translate, train
+or fine-tune any machine-learning model on, or create derivative works from,
+the Software, in whole or in part, by any means whether automated, manual,
+or AI-assisted.
+
+The fact that any portion of the Software may be served to a web browser as
+part of normal operation of the Arbel service at arbel.live, or any successor
+domain, does NOT constitute publication into the public domain, dedication
+of any copyright, an open-source release, or a grant of any further right.
+Receipt by a browser is solely a technical necessity for the operation of
+the service for an authorised end-user, and is governed by the Arbel Terms
+of Service published at https://arbel.live/generator/terms.html, which are
+incorporated by reference.
+
+PERMITTED USE
+-------------
+Use of the Arbel hosted service at arbel.live by an authorised end-user, in
+accordance with the Arbel Terms of Service and Privacy Policy, is permitted.
+All other use is prohibited and may give rise to civil and criminal liability
+under applicable copyright, computer-misuse, trade-secret, trademark, and
+unfair-competition laws, including without limitation:
+
+  - the Indian Copyright Act 1957 and the Information Technology Act 2000;
+  - the United States Copyright Act (17 U.S.C.), the Digital Millennium
+    Copyright Act, and the Computer Fraud and Abuse Act (18 U.S.C. Sec.1030);
+  - the United Kingdom Copyright, Designs and Patents Act 1988 and the
+    Computer Misuse Act 1990;
+  - the European Union Directive 2001/29/EC and Directive 2009/24/EC; and
+  - any analogous law of any other jurisdiction in which the Software is
+    accessed, used, or enforced.
+
+TRADEMARKS
+----------
+"Arbel," the Arbel logo, and any related word marks, design marks, trade
+dress, and slogans are trademarks of Arbel Live Technologies. No trademark
+license is granted under this notice or by access to this repository.
+
+NO WARRANTY
+-----------
+THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITH ALL FAULTS AND
+WITHOUT WARRANTY OF ANY KIND, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING THE
+IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+TITLE, AND NON-INFRINGEMENT. ARBEL SHALL NOT BE LIABLE FOR ANY DAMAGES OF
+ANY KIND ARISING FROM ACCESS TO OR USE OF THE SOFTWARE, TO THE MAXIMUM
+EXTENT PERMITTED BY APPLICABLE LAW.
+
+GOVERNING LAW
+-------------
+This notice and the rights it reserves are governed by the laws of India.
+The competent courts in Bengaluru, Karnataka, India shall have exclusive
+jurisdiction over any dispute arising out of or relating to this notice,
+without prejudice to Arbel's right to seek interim or injunctive relief in
+any other competent court worldwide.
+
+CONTACT
+-------
+Licensing, takedown, DMCA, and legal enquiries:
+  arbeltechnologies@gmail.com
+  Subject prefix: [LEGAL] / [DMCA] / [LICENSING]
+
+================================================================================
+ALL RIGHTS NOT EXPRESSLY GRANTED ARE RESERVED.
+================================================================================
