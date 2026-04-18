@@ -5,5 +5,15 @@ compatibility_date = "2024-01-01"
 [vars]
 # Non-secret env vars go here (none needed)
 
-# Secrets are set via: wrangler secret put GITHUB_CLIENT_ID
-# and: wrangler secret put GITHUB_CLIENT_SECRET
+# ─── Required secrets ───
+# wrangler secret put GITHUB_CLIENT_ID
+# wrangler secret put GITHUB_CLIENT_SECRET
+# wrangler secret put ADMIN_TOKEN           # random long string — grants /api/admin/stats
+# wrangler secret put ANALYTICS_SALT        # random string — salts visitor hashes
+
+# ─── Analytics KV namespace ───
+# Create once:  wrangler kv namespace create ANALYTICS
+# Then paste the returned id below and redeploy.
+# [[kv_namespaces]]
+# binding = "ANALYTICS"
+# id = "REPLACE_WITH_KV_NAMESPACE_ID"

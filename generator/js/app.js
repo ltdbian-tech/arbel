@@ -12,6 +12,54 @@
     var yearEl = document.getElementById('copyrightYear');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+    /* ─── Dev Unlock (for internal testing of locked features) ───
+       Activate by visiting: /generator/?unlock=arbel-dev-2026
+       Deactivate by visiting: /generator/?unlock=off
+       Flag is stored in localStorage so it persists across visits. */
+    var DEV_UNLOCK_KEY = 'arbel.devUnlock';
+    var DEV_UNLOCK_SECRET = 'arbel-dev-2026'; // change to rotate access
+    try {
+        var usp = new URLSearchParams(location.search);
+        if (usp.has('unlock')) {
+            var v = usp.get('unlock');
+            if (v === 'off') {
+                localStorage.removeItem(DEV_UNLOCK_KEY);
+            } else if (v === DEV_UNLOCK_SECRET) {
+                localStorage.setItem(DEV_UNLOCK_KEY, '1');
+            }
+            // Scrub the query param from URL so it isn't shared / logged
+            usp.delete('unlock');
+            var newQs = usp.toString();
+            history.replaceState(null, '', location.pathname + (newQs ? '?' + newQs : '') + location.hash);
+        }
+        if (localStorage.getItem(DEV_UNLOCK_KEY) === '1') {
+            document.body.classList.add('dev-unlocked');
+        }
+    } catch (e) { /* storage disabled — ignore */ }
+
+    /* ─── Anonymous analytics ping (fire-and-forget) ───
+       Sends a single pageview to our Cloudflare Worker which stores
+       only: UTC date, country (from CF header), and a hashed daily
+       visitor ID (no IPs, no cookies, no PII). Failures are silent. */
+    (function pingAnalytics() {
+        try {
+            if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return;
+            var payload = {
+                p: location.pathname,
+                r: document.referrer ? new URL(document.referrer).hostname : '',
+                tz: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+                dev: document.body.classList.contains('dev-unlocked') ? 1 : 0
+            };
+            fetch('https://arbel-auth.ltdb.workers.dev/api/track', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true,
+                credentials: 'omit'
+            }).catch(function () { });
+        } catch (e) { }
+    })();
+
     /* ─── State ─── */
     var state = {
         step: 0,
@@ -2125,10 +2173,26 @@
     var modeCards = $$('.mode-card');
     modeCards.forEach(function (card) {
         card.addEventListener('click', function () {
+            // Gate locked modes unless dev-unlocked
+            if (card.classList.contains('locked') && !document.body.classList.contains('dev-unlocked')) {
+                _showLockedToast();
+                return;
+            }
             state.mode = card.dataset.mode;
             modeCards.forEach(function (c) { c.classList.toggle('selected', c.dataset.mode === state.mode); });
         });
     });
+
+    function _showLockedToast() {
+        var existing = document.getElementById('arbelLockedToast');
+        if (existing) { existing.remove(); }
+        var t = document.createElement('div');
+        t.id = 'arbelLockedToast';
+        t.textContent = 'Cinematic mode is coming soon \u2014 stay tuned.';
+        t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:12px 20px;border-radius:8px;border:1px solid rgba(255,180,60,0.4);font-family:monospace;font-size:13px;z-index:9999;box-shadow:0 10px 30px rgba(0,0,0,.5)';
+        document.body.appendChild(t);
+        setTimeout(function () { t.style.transition = 'opacity .4s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 400); }, 2600);
+    }
 
     /* Cinematic step handling — when going to step 3 in cinematic mode,
        show the cinematic editor instead of the classic builder */

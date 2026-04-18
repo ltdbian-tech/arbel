@@ -31,7 +31,7 @@
     <div class="legal-page">
         <a href="index.html" class="legal-back mono">&larr; BACK TO GENERATOR</a>
         <h1>Privacy Policy</h1>
-        <p class="legal-date mono">Effective Date: March 14, 2026 &mdash; Last Updated: March 14, 2026</p>
+        <p class="legal-date mono">Effective Date: March 14, 2026 &mdash; Last Updated: April 18, 2026</p>
 
         <p>This Privacy Policy describes how <strong>Arbel</strong> ("we," "us," "our") collects, uses, and handles your information when you use our website generator platform at <strong>arbel.live</strong> (the "Service"). We are committed to transparency about our data practices.</p>
 
@@ -67,6 +67,21 @@
             <li>We do <strong>not</strong> sell, rent, or share any personal data with third parties</li>
             <li>We do <strong>not</strong> build user profiles or track behavior across sessions</li>
         </ul>
+
+        <h3>1.4 Minimal Anonymous Usage Metrics</h3>
+        <p>To understand aggregate usage and keep the Service reliable, we collect the following <strong>anonymous, non-identifying</strong> metrics when you load the Generator:</p>
+        <table class="data-table">
+            <thead>
+                <tr><th>Metric</th><th>Purpose</th><th>Retention</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Country code (2-letter, from network-level geolocation)</td><td>Regional usage statistics</td><td>Aggregate counters only</td></tr>
+                <tr><td>UTC date of visit</td><td>Daily visitor counts</td><td>Aggregate counters only</td></tr>
+                <tr><td>Salted one-way hash of IP + user-agent + date</td><td>Approximate unique-visitor count within a rolling 48-hour window</td><td>48-hour TTL; automatically expires</td></tr>
+                <tr><td>Referring hostname (not full URL)</td><td>Understand inbound traffic sources</td><td>Not stored per-visit; aggregate only</td></tr>
+            </tbody>
+        </table>
+        <p>We do <strong>not</strong> log raw IP addresses, full user-agents, session IDs, or any content you enter into the Generator. The visitor hash is salted with a secret that makes it non-reversible to an IP address and automatically expires after 48 hours. These metrics are stored in Cloudflare KV and used solely for internal reporting. Users who send a <code>DNT: 1</code> (Do Not Track) header are not counted.</p>
 
         <h2>2. How Your Data Is Used</h2>
         <table class="data-table">
@@ -125,6 +140,28 @@
 
         <h2>10. Contact</h2>
         <p>For privacy-related questions or concerns, contact us at: <strong>privacy@arbel.live</strong></p>
+
+        <h2>11. Security Practices</h2>
+        <ul>
+            <li>All communication with the Generator, GitHub, AI providers, and our OAuth worker uses <strong>HTTPS/TLS</strong> encryption.</li>
+            <li>A strict <strong>Content Security Policy (CSP)</strong> restricts which domains the Generator can communicate with.</li>
+            <li>Our Cloudflare Worker enforces <strong>origin allow-lists</strong> and validates request shapes before any processing.</li>
+            <li>Our analytics endpoint processes <strong>only hashed, non-reversible identifiers</strong> and never stores raw network data.</li>
+            <li>Administrative endpoints are gated by a <strong>rotating bearer token</strong> stored exclusively as a Cloudflare secret.</li>
+            <li>We do not perform any server-side processing of your content, tokens, or API keys.</li>
+        </ul>
+
+        <h2>12. Beta &amp; Pre-Release Features</h2>
+        <p>Some features (including but not limited to Cinematic Mode) may be offered as closed beta or preview releases available only to authorised internal testers. Such features are provided strictly on an <strong>experimental, "as-is" basis</strong>, may be withdrawn or materially altered at any time without notice, and are not covered by any stability, availability, or performance expectations. Public users will see these features marked as "Coming Soon" and cannot access them until general release.</p>
+
+        <h2>13. Do Not Track &amp; Opt-Out</h2>
+        <p>If your browser sends the <strong>Do Not Track (DNT)</strong> header, we do not record the anonymous usage metrics described in Section 1.4 for your session. You can also opt out by blocking requests to <code>arbel-auth.ltdb.workers.dev/api/track</code> at the browser or network level; the Generator remains fully functional without analytics.</p>
+
+        <h2>14. Disclosure to Authorities</h2>
+        <p>Because we do not retain identifiable user data, we have little information to disclose. In the event of a valid, enforceable legal request, we will cooperate only to the extent required by law and only with data we actually possess (aggregate counters, OAuth worker logs limited to error traces).</p>
+
+        <h2>15. Jurisdiction</h2>
+        <p>This Privacy Policy is governed by applicable data-protection laws in the jurisdiction where the operator of Arbel is established. Disputes relating to this Policy shall be resolved exclusively in the courts of that jurisdiction, subject to mandatory consumer-protection rights you may have in your country of residence.</p>
     </div>
 </body>
 </html>

@@ -778,6 +778,42 @@ a:hover { text-decoration: underline; }
     color: var(--accent2);
     border: 1px solid rgba(108,92,231,0.2);
 }
+/* Locked mode (e.g. Cinematic pre-launch) */
+.mode-card.locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(0.35);
+    pointer-events: auto; /* still clickable so tooltip/toast can show */
+    position: relative;
+}
+.mode-card.locked:hover { border-color: var(--border); }
+.mode-card.locked.selected { border-color: var(--border); box-shadow: none; }
+.mode-card-lock {
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    color: var(--fg2);
+}
+.mode-card.locked .mode-card-badge--cinematic {
+    background: rgba(255,180,60,0.12);
+    color: #ffb43c;
+    border-color: rgba(255,180,60,0.3);
+}
+body.dev-unlocked .mode-card.locked {
+    opacity: 1;
+    cursor: pointer;
+    filter: none;
+}
+body.dev-unlocked .mode-card-lock { display: none; }
+body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
+    content: " · DEV";
+    opacity: 0.7;
+}
 
 
 /* ═══════════════════════════════════════════════
