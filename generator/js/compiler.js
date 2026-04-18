@@ -1,3 +1,23 @@
+/*!
+ * © 2026 Arbel Live Technologies. All rights reserved.
+ *
+ * This source file is proprietary and confidential. It is part of
+ * the Arbel platform (https://arbel.live) and is protected by
+ * copyright and international intellectual-property treaties.
+ *
+ * NO LICENSE is granted to copy, modify, distribute, sublicense,
+ * rehost, mirror, fork, sell, or create derivative works of this
+ * code, in whole or in part, without prior written permission
+ * from Arbel Live Technologies.
+ *
+ * Reverse engineering, scraping, or automated extraction is
+ * expressly prohibited.
+ *
+ * Unauthorized use will be pursued under applicable copyright,
+ * computer-misuse, and unfair-competition laws.
+ *
+ * Contact: arbeltechnologies@gmail.com
+ */
 /* ═══════════════════════════════════════════════
    COMPILER — Template Engine
    
