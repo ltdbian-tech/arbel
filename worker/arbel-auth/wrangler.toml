@@ -5,14 +5,12 @@ compatibility_date = "2024-01-01"
 [vars]
 # Non-secret env vars (none needed at the moment)
 
-# ─── Required secrets ────────────────────────────────────────────
+# ─── Required secrets (set via `wrangler secret put`) ────────────
 # wrangler secret put GITHUB_CLIENT_ID
 # wrangler secret put GITHUB_CLIENT_SECRET
-# wrangler secret put ANALYTICS_SALT        # long random string — salts visitor hashes
-#
-# ─── Cloudflare Access (admin panel gating) ──────────────────────
-# wrangler secret put CF_ACCESS_TEAM_DOMAIN # e.g. "arbel" (the subdomain part)
-# wrangler secret put CF_ACCESS_AUD         # application audience tag from Zero Trust UI
+# wrangler secret put ANALYTICS_SALT     # long random string — salts visitor + IP hashes
+# wrangler secret put ADMIN_TOKEN        # the token YOU type to log in to /admin
+# wrangler secret put SESSION_SECRET     # long random string — signs session cookies
 #
 # ─── Analytics KV namespace ──────────────────────────────────────
 # Create once:
