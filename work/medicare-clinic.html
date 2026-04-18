@@ -3,587 +3,599 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Healing Hands — Family Care That Feels Human</title>
+<title>Meridian Health — Precision care, engineered with empathy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#FBFDFC;
+  --bg:#F5F8FA;
   --surface:#FFFFFF;
-  --mint:#D8F0E5;
-  --mint-2:#B6E3CE;
-  --mint-deep:#2E8F6B;
-  --navy:#0C2E4A;
-  --navy-2:#1A4870;
-  --ink:#0A1824;
-  --muted:#607687;
-  --line:#E3EAEE;
-  --warm:#FFE7D1;
-  --coral:#FF8B6A;
+  --ink:#0A1628;
+  --ink-2:#1A2942;
+  --fg-dim:#5A6B82;
+  --line:#E1E8EF;
+  --line-strong:#C8D4E0;
+  --teal:#00D4B4;
+  --teal-deep:#008F7A;
+  --coral:#FF6B6B;
+  --amber:#FFB547;
+  --navy:#0A1628;
+  --mint:#E8FAF6;
+  --sky:#EBF4FA;
+  --grid:rgba(10,22,40,.04);
   --ease:cubic-bezier(.2,.8,.2,1);
-  --shadow:0 30px 60px rgba(12,46,74,.08);
 }
 html{scroll-behavior:smooth}
 body{
   background:var(--bg);color:var(--ink);
   font-family:'Manrope',system-ui,sans-serif;font-weight:400;line-height:1.6;
-  overflow-x:hidden;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;-webkit-font-smoothing:antialiased;perspective:1600px;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:48px 48px;
+  background-position:-1px -1px;
 }
-::selection{background:var(--mint-2);color:var(--navy)}
+::selection{background:var(--teal);color:var(--navy)}
 
-/* ── ANNOUNCEMENT BAR ── */
-.bar{background:var(--navy);color:#fff;padding:.7rem 1.5rem;text-align:center;font-size:.8rem;font-weight:500;letter-spacing:.01em;position:relative;z-index:200}
-.bar span{opacity:.9}
-.bar a{color:var(--mint-2);text-decoration:none;font-weight:600;margin-left:.5rem}
-.bar a::after{content:' →'}
+/* ── Scan line overlay ── */
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:900;opacity:.3;mix-blend-mode:multiply;
+  background:repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(10,22,40,.02) 2px,rgba(10,22,40,.02) 3px)}
+
+/* ── ECG Loader ── */
+.loader{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2rem;transition:opacity .7s var(--ease) .3s,visibility .7s .3s}
+.loader.gone{opacity:0;visibility:hidden}
+.loader-ecg{width:320px;height:60px}
+.loader-ecg path{fill:none;stroke:var(--teal);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:800;stroke-dashoffset:800;animation:drawEcg 2s linear infinite}
+@keyframes drawEcg{to{stroke-dashoffset:-800}}
+.loader-txt{font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;color:var(--fg-dim)}
+.loader-txt span{color:var(--teal)}
+
+/* ── Top status bar ── */
+.statusbar{position:fixed;top:0;left:0;right:0;z-index:90;height:34px;background:var(--navy);color:#A0B5CC;font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.16em;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;border-bottom:1px solid var(--teal-deep)}
+.statusbar span{display:inline-flex;align-items:center;gap:.6rem}
+.statusbar .live{color:var(--teal)}
+.statusbar .live::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.statusbar-center{display:flex;gap:2rem}
 
 /* ── NAV ── */
-.nav{
-  position:sticky;top:0;z-index:100;background:rgba(251,253,252,.92);backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--line);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:1.1rem 2.5rem;
-}
-.brand{display:flex;align-items:center;gap:.7rem;font-weight:700;font-size:1.2rem;letter-spacing:-.01em;color:var(--navy)}
-.brand-mark{
-  width:38px;height:38px;border-radius:12px;background:var(--navy);display:grid;place-items:center;
-  position:relative;box-shadow:0 4px 12px rgba(12,46,74,.2);
-}
-.brand-mark::before,.brand-mark::after{content:'';position:absolute;background:var(--mint-2);border-radius:2px}
-.brand-mark::before{width:16px;height:3px}
-.brand-mark::after{width:3px;height:16px}
-.nav-links{display:flex;gap:2rem;font-size:.92rem;font-weight:500}
-.nav-links a{color:var(--ink);text-decoration:none;padding:.4rem 0;position:relative;transition:color .3s}
-.nav-links a:hover{color:var(--mint-deep)}
-.nav-right{display:flex;align-items:center;gap:1rem}
-.phone{display:flex;align-items:center;gap:.5rem;color:var(--navy);font-weight:600;font-size:.92rem;text-decoration:none}
-.phone-ic{width:34px;height:34px;border-radius:50%;background:var(--mint);display:grid;place-items:center;color:var(--mint-deep);font-weight:700}
-.btn{
-  padding:.85rem 1.5rem;border-radius:999px;font-weight:600;font-size:.92rem;cursor:pointer;border:none;
-  transition:all .3s var(--ease);letter-spacing:-.005em;
-}
-.btn-primary{background:var(--navy);color:#fff}
-.btn-primary:hover{background:var(--navy-2);transform:translateY(-1px);box-shadow:0 10px 24px rgba(12,46,74,.2)}
-.btn-mint{background:var(--mint-2);color:var(--navy)}
-.btn-mint:hover{background:var(--mint-deep);color:#fff}
-.btn-white{background:#fff;color:var(--navy);border:1px solid var(--line)}
-.btn-white:hover{border-color:var(--navy);transform:translateY(-1px)}
+.nav{position:fixed;top:34px;left:0;right:0;z-index:80;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(245,248,250,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.8rem;font-family:'Manrope',sans-serif;font-weight:700;font-size:1.25rem;letter-spacing:-.01em;color:var(--ink)}
+.brand-mark{width:36px;height:36px;border-radius:10px;background:var(--navy);display:grid;place-items:center;position:relative;overflow:hidden}
+.brand-mark::before,.brand-mark::after{content:'';position:absolute;background:var(--teal)}
+.brand-mark::before{width:16px;height:2px}
+.brand-mark::after{width:2px;height:16px}
+.brand small{display:block;font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.3em;color:var(--fg-dim);font-weight:400;margin-top:.1rem}
+.nav-links{display:flex;gap:.2rem;align-items:center}
+.nav-links a{color:var(--ink);text-decoration:none;padding:.65rem 1.1rem;border-radius:8px;font-size:.88rem;font-weight:500;transition:all .3s;position:relative}
+.nav-links a:hover{background:var(--mint);color:var(--teal-deep)}
+.nav-links a.on{background:var(--mint);color:var(--teal-deep)}
+.nav-links a.on::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--teal)}
+.nav-right{display:flex;gap:.6rem;align-items:center}
+.nav-phone{display:flex;align-items:center;gap:.6rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink);font-weight:500}
+.nav-phone .c{width:34px;height:34px;border-radius:50%;background:var(--mint);color:var(--teal-deep);display:grid;place-items:center;font-size:.9rem}
+.btn-book{padding:.75rem 1.3rem;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Manrope';font-weight:600;font-size:.82rem;cursor:pointer;transition:all .3s;display:inline-flex;align-items:center;gap:.5rem}
+.btn-book:hover{background:var(--teal-deep);transform:translateY(-1px);box-shadow:0 10px 24px rgba(0,143,122,.3)}
+.btn-book .arr{transition:transform .3s}.btn-book:hover .arr{transform:translateX(4px)}
 
 /* ── HERO ── */
-.hero{
-  padding:4rem 2.5rem 5rem;display:grid;grid-template-columns:1.1fr 1fr;gap:4rem;align-items:center;position:relative;
-}
-.hero-tag{
-  display:inline-flex;align-items:center;gap:.6rem;padding:.5rem 1rem;border-radius:999px;
-  background:var(--mint);color:var(--mint-deep);font-size:.78rem;font-weight:600;letter-spacing:.01em;margin-bottom:1.8rem;
-}
-.hero-tag .pulse{width:8px;height:8px;border-radius:50%;background:var(--mint-deep);position:relative}
-.hero-tag .pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;background:var(--mint-deep);opacity:.35;animation:pulse 1.6s ease-out infinite}
-@keyframes pulse{0%{transform:scale(.8);opacity:.5}100%{transform:scale(2.2);opacity:0}}
-.hero h1{
-  font-family:'Instrument Serif',serif;font-weight:400;
-  font-size:clamp(3rem,7vw,6rem);line-height:1;letter-spacing:-.025em;color:var(--navy);
-}
-.hero h1 .it{font-style:italic;color:var(--mint-deep)}
-.hero h1 .und{position:relative;white-space:nowrap}
-.hero h1 .und::after{content:'';position:absolute;left:0;right:0;bottom:.04em;height:.12em;background:var(--mint-2);border-radius:4px;z-index:-1}
-.hero p{margin-top:1.6rem;font-size:1.1rem;color:var(--muted);max-width:520px;line-height:1.7}
-.hero-ctas{margin-top:2.2rem;display:flex;gap:.8rem;align-items:center;flex-wrap:wrap}
-.hero-trust{margin-top:3rem;display:flex;align-items:center;gap:1rem}
-.avatars{display:flex}
-.av{width:44px;height:44px;border-radius:50%;border:3px solid #fff;margin-left:-10px;background:linear-gradient(135deg,var(--mint-2),var(--navy));box-shadow:0 2px 6px rgba(0,0,0,.1)}
-.av:nth-child(1){margin-left:0;background:linear-gradient(135deg,#FFD1B8,#FF8B6A)}
-.av:nth-child(2){background:linear-gradient(135deg,#B6E3CE,#2E8F6B)}
-.av:nth-child(3){background:linear-gradient(135deg,#C6D8F0,#1A4870)}
-.av:nth-child(4){background:linear-gradient(135deg,#F0DCB6,#C69748);display:grid;place-items:center;color:#fff;font-weight:700;font-size:.75rem}
-.trust-text{font-size:.9rem}
-.trust-text strong{display:block;color:var(--navy);font-weight:700}
-.trust-text span{color:var(--muted);font-size:.85rem}
+.hero{min-height:calc(100vh);padding:9rem 2rem 4rem;display:grid;grid-template-columns:1.15fr .85fr;gap:3rem;align-items:center;max-width:1500px;margin:0 auto;position:relative}
+.hero-tag{display:inline-flex;align-items:center;gap:.8rem;padding:.5rem .9rem .5rem .5rem;background:var(--surface);border:1px solid var(--line);border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--fg-dim);margin-bottom:1.8rem;font-weight:500}
+.hero-tag b{padding:.25rem .7rem;background:var(--mint);color:var(--teal-deep);border-radius:999px;font-weight:600}
+.hero-title{font-family:'Manrope',sans-serif;font-weight:300;font-size:clamp(2.8rem,5.8vw,5.2rem);line-height:1.02;letter-spacing:-.028em;color:var(--ink)}
+.hero-title em{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--teal-deep);position:relative}
+.hero-title em::after{content:'';position:absolute;left:0;right:0;bottom:-.05em;height:8px;background:var(--teal);opacity:.18;border-radius:4px}
+.hero-sub{margin-top:1.6rem;font-size:1.05rem;color:var(--fg-dim);max-width:520px;line-height:1.7}
+.hero-actions{margin-top:2.4rem;display:flex;gap:.8rem;flex-wrap:wrap}
+.btn-primary{padding:1rem 1.8rem;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Manrope';font-weight:600;font-size:.9rem;cursor:pointer;transition:all .3s;display:inline-flex;align-items:center;gap:.7rem;box-shadow:0 10px 30px rgba(10,22,40,.18)}
+.btn-primary:hover{background:var(--teal-deep);transform:translateY(-2px);box-shadow:0 20px 40px rgba(0,143,122,.3)}
+.btn-outline{padding:1rem 1.6rem;background:transparent;color:var(--ink);border:1.5px solid var(--line-strong);border-radius:10px;font-family:'Manrope';font-weight:600;font-size:.9rem;cursor:pointer;transition:all .3s;display:inline-flex;align-items:center;gap:.7rem}
+.btn-outline:hover{border-color:var(--teal);color:var(--teal-deep);background:var(--mint)}
+.hero-trust{margin-top:3.2rem;display:flex;align-items:center;gap:1.2rem;padding-top:1.6rem;border-top:1px dashed var(--line)}
+.hero-avatars{display:flex}
+.hero-avatars div{width:36px;height:36px;border-radius:50%;border:2px solid var(--bg);margin-left:-8px;background-size:cover;background-position:center}
+.hero-avatars div:first-child{margin-left:0}
+.hero-avatars .a1{background:linear-gradient(135deg,#FFB547,#FF6B6B)}
+.hero-avatars .a2{background:linear-gradient(135deg,#00D4B4,#008F7A)}
+.hero-avatars .a3{background:linear-gradient(135deg,#6BC5FF,#3E7FC4)}
+.hero-avatars .a4{background:linear-gradient(135deg,#C8A9FF,#7A5CC4);display:grid;place-items:center;font-family:'JetBrains Mono';font-size:.55rem;color:#fff;font-weight:700}
+.hero-trust-txt{font-size:.82rem;color:var(--fg-dim)}
+.hero-trust-txt strong{color:var(--ink);font-weight:700}
 
-/* hero visual - card stack + metrics */
-.hero-visual{position:relative;aspect-ratio:5/6;display:grid;place-items:center}
-.hero-bg-blob{
-  position:absolute;inset:5% 0 0 5%;border-radius:60% 40% 55% 45%/50% 55% 45% 50%;
-  background:linear-gradient(135deg,var(--mint-2),var(--mint));
-  z-index:0;animation:blob 14s ease-in-out infinite;
-}
-@keyframes blob{0%,100%{border-radius:60% 40% 55% 45%/50% 55% 45% 50%}50%{border-radius:45% 55% 40% 60%/55% 45% 60% 40%}}
-.doc-card{
-  position:relative;z-index:2;width:80%;max-width:380px;
-  background:#fff;border-radius:28px;padding:2rem;box-shadow:var(--shadow);
-}
-.doc-photo{
-  width:100%;aspect-ratio:5/4;border-radius:20px;
-  background:linear-gradient(135deg,#FFE0C8 0%,#FFB38C 60%,#D9896A 100%);
-  position:relative;overflow:hidden;margin-bottom:1.2rem;
-}
-.doc-photo::before{
-  content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(circle at 50% 35%,#FFCDB1 0%,#D9896A 35%,transparent 36%),
-    radial-gradient(ellipse at 50% 85%,#FFFFFF 0%,#FFFFFF 45%,transparent 46%),
-    radial-gradient(ellipse at 50% 75%,#1A4870 0%,#1A4870 30%,transparent 31%);
-}
-.doc-photo::after{
-  content:'';position:absolute;top:30%;left:50%;transform:translateX(-50%);
-  width:45%;height:12%;background:#3A2418;border-radius:50% 50% 20% 20%;
-}
-.doc-info{display:flex;justify-content:space-between;align-items:center}
-.doc-info h4{font-weight:700;font-size:1.05rem;color:var(--navy);letter-spacing:-.01em}
-.doc-info p{font-size:.82rem;color:var(--muted);margin-top:.1rem}
-.doc-badge{padding:.35rem .7rem;background:var(--mint);color:var(--mint-deep);border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.02em}
-.doc-card .slot{
-  margin-top:1.2rem;padding:.9rem 1rem;background:var(--bg);border-radius:14px;
-  display:flex;justify-content:space-between;align-items:center;font-size:.85rem;
-}
-.doc-card .slot span{color:var(--muted)}
-.doc-card .slot strong{color:var(--navy);font-weight:700}
-.floater{position:absolute;z-index:3;background:#fff;border-radius:18px;padding:1rem 1.2rem;box-shadow:0 20px 40px rgba(12,46,74,.12);display:flex;align-items:center;gap:.9rem}
-.float-1{top:8%;left:-4%;animation:floatA 5s ease-in-out infinite}
-.float-2{bottom:12%;right:-6%;animation:floatA 5s ease-in-out infinite .8s}
-@keyframes floatA{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.float-ic{width:40px;height:40px;border-radius:12px;background:var(--mint);color:var(--mint-deep);display:grid;place-items:center;font-weight:700;font-size:1.1rem}
-.float-2 .float-ic{background:var(--warm);color:var(--coral)}
-.floater strong{display:block;font-weight:700;color:var(--navy);font-size:.9rem}
-.floater span{font-size:.75rem;color:var(--muted)}
+/* ── HUD VITALS PANEL ── */
+.hud{position:relative;background:var(--surface);border-radius:20px;border:1px solid var(--line);overflow:hidden;box-shadow:0 40px 80px rgba(10,22,40,.08),0 1px 0 rgba(255,255,255,.8) inset}
+.hud::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),var(--teal-deep),var(--teal));background-size:200% 100%;animation:scan 3s linear infinite}
+@keyframes scan{to{background-position:-200% 0}}
+.hud-head{padding:1rem 1.4rem;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--navy);color:#fff}
+.hud-head-l{display:flex;align-items:center;gap:.7rem;font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase}
+.hud-head-l .dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);animation:pulse 1.2s ease-out infinite}
+.hud-head-r{font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.18em;color:#A0B5CC}
+.hud-body{padding:1.4rem}
+.hud-patient{padding-bottom:1.2rem;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.2rem}
+.hud-patient h4{font-size:.92rem;font-weight:700;color:var(--ink)}
+.hud-patient small{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.18em;color:var(--fg-dim);display:block;margin-top:.3rem}
+.hud-patient .badge{padding:.3rem .6rem;background:var(--mint);color:var(--teal-deep);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.18em;font-weight:600}
 
-/* ── STATS STRIP ── */
-.stats{padding:3rem 2.5rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--surface)}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2rem;max-width:1200px;margin:0 auto}
-.stat .num{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.4rem,4vw,3.6rem);line-height:1;color:var(--navy);letter-spacing:-.02em}
-.stat .num .it{font-style:italic;color:var(--mint-deep)}
-.stat .lbl{font-size:.85rem;color:var(--muted);margin-top:.5rem;font-weight:500}
+/* ECG big panel */
+.ecg-panel{background:var(--navy);border-radius:12px;padding:1rem;margin-bottom:1rem;position:relative;overflow:hidden}
+.ecg-panel::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,180,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,180,.08) 1px,transparent 1px);background-size:20px 20px}
+.ecg-head{display:flex;justify-content:space-between;align-items:flex-start;font-family:'JetBrains Mono',monospace;color:#A0B5CC;font-size:.6rem;letter-spacing:.18em;position:relative;z-index:2;margin-bottom:.6rem}
+.ecg-head .bpm{color:var(--teal);font-size:2.4rem;font-weight:300;letter-spacing:-.02em;line-height:1;font-family:'Manrope'}
+.ecg-head .bpm small{display:block;font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.2em;color:#A0B5CC;font-weight:400;margin-top:.2rem}
+.ecg-svg{width:100%;height:80px;position:relative;z-index:2}
+.ecg-svg path{fill:none;stroke:var(--teal);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px var(--teal));stroke-dasharray:400;stroke-dashoffset:400;animation:drawEcg2 2.4s linear infinite}
+@keyframes drawEcg2{to{stroke-dashoffset:-400}}
 
-/* ── SECTIONS ── */
-.section{padding:7rem 2.5rem}
-.section-max{max-width:1280px;margin:0 auto}
-.section-head{text-align:center;max-width:720px;margin:0 auto 4rem}
-.eyebrow{display:inline-flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-radius:999px;background:var(--mint);color:var(--mint-deep);font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:1.2rem}
-.h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,4.5vw,3.8rem);line-height:1.02;letter-spacing:-.02em;color:var(--navy)}
-.h2 .it{font-style:italic;color:var(--mint-deep)}
-.sub{margin-top:1.2rem;color:var(--muted);font-size:1.05rem}
+/* Vitals grid */
+.vit-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem}
+.vit{background:var(--sky);border-radius:10px;padding:.9rem 1rem;position:relative;overflow:hidden;border:1px solid var(--line)}
+.vit .lbl{font-family:'JetBrains Mono',monospace;font-size:.56rem;letter-spacing:.22em;text-transform:uppercase;color:var(--fg-dim);font-weight:500}
+.vit .val{font-family:'Manrope';font-weight:300;font-size:1.6rem;letter-spacing:-.02em;color:var(--ink);line-height:1;margin-top:.25rem}
+.vit .val b{font-size:.7rem;color:var(--fg-dim);margin-left:.15rem;font-weight:500}
+.vit .delta{font-family:'JetBrains Mono';font-size:.58rem;color:var(--teal-deep);margin-top:.3rem;letter-spacing:.1em;font-weight:600}
+.vit .delta.dn{color:var(--coral)}
 
-/* services grid */
-.services{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem}
-.service{
-  background:#fff;border:1px solid var(--line);border-radius:24px;padding:2rem;
-  position:relative;overflow:hidden;transition:all .5s var(--ease);cursor:pointer;
-}
-.service:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:transparent}
-.service-ic{
-  width:58px;height:58px;border-radius:18px;background:var(--mint);color:var(--mint-deep);
-  display:grid;place-items:center;margin-bottom:1.4rem;
-  font-family:'Instrument Serif',serif;font-style:italic;font-size:1.8rem;font-weight:400;
-  transition:all .5s var(--ease);
-}
-.service:hover .service-ic{background:var(--navy);color:#fff;transform:rotate(-6deg)}
-.service:nth-child(2) .service-ic{background:#FFE7D1;color:var(--coral)}
-.service:nth-child(2):hover .service-ic{background:var(--coral);color:#fff}
-.service:nth-child(4) .service-ic{background:#E6EEF8;color:var(--navy-2)}
-.service:nth-child(4):hover .service-ic{background:var(--navy-2);color:#fff}
-.service:nth-child(5) .service-ic{background:#F3E6F8;color:#7A4BB8}
-.service:nth-child(5):hover .service-ic{background:#7A4BB8;color:#fff}
-.service:nth-child(6) .service-ic{background:#FFF2CC;color:#C69748}
-.service:nth-child(6):hover .service-ic{background:#C69748;color:#fff}
-.service h3{font-weight:700;font-size:1.25rem;color:var(--navy);margin-bottom:.6rem;letter-spacing:-.01em}
-.service p{color:var(--muted);font-size:.95rem;line-height:1.6}
-.service-tags{margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:.5rem}
-.service-tags span{font-size:.72rem;padding:.25rem .7rem;background:var(--bg);border-radius:999px;color:var(--muted);font-weight:500}
-.service-link{margin-top:1.2rem;display:inline-flex;align-items:center;gap:.4rem;color:var(--navy);font-weight:700;font-size:.88rem;text-decoration:none;transition:gap .3s}
-.service:hover .service-link{gap:.8rem;color:var(--mint-deep)}
+/* O2 conic dial */
+.vit-dial{display:flex;align-items:center;gap:.8rem}
+.dial{width:54px;height:54px;border-radius:50%;background:conic-gradient(var(--teal) 0% 98%,var(--line) 98% 100%);display:grid;place-items:center;position:relative;flex:none}
+.dial::before{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--sky)}
+.dial span{font-family:'Manrope';font-weight:700;font-size:.78rem;color:var(--ink);position:relative;z-index:2}
+.vit-dial .txt{flex:1}
 
-/* ── DOCTORS ── */
-.doctors{background:linear-gradient(180deg,var(--bg) 0%,var(--mint) 100%);padding:7rem 2.5rem}
-.doc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.4rem;margin-top:3rem}
-.doctor{
-  background:#fff;border-radius:24px;overflow:hidden;position:relative;
-  transition:transform .5s var(--ease);cursor:pointer;
-}
-.doctor:hover{transform:translateY(-8px)}
-.doctor-img{
-  aspect-ratio:3/4;position:relative;overflow:hidden;
-  background:linear-gradient(180deg,var(--mint) 0%,var(--mint-2) 100%);
-}
-.doctor-img::before{
-  content:'';position:absolute;left:50%;top:15%;transform:translateX(-50%);
-  width:42%;aspect-ratio:1;border-radius:50%;
-  background:radial-gradient(circle at 50% 40%,#FFCDB1,#D9896A);
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
-}
-.doctor-img::after{
-  content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);
-  width:72%;height:50%;background:#fff;border-radius:45% 45% 0 0;
-}
-.doctor:nth-child(2) .doctor-img{background:linear-gradient(180deg,#FFE7D1,#FFB38C)}
-.doctor:nth-child(2) .doctor-img::before{background:radial-gradient(circle at 50% 40%,#F4C3A6,#A66A48)}
-.doctor:nth-child(3) .doctor-img{background:linear-gradient(180deg,#E6EEF8,#B6CCE3)}
-.doctor:nth-child(3) .doctor-img::before{background:radial-gradient(circle at 50% 40%,#FFD7BC,#BA7E5C)}
-.doctor:nth-child(4) .doctor-img{background:linear-gradient(180deg,#F3E6F8,#D4B8E0)}
-.doctor:nth-child(4) .doctor-img::before{background:radial-gradient(circle at 50% 40%,#E8B49A,#8E5A44)}
-.doctor-info{padding:1.4rem 1.4rem 1.6rem}
-.doctor-info h4{font-weight:700;color:var(--navy);font-size:1.1rem;letter-spacing:-.01em}
-.doctor-spec{color:var(--mint-deep);font-size:.85rem;font-weight:600;margin-top:.15rem}
-.doctor-meta{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
-.doctor-meta strong{color:var(--navy);font-weight:700}
+.hud-footer{padding:1rem 1.4rem;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--sky);font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.16em;color:var(--fg-dim)}
+.hud-footer .ok{color:var(--teal-deep);font-weight:600}
 
-/* ── SYMPTOM CHECKER ── */
-.checker{padding:7rem 2.5rem}
-.checker-wrap{
-  background:var(--navy);color:#fff;border-radius:36px;padding:4.5rem 3rem;
-  display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;position:relative;overflow:hidden;
-}
-.checker-wrap::before{content:'';position:absolute;top:-200px;right:-200px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(182,227,206,.25),transparent 70%)}
-.checker-wrap .eyebrow{background:rgba(182,227,206,.15);color:var(--mint-2)}
-.checker-wrap h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2rem,4vw,3.4rem);line-height:1.02;letter-spacing:-.02em;position:relative}
-.checker-wrap h2 .it{font-style:italic;color:var(--mint-2)}
-.checker-wrap p{color:rgba(255,255,255,.72);margin-top:1rem;font-size:1rem;position:relative}
-.checker-features{margin-top:2rem;display:flex;flex-direction:column;gap:.8rem;position:relative}
-.checker-features li{list-style:none;display:flex;align-items:center;gap:.8rem;font-size:.95rem}
-.checker-features li::before{content:'✓';width:24px;height:24px;border-radius:50%;background:var(--mint-2);color:var(--navy);display:grid;place-items:center;font-weight:700;font-size:.75rem;flex-shrink:0}
-.checker-form{
-  background:#fff;border-radius:24px;padding:2rem;color:var(--ink);position:relative;
-}
-.form-step{font-size:.72rem;letter-spacing:.14em;color:var(--mint-deep);font-weight:700;text-transform:uppercase;margin-bottom:.6rem}
-.checker-form h3{font-weight:700;color:var(--navy);font-size:1.25rem;margin-bottom:1.2rem;letter-spacing:-.01em}
-.options{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.5rem}
-.opt{
-  padding:.9rem;border-radius:14px;border:1.5px solid var(--line);background:#fff;cursor:pointer;
-  font-weight:600;font-size:.88rem;color:var(--navy);text-align:left;display:flex;align-items:center;gap:.7rem;
-  transition:all .3s var(--ease);
-}
-.opt:hover{border-color:var(--mint-deep);background:var(--mint)}
-.opt.on{background:var(--navy);color:#fff;border-color:var(--navy)}
-.opt .em{font-size:1.2rem}
-.progress{height:6px;background:var(--line);border-radius:999px;overflow:hidden;margin-bottom:1.2rem}
-.progress-fill{height:100%;width:60%;background:linear-gradient(90deg,var(--mint-deep),var(--mint-2));border-radius:999px}
+/* ── HERO STATS STRIP ── */
+.stats{max-width:1500px;margin:0 auto;padding:0 2rem;margin-bottom:5rem}
+.stats-inner{background:var(--surface);border:1px solid var(--line);border-radius:16px;display:grid;grid-template-columns:repeat(4,1fr);overflow:hidden}
+.stat{padding:1.8rem 1.6rem;border-right:1px solid var(--line);position:relative}
+.stat:last-child{border-right:none}
+.stat .lbl{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--fg-dim);font-weight:500;margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.stat .lbl::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--teal)}
+.stat .val{font-family:'Manrope';font-weight:300;font-size:2.6rem;letter-spacing:-.025em;line-height:1;color:var(--ink)}
+.stat .val b{font-family:'Instrument Serif',serif;font-weight:400;font-style:italic;color:var(--teal-deep)}
+.stat .desc{margin-top:.5rem;font-size:.78rem;color:var(--fg-dim)}
+
+/* ── SECTION COMMON ── */
+.sec{padding:7rem 2rem;max-width:1500px;margin:0 auto;position:relative}
+.sec-head{display:grid;grid-template-columns:.4fr 1fr .6fr;gap:2.5rem;align-items:flex-end;margin-bottom:4rem}
+.eye{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.28em;text-transform:uppercase;color:var(--teal-deep);font-weight:600;display:inline-flex;align-items:center;gap:.7rem}
+.eye::before{content:'';width:24px;height:1px;background:var(--teal)}
+.h2{font-family:'Manrope',sans-serif;font-weight:300;font-size:clamp(2rem,4vw,3.6rem);line-height:1.05;letter-spacing:-.022em;color:var(--ink)}
+.h2 em{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--teal-deep)}
+.lead{color:var(--fg-dim);font-size:.96rem;line-height:1.7;align-self:end}
+
+/* ── HEX SERVICES ── */
+.hex-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1rem}
+.hex{grid-column:span 2;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.8rem;position:relative;overflow:hidden;transition:all .5s var(--ease);cursor:pointer}
+.hex:nth-child(4){grid-column:span 3}
+.hex:nth-child(5){grid-column:span 3}
+.hex:nth-child(6){grid-column:span 2}
+.hex:nth-child(7){grid-column:span 2}
+.hex:nth-child(8){grid-column:span 2}
+.hex::before{content:'';position:absolute;top:0;right:0;width:140px;height:140px;background:conic-gradient(from 45deg at 70% 30%,var(--mint),transparent 40%);opacity:0;transition:opacity .5s;border-radius:14px}
+.hex:hover{transform:translateY(-6px);border-color:var(--teal);box-shadow:0 30px 60px rgba(0,143,122,.12)}
+.hex:hover::before{opacity:1}
+.hex-num{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.22em;color:var(--fg-dim);font-weight:500;margin-bottom:1.4rem;display:flex;justify-content:space-between;align-items:center}
+.hex-num .tag{padding:.25rem .6rem;background:var(--mint);color:var(--teal-deep);border-radius:4px;font-size:.55rem;letter-spacing:.18em;font-weight:700}
+.hex-icon{width:44px;height:44px;border-radius:10px;background:var(--sky);display:grid;place-items:center;color:var(--teal-deep);margin-bottom:1.2rem;transition:all .4s}
+.hex:hover .hex-icon{background:var(--navy);color:var(--teal);transform:rotate(-6deg) scale(1.05)}
+.hex h3{font-family:'Manrope';font-weight:700;font-size:1.2rem;letter-spacing:-.01em;color:var(--ink);margin-bottom:.5rem}
+.hex h3 em{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--teal-deep)}
+.hex p{font-size:.86rem;color:var(--fg-dim);line-height:1.6}
+.hex-meta{margin-top:1.2rem;padding-top:1rem;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:.64rem;letter-spacing:.16em;color:var(--fg-dim);font-weight:500}
+.hex-meta .ar{font-family:'Manrope';color:var(--teal-deep);font-weight:600;letter-spacing:0;font-size:.78rem;display:inline-flex;gap:.3rem;transition:transform .3s}
+.hex:hover .hex-meta .ar{transform:translateX(4px)}
+
+/* ── DNA HELIX ── */
+.dna{padding:7rem 2rem;max-width:1500px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
+.dna-vis{position:relative;height:540px;perspective:900px;display:grid;place-items:center}
+.dna-helix{position:relative;width:260px;height:100%;transform-style:preserve-3d;animation:dnaSpin 18s linear infinite}
+@keyframes dnaSpin{to{transform:rotateY(360deg)}}
+.dna-rung{position:absolute;left:50%;top:50%;transform-style:preserve-3d;display:flex;align-items:center;gap:0}
+.dna-rung .ball{width:22px;height:22px;border-radius:50%;flex:none}
+.dna-rung .bar{flex:1;height:2px;background:linear-gradient(90deg,var(--teal),var(--coral));opacity:.4}
+.dna-rung .ball.a{background:var(--teal);box-shadow:0 0 16px var(--teal)}
+.dna-rung .ball.b{background:var(--coral);box-shadow:0 0 16px var(--coral)}
+.dna-ring{position:absolute;inset:10% 30%;border:1px dashed var(--line-strong);border-radius:50%;animation:dnaSpin 24s linear infinite reverse;opacity:.5}
+.dna-metrics{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-top:2rem}
+.dna-metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:1.1rem}
+.dna-metric .k{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--fg-dim);font-weight:500}
+.dna-metric .v{font-family:'Manrope';font-weight:300;font-size:1.8rem;letter-spacing:-.02em;margin-top:.2rem;color:var(--ink);line-height:1}
+.dna-metric .v b{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--teal-deep);font-size:1rem}
+.dna-bar{margin-top:.5rem;height:4px;background:var(--line);border-radius:999px;overflow:hidden}
+.dna-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--teal-deep));border-radius:999px}
+
+/* ── DOCTORS — 3D FLIP ── */
+.docs{padding:7rem 2rem;max-width:1500px;margin:0 auto}
+.docs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2rem;perspective:1400px}
+.doc{aspect-ratio:3/4;border-radius:18px;position:relative;transform-style:preserve-3d;transition:transform .9s var(--ease);cursor:pointer}
+.doc:hover{transform:rotateY(180deg)}
+.doc-f,.doc-b{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;overflow:hidden}
+.doc-f{background:linear-gradient(180deg,var(--sky),var(--mint));display:flex;flex-direction:column;justify-content:flex-end;padding:1.4rem;border:1px solid var(--line)}
+.doc-f::before{content:'';position:absolute;top:1rem;right:1rem;font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.2em;color:var(--teal-deep);background:#fff;padding:.3rem .6rem;border-radius:4px;font-weight:700}
+.doc-1 .doc-f::before{content:'CARD'}.doc-2 .doc-f::before{content:'DERM'}.doc-3 .doc-f::before{content:'PEDI'}.doc-4 .doc-f::before{content:'ORTH'}
+.doc-avatar{position:absolute;top:50%;left:50%;transform:translate(-50%,-62%);width:60%;aspect-ratio:1/1;border-radius:50%;filter:saturate(.9)}
+.doc-1 .doc-avatar{background:radial-gradient(circle at 30% 30%,#FFD9A8,#C49568 70%,#7A5A44)}
+.doc-2 .doc-avatar{background:radial-gradient(circle at 30% 30%,#8FE5FF,#3E7FC4 70%,#1E3E64)}
+.doc-3 .doc-avatar{background:radial-gradient(circle at 30% 30%,#FFB8D4,#C47AA5 70%,#6F4268)}
+.doc-4 .doc-avatar{background:radial-gradient(circle at 30% 30%,#C8A9FF,#7A5CC4 70%,#3E2868)}
+.doc-avatar::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:30%;background:linear-gradient(180deg,transparent,rgba(10,22,40,.3));border-radius:0 0 50% 50%;filter:blur(8px)}
+.doc-f .info{position:relative;z-index:2;color:var(--ink)}
+.doc-f .info .role{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--teal-deep);font-weight:600;margin-bottom:.3rem}
+.doc-f .info h4{font-family:'Manrope';font-weight:700;font-size:1.15rem;letter-spacing:-.01em}
+.doc-f .info .x{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;color:var(--teal-deep);font-size:.9rem;margin-top:.1rem}
+.doc-b{transform:rotateY(180deg);background:var(--navy);color:#fff;padding:1.4rem;display:flex;flex-direction:column;justify-content:space-between}
+.doc-b .t{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--teal)}
+.doc-b h5{font-family:'Manrope';font-weight:700;font-size:1.15rem;margin-top:.5rem}
+.doc-b ul{list-style:none;margin-top:1.2rem;font-size:.82rem;color:#A0B5CC;line-height:1.8}
+.doc-b ul li::before{content:'—';color:var(--teal);margin-right:.5rem}
+.doc-b .bk{background:var(--teal);color:var(--navy);padding:.7rem 1rem;border-radius:8px;font-size:.78rem;font-weight:700;text-align:center;margin-top:1rem}
+
+/* ── BOOK WIZARD ── */
+.book{padding:7rem 2rem;max-width:1300px;margin:0 auto}
+.book-inner{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:3rem;display:grid;grid-template-columns:.9fr 1.1fr;gap:3rem;box-shadow:0 40px 80px rgba(10,22,40,.06)}
+.book-head .eye{margin-bottom:1rem}
+.book-head .h2{font-size:clamp(1.8rem,3vw,2.8rem)}
+.book-head .lead{margin-top:1.2rem}
+.book-steps{margin-top:2rem}
+.book-step{display:flex;gap:1rem;padding:.8rem 0;border-top:1px dashed var(--line);position:relative}
+.book-step:first-child{border-top:none}
+.book-step .n{width:28px;height:28px;border-radius:50%;background:var(--line);color:var(--fg-dim);display:grid;place-items:center;font-family:'JetBrains Mono';font-size:.68rem;font-weight:700;flex:none;transition:all .3s}
+.book-step.on .n,.book-step.done .n{background:var(--teal);color:var(--navy)}
+.book-step.done .n::before{content:'✓';font-size:.78rem}
+.book-step.done .n b{display:none}
+.book-step .txt small{font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:.22em;color:var(--fg-dim);display:block;text-transform:uppercase;font-weight:500}
+.book-step .txt p{font-size:.92rem;font-weight:600;color:var(--ink);margin-top:.15rem}
+.book-step.on .txt p{color:var(--teal-deep)}
+
+.book-form{background:var(--sky);border-radius:16px;padding:2rem;border:1px solid var(--line);position:relative;overflow:hidden}
+.book-form::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--teal),transparent);animation:scan 3s linear infinite}
+.book-form .pnum{font-family:'JetBrains Mono';font-size:.6rem;letter-spacing:.22em;color:var(--teal-deep);text-transform:uppercase;font-weight:600;margin-bottom:.6rem}
+.book-form h3{font-family:'Manrope';font-weight:700;font-size:1.3rem;color:var(--ink);margin-bottom:.4rem}
+.book-form p{font-size:.86rem;color:var(--fg-dim);margin-bottom:1.6rem}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1.6rem}
+.chip{padding:1rem;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;cursor:pointer;text-align:left;transition:all .3s;font-family:'Manrope';display:flex;flex-direction:column;gap:.3rem}
+.chip small{font-family:'JetBrains Mono';font-size:.58rem;letter-spacing:.2em;color:var(--fg-dim);text-transform:uppercase;font-weight:500}
+.chip strong{font-size:.92rem;font-weight:700;color:var(--ink)}
+.chip.sel{border-color:var(--teal);background:var(--mint)}
+.chip.sel small{color:var(--teal-deep)}
+.field{margin-bottom:1rem}
+.field label{display:block;font-family:'JetBrains Mono';font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--fg-dim);font-weight:500;margin-bottom:.4rem}
+.field input,.field select{width:100%;padding:.9rem 1rem;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;font-family:'Manrope';font-size:.9rem;color:var(--ink);outline:none;transition:all .3s}
+.field input:focus,.field select:focus{border-color:var(--teal);box-shadow:0 0 0 4px var(--mint)}
+.book-cta{margin-top:1rem;width:100%;padding:1.1rem;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Manrope';font-weight:700;font-size:.92rem;cursor:pointer;transition:all .3s;display:flex;justify-content:space-between;align-items:center}
+.book-cta:hover{background:var(--teal-deep)}
+.book-cta .arr{transition:transform .3s}
+.book-cta:hover .arr{transform:translateX(4px)}
 
 /* ── TESTIMONIAL ── */
-.testi{padding:7rem 2.5rem;background:var(--surface)}
-.testi-wrap{max-width:1000px;margin:0 auto;text-align:center;position:relative}
-.testi-stars{font-size:1.2rem;letter-spacing:.15em;color:#F5B82E;margin-bottom:1.2rem}
-.testi-quote{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(1.6rem,3.2vw,2.6rem);line-height:1.3;color:var(--navy);letter-spacing:-.015em}
-.testi-quote .it{font-style:italic;color:var(--mint-deep)}
-.testi-author{margin-top:2rem;display:inline-flex;align-items:center;gap:1rem}
-.testi-av{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FFE0C8,#D9896A)}
-.testi-author div{text-align:left}
-.testi-author strong{display:block;color:var(--navy);font-weight:700}
-.testi-author span{color:var(--muted);font-size:.85rem}
-
-/* ── INSURANCE ── */
-.insurance{padding:5rem 2.5rem;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.insurance-wrap{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:auto 1fr;gap:3rem;align-items:center}
-.insurance h4{font-weight:700;color:var(--navy);font-size:1.05rem;letter-spacing:-.01em}
-.insurance p{color:var(--muted);font-size:.85rem;margin-top:.2rem}
-.logos{display:grid;grid-template-columns:repeat(6,1fr);gap:2rem;align-items:center}
-.logo{
-  font-weight:700;letter-spacing:-.02em;color:var(--muted);font-size:1.1rem;text-align:center;
-  padding:1rem;border:1px dashed var(--line);border-radius:12px;transition:all .3s;
-}
-.logo:hover{color:var(--navy);border-color:var(--navy);border-style:solid}
-
-/* ── CTA ── */
-.cta{padding:7rem 2.5rem}
-.cta-wrap{
-  background:linear-gradient(135deg,var(--mint) 0%,var(--mint-2) 100%);
-  border-radius:36px;padding:5rem 3rem;text-align:center;position:relative;overflow:hidden;
-}
-.cta-wrap::before{content:'';position:absolute;top:-150px;left:-150px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,.3);filter:blur(60px)}
-.cta-wrap::after{content:'';position:absolute;bottom:-150px;right:-150px;width:400px;height:400px;border-radius:50%;background:rgba(46,143,107,.3);filter:blur(60px)}
-.cta-wrap > *{position:relative}
-.cta-wrap h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,4.5vw,3.8rem);line-height:1;letter-spacing:-.02em;color:var(--navy);margin-bottom:1rem}
-.cta-wrap h2 .it{font-style:italic}
-.cta-wrap p{color:var(--navy-2);font-size:1.05rem;max-width:560px;margin:0 auto 2.2rem}
-.cta-ctas{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+.testi{padding:7rem 2rem;max-width:1500px;margin:0 auto}
+.testi-inner{background:var(--navy);color:#fff;border-radius:24px;padding:5rem 4rem;position:relative;overflow:hidden;display:grid;grid-template-columns:.35fr 1fr;gap:3rem;align-items:center}
+.testi-inner::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,180,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,180,.05) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.testi-avatar{width:200px;aspect-ratio:3/4;border-radius:16px;background:linear-gradient(180deg,#FFB8D4,#C47AA5);position:relative;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.3)}
+.testi-avatar::before{content:'';position:absolute;bottom:-10%;left:-10%;right:-10%;top:30%;background:linear-gradient(180deg,transparent,var(--navy) 90%)}
+.testi-avatar::after{content:'';position:absolute;top:30%;left:50%;transform:translateX(-50%);width:60%;aspect-ratio:1/1;border-radius:50%;background:radial-gradient(circle at 30% 30%,#FFD9A8,#C47AA5 70%)}
+.testi-quote{font-family:'Instrument Serif',serif;font-weight:400;font-style:italic;font-size:clamp(1.4rem,2.4vw,2.1rem);line-height:1.4;letter-spacing:-.01em;color:#E8FAF6;position:relative}
+.testi-quote::before{content:'"';position:absolute;top:-3rem;left:-1rem;font-size:8rem;color:var(--teal);opacity:.3;line-height:1;font-family:'Instrument Serif'}
+.testi-meta{margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono';font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:#A0B5CC}
+.testi-meta strong{color:var(--teal);font-family:'Manrope';letter-spacing:0;text-transform:none;font-weight:700;font-size:.95rem}
+.testi-meta small{display:block;font-family:'JetBrains Mono';letter-spacing:.18em;color:#A0B5CC;margin-top:.2rem;font-size:.62rem}
 
 /* ── FOOTER ── */
-footer{background:var(--navy);color:#fff;padding:5rem 2.5rem 2rem}
-.foot-top{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1.2fr;gap:3rem;margin-bottom:3rem}
+footer{background:var(--navy);color:#A0B5CC;padding:4rem 2rem 2rem;position:relative}
+.foot-grid{max-width:1500px;margin:0 auto;display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
 .foot-brand .brand{color:#fff}
-.foot-brand .brand-mark{background:var(--mint-2)}
+.foot-brand .brand-mark{background:var(--teal);box-shadow:0 0 20px rgba(0,212,180,.4)}
 .foot-brand .brand-mark::before,.foot-brand .brand-mark::after{background:var(--navy)}
-.foot-brand p{margin-top:1rem;color:rgba(255,255,255,.7);font-size:.92rem;max-width:260px}
-.foot-col h5{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mint-2);margin-bottom:1.2rem;font-weight:700}
-.foot-col a{display:block;color:rgba(255,255,255,.8);text-decoration:none;padding:.35rem 0;font-size:.92rem;transition:color .3s}
-.foot-col a:hover{color:var(--mint-2)}
-.foot-contact{font-size:.92rem;color:rgba(255,255,255,.8);line-height:1.8}
-.foot-contact strong{display:block;color:#fff;font-weight:700;margin-bottom:.4rem}
-.foot-bot{max-width:1280px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem;font-size:.82rem;color:rgba(255,255,255,.5)}
+.foot-brand p{margin-top:1.2rem;font-size:.9rem;max-width:320px;color:#A0B5CC}
+.foot-brand .addr{margin-top:1.2rem;font-family:'JetBrains Mono';font-size:.72rem;letter-spacing:.1em;line-height:1.8;color:#A0B5CC}
+.foot-col h5{font-family:'JetBrains Mono';font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--teal);margin-bottom:1.2rem;font-weight:700}
+.foot-col a{display:block;color:#CFDCEA;text-decoration:none;padding:.4rem 0;font-size:.9rem;transition:color .3s}
+.foot-col a:hover{color:var(--teal)}
+.foot-bot{max-width:1500px;margin:0 auto;padding-top:2rem;border-top:1px solid rgba(255,255,255,.1);display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono';font-size:.64rem;letter-spacing:.18em;color:#7A8A9C}
 
-/* reveal */
-.r{opacity:0;transform:translateY(24px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.r{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
 .r.in{opacity:1;transform:none}
 
-@media(max-width:980px){
-  .nav{padding:1rem 1.2rem}.nav-links{display:none}.phone{display:none}
-  .hero{grid-template-columns:1fr;padding:3rem 1.2rem 4rem;gap:3rem}
-  .section,.doctors,.checker,.testi,.cta{padding:4.5rem 1.2rem}
-  .stats-grid{grid-template-columns:1fr 1fr;gap:2rem}
-  .services{grid-template-columns:1fr;gap:1rem}
-  .doc-grid{grid-template-columns:1fr 1fr}
-  .checker-wrap{grid-template-columns:1fr;padding:3rem 1.5rem;gap:2.5rem}
-  .insurance-wrap{grid-template-columns:1fr;gap:1.5rem}.logos{grid-template-columns:repeat(3,1fr)}
-  .cta-wrap{padding:3.5rem 1.5rem;border-radius:24px}
-  .foot-top{grid-template-columns:1fr 1fr;gap:2rem}
-  .foot-bot{flex-direction:column;text-align:center}
+@media(max-width:1100px){
+  .hero{grid-template-columns:1fr;gap:2.5rem}
+  .stats-inner{grid-template-columns:1fr 1fr}.stat:nth-child(2){border-right:none}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+  .hex-grid{grid-template-columns:1fr 1fr}.hex,.hex:nth-child(4),.hex:nth-child(5),.hex:nth-child(6),.hex:nth-child(7),.hex:nth-child(8){grid-column:span 1}
+  .dna{grid-template-columns:1fr;gap:2rem}.dna-vis{height:400px}
+  .docs-grid{grid-template-columns:1fr 1fr}
+  .book-inner{grid-template-columns:1fr;padding:2rem}
+  .testi-inner{grid-template-columns:1fr;padding:3rem 2rem}.testi-avatar{margin:0 auto}
+  .sec-head{grid-template-columns:1fr;gap:1rem}
+  .foot-grid{grid-template-columns:1fr 1fr}.foot-brand{grid-column:span 2}
+  .statusbar-center{display:none}
+  .nav-phone{display:none}
+  .nav-links{display:none}
+  .foot-bot{flex-direction:column;gap:.8rem;text-align:center}
 }
 </style>
 </head>
 <body>
 
-<div class="bar"><span>🩺 Accepting new patients — same-day appointments available Monday–Saturday</span><a href="#book">Book now</a></div>
+<div class="scanlines"></div>
+
+<div class="loader" id="loader">
+  <svg class="loader-ecg" viewBox="0 0 320 60" preserveAspectRatio="none">
+    <path d="M0,30 L60,30 L75,30 L82,10 L92,50 L100,20 L110,30 L170,30 L185,30 L192,12 L202,48 L210,30 L320,30"/>
+  </svg>
+  <div class="loader-txt">Initialising secure channel · <span id="loadp">loading</span></div>
+</div>
+
+<div class="statusbar">
+  <span class="live">System online</span>
+  <div class="statusbar-center">
+    <span>CQC rating · <b style="color:var(--teal)">Outstanding</b></span>
+    <span>NHS partner since 2012</span>
+    <span id="sbclock">00:00 GMT</span>
+  </div>
+  <span>ISO-27001 · HIPAA-ready</span>
+</div>
 
 <nav class="nav">
-  <div class="brand"><div class="brand-mark"></div>Healing Hands</div>
+  <div class="brand"><span class="brand-mark"></span><div>Meridian Health<small>CLINIC · EST 2012</small></div></div>
   <div class="nav-links">
-    <a href="#services">Services</a>
-    <a href="#doctors">Our doctors</a>
-    <a href="#checker">Symptom checker</a>
-    <a href="#testi">Patients</a>
-    <a href="#insurance">Insurance</a>
+    <a class="on">Home</a><a>Services</a><a>Specialists</a><a>Patient portal</a><a>Research</a><a>Contact</a>
   </div>
   <div class="nav-right">
-    <a href="tel:+441173456789" class="phone"><span class="phone-ic">☎</span><span>0117 345 6789</span></a>
-    <button class="btn btn-primary">Book visit</button>
+    <div class="nav-phone"><span class="c">☎</span>0203 992 1144</div>
+    <button class="btn-book">Book now<span class="arr">→</span></button>
   </div>
 </nav>
 
 <section class="hero">
   <div>
-    <div class="hero-tag"><span class="pulse"></span>Same-day appointments available today</div>
-    <h1>Family care<br>that <span class="it">feels</span><br><span class="und">human again.</span></h1>
-    <p>A modern clinic where your GP actually remembers your name, same-day visits are the rule, and your data stays out of a black box. Run by doctors, not by a spreadsheet.</p>
-    <div class="hero-ctas">
-      <button class="btn btn-primary">Book a 15-min visit</button>
-      <button class="btn btn-white">See our doctors</button>
+    <div class="hero-tag"><b>Now accepting</b>New patients · Central London &amp; Canary Wharf</div>
+    <h1 class="hero-title">Precision care, engineered with <em>empathy</em>.</h1>
+    <p class="hero-sub">A multi-specialty clinic built around the radical idea that world-class medicine should also feel human. Same-day appointments, 45-minute consults, and a team that actually remembers your name.</p>
+    <div class="hero-actions">
+      <button class="btn-primary">Book your consultation<span class="arr">→</span></button>
+      <button class="btn-outline"><span>▶</span>Tour the clinic · 90s</button>
     </div>
     <div class="hero-trust">
-      <div class="avatars"><div class="av"></div><div class="av"></div><div class="av"></div><div class="av">+9k</div></div>
-      <div class="trust-text"><strong>Trusted by 9,200+ families</strong><span>4.9 / 5 on Google · 2,413 reviews</span></div>
+      <div class="hero-avatars">
+        <div class="a1"></div><div class="a2"></div><div class="a3"></div><div class="a4">+2k</div>
+      </div>
+      <div class="hero-trust-txt"><strong>4.97 / 5</strong> from 2,341 Google reviews · <strong>98%</strong> would recommend</div>
     </div>
   </div>
-  <div class="hero-visual">
-    <div class="hero-bg-blob"></div>
-    <div class="floater float-1"><div class="float-ic">✓</div><div><strong>Appointment confirmed</strong><span>Today · 3:40 PM</span></div></div>
-    <div class="doc-card">
-      <div class="doc-photo"></div>
-      <div class="doc-info">
-        <div><h4>Dr. Amelia Chen</h4><p>Family medicine · 12 yrs</p></div>
-        <div class="doc-badge">Available</div>
-      </div>
-      <div class="slot"><span>Next slot</span><strong>Today · 3:40 PM</strong></div>
+
+  <div class="hud">
+    <div class="hud-head">
+      <span class="hud-head-l"><span class="dot"></span>Live monitor · Sample patient</span>
+      <span class="hud-head-r">Session · <span id="hudtime">MON 09:42</span></span>
     </div>
-    <div class="floater float-2"><div class="float-ic">♥</div><div><strong>No wait room queue</strong><span>Avg visit: 18 min</span></div></div>
+    <div class="hud-body">
+      <div class="hud-patient">
+        <div><h4>Sarah K. · 34F</h4><small>PT-#48291 · Annual health screen</small></div>
+        <span class="badge">Stable</span>
+      </div>
+      <div class="ecg-panel">
+        <div class="ecg-head">
+          <span>ECG · Lead II<br><span style="opacity:.6">Sinus rhythm</span></span>
+          <span class="bpm"><span id="bpm">72</span><small>BPM</small></span>
+        </div>
+        <svg class="ecg-svg" viewBox="0 0 400 80" preserveAspectRatio="none">
+          <path d="M0,40 L40,40 L52,40 L58,25 L64,55 L70,15 L76,60 L82,40 L140,40 L160,40 L172,40 L178,25 L184,55 L190,15 L196,60 L202,40 L260,40 L280,40 L292,40 L298,25 L304,55 L310,15 L316,60 L322,40 L400,40"/>
+        </svg>
+      </div>
+      <div class="vit-grid">
+        <div class="vit">
+          <div class="lbl">Blood Pressure</div>
+          <div class="val">118<b>/</b>76<b>mmHg</b></div>
+          <div class="delta">▲ optimal range</div>
+        </div>
+        <div class="vit">
+          <div class="lbl">Temp</div>
+          <div class="val">36.7<b>°C</b></div>
+          <div class="delta">▼ 0.2 vs avg</div>
+        </div>
+        <div class="vit">
+          <div class="lbl">SpO₂</div>
+          <div class="vit-dial">
+            <div class="dial"><span>98%</span></div>
+            <div class="txt"><div class="val" style="font-size:1.2rem">Excellent</div><div class="delta">▲ steady</div></div>
+          </div>
+        </div>
+        <div class="vit">
+          <div class="lbl">Hydration</div>
+          <div class="val">94<b>%</b></div>
+          <div class="delta">▲ +3 today</div>
+        </div>
+      </div>
+    </div>
+    <div class="hud-footer">
+      <span><span class="ok">●</span> All systems nominal</span>
+      <span>Report ready in <b style="color:var(--ink)">4 min</b></span>
+    </div>
   </div>
 </section>
 
 <section class="stats">
-  <div class="stats-grid">
-    <div class="stat r"><div class="num">9,200<span class="it">+</span></div><div class="lbl">Families we care for across Bristol</div></div>
-    <div class="stat r"><div class="num">18 <span class="it">min</span></div><div class="lbl">Average appointment length — not 7</div></div>
-    <div class="stat r"><div class="num">24<span class="it">/</span>7</div><div class="lbl">Message your GP directly, any time</div></div>
-    <div class="stat r"><div class="num">94<span class="it">%</span></div><div class="lbl">Same-day visits booked when asked</div></div>
+  <div class="stats-inner">
+    <div class="stat"><div class="lbl">Patients cared for</div><div class="val" data-ct="28">0<b>k+</b></div><div class="desc">Across 3 London clinics</div></div>
+    <div class="stat"><div class="lbl">Board-certified specialists</div><div class="val" data-ct="34">0</div><div class="desc">Across 14 disciplines</div></div>
+    <div class="stat"><div class="lbl">Avg. consult time</div><div class="val" data-ct="45">0<b>min</b></div><div class="desc">Not 8. Not 12. Forty-five.</div></div>
+    <div class="stat"><div class="lbl">Same-day availability</div><div class="val" data-ct="97">0<b>%</b></div><div class="desc">Measured every week</div></div>
   </div>
 </section>
 
-<section class="section" id="services">
-  <div class="section-max">
-    <div class="section-head r">
-      <div class="eyebrow">What we treat</div>
-      <h2 class="h2">Full-service care,<br>under <span class="it">one calm roof</span>.</h2>
-      <p class="sub">From your 6-month-old's sniffle to your 68-year-old father's annual check. No referral loops, no maze of buildings — just one team that already knows you.</p>
-    </div>
-    <div class="services">
-      <div class="service r">
-        <div class="service-ic">A</div>
-        <h3>Family medicine</h3>
-        <p>Your GP, on call. Same doctor every visit so nothing gets lost between the lines on a form.</p>
-        <div class="service-tags"><span>Annual check-ups</span><span>Sick visits</span><span>Chronic care</span></div>
-        <a href="#" class="service-link">Learn more →</a>
-      </div>
-      <div class="service r">
-        <div class="service-ic">B</div>
-        <h3>Paediatrics</h3>
-        <p>From newborn check-ups to teenage health. A kid-friendly clinic that doesn't feel like a waiting room.</p>
-        <div class="service-tags"><span>Vaccinations</span><span>Developmental</span><span>Allergy testing</span></div>
-        <a href="#" class="service-link">Learn more →</a>
-      </div>
-      <div class="service r">
-        <div class="service-ic">C</div>
-        <h3>Women's health</h3>
-        <p>Gynaecology, maternity planning, menopause care. Compassionate and comprehensive, never rushed.</p>
-        <div class="service-tags"><span>Screenings</span><span>Contraception</span><span>Fertility</span></div>
-        <a href="#" class="service-link">Learn more →</a>
-      </div>
-      <div class="service r">
-        <div class="service-ic">D</div>
-        <h3>Mental wellness</h3>
-        <p>Talk therapy, medication reviews, and proper referrals. Because bodies and minds aren't two separate offices.</p>
-        <div class="service-tags"><span>Therapy</span><span>Anxiety &amp; mood</span><span>Sleep</span></div>
-        <a href="#" class="service-link">Learn more →</a>
-      </div>
-      <div class="service r">
-        <div class="service-ic">E</div>
-        <h3>Diagnostics lab</h3>
-        <p>In-clinic blood work, ultrasound, and ECG. Most results back within 24 hours, read by your own doctor.</p>
-        <div class="service-tags"><span>Blood panels</span><span>Imaging</span><span>Allergy</span></div>
-        <a href="#" class="service-link">Learn more →</a>
-      </div>
-      <div class="service r">
-        <div class="service-ic">F</div>
-        <h3>Preventive &amp; wellness</h3>
-        <p>Annual reviews, nutrition, physio, and travel health. The kind of care that keeps you out of hospital.</p>
-        <div class="service-tags"><span>Nutrition</span><span>Physiotherapy</span><span>Vaccinations</span></div>
-        <a href="#" class="service-link">Learn more →</a>
-      </div>
-    </div>
+<section class="sec" id="services">
+  <div class="sec-head">
+    <div class="r"><div class="eye">Services · 012</div></div>
+    <div class="r"><h2 class="h2">One clinic.<br>Every specialist you might <em>actually</em> need.</h2></div>
+    <p class="lead r">From annual screenings to complex cardiology, our team covers 14 specialties under one roof — and they all talk to each other. No more repeating your story.</p>
+  </div>
+  <div class="hex-grid">
+    <div class="hex r"><div class="hex-num">01 / Cardiology<span class="tag">New</span></div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><h3>Heart &amp; <em>Cardiovascular</em></h3><p>Full cardiac screening, ECG, echo, and 24/7 arrhythmia monitoring with our tenured consultants.</p><div class="hex-meta"><span>From £220</span><span class="ar">Book consult →</span></div></div>
+    <div class="hex r"><div class="hex-num">02 / Dermatology</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></div><h3>Skin <em>Precision</em></h3><p>AI-assisted mole mapping, mohs surgery, and medical-grade aesthetics — led by Dr. Cohen.</p><div class="hex-meta"><span>From £180</span><span class="ar">Book consult →</span></div></div>
+    <div class="hex r"><div class="hex-num">03 / Paediatrics</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 18 L6 22 L7 15 L2 10 L9 9 Z"/></svg></div><h3><em>Children's</em> wellness</h3><p>A warm, unhurried practice for ages 0–16 with dedicated family rooms and no waiting room.</p><div class="hex-meta"><span>From £145</span><span class="ar">Book consult →</span></div></div>
+
+    <div class="hex r"><div class="hex-num">04 / Diagnostics<span class="tag">Flagship</span></div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg></div><h3>Advanced <em>Imaging</em> Suite</h3><p>3T MRI, low-dose CT, ultrasound, and full-body MRI screens. Results read same-day by our consultant radiologists — not outsourced offshore. The entire diagnostic floor was rebuilt in 2024 around patient comfort.</p><div class="hex-meta"><span>MRI from £450 · Full body from £1,950</span><span class="ar">Tour suite →</span></div></div>
+    <div class="hex r"><div class="hex-num">05 / Mental Health</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 5 3 6v3a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-3c1-1 3-3 3-6a7 7 0 0 0-7-7z"/></svg></div><h3>Mind &amp; <em>therapy</em></h3><p>BACP-registered psychologists, CBT, EMDR, and psychiatry. First session within 48 hours.</p><div class="hex-meta"><span>From £110 / hr</span><span class="ar">Find a therapist →</span></div></div>
+
+    <div class="hex r"><div class="hex-num">06 / Nutrition</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 C7 2, 4 6, 4 12 C4 17, 7 22, 12 22 C17 22, 20 17, 20 12 C20 6, 17 2, 12 2 z M12 2 C12 8, 14 12, 20 12"/></svg></div><h3><em>Clinical</em> Nutrition</h3><p>DNA, blood, &amp; gut microbiome tested plans. Not another app.</p><div class="hex-meta"><span>From £195</span><span class="ar">See programmes →</span></div></div>
+    <div class="hex r"><div class="hex-num">07 / Physio</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3 L19 3 M12 3 L12 21 M8 21 L16 21 M8 10 L16 10 M6 16 L18 16"/></svg></div><h3>Sports <em>Medicine</em></h3><p>Musculoskeletal, shockwave, and return-to-sport planning with in-house MRI access.</p><div class="hex-meta"><span>From £95 / session</span><span class="ar">Book assessment →</span></div></div>
+    <div class="hex r"><div class="hex-num">08 / Women's Health</div><div class="hex-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="6"/><path d="M12 15 L12 22 M9 19 L15 19"/></svg></div><h3><em>Women-led</em> care</h3><p>Gynaecology, menopause, fertility, and postnatal recovery — consultant-led throughout.</p><div class="hex-meta"><span>From £220</span><span class="ar">Book consult →</span></div></div>
   </div>
 </section>
 
-<section class="doctors" id="doctors">
-  <div class="section-max">
-    <div class="section-head r">
-      <div class="eyebrow">Meet the team</div>
-      <h2 class="h2">Four doctors.<br><span class="it">One hundred</span> years of care.</h2>
-      <p class="sub">A small, deliberately kept-small team so nobody falls through the cracks. Every doctor has at least ten years of clinical experience and a reason to be here that isn't a bonus scheme.</p>
+<section class="dna">
+  <div class="r">
+    <div class="eye">The Meridian Method</div>
+    <h2 class="h2">Your health, <em>read</em><br>down to the molecule.</h2>
+    <p style="margin-top:1.4rem;color:var(--fg-dim);font-size:1rem;max-width:480px">Every patient begins with our signature 200-point work-up — blood, imaging, cardiac, lifestyle, genetics. The full picture, from one 90-minute visit. No vague "you seem fine, come back in a year".</p>
+    <div class="dna-metrics">
+      <div class="dna-metric"><div class="k">Biomarkers tracked</div><div class="v">200<b>+ points</b></div><div class="dna-bar"><span style="width:92%"></span></div></div>
+      <div class="dna-metric"><div class="k">Imaging modalities</div><div class="v">9<b>incl. 3T MRI</b></div><div class="dna-bar"><span style="width:75%"></span></div></div>
+      <div class="dna-metric"><div class="k">Genetic panels</div><div class="v">4<b>CLIA-certified</b></div><div class="dna-bar"><span style="width:55%"></span></div></div>
+      <div class="dna-metric"><div class="k">Results turnaround</div><div class="v">48<b>hrs average</b></div><div class="dna-bar"><span style="width:96%"></span></div></div>
     </div>
-    <div class="doc-grid">
-      <div class="doctor r">
-        <div class="doctor-img"></div>
-        <div class="doctor-info">
-          <h4>Dr. Amelia Chen</h4>
-          <div class="doctor-spec">Family medicine · MBBS, MRCGP</div>
-          <div class="doctor-meta"><span>12 years</span><strong>Available today</strong></div>
-        </div>
+  </div>
+  <div class="dna-vis r">
+    <div class="dna-ring"></div>
+    <div class="dna-helix" id="helix"></div>
+  </div>
+</section>
+
+<section class="docs" id="specialists">
+  <div class="sec-head">
+    <div class="r"><div class="eye">Our specialists</div></div>
+    <div class="r"><h2 class="h2">Led by <em>doctors</em><br>who still do house calls.</h2></div>
+    <p class="lead r">Hover any card to meet the full credentials. Every consultant is GMC-registered and personally vetted by our clinical director.</p>
+  </div>
+  <div class="docs-grid">
+    <div class="doc doc-1 r"><div class="doc-f"><div class="doc-avatar"></div><div class="info"><div class="role">Clinical Director · Cardiology</div><h4>Dr. James Okafor</h4><div class="x">MD, MRCP, FRCP</div></div></div><div class="doc-b"><div><div class="t">Full credentials</div><h5>Dr. James Okafor</h5><ul><li>18 yrs NHS + private</li><li>Harvard-trained fellow</li><li>200+ published papers</li><li>Speaks EN · FR · YO</li></ul></div><div class="bk">Book a consult →</div></div></div>
+    <div class="doc doc-2 r"><div class="doc-f"><div class="doc-avatar"></div><div class="info"><div class="role">Consultant Dermatologist</div><h4>Dr. Rachel Cohen</h4><div class="x">MD, FRCD, BSc</div></div></div><div class="doc-b"><div><div class="t">Full credentials</div><h5>Dr. Rachel Cohen</h5><ul><li>Mohs surgery specialist</li><li>Ex-King's College lecturer</li><li>12 yrs clinical practice</li><li>Research: melanoma AI</li></ul></div><div class="bk">Book a consult →</div></div></div>
+    <div class="doc doc-3 r"><div class="doc-f"><div class="doc-avatar"></div><div class="info"><div class="role">Consultant Paediatrician</div><h4>Dr. Maya Srinivasan</h4><div class="x">MBBS, MRCPCH</div></div></div><div class="doc-b"><div><div class="t">Full credentials</div><h5>Dr. Maya Srinivasan</h5><ul><li>Ex-GOSH consultant · 8 yrs</li><li>Paediatric allergy lead</li><li>Mother of 2 · very patient</li><li>Speaks EN · HI · TA</li></ul></div><div class="bk">Book a consult →</div></div></div>
+    <div class="doc doc-4 r"><div class="doc-f"><div class="doc-avatar"></div><div class="info"><div class="role">Consultant Orthopaedic Surgeon</div><h4>Dr. Marcus Whitfield</h4><div class="x">FRCS (Tr &amp; Orth)</div></div></div><div class="doc-b"><div><div class="t">Full credentials</div><h5>Dr. Marcus Whitfield</h5><ul><li>Team doc · Premier League</li><li>Sports medicine diploma</li><li>Robotic knee surgery cert</li><li>Ex-Royal Marines</li></ul></div><div class="bk">Book a consult →</div></div></div>
+  </div>
+</section>
+
+<section class="book" id="book">
+  <div class="book-inner r">
+    <div class="book-head">
+      <div class="eye">Appointment wizard</div>
+      <h2 class="h2">Book in under <em>ninety seconds</em>.</h2>
+      <p class="lead" style="max-width:none;margin-top:1rem">Four quick taps and a name. We'll confirm by text in under five minutes, usually within one.</p>
+      <div class="book-steps">
+        <div class="book-step done"><div class="n"><b>1</b></div><div class="txt"><small>Step 01</small><p>Service selected</p></div></div>
+        <div class="book-step on"><div class="n"><b>2</b></div><div class="txt"><small>Step 02</small><p>Pick a slot</p></div></div>
+        <div class="book-step"><div class="n"><b>3</b></div><div class="txt"><small>Step 03</small><p>Your details</p></div></div>
+        <div class="book-step"><div class="n"><b>4</b></div><div class="txt"><small>Step 04</small><p>Confirm &amp; pay</p></div></div>
       </div>
-      <div class="doctor r">
-        <div class="doctor-img"></div>
-        <div class="doctor-info">
-          <h4>Dr. Marcus Olawale</h4>
-          <div class="doctor-spec">Paediatrics · MBBS, FRCPCH</div>
-          <div class="doctor-meta"><span>14 years</span><strong>Tue · Thu · Sat</strong></div>
-        </div>
+    </div>
+    <div class="book-form">
+      <div class="pnum">Step 02 · 04</div>
+      <h3>Pick a time that works</h3>
+      <p>Cardiology consults · Dr. Okafor · Canary Wharf clinic</p>
+      <div class="chips" id="chips">
+        <button class="chip sel" data-c><small>Tomorrow</small><strong>Tue · 09:15</strong></button>
+        <button class="chip" data-c><small>Tomorrow</small><strong>Tue · 14:40</strong></button>
+        <button class="chip" data-c><small>Wed</small><strong>Wed · 10:30</strong></button>
+        <button class="chip" data-c><small>Wed</small><strong>Wed · 16:15</strong></button>
       </div>
-      <div class="doctor r">
-        <div class="doctor-img"></div>
-        <div class="doctor-info">
-          <h4>Dr. Sofia Ramírez</h4>
-          <div class="doctor-spec">Women's health · MD, MRCOG</div>
-          <div class="doctor-meta"><span>16 years</span><strong>Available Fri</strong></div>
-        </div>
-      </div>
-      <div class="doctor r">
-        <div class="doctor-img"></div>
-        <div class="doctor-info">
-          <h4>Dr. James Patel</h4>
-          <div class="doctor-spec">Mental wellness · MBChB, MRCPsych</div>
-          <div class="doctor-meta"><span>11 years</span><strong>Mon · Wed</strong></div>
-        </div>
-      </div>
+      <div class="field"><label>Appointment type</label><select><option>In-person · Canary Wharf</option><option>In-person · Marylebone</option><option>Video consultation</option><option>Home visit (+£45)</option></select></div>
+      <div class="field"><label>Your full name</label><input type="text" placeholder="e.g. Sarah Kim"></div>
+      <button class="book-cta">Continue to step 03 <span class="arr">→</span></button>
     </div>
   </div>
 </section>
 
-<section class="checker" id="checker">
-  <div class="section-max">
-    <div class="checker-wrap r">
-      <div>
-        <div class="eyebrow">Not sure if you should book?</div>
-        <h2>Free <span class="it">symptom checker</span>,<br>answered by a human doctor.</h2>
-        <p>Tell us what's going on in three questions. A duty GP reads every answer and tells you within 15 minutes whether you need a visit, a test, or just a good night's sleep.</p>
-        <ul class="checker-features">
-          <li>Answered by a real GP, not a chatbot</li>
-          <li>Average response under 15 minutes, 8am–8pm</li>
-          <li>Completely free — no sign-up, no card needed</li>
-        </ul>
-      </div>
-      <div class="checker-form">
-        <div class="form-step">Step 2 of 3</div>
-        <h3>How long have you had these symptoms?</h3>
-        <div class="options">
-          <button class="opt"><span class="em">⏱</span>Under 24 hours</button>
-          <button class="opt on"><span class="em">📅</span>2–4 days</button>
-          <button class="opt"><span class="em">🗓</span>About a week</button>
-          <button class="opt"><span class="em">🕰</span>Over a week</button>
-        </div>
-        <div class="progress"><div class="progress-fill"></div></div>
-        <button class="btn btn-primary" style="width:100%">Continue →</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="testi" id="testi">
-  <div class="testi-wrap r">
-    <div class="eyebrow">What patients say</div>
-    <div class="testi-stars">★ ★ ★ ★ ★</div>
-    <p class="testi-quote">"My son had a rash on a Saturday morning. I messaged the clinic at 9:02, had a video call at 9:25, and the <span class="it">prescription was at our pharmacy</span> before lunch. That's what healthcare should feel like."</p>
-    <div class="testi-author">
-      <div class="testi-av"></div>
-      <div><strong>Priya Desai</strong><span>Mother of two · patient since 2022</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="insurance" id="insurance">
-  <div class="insurance-wrap">
+<section class="testi">
+  <div class="testi-inner r">
+    <div class="testi-avatar"></div>
     <div>
-      <h4>We accept every major UK insurer</h4>
-      <p>Plus self-pay with transparent, fixed-price visits from £65.</p>
-    </div>
-    <div class="logos">
-      <div class="logo">Bupa</div>
-      <div class="logo">AXA</div>
-      <div class="logo">Vitality</div>
-      <div class="logo">Aviva</div>
-      <div class="logo">WPA</div>
-      <div class="logo">Cigna</div>
-    </div>
-  </div>
-</section>
-
-<section class="cta" id="book">
-  <div class="cta-wrap r">
-    <div class="eyebrow">Take the first step</div>
-    <h2>Book a visit <span class="it">today</span>.<br>Meet your new GP this week.</h2>
-    <p>Registration takes 90 seconds. First visit is free for new patients this month — for kids, adults, and everyone in between.</p>
-    <div class="cta-ctas">
-      <button class="btn btn-primary">Book a free first visit</button>
-      <button class="btn btn-white">Call 0117 345 6789</button>
+      <p class="testi-quote">Meridian is the first clinic where I didn't feel like a 7-minute slot. Dr. Okafor spent an actual hour with me, asked about my sleep, my job, my worries — and then ordered exactly the right tests. Two weeks later I had my full results explained in plain English. This is how medicine should feel.</p>
+      <div class="testi-meta">
+        <div>
+          <strong>Elena Volkov</strong>
+          <small>Patient since 2023 · Cardiology</small>
+        </div>
+        <span>★★★★★ · Verified</span>
+      </div>
     </div>
   </div>
 </section>
 
 <footer>
-  <div class="foot-top">
+  <div class="foot-grid">
     <div class="foot-brand">
-      <div class="brand" style="color:#fff"><div class="brand-mark"></div>Healing Hands</div>
-      <p>A modern family clinic in Bristol, UK. Run by doctors, owned by doctors, answerable only to patients.</p>
+      <div class="brand"><span class="brand-mark"></span><div>Meridian Health<small>CLINIC · EST 2012</small></div></div>
+      <p>A multi-specialty private clinic built on the radical idea that healthcare should still feel human.</p>
+      <div class="addr">
+        CANARY WHARF · ONE BANK STREET, E14<br>
+        MARYLEBONE · 88 WIMPOLE STREET, W1G<br>
+        CLAPHAM · 142 NORTHCOTE ROAD, SW11
+      </div>
     </div>
-    <div class="foot-col"><h5>Care</h5><a href="#">Family medicine</a><a href="#">Paediatrics</a><a href="#">Women's health</a><a href="#">Mental wellness</a><a href="#">Diagnostics</a></div>
-    <div class="foot-col"><h5>Clinic</h5><a href="#">Our doctors</a><a href="#">Insurance</a><a href="#">Prices</a><a href="#">Careers</a><a href="#">Reviews</a></div>
-    <div class="foot-col"><h5>Patients</h5><a href="#">Book a visit</a><a href="#">Patient portal</a><a href="#">Symptom checker</a><a href="#">Request records</a></div>
-    <div class="foot-contact">
-      <h5 style="color:var(--mint-2);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:1.2rem">Visit us</h5>
-      <strong>28 Park Street<br>Bristol BS1 5JA</strong>
-      Mon–Fri · 8am–8pm<br>Sat · 9am–4pm<br>Emergencies · 24/7
-    </div>
+    <div class="foot-col"><h5>Care</h5><a>Cardiology</a><a>Dermatology</a><a>Paediatrics</a><a>Imaging</a><a>Mental health</a><a>All services</a></div>
+    <div class="foot-col"><h5>Patients</h5><a>Book appointment</a><a>Patient portal</a><a>Prescriptions</a><a>Insurance &amp; billing</a><a>FAQs</a></div>
+    <div class="foot-col"><h5>Clinic</h5><a>About us</a><a>Specialists</a><a>Research</a><a>Careers · we're hiring</a><a>Press</a></div>
+    <div class="foot-col"><h5>Contact</h5><a>0203 992 1144</a><a>hello@meridian.health</a><a>Emergency line</a><a>Twitter / X</a><a>LinkedIn</a></div>
   </div>
-  <div class="foot-bot">
-    <span>© 2026 Healing Hands Clinic · CQC registered · GMC 4482310</span>
-    <span>🔒 Your data stays in the UK. Always.</span>
-  </div>
+  <div class="foot-bot"><span>© 2026 Meridian Health Ltd · Regulated by the CQC · Co. No. 08291447</span><span>ISO-27001 · HIPAA-ready · NHS partner</span></div>
 </footer>
 
 <script>
-  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.1});
-  document.querySelectorAll('.r').forEach(el=>io.observe(el));
-  // symptom checker toggle
-  document.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>{
-    document.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));
-    b.classList.add('on');
+(function(){
+  window.addEventListener('load',()=>setTimeout(()=>document.getElementById('loader').classList.add('gone'),1400));
+
+  // clocks
+  function pad(n){return n<10?'0'+n:n}
+  function tick(){const d=new Date();const t=`${['SUN','MON','TUE','WED','THU','FRI','SAT'][d.getDay()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`;const c=`${pad(d.getHours())}:${pad(d.getMinutes())} GMT`;const e=document.getElementById('hudtime');const e2=document.getElementById('sbclock');if(e)e.textContent=t;if(e2)e2.textContent=c}
+  tick();setInterval(tick,15000);
+
+  // BPM jitter
+  const bpm=document.getElementById('bpm');if(bpm)setInterval(()=>{bpm.textContent=68+Math.floor(Math.random()*8)},1100);
+
+  // loader progress
+  const lp=document.getElementById('loadp');let pc=0;const iv=setInterval(()=>{pc=Math.min(100,pc+Math.random()*22);if(lp)lp.textContent=Math.floor(pc)+'%';if(pc>=100)clearInterval(iv)},160);
+
+  // Build DNA helix
+  const helix=document.getElementById('helix');
+  if(helix){
+    const N=20;
+    for(let i=0;i<N;i++){
+      const t=i/(N-1);
+      const y=t*500-250;
+      const ang=t*Math.PI*4;
+      const r=document.createElement('div');
+      r.className='dna-rung';
+      const len=110+Math.cos(ang)*20;
+      r.innerHTML=`<div class="ball a"></div><div class="bar" style="width:${len*2}px"></div><div class="ball b"></div>`;
+      r.style.transform=`translate(-50%,-50%) translateY(${y}px) rotateY(${ang*57.3}deg)`;
+      helix.appendChild(r);
+    }
+  }
+
+  // appointment chips
+  document.querySelectorAll('[data-c]').forEach(c=>c.addEventListener('click',()=>{
+    document.querySelectorAll('[data-c]').forEach(x=>x.classList.remove('sel'));
+    c.classList.add('sel');
   }));
+
+  // count-up
+  const ease=t=>1-Math.pow(1-t,3);
+  const cio=new IntersectionObserver(es=>es.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const el=e.target;const target=parseInt(el.dataset.ct,10);const suf=el.innerHTML.replace(/^\d+/, '');const dur=1400;const s=performance.now();
+    function step(now){const p=Math.min(1,(now-s)/dur);const v=Math.floor(ease(p)*target);el.innerHTML=v+suf;if(p<1)requestAnimationFrame(step);else el.innerHTML=target+suf}
+    requestAnimationFrame(step);cio.unobserve(el);
+  }),{threshold:.4});
+  document.querySelectorAll('[data-ct]').forEach(el=>cio.observe(el));
+
+  // reveal
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+  document.querySelectorAll('.r').forEach(el=>io.observe(el));
+})();
 </script>
 </body>
 </html>
