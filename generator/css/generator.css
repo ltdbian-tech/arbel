@@ -1042,10 +1042,28 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     margin-top: 6px;
 }
 .ai-generate { margin-top: 16px; }
+.ai-actions {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+.ai-actions .gen-btn--accent { flex: 1; }
 .ai-status {
     font-size: 0.75rem;
     color: var(--fg3);
     margin-top: 10px;
+}
+.ai-status--success { color: var(--accent-green, #00d47e); }
+.ai-status--error   { color: var(--danger, #ff5d6c); }
+.ai-status--info    { color: var(--fg2); }
+
+/* Transient highlight on inputs populated by AI */
+@keyframes arbelAiFill {
+    0%   { background-color: rgba(108, 92, 255, 0.22); }
+    100% { background-color: transparent; }
+}
+.content-input.ai-filled {
+    animation: arbelAiFill 2.4s ease-out;
 }
 .ai-links {
     font-size: 0.65rem;

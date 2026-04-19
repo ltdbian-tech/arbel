@@ -179,6 +179,7 @@
         aiGenerate: $('aiGenerate'),
         aiPrompt: $('aiPrompt'),
         aiGenerateBtn: $('aiGenerateBtn'),
+        aiPreviewBtn: $('aiPreviewBtn'),
         aiStatus: $('aiStatus'),
         // Preview
         previewIframe: $('previewIframe'),
@@ -1188,6 +1189,13 @@
         refreshAIKeyState();
     });
 
+    if (els.aiPreviewBtn) {
+        els.aiPreviewBtn.addEventListener('click', function () {
+            // Jump to the Edit/Preview step so the user sees the generated copy applied live
+            try { goToStep(3); } catch (e) { }
+        });
+    }
+
     els.aiGenerateBtn.addEventListener('click', function () {
         var desc = els.aiPrompt.value.trim();
         if (!desc) {
@@ -1206,18 +1214,33 @@
         ArbelAI.generateCopy(desc, els.industry.value, els.brandName.value, activeSections)
             .then(function (copy) {
                 // Fill content inputs with AI-generated copy
+                var filled = 0;
+                var firstFilled = null;
                 Object.keys(copy).forEach(function (key) {
                     var input = document.querySelector('.content-input[data-key="' + key + '"]');
                     if (input) {
-                        if (input.tagName === 'TEXTAREA') {
-                            input.value = copy[key];
-                        } else {
-                            input.value = copy[key];
-                        }
+                        input.value = copy[key];
+                        // Fire input/change events so any listeners (e.g. live preview) update
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                        filled++;
+                        if (!firstFilled) firstFilled = input;
                     }
                 });
-                els.aiStatus.textContent = 'Content generated! Review and edit above.';
+                els.aiStatus.textContent = 'Filled ' + filled + ' fields \u2014 scroll up to review, or click Preview.';
                 els.aiStatus.className = 'ai-status ai-status--success';
+                // Scroll the first filled field into view so the user sees what was generated
+                if (firstFilled) {
+                    try { firstFilled.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { }
+                    // Transient highlight so the user can see which fields are fresh
+                    var highlights = document.querySelectorAll('.content-input');
+                    highlights.forEach(function (el) {
+                        if (el.value) {
+                            el.classList.add('ai-filled');
+                            setTimeout(function () { el.classList.remove('ai-filled'); }, 2400);
+                        }
+                    });
+                }
                 // P6: Push AI copy into cinematic scene elements if in cinematic mode
                 if (state.mode === 'cinematic' && typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.updateContentFromCopy) {
                     ArbelCinematicEditor.updateContentFromCopy(copy);
