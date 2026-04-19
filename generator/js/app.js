@@ -1306,6 +1306,8 @@
         snap.aiSectionCounts = state.aiSectionCounts ? Object.assign({}, state.aiSectionCounts) : null;
         snap.aiAboutFlip    = typeof state.aiAboutFlip === 'boolean' ? state.aiAboutFlip : null;
         snap.aiPricingAccent = state.aiPricingAccent || null;
+        snap.aiHeadingAlign = state.aiHeadingAlign || null;
+        snap.aiContainerWidth = state.aiContainerWidth || null;
         snap.editorOverrides = state.editorOverrides ? JSON.parse(JSON.stringify(state.editorOverrides)) : null;
         return snap;
     }
@@ -1364,6 +1366,8 @@
         state.aiSectionCounts = snap.aiSectionCounts || null;
         state.aiAboutFlip    = typeof snap.aiAboutFlip === 'boolean' ? snap.aiAboutFlip : null;
         state.aiPricingAccent = snap.aiPricingAccent || null;
+        state.aiHeadingAlign = snap.aiHeadingAlign || null;
+        state.aiContainerWidth = snap.aiContainerWidth || null;
         state.editorOverrides = snap.editorOverrides || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
@@ -1511,6 +1515,18 @@
         if (typeof design.aboutFlip !== 'boolean') design.aboutFlip = Math.random() < 0.5;
         var pa = parseInt(design.pricingAccent, 10);
         if (isNaN(pa) || pa < 1 || pa > 3) design.pricingAccent = 1 + Math.floor(Math.random() * 3);
+
+        // ─── PAGE-WIDE RHYTHM ─── heading alignment + container width
+        var aligns = ['left', 'center', 'right'];
+        if (aligns.indexOf(design.headingAlign) === -1) {
+            // weight toward left (safe default) but allow center/right
+            var pool = ['left', 'left', 'center', 'right'];
+            design.headingAlign = pool[Math.floor(Math.random() * pool.length)];
+        }
+        var widths = ['narrow', 'normal', 'wide'];
+        if (widths.indexOf(design.containerWidth) === -1) {
+            design.containerWidth = widths[Math.floor(Math.random() * widths.length)];
+        }
 
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
         // This dramatically increases visual variety because each preset
@@ -1679,6 +1695,8 @@
         state.aiSectionCounts = design.sectionCounts;
         state.aiAboutFlip    = design.aboutFlip;
         state.aiPricingAccent = design.pricingAccent;
+        state.aiHeadingAlign  = design.headingAlign;
+        state.aiContainerWidth = design.containerWidth;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2131,6 +2149,8 @@
         if (state.aiSectionCounts) cfg.sectionCounts = state.aiSectionCounts;
         if (typeof state.aiAboutFlip === 'boolean') cfg.aboutFlip = state.aiAboutFlip;
         if (state.aiPricingAccent) cfg.pricingAccent = state.aiPricingAccent;
+        if (state.aiHeadingAlign) cfg.headingAlign = state.aiHeadingAlign;
+        if (state.aiContainerWidth) cfg.containerWidth = state.aiContainerWidth;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();

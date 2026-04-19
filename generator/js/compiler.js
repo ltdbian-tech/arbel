@@ -1067,7 +1067,14 @@ window.ArbelCompiler = (function () {
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
             '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +
             '  <link rel="stylesheet" href="css/style.css">\n' +
-            '</head>\n<body>\n\n' +
+            '</head>\n<body' + (function () {
+                var cls = [];
+                if (cfg.headingAlign === 'center') cls.push('headings-center');
+                else if (cfg.headingAlign === 'right') cls.push('headings-right');
+                if (cfg.containerWidth === 'narrow') cls.push('container-narrow');
+                else if (cfg.containerWidth === 'wide') cls.push('container-wide');
+                return cls.length ? ' class="' + cls.join(' ') + '"' : '';
+            })() + '>\n\n' +
             '  <!-- Preloader -->\n' +
             '  <div class="preloader" id="preloader">\n' +
             '    <div class="preloader-inner">\n' +
@@ -1143,6 +1150,10 @@ window.ArbelCompiler = (function () {
             '.mono { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; }\n' +
             'em { font-family: var(--font-display); font-style: italic; }\n' +
             '.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }\n' +
+            '.container-narrow .container { max-width: 860px; }\n' +
+            '.container-wide .container { max-width: 1440px; }\n' +
+            '.headings-center .section-heading, .headings-center .section-label { text-align: center; }\n' +
+            '.headings-right .section-heading, .headings-right .section-label { text-align: right; }\n' +
             '.text-center { text-align: center; }\n\n' +
             '/* ═══ PRELOADER ═══ */\n' +
             '.preloader { position: fixed; inset: 0; z-index: 9999; background: var(--bg); display: flex; align-items: center; justify-content: center; transition: opacity 0.6s, visibility 0.6s; }\n' +
@@ -1212,17 +1223,20 @@ window.ArbelCompiler = (function () {
             })() +
             '.hero-content { position: relative; z-index: 2; text-align: center; padding: 2rem; max-width: 800px; }\n' +
             /* Text-shadow halo using bg color — invisible on flat bg, life-saver on blobs */
-            '.hero-heading { font-size: clamp(2.5rem, 7vw, 5.5rem); font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem; text-shadow: 0 2px 24px color-mix(in srgb, var(--bg) 80%, transparent); }\n' +
+            '.hero-heading { font-size: clamp(2.5rem, 7vw, 5.5rem); font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem; text-shadow: 0 2px 24px color-mix(in srgb, var(--bg) 80%, transparent), 0 0 48px color-mix(in srgb, var(--bg) 50%, transparent); }\n' +
             '.hero-heading .line { display: block; overflow: hidden; }\n' +
             '.hero-heading .line-inner { display: inline-block; }\n' +
-            '.hero-sub { color: var(--fg2); font-size: 1.05rem; line-height: 1.6; max-width: 500px; margin: 0 auto 2rem; text-shadow: 0 1px 12px color-mix(in srgb, var(--bg) 70%, transparent); }\n' +
+            /* Hero sub: use full fg color + stronger halo + min-width to avoid squish */
+            '.hero-sub { position: relative; z-index: 3; color: color-mix(in srgb, var(--fg) 92%, var(--fg2)); font-size: 1.05rem; line-height: 1.6; max-width: 520px; margin: 0 auto 2rem; text-shadow: 0 1px 16px color-mix(in srgb, var(--bg) 85%, transparent), 0 0 32px color-mix(in srgb, var(--bg) 60%, transparent); }\n' +
             /* Hero layout variants */
             '.hero--left .hero-content { text-align: left; margin-left: 8%; margin-right: auto; }\n' +
             '.hero--left .hero-heading, .hero--left .hero-actions { justify-content: flex-start; }\n' +
             '.hero--left .hero-sub { margin-left: 0; }\n' +
             '.hero--split .hero-content { max-width: 1200px; width: 90%; display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: center; text-align: left; }\n' +
-            '.hero--split .hero-sub { margin-left: 0; }\n' +
-            '.hero--split .hero-decoration { width: 100%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--accent), transparent 70%); opacity: 0.5; filter: blur(20px); }\n' +
+            '.hero--split .hero-heading { grid-column: 1; }\n' +
+            '.hero--split .hero-sub { grid-column: 1; margin-left: 0; max-width: none; }\n' +
+            '.hero--split .hero-actions { grid-column: 1; justify-content: flex-start; }\n' +
+            '.hero--split .hero-decoration { grid-column: 2; grid-row: 1 / span 3; width: 100%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--accent), transparent 70%); opacity: 0.35; filter: blur(24px); pointer-events: none; }\n' +
             '.hero--minimal .hero-vignette { display: none; }\n' +
             '.hero--minimal .hero-heading { font-size: clamp(2rem, 5vw, 3.5rem); }\n' +
             '@media (max-width: 768px) { .hero--split .hero-content { grid-template-columns: 1fr; } .hero--split .hero-decoration { display:none; } .hero--left .hero-content { margin-left: 5%; } }\n' +
