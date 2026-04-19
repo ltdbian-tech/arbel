@@ -388,6 +388,16 @@ a:hover { text-decoration: underline; }
     transform: translateY(-2px);
 }
 .gen-btn--sm { min-height: 36px; padding: 6px 14px; font-size: 0.65rem; }
+.gen-btn--ghost {
+    background: transparent;
+    border: 1px dashed var(--border, rgba(255,255,255,0.18));
+    color: var(--fg2);
+}
+.gen-btn--ghost:hover:not(:disabled) {
+    border-style: solid;
+    border-color: var(--accent, #6C5CE7);
+    color: var(--fg);
+}
 .gen-btn--lg { min-height: 52px; padding: 14px 40px; font-size: 0.85rem; }
 .gen-btn[disabled], .gen-btn:disabled {
     opacity: 0.4; cursor: not-allowed;
@@ -1048,6 +1058,8 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     align-items: stretch;
 }
 .ai-actions .gen-btn--accent { flex: 1; }
+.ai-actions--secondary { margin-top: 8px; }
+.ai-actions--secondary .gen-btn--ghost { flex: 1; }
 .ai-status {
     font-size: 0.75rem;
     color: var(--fg3);

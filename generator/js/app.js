@@ -174,12 +174,15 @@
         aiBody: $('aiBody'),
         aiProvider: $('aiProvider'),
         aiKeyInput: $('aiKeyInput'),
+        aiKeyToggle: $('aiKeyToggle'),
         aiKeyRemove: $('aiKeyRemove'),
         aiKeyStatus: $('aiKeyStatus'),
         aiGenerate: $('aiGenerate'),
         aiPrompt: $('aiPrompt'),
         aiGenerateBtn: $('aiGenerateBtn'),
         aiPreviewBtn: $('aiPreviewBtn'),
+        aiAutoDesignBtn: $('aiAutoDesignBtn'),
+        aiUndoBtn: $('aiUndoBtn'),
         aiStatus: $('aiStatus'),
         // Preview
         previewIframe: $('previewIframe'),
@@ -1164,9 +1167,22 @@
         if (e.key === 'Enter') { e.preventDefault(); saveAiKey(); }
     });
 
+    // Auto-detect provider from pasted key so the user never has to pick
+    els.aiKeyInput.addEventListener('input', function () {
+        var detected = (window.ArbelAI && ArbelAI.detectProvider)
+            ? ArbelAI.detectProvider(els.aiKeyInput.value)
+            : null;
+        if (detected && els.aiProvider.value !== detected) {
+            els.aiProvider.value = detected;
+        }
+    });
+
     function saveAiKey() {
         var key = els.aiKeyInput.value.trim();
         if (!key) return;
+        // Final auto-detect on save
+        var detected = (window.ArbelAI && ArbelAI.detectProvider) ? ArbelAI.detectProvider(key) : null;
+        if (detected) els.aiProvider.value = detected;
         var provider = els.aiProvider.value;
         var ok = ArbelKeyManager.saveKey('text', provider, key);
         if (!ok) {
@@ -1176,6 +1192,19 @@
         }
         els.aiKeyInput.value = '';
         refreshAIKeyState();
+    }
+
+    // Eye toggle: briefly flip the input to type=text so the user can verify what they pasted
+    if (els.aiKeyToggle) {
+        els.aiKeyToggle.addEventListener('click', function () {
+            if (els.aiKeyInput.type === 'password') {
+                els.aiKeyInput.type = 'text';
+                els.aiKeyToggle.textContent = 'HIDE';
+            } else {
+                els.aiKeyInput.type = 'password';
+                els.aiKeyToggle.textContent = 'SHOW';
+            }
+        });
     }
 
     els.aiKeyRemove.addEventListener('click', function () {
@@ -1189,10 +1218,167 @@
         refreshAIKeyState();
     });
 
+    // Remember the last AI description across refreshes (local to this browser only)
+    var AI_PROMPT_STORAGE = 'arbel_ai_last_prompt';
+    try {
+        var savedPrompt = localStorage.getItem(AI_PROMPT_STORAGE);
+        if (savedPrompt && els.aiPrompt && !els.aiPrompt.value) {
+            els.aiPrompt.value = savedPrompt;
+        }
+    } catch (e) { /* localStorage may be disabled */ }
+    if (els.aiPrompt) {
+        els.aiPrompt.addEventListener('input', function () {
+            try { localStorage.setItem(AI_PROMPT_STORAGE, els.aiPrompt.value); } catch (e) { }
+        });
+        // Prefill from Brand + Industry when the user focuses an empty prompt
+        els.aiPrompt.addEventListener('focus', function () {
+            if (els.aiPrompt.value.trim()) return;
+            var brand = (els.brandName && els.brandName.value.trim()) || '';
+            var industry = (els.industry && els.industry.value.trim()) || '';
+            if (brand || industry) {
+                var seed = brand
+                    ? (brand + ' is a ' + (industry || 'business') + ' that...')
+                    : ('A ' + industry + ' that...');
+                els.aiPrompt.value = seed;
+                // Put the cursor at the end so the user can continue typing
+                els.aiPrompt.setSelectionRange(seed.length, seed.length);
+            }
+        });
+    }
+
     if (els.aiPreviewBtn) {
         els.aiPreviewBtn.addEventListener('click', function () {
             // Jump to the Edit/Preview step so the user sees the generated copy applied live
             try { goToStep(3); } catch (e) { }
+        });
+    }
+
+    // Snapshot used for UNDO — captures the last state before AI writes anything
+    var aiLastSnapshot = null;
+
+    function _snapshotForUndo() {
+        var snap = { content: {}, sections: {}, colors: null, cat: null };
+        document.querySelectorAll('.content-input').forEach(function (inp) {
+            var k = inp.dataset.key;
+            if (k) snap.content[k] = inp.value;
+        });
+        document.querySelectorAll('[data-section]').forEach(function (cb) {
+            if (!cb.disabled) snap.sections[cb.dataset.section] = cb.checked;
+        });
+        if (builderState && builderState.colors) snap.colors = builderState.colors.slice();
+        if (builderState) snap.cat = builderState.cat;
+        return snap;
+    }
+
+    function _restoreSnapshot(snap) {
+        if (!snap) return;
+        Object.keys(snap.content).forEach(function (k) {
+            var input = document.querySelector('.content-input[data-key="' + k + '"]');
+            if (input) {
+                input.value = snap.content[k];
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        Object.keys(snap.sections).forEach(function (s) {
+            var cb = document.querySelector('[data-section="' + s + '"]');
+            if (cb && !cb.disabled) cb.checked = snap.sections[s];
+        });
+        if (snap.colors && builderState) {
+            builderState.colors = snap.colors.slice();
+            [els.builderColor1, els.builderColor2, els.builderColor3].forEach(function (inp, i) {
+                if (inp && snap.colors[i]) inp.value = snap.colors[i];
+            });
+        }
+        if (snap.cat && builderState) builderState.cat = snap.cat;
+    }
+
+    function _applyCopy(copy) {
+        var filled = 0, firstFilled = null;
+        Object.keys(copy).forEach(function (key) {
+            var input = document.querySelector('.content-input[data-key="' + key + '"]');
+            if (input) {
+                input.value = copy[key];
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                filled++;
+                if (!firstFilled) firstFilled = input;
+            }
+        });
+        if (firstFilled) {
+            try { firstFilled.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { }
+            document.querySelectorAll('.content-input').forEach(function (el) {
+                if (el.value) {
+                    el.classList.add('ai-filled');
+                    setTimeout(function () { el.classList.remove('ai-filled'); }, 2400);
+                }
+            });
+        }
+        if (state.mode === 'cinematic' && typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.updateContentFromCopy) {
+            ArbelCinematicEditor.updateContentFromCopy(copy);
+        }
+        return filled;
+    }
+
+    // Validate that a string is a well-formed hex color — prevents CSS/DOM injection
+    // from the AI response since we write these values straight into color inputs.
+    function _isHexColor(s) {
+        return typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.trim());
+    }
+
+    function _applyDesign(design) {
+        if (!design || typeof design !== 'object') return;
+        // Category
+        var validCats = ['particle', 'blob', 'gradient', 'wave'];
+        if (design.category && validCats.indexOf(design.category) !== -1 && builderState) {
+            builderState.cat = design.category;
+        }
+        // Colors — strictly validate as hex before applying
+        if (Array.isArray(design.colors) && design.colors.length >= 3) {
+            var clean = design.colors.slice(0, 3).filter(_isHexColor);
+            if (clean.length === 3 && builderState) {
+                builderState.colors = clean;
+                [els.builderColor1, els.builderColor2, els.builderColor3].forEach(function (inp, i) {
+                    if (inp) inp.value = clean[i];
+                });
+            }
+        }
+        // Sections — only allow known section names; never touch disabled/required ones
+        var allowedSections = ['services', 'portfolio', 'about', 'process', 'testimonials', 'pricing', 'faq'];
+        if (Array.isArray(design.sections)) {
+            var wanted = {};
+            design.sections.forEach(function (s) {
+                if (allowedSections.indexOf(s) !== -1) wanted[s] = true;
+            });
+            document.querySelectorAll('[data-section]').forEach(function (cb) {
+                if (cb.disabled) return;
+                if (allowedSections.indexOf(cb.dataset.section) === -1) return;
+                cb.checked = !!wanted[cb.dataset.section];
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
+        // Mode — only accept the two known values
+        if ((design.mode === 'classic' || design.mode === 'cinematic') && design.mode !== state.mode) {
+            state.mode = design.mode;
+            var modeCards = document.querySelectorAll('.mode-card');
+            modeCards.forEach(function (c) {
+                c.classList.toggle('selected', c.dataset.mode === state.mode);
+            });
+        }
+    }
+
+    function _showUndo() {
+        if (els.aiUndoBtn) els.aiUndoBtn.style.display = '';
+    }
+
+    if (els.aiUndoBtn) {
+        els.aiUndoBtn.addEventListener('click', function () {
+            if (!aiLastSnapshot) return;
+            _restoreSnapshot(aiLastSnapshot);
+            aiLastSnapshot = null;
+            els.aiUndoBtn.style.display = 'none';
+            els.aiStatus.textContent = 'Reverted to previous state.';
+            els.aiStatus.className = 'ai-status ai-status--info';
         });
     }
 
@@ -1204,6 +1390,7 @@
             return;
         }
 
+        aiLastSnapshot = _snapshotForUndo();
         els.aiGenerateBtn.disabled = true;
         els.aiGenerateBtn.textContent = 'GENERATING...';
         els.aiStatus.textContent = 'Calling AI...';
@@ -1213,38 +1400,10 @@
 
         ArbelAI.generateCopy(desc, els.industry.value, els.brandName.value, activeSections)
             .then(function (copy) {
-                // Fill content inputs with AI-generated copy
-                var filled = 0;
-                var firstFilled = null;
-                Object.keys(copy).forEach(function (key) {
-                    var input = document.querySelector('.content-input[data-key="' + key + '"]');
-                    if (input) {
-                        input.value = copy[key];
-                        // Fire input/change events so any listeners (e.g. live preview) update
-                        input.dispatchEvent(new Event('input', { bubbles: true }));
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                        filled++;
-                        if (!firstFilled) firstFilled = input;
-                    }
-                });
+                var filled = _applyCopy(copy);
                 els.aiStatus.textContent = 'Filled ' + filled + ' fields \u2014 scroll up to review, or click Preview.';
                 els.aiStatus.className = 'ai-status ai-status--success';
-                // Scroll the first filled field into view so the user sees what was generated
-                if (firstFilled) {
-                    try { firstFilled.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { }
-                    // Transient highlight so the user can see which fields are fresh
-                    var highlights = document.querySelectorAll('.content-input');
-                    highlights.forEach(function (el) {
-                        if (el.value) {
-                            el.classList.add('ai-filled');
-                            setTimeout(function () { el.classList.remove('ai-filled'); }, 2400);
-                        }
-                    });
-                }
-                // P6: Push AI copy into cinematic scene elements if in cinematic mode
-                if (state.mode === 'cinematic' && typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.updateContentFromCopy) {
-                    ArbelCinematicEditor.updateContentFromCopy(copy);
-                }
+                _showUndo();
             })
             .catch(function (err) {
                 els.aiStatus.textContent = 'Error: ' + err.message;
@@ -1255,6 +1414,49 @@
                 els.aiGenerateBtn.textContent = 'GENERATE ALL COPY';
             });
     });
+
+    // Full auto-design: AI picks palette + sections + mode + writes all copy in one call
+    if (els.aiAutoDesignBtn) {
+        els.aiAutoDesignBtn.addEventListener('click', function () {
+            var desc = els.aiPrompt.value.trim();
+            if (!desc) {
+                els.aiStatus.textContent = 'Please describe your business first.';
+                els.aiStatus.className = 'ai-status ai-status--error';
+                return;
+            }
+
+            aiLastSnapshot = _snapshotForUndo();
+            els.aiAutoDesignBtn.disabled = true;
+            els.aiGenerateBtn.disabled = true;
+            var originalLabel = els.aiAutoDesignBtn.textContent;
+            els.aiAutoDesignBtn.textContent = 'DESIGNING...';
+            els.aiStatus.textContent = 'AI is designing your site (palette, sections, copy)...';
+            els.aiStatus.className = 'ai-status ai-status--info';
+
+            ArbelAI.generateDesign(desc, els.industry.value, els.brandName.value)
+                .then(function (result) {
+                    _applyDesign(result.design);
+                    var filled = _applyCopy(result.copy);
+                    var note = result.design && result.design.rationale
+                        ? (' \u2014 ' + String(result.design.rationale).slice(0, 120))
+                        : '';
+                    els.aiStatus.textContent = 'Designed: palette, ' +
+                        (Array.isArray(result.design && result.design.sections) ? result.design.sections.length : 0) +
+                        ' sections, ' + filled + ' copy fields' + note;
+                    els.aiStatus.className = 'ai-status ai-status--success';
+                    _showUndo();
+                })
+                .catch(function (err) {
+                    els.aiStatus.textContent = 'Error: ' + err.message;
+                    els.aiStatus.className = 'ai-status ai-status--error';
+                })
+                .finally(function () {
+                    els.aiAutoDesignBtn.disabled = false;
+                    els.aiGenerateBtn.disabled = false;
+                    els.aiAutoDesignBtn.textContent = originalLabel;
+                });
+        });
+    }
 
     /* ─── Build Config Object ─── */
     function getActiveSections() {

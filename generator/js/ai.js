@@ -160,7 +160,78 @@ window.ArbelAI = (function () {
         return await _callGroq(prompt, apiKey);
     }
 
+    /** Build the full auto-design prompt (design + copy) */
+    function _buildDesignPrompt(description, industry, brandName) {
+        return 'You are a senior brand designer and copywriter. Design a complete website for:\n\n' +
+            'Business: ' + (brandName || '(unnamed)') + '\n' +
+            'Industry: ' + (industry || '(not specified)') + '\n' +
+            'Description: ' + description + '\n\n' +
+            'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with TWO top-level keys: "design" and "copy".\n\n' +
+            'The "design" key must be:\n' +
+            '{\n' +
+            '  "category": one of "particle" | "blob" | "gradient" | "wave" (choose what fits the industry vibe),\n' +
+            '  "colors": ["#RRGGBB accent", "#RRGGBB secondary", "#RRGGBB background"] — background must be very dark (near-black, e.g. #0a0a0f) or very light (near-white),\n' +
+            '  "sections": array of section names to enable from ["services","portfolio","about","process","testimonials","pricing","faq"] — pick 3-6 that fit this business,\n' +
+            '  "mode": "classic" for most businesses; "cinematic" only for luxury/creative/portfolio brands that benefit from a scroll-driven experience,\n' +
+            '  "rationale": one short sentence explaining the visual direction\n' +
+            '}\n\n' +
+            'The "copy" key must contain all of these exact keys:\n' +
+            '{\n' +
+            '  "heroLine1":"2-4 words","heroLine2":"1-2 words","heroLine3":"1-2 words italic with period",\n' +
+            '  "heroSub":"<150 chars","heroCta":"2-3 words uppercase",\n' +
+            '  "servicesHeading":"heading",\n' +
+            '  "service1Title":"","service1Desc":"","service2Title":"","service2Desc":"","service3Title":"","service3Desc":"",\n' +
+            '  "portfolioHeading":"",\n' +
+            '  "project1Title":"","project1Tag":"","project1Desc":"",\n' +
+            '  "project2Title":"","project2Tag":"","project2Desc":"",\n' +
+            '  "project3Title":"","project3Tag":"","project3Desc":"",\n' +
+            '  "aboutHeading":"","aboutDesc":"<300 chars",\n' +
+            '  "stat1Val":"","stat1Label":"","stat2Val":"","stat2Label":"","stat3Val":"","stat3Label":"",\n' +
+            '  "processHeading":"","step1Title":"","step1Desc":"","step2Title":"","step2Desc":"","step3Title":"","step3Desc":"",\n' +
+            '  "testimonial1Quote":"","testimonial1Name":"","testimonial1Role":"",\n' +
+            '  "testimonial2Quote":"","testimonial2Name":"","testimonial2Role":"",\n' +
+            '  "pricingHeading":"",\n' +
+            '  "tier1Name":"","tier1Price":"","tier1Features":"f1\\nf2\\nf3",\n' +
+            '  "tier2Name":"","tier2Price":"","tier2Features":"f1\\nf2\\nf3",\n' +
+            '  "tier3Name":"","tier3Price":"","tier3Features":"f1\\nf2\\nf3",\n' +
+            '  "faq1Q":"","faq1A":"","faq2Q":"","faq2A":"","faq3Q":"","faq3A":"",\n' +
+            '  "contactHeading":"","contactCta":""\n' +
+            '}\n\n' +
+            'Colors must have strong contrast with the background. Keep copy tight and industry-appropriate.';
+    }
+
+    /** Auto-design the full website: palette + sections + mode + copy */
+    async function generateDesign(description, industry, brandName) {
+        var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
+        var apiKey = ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey();
+
+        if (!apiKey) throw new Error('No API key configured. Add your key in the AI panel.');
+        if (!description || !description.trim()) throw new Error('Please describe your business first.');
+
+        var prompt = _buildDesignPrompt(description, industry, brandName);
+        var raw = (provider === 'gemini')
+            ? await _callGemini(prompt, apiKey)
+            : await _callGroq(prompt, apiKey);
+
+        // Validate shape
+        if (!raw || typeof raw !== 'object' || !raw.design || !raw.copy) {
+            throw new Error('AI returned an unexpected shape. Try again.');
+        }
+        return raw;
+    }
+
+    /** Infer provider from an API key prefix — used for the provider auto-detect UX */
+    function detectProvider(key) {
+        if (!key || typeof key !== 'string') return null;
+        var k = key.trim();
+        if (/^gsk_[A-Za-z0-9]{20,}$/.test(k)) return 'groq';
+        if (/^AIza[0-9A-Za-z_-]{30,}$/.test(k)) return 'gemini';
+        return null;
+    }
+
     return {
-        generateCopy: generateCopy
+        generateCopy: generateCopy,
+        generateDesign: generateDesign,
+        detectProvider: detectProvider
     };
 })();

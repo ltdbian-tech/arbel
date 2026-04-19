@@ -603,6 +603,7 @@
                                     <label class="field-label mono">API KEY</label>
                                     <div class="input-group">
                                         <input type="password" id="aiKeyInput" class="gen-input" placeholder="Paste your API key..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" data-1p-ignore="true">
+                                        <button class="gen-btn gen-btn--sm" id="aiKeyToggle" type="button" title="Show / hide key" aria-label="Show or hide API key">SHOW</button>
                                         <button class="gen-btn gen-btn--sm" id="aiKeyRemove" style="display:none;">REMOVE</button>
                                     </div>
                                     <div class="ai-key-status" id="aiKeyStatus"></div>
@@ -621,6 +622,10 @@
                                     <div class="ai-actions">
                                         <button class="gen-btn gen-btn--accent" id="aiGenerateBtn">GENERATE ALL COPY</button>
                                         <button class="gen-btn gen-btn--sm" id="aiPreviewBtn" type="button" title="Jump to the live preview">PREVIEW</button>
+                                    </div>
+                                    <div class="ai-actions ai-actions--secondary">
+                                        <button class="gen-btn gen-btn--ghost" id="aiAutoDesignBtn" type="button" title="Let AI pick your palette, sections, and fill all copy">&#10024; AUTO-DESIGN WEBSITE</button>
+                                        <button class="gen-btn gen-btn--sm" id="aiUndoBtn" type="button" style="display:none;" title="Revert AI changes">UNDO</button>
                                     </div>
                                     <div class="ai-status" id="aiStatus"></div>
                                 </div>
