@@ -1308,6 +1308,10 @@
         snap.aiPricingAccent = state.aiPricingAccent || null;
         snap.aiHeadingAlign = state.aiHeadingAlign || null;
         snap.aiContainerWidth = state.aiContainerWidth || null;
+        snap.aiCardTreatment = state.aiCardTreatment || null;
+        snap.aiNavStyle = state.aiNavStyle || null;
+        snap.aiSectionRhythm = state.aiSectionRhythm || null;
+        snap.aiHeroEyebrow = state.aiHeroEyebrow || null;
         snap.editorOverrides = state.editorOverrides ? JSON.parse(JSON.stringify(state.editorOverrides)) : null;
         return snap;
     }
@@ -1368,6 +1372,10 @@
         state.aiPricingAccent = snap.aiPricingAccent || null;
         state.aiHeadingAlign = snap.aiHeadingAlign || null;
         state.aiContainerWidth = snap.aiContainerWidth || null;
+        state.aiCardTreatment = snap.aiCardTreatment || null;
+        state.aiNavStyle = snap.aiNavStyle || null;
+        state.aiSectionRhythm = snap.aiSectionRhythm || null;
+        state.aiHeroEyebrow = snap.aiHeroEyebrow || null;
         state.editorOverrides = snap.editorOverrides || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
@@ -1526,6 +1534,45 @@
         var widths = ['narrow', 'normal', 'wide'];
         if (widths.indexOf(design.containerWidth) === -1) {
             design.containerWidth = widths[Math.floor(Math.random() * widths.length)];
+        }
+
+        // ─── CARD TREATMENT ─── completely reskins every card in the page
+        var treatments = ['default', 'bordered', 'filled', 'floating', 'minimal', 'glass'];
+        if (treatments.indexOf(design.cardTreatment) === -1) {
+            design.cardTreatment = treatments[Math.floor(Math.random() * treatments.length)];
+        }
+
+        // ─── NAV STYLE ─── pill / minimal / ghost / default
+        var navStyles = ['default', 'pill', 'minimal', 'ghost'];
+        if (navStyles.indexOf(design.navStyle) === -1) {
+            design.navStyle = navStyles[Math.floor(Math.random() * navStyles.length)];
+        }
+
+        // ─── SECTION RHYTHM ─── padding cadence between sections
+        var rhythms = ['normal', 'compact', 'roomy', 'alternating'];
+        if (rhythms.indexOf(design.sectionRhythm) === -1) {
+            design.sectionRhythm = rhythms[Math.floor(Math.random() * rhythms.length)];
+        }
+
+        // ─── HERO EYEBROW ─── 40% chance of a small badge above the heading
+        if (typeof design.heroEyebrow !== 'string') {
+            if (Math.random() < 0.4) {
+                var bn = (els.brandName && els.brandName.value) || 'STUDIO';
+                var ind = (els.industry && els.industry.value) || 'WEB';
+                var eyebrowPool = [
+                    'EST. ' + (new Date().getFullYear() - Math.floor(Math.random() * 15)),
+                    'NEW \u00b7 ' + new Date().getFullYear(),
+                    'INTRODUCING',
+                    'v' + (new Date().getFullYear()),
+                    '// ' + bn.toUpperCase().slice(0, 16),
+                    ind.toUpperCase().slice(0, 12) + ' STUDIO',
+                    'LIMITED SERIES',
+                    'AWARD \u00b7 2025'
+                ];
+                design.heroEyebrow = eyebrowPool[Math.floor(Math.random() * eyebrowPool.length)];
+            } else {
+                design.heroEyebrow = '';
+            }
         }
 
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
@@ -1697,6 +1744,10 @@
         state.aiPricingAccent = design.pricingAccent;
         state.aiHeadingAlign  = design.headingAlign;
         state.aiContainerWidth = design.containerWidth;
+        state.aiCardTreatment = design.cardTreatment;
+        state.aiNavStyle      = design.navStyle;
+        state.aiSectionRhythm = design.sectionRhythm;
+        state.aiHeroEyebrow   = design.heroEyebrow;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2151,6 +2202,10 @@
         if (state.aiPricingAccent) cfg.pricingAccent = state.aiPricingAccent;
         if (state.aiHeadingAlign) cfg.headingAlign = state.aiHeadingAlign;
         if (state.aiContainerWidth) cfg.containerWidth = state.aiContainerWidth;
+        if (state.aiCardTreatment) cfg.cardTreatment = state.aiCardTreatment;
+        if (state.aiNavStyle) cfg.navStyle = state.aiNavStyle;
+        if (state.aiSectionRhythm) cfg.sectionRhythm = state.aiSectionRhythm;
+        if (state.aiHeroEyebrow) cfg.heroEyebrow = state.aiHeroEyebrow;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();

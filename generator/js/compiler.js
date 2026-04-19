@@ -789,10 +789,12 @@ window.ArbelCompiler = (function () {
         var layout = (c.__heroLayout || '').toString();
         var layoutClass = (layout === 'left' || layout === 'split' || layout === 'minimal') ? ' hero--' + layout : '';
         var decoration = layout === 'split' ? '    <div class="hero-decoration" aria-hidden="true"></div>\n' : '';
+        var eyebrow = c.__heroEyebrow ? '    <div class="hero-eyebrow mono" data-arbel-id="hero-eyebrow" data-arbel-edit="text">' + esc(c.__heroEyebrow) + '</div>\n' : '';
         return '<section class="hero' + layoutClass + '" id="hero" data-arbel-id="hero">\n' +
             '  <div class="' + bgClass + ' hero-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
             '  <div class="hero-content" data-arbel-id="hero-content">\n' +
+            eyebrow +
             '    <h1 class="hero-heading" data-arbel-id="hero-heading">\n' +
             '      <span class="line"><span class="line-inner" data-arbel-id="hero-line1" data-arbel-edit="text">' + esc(c.heroLine1 || 'We build') + '</span></span>\n' +
             '      <span class="line"><span class="line-inner" data-arbel-id="hero-line2" data-arbel-edit="text">' + esc(c.heroLine2 || 'cinematic') + '</span></span>\n' +
@@ -1003,6 +1005,7 @@ window.ArbelCompiler = (function () {
             if (!builder) return;
             if (s === 'hero') {
                 c.__heroLayout = cfg.heroLayout || '';
+                c.__heroEyebrow = cfg.heroEyebrow || '';
                 sectionsHTML += builder(c, bgClass) + '\n\n';
             } else if (s === 'contact') {
                 sectionsHTML += builder(c, cfg.contactEmail, bgClass) + '\n\n';
@@ -1073,6 +1076,12 @@ window.ArbelCompiler = (function () {
                 else if (cfg.headingAlign === 'right') cls.push('headings-right');
                 if (cfg.containerWidth === 'narrow') cls.push('container-narrow');
                 else if (cfg.containerWidth === 'wide') cls.push('container-wide');
+                var ct = cfg.cardTreatment;
+                if (['bordered','filled','floating','minimal','glass'].indexOf(ct) !== -1) cls.push('cards-' + ct);
+                var ns = cfg.navStyle;
+                if (['pill','minimal','ghost'].indexOf(ns) !== -1) cls.push('nav-' + ns);
+                var rh = cfg.sectionRhythm;
+                if (['compact','roomy','alternating'].indexOf(rh) !== -1) cls.push('rhythm-' + rh);
                 return cls.length ? ' class="' + cls.join(' ') + '"' : '';
             })() + '>\n\n' +
             '  <!-- Preloader -->\n' +
@@ -1245,6 +1254,28 @@ window.ArbelCompiler = (function () {
             '.scroll-track { width: 1px; height: 40px; background: var(--border); position: relative; overflow: hidden; }\n' +
             '.scroll-thumb { width: 100%; height: 40%; background: var(--accent); animation: scrollPulse 2s infinite; }\n' +
             '@keyframes scrollPulse { 0%{transform:translateY(-100%)} 100%{transform:translateY(250%)} }\n\n' +
+            '/* ═══ HERO EYEBROW ═══ */\n' +
+            '.hero-eyebrow { display:inline-block; padding: 0.3rem 0.75rem; border:1px solid var(--border); border-radius: 999px; font-size: 0.65rem; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 1.5rem; background: color-mix(in srgb, var(--bg) 60%, transparent); backdrop-filter: blur(6px); }\n\n' +
+            '/* ═══ CARD TREATMENTS (body-class toggles) ═══ */\n' +
+            '.cards-bordered .service-card, .cards-bordered .portfolio-card, .cards-bordered .process-card, .cards-bordered .testimonial-card, .cards-bordered .pricing-card { background: transparent; border-width: 2px; }\n' +
+            '.cards-filled .service-card, .cards-filled .portfolio-card, .cards-filled .process-card, .cards-filled .testimonial-card, .cards-filled .pricing-card { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); border-color: transparent; }\n' +
+            '.cards-floating .service-card, .cards-floating .portfolio-card, .cards-floating .process-card, .cards-floating .testimonial-card, .cards-floating .pricing-card { background: var(--surface); border-color: transparent; box-shadow: 0 12px 40px color-mix(in srgb, var(--bg) 50%, #000 0%), 0 2px 8px color-mix(in srgb, var(--bg) 70%, #000 0%); }\n' +
+            '.cards-minimal .service-card, .cards-minimal .portfolio-card, .cards-minimal .process-card, .cards-minimal .testimonial-card, .cards-minimal .pricing-card { background: transparent; border-width: 0; border-top: 1px solid var(--border); border-radius: 0; padding-left: 0; padding-right: 0; }\n' +
+            '.cards-minimal .pricing-card--accent { border-top-color: var(--accent); border-top-width: 2px; }\n' +
+            '.cards-glass .service-card, .cards-glass .portfolio-card, .cards-glass .process-card, .cards-glass .testimonial-card, .cards-glass .pricing-card { background: color-mix(in srgb, var(--fg) 4%, transparent); border-color: color-mix(in srgb, var(--fg) 12%, transparent); backdrop-filter: blur(12px); }\n\n' +
+            '/* ═══ NAV STYLE VARIANTS ═══ */\n' +
+            '.nav-pill .header { top: 1rem; left: 50%; transform: translateX(-50%); right: auto; width: auto; border-radius: 999px; padding: 0.4rem 1.5rem; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--border); }\n' +
+            '.nav-minimal .header { background: transparent; backdrop-filter: none; border-bottom: none; padding: 1.5rem 2rem; }\n' +
+            '.nav-minimal .nav { gap: 2.5rem; }\n' +
+            '.nav-ghost .header { background: transparent; border-bottom: none; }\n' +
+            '.nav-ghost .nav a { opacity: 0.65; }\n' +
+            '.nav-ghost .nav a:hover { opacity: 1; }\n\n' +
+            '/* ═══ SECTION RHYTHM ═══ */\n' +
+            '.rhythm-compact .section { padding: 4rem 0; }\n' +
+            '.rhythm-roomy .section { padding: 10rem 0; }\n' +
+            '.rhythm-alternating .section:nth-of-type(odd) { padding: 5rem 0; }\n' +
+            '.rhythm-alternating .section:nth-of-type(even) { padding: 9rem 0; }\n' +
+            '@media (max-width: 768px) { .rhythm-roomy .section { padding: 6rem 0; } .rhythm-alternating .section { padding: 5rem 0 !important; } }\n\n' +
             '/* ═══ BUTTONS ═══ */\n' +
             '.btn { display: inline-flex; align-items: center; padding: 0.85rem 2rem; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s var(--ease); background: transparent; color: var(--fg); position: relative; overflow: hidden; }\n' +
             '.btn::before { content: ""; position: absolute; inset: 0; background: var(--accent); transform: translateY(100%); transition: transform 0.4s var(--ease); }\n' +
