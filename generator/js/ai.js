@@ -183,6 +183,13 @@ window.ArbelAI = (function () {
         var palette = paletteHints[Math.floor(Math.random() * paletteHints.length)];
         var seed = Math.random().toString(36).slice(2, 10);
 
+        var presetCatalogue =
+            'SHADERS: obsidian (luxury/mysterious), aurora (tech/vibrant), ember (food/bold), frost (finance/clinical), neon (gaming/edgy), silk (fashion/elegant).\n' +
+            '  PARTICLES: constellation (tech), fireflies (warm/organic), snow (seasonal), nebula (space/premium), matrix (hacker/dev), bokeh (photography/romantic), spark (energy), plasma (sci-fi), stardust (dreamy), rain (moody), vortex (abstract), circuits (hardware), confetti (events), galaxy (epic).\n' +
+            '  BLOBS: morphBlob (startup), lavaLamp (retro/playful), auroraBlob (nature/elegant), sunsetBlob (fashion/lifestyle), oceanBlob (corporate/saas), cosmicBlob (creative/dark).\n' +
+            '  GRADIENTS: meshGrad (apple/saas), noiseGrad (minimal/art), prism (colorful/portfolio), iridescent (luxury/fashion), northern (nature/premium).\n' +
+            '  WAVES: sineWaves (music/elegant), topology (minimal/cartography), ripple (zen/wellness), liquidWave (bold/creative).';
+
         return 'You are a senior brand designer and copywriter. Design a complete website for:\n\n' +
             'Business: ' + (brandName || '(infer a name from the description)') + '\n' +
             'Industry hint: ' + (industry || '(pick one from the list below)') + '\n' +
@@ -202,25 +209,29 @@ window.ArbelAI = (function () {
             '  "seoTitle": "<=70 char SEO title",\n' +
             '  "seoDescription": "<=160 char meta description"\n' +
             '}\n\n' +
-            'The "design" key must be:\n' +
+            'The "design" key MUST use ONE of these two shapes:\n\n' +
+            '[A] PRESET MODE (PREFERRED — use this ~80% of runs for maximum variety):\n' +
             '{\n' +
-            '  "category": one of "particle"|"blob"|"gradient"|"wave" — pick the one that fits the mood,\n' +
-            '  "colors": ["#RRGGBB accent", "#RRGGBB secondary", "#RRGGBB background"] — background near-black or near-white; accent/secondary must have strong contrast. Honor the palette direction above.\n' +
-            '  "params": {\n' +
-            '     // Supply ONLY the params that apply to the chosen category. Use numbers in-range.\n' +
-            '     "count":   20-300   (particle) | 2-8 (blob),\n' +
-            '     "speed":   0.2-3.0  (all),\n' +
-            '     "size":    1-8      (particle),\n' +
-            '     "glow":    0-1      (particle | gradient),\n' +
-            '     "connect": true/false (particle),\n' +
-            '     "blur":    10-80    (blob),\n' +
-            '     "layers":  2-8      (wave),\n' +
-            '     "amplitude": 10-80  (wave)\n' +
-            '  },\n' +
-            '  "sections": array of 3-6 from ["services","portfolio","about","process","testimonials","pricing","faq"] — choose what actually fits this business (a restaurant needs FAQ + testimonials, a SaaS needs pricing + process, a portfolio needs portfolio + about, etc.),\n' +
-            '  "mode": "classic" — always use classic for now, do NOT return cinematic,\n' +
-            '  "rationale": one sentence explaining the direction (mention mood + palette choice)\n' +
+            '  "presetId": "<one of the catalogue IDs below — match mood + industry>",\n' +
+            '  "accentOverride": "#RRGGBB (optional — tweak preset accent to match palette hint)",\n' +
+            '  "bgOverride":     "#RRGGBB (optional — tweak preset background)",\n' +
+            '  "sections": array of 3-6 from ["services","portfolio","about","process","testimonials","pricing","faq"],\n' +
+            '  "rationale": "one sentence on why this preset fits"\n' +
+            '}\n' +
+            'PRESET CATALOGUE:\n  ' + presetCatalogue + '\n\n' +
+            '[B] BUILDER MODE (only when no preset fits):\n' +
+            '{\n' +
+            '  "category": "particle"|"blob"|"gradient"|"wave",\n' +
+            '  "colors": ["#RRGGBB accent","#RRGGBB secondary","#RRGGBB background"],\n' +
+            '  "params": { "count":20-300, "speed":0.2-3, "size":1-8, "glow":0-1, "connect":bool, "blur":10-80, "layers":2-8, "amplitude":10-80 },\n' +
+            '  "sections": array of 3-6 from the same list,\n' +
+            '  "rationale": "one sentence"\n' +
             '}\n\n' +
+            'BOTH SHAPES MAY ALSO INCLUDE these optional top-level design keys:\n' +
+            '  "density":  "compact"|"cozy"|"spacious" — overall vertical spacing,\n' +
+            '  "corners":  "sharp"|"soft"|"pill" — button & card roundness,\n' +
+            '  "fontPair": "editorial"|"tech"|"humanist"|"display"|"mono" — typographic personality.\n' +
+            '"mode": "classic" — always use classic, do NOT return cinematic.\n\n' +
             'The "copy" key must contain all of these exact keys (every value non-empty, original, punchy, industry-specific — NO generic phrases like "welcome to our site" or "we build the future"):\n' +
             '{\n' +
             '  "heroLine1":"2-4 words","heroLine2":"1-2 words","heroLine3":"1-2 words italic with period",\n' +

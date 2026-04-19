@@ -1042,7 +1042,7 @@ window.ArbelCompiler = (function () {
             metaBlock +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +
+            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +
             '  <link rel="stylesheet" href="css/style.css">\n' +
             '</head>\n<body>\n\n' +
             '  <!-- Preloader -->\n' +
@@ -1280,7 +1280,31 @@ window.ArbelCompiler = (function () {
             '  .hero-heading { font-size: clamp(2rem, 8vw, 3.5rem); }\n' +
             '  .stats-row { gap: 1.5rem; }\n' +
             '  .stat-val { font-size: 1.5rem; }\n' +
-            '}\n';
+            '}\n' +
+            _buildTokenOverrides(dt);
+    }
+
+    /** Apply AI-chosen design tokens (density / corners / typography) as
+     *  targeted overrides on top of the base CSS. Only emits rules when a
+     *  token is actually provided. */
+    function _buildTokenOverrides(dt) {
+        if (!dt || typeof dt !== 'object') return '';
+        var css = '\n/* ═══ DESIGN TOKEN OVERRIDES (AI) ═══ */\n';
+        if (dt.radius != null) {
+            var r = Math.max(0, Math.min(40, +dt.radius));
+            css += '.btn, .service-card, .portfolio-card, .process-card, .testimonial-card, .pricing-card, .faq-item, .stat, .tier-feature, input, textarea, select { border-radius: ' + r + 'px; }\n';
+        }
+        if (dt.spaceUnit != null) {
+            var sp = Math.max(4, Math.min(16, +dt.spaceUnit));
+            // Scale section padding based on the space unit (baseline 8px)
+            var padRem = (sp * 1.25).toFixed(2);
+            css += '.section { padding: ' + padRem + 'rem 0; }\n';
+            css += '.service-card, .process-card, .testimonial-card, .pricing-card { padding: ' + (sp * 0.28).toFixed(2) + 'rem; }\n';
+        }
+        if (dt.headingFont) {
+            css += '.hero-heading, h1, h2, h3, .section-heading { font-family: ' + dt.headingFont + '; }\n';
+        }
+        return css;
     }
 
     /* ─── Animations JS ─── */

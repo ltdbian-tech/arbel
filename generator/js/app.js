@@ -1293,6 +1293,11 @@
             seoDescription:  els.seoDescription  ? els.seoDescription.value  : ''
         };
         snap.mode = state.mode;
+        snap.style = state.style;
+        snap.styleMode = state.styleMode;
+        snap.accent = els.accentColor ? els.accentColor.value : null;
+        snap.bg = els.bgColor ? els.bgColor.value : null;
+        snap.aiDesignTokens = state.aiDesignTokens ? Object.assign({}, state.aiDesignTokens) : null;
         return snap;
     }
 
@@ -1338,6 +1343,12 @@
                 c.classList.toggle('selected', c.dataset.mode === state.mode);
             });
         }
+        if (snap.style) state.style = snap.style;
+        if (snap.styleMode) { state.styleMode = snap.styleMode; styleMode = snap.styleMode === 'builder' ? 'builder' : 'presets'; }
+        if (snap.accent && els.accentColor) { els.accentColor.value = snap.accent; if (els.accentVal) els.accentVal.textContent = snap.accent; }
+        if (snap.bg && els.bgColor) { els.bgColor.value = snap.bg; if (els.bgVal) els.bgVal.textContent = snap.bg; }
+        state.aiDesignTokens = snap.aiDesignTokens || null;
+        if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
 
     function _applyCopy(copy) {
@@ -1375,13 +1386,46 @@
 
     function _applyDesign(design) {
         if (!design || typeof design !== 'object') return;
-        // Category
+
+        // ─── PRESET PATH ─── If the AI picked a named preset, use it.
+        // This dramatically increases visual variety because each preset
+        // ships curated colors, shaders/particles, and motion.
+        var usedPreset = false;
+        if (typeof design.presetId === 'string') {
+            var knownStyles = ArbelCompiler.getStyles();
+            var match = knownStyles.find(function (s) { return s.id === design.presetId; });
+            if (match) {
+                state.style = match.id;
+                state.styleMode = 'preset';
+                styleMode = 'presets';
+                // Sync accent/bg inputs from the preset (so the rest of the
+                // pipeline picks up the curated colors).
+                if (els.accentColor) { els.accentColor.value = match.colors.accent; if (els.accentVal) els.accentVal.textContent = match.colors.accent; }
+                if (els.bgColor)     { els.bgColor.value     = match.colors.bg;     if (els.bgVal)     els.bgVal.textContent     = match.colors.bg; }
+                // Allow AI to tweak accent / bg
+                if (_isHexColor(design.accentOverride) && els.accentColor) {
+                    els.accentColor.value = design.accentOverride;
+                    if (els.accentVal) els.accentVal.textContent = design.accentOverride;
+                }
+                if (_isHexColor(design.bgOverride) && els.bgColor) {
+                    els.bgColor.value = design.bgOverride;
+                    if (els.bgVal) els.bgVal.textContent = design.bgOverride;
+                }
+                // Re-render the style grid so the selected card gets highlighted
+                if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
+                usedPreset = true;
+            }
+        }
+
+        // ─── BUILDER PATH ─── Only used when no preset picked.
         var validCats = ['particle', 'blob', 'gradient', 'wave'];
-        if (design.category && validCats.indexOf(design.category) !== -1 && builderState) {
+        if (!usedPreset && design.category && validCats.indexOf(design.category) !== -1 && builderState) {
             builderState.cat = design.category;
+            state.styleMode = 'builder';
+            styleMode = 'builder';
         }
         // Colors — strictly validate as hex before applying
-        if (Array.isArray(design.colors) && design.colors.length >= 3) {
+        if (!usedPreset && Array.isArray(design.colors) && design.colors.length >= 3) {
             var clean = design.colors.slice(0, 3).filter(_isHexColor);
             if (clean.length === 3 && builderState) {
                 builderState.colors = clean;
@@ -1431,6 +1475,28 @@
                 c.classList.toggle('selected', c.dataset.mode === 'classic');
             });
         }
+
+        // ─── DESIGN TOKENS ─── density / corners / fontPair
+        // Translate semantic AI choices into concrete CSS tokens that the
+        // compiler already understands (see _buildCSS → cfg.designTokens).
+        var densityMap = {
+            compact:  { spaceUnit: 6,  baseSize: 15, scale: 1.2 },
+            cozy:     { spaceUnit: 8,  baseSize: 16, scale: 1.25 },
+            spacious: { spaceUnit: 11, baseSize: 17, scale: 1.333 }
+        };
+        var cornersMap = { sharp: 2, soft: 10, pill: 24 };
+        var fontPairs = {
+            editorial: { headingFont: '"Instrument Serif", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            tech:      { headingFont: '"Space Grotesk", -apple-system, sans-serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            humanist:  { headingFont: '"Fraunces", Georgia, serif', bodyFont: '"Work Sans", -apple-system, sans-serif' },
+            display:   { headingFont: '"Playfair Display", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            mono:      { headingFont: '"Space Mono", monospace', bodyFont: '"IBM Plex Mono", monospace' }
+        };
+        var tokens = {};
+        if (design.density && densityMap[design.density]) Object.assign(tokens, densityMap[design.density]);
+        if (design.corners && cornersMap[design.corners] != null) tokens.radius = cornersMap[design.corners];
+        if (design.fontPair && fontPairs[design.fontPair]) Object.assign(tokens, fontPairs[design.fontPair]);
+        state.aiDesignTokens = Object.keys(tokens).length ? tokens : null;
     }
 
     // Strict validators for brand/SEO fields before they touch the DOM
@@ -1696,6 +1762,11 @@
         // Store element-level edits from visual editor
         if (state.editorOverrides) {
             cfg.editorOverrides = state.editorOverrides;
+        }
+
+        // AI-chosen design tokens (density / corners / typography)
+        if (state.aiDesignTokens) {
+            cfg.designTokens = Object.assign({}, cfg.designTokens || {}, state.aiDesignTokens);
         }
 
         // Include pages from editor
