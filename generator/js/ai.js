@@ -230,7 +230,10 @@ window.ArbelAI = (function () {
             'BOTH SHAPES MAY ALSO INCLUDE these optional top-level design keys:\n' +
             '  "density":  "compact"|"cozy"|"spacious" — overall vertical spacing,\n' +
             '  "corners":  "sharp"|"soft"|"pill" — button & card roundness,\n' +
-            '  "fontPair": "editorial"|"tech"|"humanist"|"display"|"mono" — typographic personality.\n' +
+            '  "fontPair": "editorial"|"tech"|"humanist"|"display"|"mono" — typographic personality,\n' +
+            '  "sectionTones": object keyed by section id (services/portfolio/about/process/testimonials/pricing/faq/contact) with value "dark"|"light"|"accent" — use this to alternate section backgrounds for rhythm; don\'t make every section the same tone,\n' +
+            '  "sectionAnims": object keyed by the same section ids with value "fade"|"fadeUp"|"slideLeft"|"slideRight"|"scale"|"stagger"|"blur"|"none" — entrance animation per section.\n' +
+            'CONTRAST RULE: text must remain readable. If you override bg to a LIGHT color, do not pair it with a pale accent for headings — pick a deep, saturated accent so contrast ratio stays ≥ 4.5.\n' +
             '"mode": "classic" — always use classic, do NOT return cinematic.\n\n' +
             'The "copy" key must contain all of these exact keys (every value non-empty, original, punchy, industry-specific — NO generic phrases like "welcome to our site" or "we build the future"):\n' +
             '{\n' +

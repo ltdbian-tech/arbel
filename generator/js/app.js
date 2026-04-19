@@ -1298,6 +1298,8 @@
         snap.accent = els.accentColor ? els.accentColor.value : null;
         snap.bg = els.bgColor ? els.bgColor.value : null;
         snap.aiDesignTokens = state.aiDesignTokens ? Object.assign({}, state.aiDesignTokens) : null;
+        snap.aiSectionTones = state.aiSectionTones ? Object.assign({}, state.aiSectionTones) : null;
+        snap.aiSectionAnims = state.aiSectionAnims ? Object.assign({}, state.aiSectionAnims) : null;
         return snap;
     }
 
@@ -1348,6 +1350,8 @@
         if (snap.accent && els.accentColor) { els.accentColor.value = snap.accent; if (els.accentVal) els.accentVal.textContent = snap.accent; }
         if (snap.bg && els.bgColor) { els.bgColor.value = snap.bg; if (els.bgVal) els.bgVal.textContent = snap.bg; }
         state.aiDesignTokens = snap.aiDesignTokens || null;
+        state.aiSectionTones = snap.aiSectionTones || null;
+        state.aiSectionAnims = snap.aiSectionAnims || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
 
@@ -1382,6 +1386,21 @@
     // from the AI response since we write these values straight into color inputs.
     function _isHexColor(s) {
         return typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s.trim());
+    }
+
+    // Relative luminance per WCAG (0–1) for a #RRGGBB hex string
+    function _luminance(hex) {
+        if (!_isHexColor(hex)) return 0.5;
+        var h = hex.slice(1);
+        var rgb = [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+        rgb = rgb.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+    }
+    // WCAG contrast ratio (1–21) between two hex colors
+    function _contrast(a, b) {
+        var la = _luminance(a), lb = _luminance(b);
+        var hi = Math.max(la, lb), lo = Math.min(la, lb);
+        return (hi + 0.05) / (lo + 0.05);
     }
 
     function _applyDesign(design) {
@@ -1496,7 +1515,59 @@
         if (design.density && densityMap[design.density]) Object.assign(tokens, densityMap[design.density]);
         if (design.corners && cornersMap[design.corners] != null) tokens.radius = cornersMap[design.corners];
         if (design.fontPair && fontPairs[design.fontPair]) Object.assign(tokens, fontPairs[design.fontPair]);
+
+        // ─── CONTRAST GUARD ─── Figure out the final background and make
+        // sure text sits on it readably. If the preset's fg fails WCAG AA
+        // against the (possibly overridden) bg, force a safe fg/surface pair
+        // derived from the bg's luminance. This stops scenarios like a cream
+        // bgOverride + Obsidian's pale-lavender fg producing invisible text.
+        var finalBg = (els.bgColor && els.bgColor.value) || '#0a0a0f';
+        var presetStyle = ArbelCompiler.getStyles().find(function (s) { return s.id === state.style; });
+        var presetFg = presetStyle && presetStyle.colors ? presetStyle.colors.fg : '#f0f0f0';
+        if (_isHexColor(finalBg) && _isHexColor(presetFg) && _contrast(presetFg, finalBg) < 4.5) {
+            var bgLight = _luminance(finalBg) > 0.5;
+            if (bgLight) {
+                tokens.text       = '#101014';
+                tokens.textMuted  = '#55586a';
+                tokens.surface    = '#ffffff';
+            } else {
+                tokens.text       = '#f4f4f8';
+                tokens.textMuted  = '#a8acbb';
+                tokens.surface    = '#18181f';
+            }
+        }
+
+        // ─── SECTION TONES ─── per-section background + text swaps.
+        // AI returns { services:"dark"|"light"|"accent", ... } keyed by section id.
+        var allowedSectionIds = ['services','portfolio','about','process','testimonials','pricing','faq','contact'];
+        var allowedTones = ['dark','light','accent'];
+        var sectionTones = null;
+        if (design.sectionTones && typeof design.sectionTones === 'object') {
+            sectionTones = {};
+            Object.keys(design.sectionTones).forEach(function (k) {
+                if (allowedSectionIds.indexOf(k) !== -1 && allowedTones.indexOf(design.sectionTones[k]) !== -1) {
+                    sectionTones[k] = design.sectionTones[k];
+                }
+            });
+            if (!Object.keys(sectionTones).length) sectionTones = null;
+        }
+
+        // ─── SECTION ANIMS ─── per-section entrance animation variant.
+        var allowedAnims = ['fade','fadeUp','slideLeft','slideRight','scale','stagger','blur','none'];
+        var sectionAnims = null;
+        if (design.sectionAnims && typeof design.sectionAnims === 'object') {
+            sectionAnims = {};
+            Object.keys(design.sectionAnims).forEach(function (k) {
+                if (allowedSectionIds.indexOf(k) !== -1 && allowedAnims.indexOf(design.sectionAnims[k]) !== -1) {
+                    sectionAnims[k] = design.sectionAnims[k];
+                }
+            });
+            if (!Object.keys(sectionAnims).length) sectionAnims = null;
+        }
+
         state.aiDesignTokens = Object.keys(tokens).length ? tokens : null;
+        state.aiSectionTones = sectionTones;
+        state.aiSectionAnims = sectionAnims;
     }
 
     // Strict validators for brand/SEO fields before they touch the DOM
@@ -1768,6 +1839,8 @@
         if (state.aiDesignTokens) {
             cfg.designTokens = Object.assign({}, cfg.designTokens || {}, state.aiDesignTokens);
         }
+        if (state.aiSectionTones) cfg.sectionTones = state.aiSectionTones;
+        if (state.aiSectionAnims) cfg.sectionAnims = state.aiSectionAnims;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();

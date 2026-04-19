@@ -1281,29 +1281,90 @@ window.ArbelCompiler = (function () {
             '  .stats-row { gap: 1.5rem; }\n' +
             '  .stat-val { font-size: 1.5rem; }\n' +
             '}\n' +
-            _buildTokenOverrides(dt);
+            _buildTokenOverrides(dt, cfg);
     }
 
-    /** Apply AI-chosen design tokens (density / corners / typography) as
-     *  targeted overrides on top of the base CSS. Only emits rules when a
-     *  token is actually provided. */
-    function _buildTokenOverrides(dt) {
-        if (!dt || typeof dt !== 'object') return '';
-        var css = '\n/* ═══ DESIGN TOKEN OVERRIDES (AI) ═══ */\n';
-        if (dt.radius != null) {
-            var r = Math.max(0, Math.min(40, +dt.radius));
-            css += '.btn, .service-card, .portfolio-card, .process-card, .testimonial-card, .pricing-card, .faq-item, .stat, .tier-feature, input, textarea, select { border-radius: ' + r + 'px; }\n';
+    /** Apply AI-chosen design tokens (density / corners / typography / section tones / anims)
+     *  as targeted overrides on top of the base CSS. */
+    function _buildTokenOverrides(dt, cfg) {
+        var css = '';
+        if (dt && typeof dt === 'object') {
+            css += '\n/* ═══ DESIGN TOKEN OVERRIDES (AI) ═══ */\n';
+            if (dt.radius != null) {
+                var r = Math.max(0, Math.min(40, +dt.radius));
+                css += '.btn, .service-card, .portfolio-card, .process-card, .testimonial-card, .pricing-card, .faq-item, .stat, .tier-feature, input, textarea, select { border-radius: ' + r + 'px; }\n';
+            }
+            if (dt.spaceUnit != null) {
+                var sp = Math.max(4, Math.min(16, +dt.spaceUnit));
+                var padRem = (sp * 1.25).toFixed(2);
+                css += '.section { padding: ' + padRem + 'rem 0; }\n';
+                css += '.service-card, .process-card, .testimonial-card, .pricing-card { padding: ' + (sp * 0.28).toFixed(2) + 'rem; }\n';
+            }
+            if (dt.headingFont) {
+                css += '.hero-heading, h1, h2, h3, .section-heading { font-family: ' + dt.headingFont + '; }\n';
+            }
         }
-        if (dt.spaceUnit != null) {
-            var sp = Math.max(4, Math.min(16, +dt.spaceUnit));
-            // Scale section padding based on the space unit (baseline 8px)
-            var padRem = (sp * 1.25).toFixed(2);
-            css += '.section { padding: ' + padRem + 'rem 0; }\n';
-            css += '.service-card, .process-card, .testimonial-card, .pricing-card { padding: ' + (sp * 0.28).toFixed(2) + 'rem; }\n';
+
+        // Per-section tones — safe because section IDs are a fixed whitelist
+        var toneRgbVars = {
+            dark:   { bg: 'var(--surface)', fg: 'var(--fg)' },
+            light:  { bg: '#f8f6f1',        fg: '#1a1a22' },
+            accent: { bg: 'var(--accent)',  fg: '#ffffff' }
+        };
+        if (cfg && cfg.sectionTones && typeof cfg.sectionTones === 'object') {
+            css += '\n/* ═══ SECTION TONES (AI) ═══ */\n';
+            Object.keys(cfg.sectionTones).forEach(function (id) {
+                var t = toneRgbVars[cfg.sectionTones[id]];
+                if (!t) return;
+                // id is whitelisted; still guard just in case
+                if (!/^[a-z]+$/.test(id)) return;
+                css += '#' + id + '{background:' + t.bg + ';color:' + t.fg + ';}\n';
+                css += '#' + id + ' .section-heading,#' + id + ' h2,#' + id + ' h3,#' + id + ' p{color:inherit;}\n';
+                if (cfg.sectionTones[id] === 'light') {
+                    css += '#' + id + ' .service-card,#' + id + ' .portfolio-card,#' + id + ' .process-card,#' + id + ' .testimonial-card,#' + id + ' .pricing-card,#' + id + ' .faq-item{background:rgba(255,255,255,0.7);border-color:rgba(0,0,0,0.08);}\n';
+                }
+            });
         }
-        if (dt.headingFont) {
-            css += '.hero-heading, h1, h2, h3, .section-heading { font-family: ' + dt.headingFont + '; }\n';
+
+        // Per-section entrance animations
+        var animMap = {
+            fade:       '@keyframes arbelFade{from{opacity:0}to{opacity:1}}',
+            fadeUp:     '@keyframes arbelFadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}',
+            slideLeft:  '@keyframes arbelSlideL{from{opacity:0;transform:translateX(-32px)}to{opacity:1;transform:translateX(0)}}',
+            slideRight: '@keyframes arbelSlideR{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}',
+            scale:      '@keyframes arbelScale{from{opacity:0;transform:scale(0.94)}to{opacity:1;transform:scale(1)}}',
+            blur:       '@keyframes arbelBlur{from{opacity:0;filter:blur(12px)}to{opacity:1;filter:blur(0)}}'
+        };
+        var animName = {
+            fade:'arbelFade', fadeUp:'arbelFadeUp', slideLeft:'arbelSlideL',
+            slideRight:'arbelSlideR', scale:'arbelScale', blur:'arbelBlur'
+        };
+        if (cfg && cfg.sectionAnims && typeof cfg.sectionAnims === 'object') {
+            css += '\n/* ═══ SECTION ANIMATIONS (AI) ═══ */\n';
+            var emitted = {};
+            Object.keys(cfg.sectionAnims).forEach(function (id) {
+                var a = cfg.sectionAnims[id];
+                if (!/^[a-z]+$/.test(id)) return;
+                if (a === 'none') {
+                    css += '#' + id + ' .reveal-up{opacity:1;transform:none;}\n';
+                    return;
+                }
+                if (a === 'stagger') {
+                    // Apply a small delay ladder to children
+                    css += '#' + id + ' .reveal-up{animation:arbelFadeUp 0.8s var(--ease) both;}\n';
+                    for (var i = 1; i <= 8; i++) {
+                        css += '#' + id + ' .reveal-up:nth-child(' + i + '){animation-delay:' + (i * 0.08).toFixed(2) + 's;}\n';
+                    }
+                    if (!emitted.fadeUp) { css += animMap.fadeUp + '\n'; emitted.fadeUp = true; }
+                    return;
+                }
+                if (animName[a]) {
+                    css += '#' + id + ' .reveal-up{animation:' + animName[a] + ' 0.9s var(--ease) both;}\n';
+                    if (!emitted[a]) { css += animMap[a] + '\n'; emitted[a] = true; }
+                }
+            });
         }
+
         return css;
     }
 
