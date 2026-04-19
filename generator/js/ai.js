@@ -113,12 +113,14 @@ window.ArbelAI = (function () {
         return JSON.parse(text);
     }
 
-    /** Call Gemini API */
+    /** Call Gemini API — key sent as header (not URL) to avoid log/referrer leaks */
     async function _callGemini(prompt, apiKey) {
-        var url = GEMINI_URL + '?key=' + apiKey;
-        var resp = await fetch(url, {
+        var resp = await fetch(GEMINI_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey
+            },
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {

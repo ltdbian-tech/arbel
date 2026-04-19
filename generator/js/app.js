@@ -1142,9 +1142,9 @@
     });
 
     function refreshAIKeyState() {
-        if (ArbelKeyManager.hasKey()) {
+        if (ArbelKeyManager.hasKey('text')) {
             els.aiKeyInput.value = '';
-            els.aiKeyInput.placeholder = ArbelKeyManager.getMaskedKey();
+            els.aiKeyInput.placeholder = ArbelKeyManager.getMaskedKey('text');
             els.aiKeyRemove.style.display = '';
             els.aiGenerate.style.display = '';
             els.aiKeyStatus.textContent = 'Key saved securely.';
@@ -1154,26 +1154,37 @@
             els.aiKeyRemove.style.display = 'none';
             els.aiGenerate.style.display = 'none';
             els.aiKeyStatus.textContent = '';
+            els.aiKeyStatus.className = 'ai-key-status';
         }
     }
 
-    els.aiKeyInput.addEventListener('change', function () {
+    els.aiKeyInput.addEventListener('change', saveAiKey);
+    els.aiKeyInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveAiKey(); }
+    });
+
+    function saveAiKey() {
         var key = els.aiKeyInput.value.trim();
         if (!key) return;
         var provider = els.aiProvider.value;
-        ArbelKeyManager.saveKey(provider, key);
+        var ok = ArbelKeyManager.saveKey('text', provider, key);
+        if (!ok) {
+            els.aiKeyStatus.textContent = 'Key rejected \u2014 check that it\'s at least 8 characters and matches the selected provider.';
+            els.aiKeyStatus.className = 'ai-key-status ai-key-status--error';
+            return;
+        }
         els.aiKeyInput.value = '';
         refreshAIKeyState();
-    });
+    }
 
     els.aiKeyRemove.addEventListener('click', function () {
-        ArbelKeyManager.removeKey();
+        ArbelKeyManager.removeKey('text');
         refreshAIKeyState();
     });
 
     els.aiProvider.addEventListener('change', function () {
         // When switching provider, clear the stored key
-        ArbelKeyManager.removeKey();
+        ArbelKeyManager.removeKey('text');
         refreshAIKeyState();
     });
 
