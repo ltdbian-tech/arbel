@@ -97,8 +97,9 @@ window.ArbelAI = (function () {
                     { role: 'system', content: 'You are a website copywriter. Return only valid JSON, no markdown.' },
                     { role: 'user', content: prompt }
                 ],
-                temperature: 0.7,
-                max_tokens: 2000,
+                temperature: 1.0,
+                top_p: 0.95,
+                max_tokens: 2800,
                 response_format: { type: 'json_object' }
             })
         });
@@ -124,8 +125,9 @@ window.ArbelAI = (function () {
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 2000,
+                    temperature: 1.0,
+                    topP: 0.95,
+                    maxOutputTokens: 2800,
                     responseMimeType: 'application/json'
                 }
             })
@@ -162,15 +164,39 @@ window.ArbelAI = (function () {
 
     /** Build the full auto-design prompt (design + copy) */
     function _buildDesignPrompt(description, industry, brandName) {
+        // Inject a random "style brief" seed so repeated runs on the same
+        // description produce genuinely different looks instead of the same output.
+        var moods = [
+            'editorial / high-fashion', 'brutalist / raw', 'neo-minimal / clean',
+            'vaporwave / retro-futurist', 'organic / botanical', 'industrial / monochrome',
+            'playful / maximalist', 'cinematic / moody', 'scandi / warm-neutral',
+            'cyberpunk / neon', 'art-deco / luxe', 'handcrafted / zine'
+        ];
+        var paletteHints = [
+            'warm terracotta + sand + ink', 'deep emerald + gold + cream',
+            'electric magenta + charcoal + white', 'dusty rose + taupe + bone',
+            'cobalt + amber + off-white', 'forest + bronze + parchment',
+            'blush + plum + ivory', 'citrus + navy + snow', 'lilac + sage + midnight',
+            'crimson + black + eggshell', 'turquoise + rust + linen', 'violet + lemon + slate'
+        ];
+        var mood = moods[Math.floor(Math.random() * moods.length)];
+        var palette = paletteHints[Math.floor(Math.random() * paletteHints.length)];
+        var seed = Math.random().toString(36).slice(2, 10);
+
         return 'You are a senior brand designer and copywriter. Design a complete website for:\n\n' +
             'Business: ' + (brandName || '(infer a name from the description)') + '\n' +
             'Industry hint: ' + (industry || '(pick one from the list below)') + '\n' +
             'Description: ' + description + '\n\n' +
+            'STYLE DIRECTION FOR THIS RUN (use as inspiration, not quoted text):\n' +
+            '  Mood: ' + mood + '\n' +
+            '  Palette direction: ' + palette + '\n' +
+            '  Variation seed: ' + seed + '\n\n' +
+            'IMPORTANT: Do NOT default to generic tech-blue or purple. Match the palette to the industry and mood (beauty=rose/gold/ivory, food=warm tones, finance=muted/serious, nonprofit=earthy, music=bold/saturated, etc.). Be adventurous.\n\n' +
             'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with THREE top-level keys: "brand", "design", and "copy".\n\n' +
             'The "brand" key must be:\n' +
             '{\n' +
             '  "name": "the actual brand name — extract from description if mentioned, otherwise invent a fitting one",\n' +
-            '  "tagline": "short memorable tagline (3-8 words)",\n' +
+            '  "tagline": "short memorable tagline (3-8 words) — specific, not generic",\n' +
             '  "industry": one of "agency"|"saas"|"ecommerce"|"restaurant"|"healthcare"|"portfolio"|"fashion"|"realestate"|"fitness"|"education"|"finance"|"legal"|"nonprofit"|"music"|"photography"|"startup"|"other",\n' +
             '  "email": "a placeholder contact email using the brand name (e.g. hello@arres.co)",\n' +
             '  "seoTitle": "<=70 char SEO title",\n' +
@@ -178,8 +204,8 @@ window.ArbelAI = (function () {
             '}\n\n' +
             'The "design" key must be:\n' +
             '{\n' +
-            '  "category": one of "particle"|"blob"|"gradient"|"wave" — match the brand vibe (luxury = blob/gradient, tech = particle, editorial = gradient, playful = wave),\n' +
-            '  "colors": ["#RRGGBB accent", "#RRGGBB secondary", "#RRGGBB background"] — background near-black or near-white, accents must have strong contrast,\n' +
+            '  "category": one of "particle"|"blob"|"gradient"|"wave" — pick the one that fits the mood,\n' +
+            '  "colors": ["#RRGGBB accent", "#RRGGBB secondary", "#RRGGBB background"] — background near-black or near-white; accent/secondary must have strong contrast. Honor the palette direction above.\n' +
             '  "params": {\n' +
             '     // Supply ONLY the params that apply to the chosen category. Use numbers in-range.\n' +
             '     "count":   20-300   (particle) | 2-8 (blob),\n' +
@@ -191,21 +217,21 @@ window.ArbelAI = (function () {
             '     "layers":  2-8      (wave),\n' +
             '     "amplitude": 10-80  (wave)\n' +
             '  },\n' +
-            '  "sections": array of 3-6 from ["services","portfolio","about","process","testimonials","pricing","faq"],\n' +
-            '  "mode": "classic" for most; "cinematic" for luxury/creative/portfolio/photography brands,\n' +
-            '  "rationale": one sentence explaining the direction\n' +
+            '  "sections": array of 3-6 from ["services","portfolio","about","process","testimonials","pricing","faq"] — choose what actually fits this business (a restaurant needs FAQ + testimonials, a SaaS needs pricing + process, a portfolio needs portfolio + about, etc.),\n' +
+            '  "mode": "classic" for most; "cinematic" for luxury/creative/portfolio/photography/fashion brands that benefit from scroll-driven storytelling,\n' +
+            '  "rationale": one sentence explaining the direction (mention mood + palette choice)\n' +
             '}\n\n' +
-            'The "copy" key must contain all of these exact keys (all non-empty, original, industry-appropriate):\n' +
+            'The "copy" key must contain all of these exact keys (every value non-empty, original, punchy, industry-specific — NO generic phrases like "welcome to our site" or "we build the future"):\n' +
             '{\n' +
             '  "heroLine1":"2-4 words","heroLine2":"1-2 words","heroLine3":"1-2 words italic with period",\n' +
-            '  "heroSub":"<150 chars","heroCta":"2-3 words uppercase",\n' +
+            '  "heroSub":"<150 chars — specific value prop","heroCta":"2-3 words uppercase",\n' +
             '  "servicesHeading":"",\n' +
             '  "service1Title":"","service1Desc":"","service2Title":"","service2Desc":"","service3Title":"","service3Desc":"",\n' +
             '  "portfolioHeading":"",\n' +
             '  "project1Title":"","project1Tag":"","project1Desc":"",\n' +
             '  "project2Title":"","project2Tag":"","project2Desc":"",\n' +
             '  "project3Title":"","project3Tag":"","project3Desc":"",\n' +
-            '  "aboutHeading":"","aboutDesc":"<300 chars",\n' +
+            '  "aboutHeading":"","aboutDesc":"<300 chars — tell a real story",\n' +
             '  "stat1Val":"","stat1Label":"","stat2Val":"","stat2Label":"","stat3Val":"","stat3Label":"",\n' +
             '  "processHeading":"","step1Title":"","step1Desc":"","step2Title":"","step2Desc":"","step3Title":"","step3Desc":"",\n' +
             '  "testimonial1Quote":"","testimonial1Name":"","testimonial1Role":"",\n' +
@@ -217,7 +243,7 @@ window.ArbelAI = (function () {
             '  "faq1Q":"","faq1A":"","faq2Q":"","faq2A":"","faq3Q":"","faq3A":"",\n' +
             '  "contactHeading":"","contactCta":""\n' +
             '}\n\n' +
-            'Be adventurous with the palette — vary accents widely across runs. Be specific, punchy, and original in copy (no generic phrases like "welcome to our site"). Every field must be filled.';
+            'Every single copy field MUST be filled with original, industry-appropriate text — no empty strings, no placeholders.';
     }
 
     /** Auto-design the full website: brand + palette + sections + mode + copy */

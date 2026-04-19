@@ -1445,6 +1445,10 @@
             els.brandName.dispatchEvent(new Event('input', { bubbles: true }));
             els.brandName.classList.add('ai-filled');
             setTimeout(function () { els.brandName.classList.remove('ai-filled'); }, 2400);
+            // Push the new brand name into cinematic scenes so the live nav-logo updates too
+            if (typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.syncBrandToScenes) {
+                try { ArbelCinematicEditor.syncBrandToScenes(els.brandName.value); } catch (e) { }
+            }
             count++;
         }
         if (typeof brand.tagline === 'string' && brand.tagline.trim() && els.tagline) {
@@ -1502,7 +1506,7 @@
 
         aiLastSnapshot = _snapshotForUndo();
         els.aiGenerateBtn.disabled = true;
-        els.aiGenerateBtn.textContent = 'GENERATING...';
+        els.aiGenerateBtn.textContent = 'WRITING...';
         els.aiStatus.textContent = 'Calling AI...';
         els.aiStatus.className = 'ai-status ai-status--info';
 
@@ -1521,7 +1525,7 @@
             })
             .finally(function () {
                 els.aiGenerateBtn.disabled = false;
-                els.aiGenerateBtn.textContent = 'GENERATE ALL COPY';
+                els.aiGenerateBtn.textContent = 'COPY ONLY';
             });
     });
 
@@ -1538,9 +1542,9 @@
             aiLastSnapshot = _snapshotForUndo();
             els.aiAutoDesignBtn.disabled = true;
             els.aiGenerateBtn.disabled = true;
-            var originalLabel = els.aiAutoDesignBtn.textContent;
+            var originalLabel = els.aiAutoDesignBtn.innerHTML;
             els.aiAutoDesignBtn.textContent = 'DESIGNING...';
-            els.aiStatus.textContent = 'AI is designing your site (palette, sections, copy)...';
+            els.aiStatus.textContent = 'AI is designing your site (brand, palette, sections, copy)...';
             els.aiStatus.className = 'ai-status ai-status--info';
 
             ArbelAI.generateDesign(desc, els.industry.value, els.brandName.value)
@@ -1564,7 +1568,7 @@
                 .finally(function () {
                     els.aiAutoDesignBtn.disabled = false;
                     els.aiGenerateBtn.disabled = false;
-                    els.aiAutoDesignBtn.textContent = originalLabel;
+                    els.aiAutoDesignBtn.innerHTML = originalLabel;
                 });
         });
     }
@@ -2381,6 +2385,14 @@
         var el = els[id];
         if (el) el.addEventListener('input', _markDirty);
     });
+    // Keep cinematic scene nav-logo in sync with the brand input in real time
+    if (els.brandName) {
+        els.brandName.addEventListener('input', function () {
+            if (typeof ArbelCinematicEditor !== 'undefined' && ArbelCinematicEditor.syncBrandToScenes) {
+                try { ArbelCinematicEditor.syncBrandToScenes(els.brandName.value); } catch (e) { }
+            }
+        });
+    }
     // Selects
     if (els.industry) els.industry.addEventListener('change', _markDirty);
     // Color pickers

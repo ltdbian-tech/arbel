@@ -1056,9 +1056,15 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     display: flex;
     gap: 8px;
     align-items: stretch;
+    flex-wrap: wrap;
 }
-.ai-actions .gen-btn--accent { flex: 1; }
+.ai-actions .gen-btn--accent { flex: 1 1 100%; }
 .ai-actions--secondary { margin-top: 8px; }
+.ai-actions--secondary .gen-btn--sm {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 0;
+    padding: 6px 8px;
+}
 .ai-actions--secondary .gen-btn--ghost { flex: 1; }
 .ai-status {
     font-size: 0.75rem;

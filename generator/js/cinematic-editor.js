@@ -72,7 +72,8 @@ window.ArbelCinematicEditor = (function () {
         'cta-sub':       'ctaLine2',
         'fg-title':      'servicesHeading',
         'stats-heading': 'servicesHeading',
-        'mrq-center':    'tagline'
+        'mrq-center':    'tagline',
+        'site-logo':     'brandName'
     };
 
     function updateContentFromCopy(copy) {
@@ -85,6 +86,30 @@ window.ArbelCinematicEditor = (function () {
                 var contentKey = _CONTENT_PREFIXES[prefix];
                 if (contentKey && copy[contentKey]) {
                     el.text = copy[contentKey];
+                    changed = true;
+                }
+            });
+        });
+        if (changed) {
+            _renderSceneList();
+            _selectScene(_currentSceneIdx);
+            _notifyUpdate(true);
+        }
+    }
+
+    /** Sync a single brand name into every scene's site-logo element.
+     *  Called from app.js after the Brand Info field is updated by AI or the user.
+     *  Safe to call in either mode — silently no-ops if scenes aren't loaded yet. */
+    function syncBrandToScenes(name) {
+        if (!name || typeof name !== 'string' || !_scenes || !_scenes.length) return;
+        var safe = name.trim().slice(0, 80);
+        if (!safe) return;
+        var changed = false;
+        _scenes.forEach(function (scene) {
+            (scene.elements || []).forEach(function (el) {
+                var prefix = el.id.replace(/-[^-]+$/, '');
+                if (prefix === 'site-logo' && el.text !== safe) {
+                    el.text = safe;
                     changed = true;
                 }
             });
@@ -12100,6 +12125,7 @@ window.ArbelCinematicEditor = (function () {
                 '" style="border:0;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.2)" loading="lazy" allow="autoplay; fullscreen"></iframe>';
         },
         updateContentFromCopy: updateContentFromCopy,
+        syncBrandToScenes: syncBrandToScenes,
         destroy: function () {
             _active = false;
             _selectedElementId = null;
