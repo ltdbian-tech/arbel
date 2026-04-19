@@ -83,69 +83,135 @@ window.ArbelAI = (function () {
             'Make the copy professional, concise, and compelling. Match the tone to the industry.';
     }
 
-    /** Call Groq API */
-    async function _callGroq(prompt, apiKey) {
-        var resp = await fetch(GROQ_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + apiKey,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'llama-3.3-70b-versatile',
-                messages: [
-                    { role: 'system', content: 'You are a website copywriter. Return only valid JSON, no markdown.' },
-                    { role: 'user', content: prompt }
-                ],
-                temperature: 1.0,
-                top_p: 0.95,
-                max_tokens: 2800,
-                seed: Math.floor(Math.random() * 2147483647),
-                response_format: { type: 'json_object' }
-            })
-        });
+    /** Sleep helper */
+    function _sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-        if (!resp.ok) {
-            var errData = await resp.json().catch(function () { return {}; });
-            throw new Error(errData.error?.message || 'Groq API error (' + resp.status + ')');
+    /** Parse a retry delay (in ms) from a 429 response. Tries Retry-After header
+     *  first, then provider-specific hints in the error body. Caps at 60s. */
+    function _parseRetryMs(resp, errData) {
+        var h = resp.headers && resp.headers.get && resp.headers.get('Retry-After');
+        if (h) {
+            var n = parseFloat(h);
+            if (isFinite(n) && n > 0) return Math.min(n * 1000, 60000);
         }
-
-        var data = await resp.json();
-        var text = data.choices[0].message.content;
-        return JSON.parse(text);
+        var msg = (errData && errData.error && errData.error.message) || '';
+        // Groq: "Please try again in 2.384s"
+        var m = msg.match(/try again in\s+([\d.]+)s/i);
+        if (m) return Math.min(parseFloat(m[1]) * 1000, 60000);
+        // Gemini: "Please retry in 47.86s."
+        m = msg.match(/retry in\s+([\d.]+)s/i);
+        if (m) return Math.min(parseFloat(m[1]) * 1000, 60000);
+        return 0;
     }
 
-    /** Call Gemini API — key sent as header (not URL) to avoid log/referrer leaks */
-    async function _callGemini(prompt, apiKey) {
-        var resp = await fetch(GEMINI_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey
-            },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 1.0,
-                    topP: 0.95,
-                    maxOutputTokens: 2800,
-                    seed: Math.floor(Math.random() * 2147483647),
-                    responseMimeType: 'application/json'
+    /** Call Groq API with auto-retry on 429 and model fallback */
+    async function _callGroq(prompt, apiKey) {
+        // Larger model first, smaller as fallback if the big one is rate-limited
+        var models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+        var lastErr = null;
+
+        for (var mi = 0; mi < models.length; mi++) {
+            var model = models[mi];
+            var attempts = mi === 0 ? 3 : 1; // retry the primary, single-shot on fallback
+
+            for (var attempt = 0; attempt < attempts; attempt++) {
+                var resp = await fetch(GROQ_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: 'You are a website copywriter. Return only valid JSON, no markdown.' },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 1.0,
+                        top_p: 0.95,
+                        max_tokens: 2200,
+                        seed: Math.floor(Math.random() * 2147483647),
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (resp.ok) {
+                    var data = await resp.json();
+                    var text = data.choices[0].message.content;
+                    return JSON.parse(text);
                 }
-            })
-        });
 
-        if (!resp.ok) {
+                var errData = await resp.json().catch(function () { return {}; });
+                var errMsg = (errData.error && errData.error.message) || 'Groq API error (' + resp.status + ')';
+                lastErr = new Error(errMsg);
+
+                // 429 → wait and retry (or break to fall back to smaller model)
+                if (resp.status === 429) {
+                    var waitMs = _parseRetryMs(resp, errData);
+                    if (attempt < attempts - 1 && waitMs > 0 && waitMs <= 15000) {
+                        await _sleep(waitMs + 250);
+                        continue;
+                    }
+                    // Too long or out of retries on this model — fall back
+                    break;
+                }
+
+                // Non-retryable error
+                throw lastErr;
+            }
+        }
+
+        throw lastErr || new Error('Groq API rate-limited. Wait a minute and try again.');
+    }
+
+    /** Call Gemini API with auto-retry on 429 */
+    async function _callGemini(prompt, apiKey) {
+        var lastErr = null;
+        for (var attempt = 0; attempt < 3; attempt++) {
+            var resp = await fetch(GEMINI_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-goog-api-key': apiKey
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 1.0,
+                        topP: 0.95,
+                        maxOutputTokens: 2200,
+                        seed: Math.floor(Math.random() * 2147483647),
+                        responseMimeType: 'application/json'
+                    }
+                })
+            });
+
+            if (resp.ok) {
+                var data = await resp.json();
+                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
+                    throw new Error('Gemini returned an unexpected response format.');
+                }
+                var text = data.candidates[0].content.parts[0].text;
+                return JSON.parse(text);
+            }
+
             var errData = await resp.json().catch(function () { return {}; });
-            throw new Error(errData.error?.message || 'Gemini API error (' + resp.status + ')');
-        }
+            var errMsg = (errData.error && errData.error.message) || 'Gemini API error (' + resp.status + ')';
+            lastErr = new Error(errMsg);
 
-        var data = await resp.json();
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
-            throw new Error('Gemini returned an unexpected response format.');
+            if (resp.status === 429 && attempt < 2) {
+                var waitMs = _parseRetryMs(resp, errData);
+                if (waitMs > 0 && waitMs <= 15000) {
+                    await _sleep(waitMs + 250);
+                    continue;
+                }
+                // Daily quota or long wait — surface a clearer message
+                throw new Error('Gemini rate-limited. Either wait, switch to Groq in the key panel, or use a different API key.');
+            }
+
+            throw lastErr;
         }
-        var text = data.candidates[0].content.parts[0].text;
-        return JSON.parse(text);
+        throw lastErr || new Error('Gemini API error.');
     }
 
     /** Generate copy using the configured provider */
