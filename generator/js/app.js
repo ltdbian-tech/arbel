@@ -1303,6 +1303,9 @@
         snap.aiSectionAnims = state.aiSectionAnims ? Object.assign({}, state.aiSectionAnims) : null;
         snap.aiHeroLayout   = state.aiHeroLayout || null;
         snap.aiSectionOrder = state.aiSectionOrder ? state.aiSectionOrder.slice() : null;
+        snap.aiSectionCounts = state.aiSectionCounts ? Object.assign({}, state.aiSectionCounts) : null;
+        snap.aiAboutFlip    = typeof state.aiAboutFlip === 'boolean' ? state.aiAboutFlip : null;
+        snap.aiPricingAccent = state.aiPricingAccent || null;
         snap.editorOverrides = state.editorOverrides ? JSON.parse(JSON.stringify(state.editorOverrides)) : null;
         return snap;
     }
@@ -1358,6 +1361,9 @@
         state.aiSectionAnims = snap.aiSectionAnims || null;
         state.aiHeroLayout   = snap.aiHeroLayout || null;
         state.aiSectionOrder = snap.aiSectionOrder || null;
+        state.aiSectionCounts = snap.aiSectionCounts || null;
+        state.aiAboutFlip    = typeof snap.aiAboutFlip === 'boolean' ? snap.aiAboutFlip : null;
+        state.aiPricingAccent = snap.aiPricingAccent || null;
         state.editorOverrides = snap.editorOverrides || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
@@ -1415,6 +1421,7 @@
     var _aiLastDensity = null;
     var _aiLastCorners = null;
     var _aiLastFont = null;
+    var _aiLastHeroLayout = null;
 
     function _pickRandom(arr, exclude) {
         var pool = arr.filter(function (v) { return v !== exclude; });
@@ -1464,6 +1471,11 @@
         if (['centered','left','split','minimal'].indexOf(design.heroLayout) === -1) {
             design.heroLayout = layouts[Math.floor(Math.random() * layouts.length)];
         }
+        // Force anti-repeat: if AI picked the same hero layout as last run, rotate.
+        if (_aiLastHeroLayout && design.heroLayout === _aiLastHeroLayout) {
+            var others = layouts.filter(function (l) { return l !== _aiLastHeroLayout; });
+            design.heroLayout = others[Math.floor(Math.random() * others.length)];
+        }
         // Valid section IDs in the compiler. Hero must stay first, contact last.
         var validSections = ['services','portfolio','about','process','testimonials','pricing','faq','stats'];
         if (!Array.isArray(design.sectionOrder) || !design.sectionOrder.length) {
@@ -1482,6 +1494,23 @@
             clean.push('contact');
             design.sectionOrder = clean;
         }
+
+        // ─── CARD COUNTS ─── randomize how many cards render per section
+        // (compiler clamps to populated copy slots).
+        var countRanges = { services: [2,4], portfolio: [2,4], process: [3,4] };
+        if (!design.sectionCounts || typeof design.sectionCounts !== 'object') design.sectionCounts = {};
+        Object.keys(countRanges).forEach(function (k) {
+            var v = parseInt(design.sectionCounts[k], 10);
+            var r = countRanges[k];
+            if (isNaN(v) || v < r[0] || v > r[1]) {
+                design.sectionCounts[k] = r[0] + Math.floor(Math.random() * (r[1] - r[0] + 1));
+            }
+        });
+
+        // ─── MICRO-STRUCTURAL FLIPS ─── about column flip + pricing accent tier
+        if (typeof design.aboutFlip !== 'boolean') design.aboutFlip = Math.random() < 0.5;
+        var pa = parseInt(design.pricingAccent, 10);
+        if (isNaN(pa) || pa < 1 || pa > 3) design.pricingAccent = 1 + Math.floor(Math.random() * 3);
 
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
         // This dramatically increases visual variety because each preset
@@ -1647,12 +1676,16 @@
         state.aiSectionAnims = sectionAnims;
         state.aiHeroLayout   = design.heroLayout;
         state.aiSectionOrder = design.sectionOrder;
+        state.aiSectionCounts = design.sectionCounts;
+        state.aiAboutFlip    = design.aboutFlip;
+        state.aiPricingAccent = design.pricingAccent;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
         _aiLastDensity  = design.density || _aiLastDensity;
         _aiLastCorners  = design.corners || _aiLastCorners;
         _aiLastFont     = design.fontPair || _aiLastFont;
+        _aiLastHeroLayout = design.heroLayout || _aiLastHeroLayout;
 
         // ─── PER-ELEMENT OVERRIDES ─── AI can target specific elements
         // (hero-cta, service-card-1, project-1-tag, faq-item-2 ...) and apply
@@ -2095,6 +2128,9 @@
         if (state.aiSectionAnims) cfg.sectionAnims = state.aiSectionAnims;
         if (state.aiHeroLayout)   cfg.heroLayout   = state.aiHeroLayout;
         if (state.aiSectionOrder && state.aiSectionOrder.length) cfg.sections = state.aiSectionOrder;
+        if (state.aiSectionCounts) cfg.sectionCounts = state.aiSectionCounts;
+        if (typeof state.aiAboutFlip === 'boolean') cfg.aboutFlip = state.aiAboutFlip;
+        if (state.aiPricingAccent) cfg.pricingAccent = state.aiPricingAccent;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();

@@ -777,6 +777,14 @@ window.ArbelCompiler = (function () {
     }
 
     /* ─── Section HTML generators ─── */
+    function _clampCount(v, def, min, max) {
+        var n = parseInt(v, 10);
+        if (isNaN(n)) return def;
+        if (n < min) return min;
+        if (n > max) return max;
+        return n;
+    }
+
     function _heroHTML(c, bgClass) {
         var layout = (c.__heroLayout || '').toString();
         var layoutClass = (layout === 'left' || layout === 'split' || layout === 'minimal') ? ' hero--' + layout : '';
@@ -801,8 +809,9 @@ window.ArbelCompiler = (function () {
     }
 
     function _servicesHTML(c) {
+        var count = _clampCount(c.__servicesCount, 3, 2, 4);
         var items = '';
-        for (var i = 1; i <= 3; i++) {
+        for (var i = 1; i <= count; i++) {
             var title = c['service' + i + 'Title'] || 'Service ' + i;
             var desc = c['service' + i + 'Desc'] || '';
             items += '  <div class="service-card reveal-up" data-arbel-id="service-card-' + i + '">\n' +
@@ -815,13 +824,14 @@ window.ArbelCompiler = (function () {
             '<div class="container">\n' +
             '  <div class="section-label mono">' + esc(c.servicesLabel || 'SERVICES') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="services-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.servicesHeading || 'What we do') + '</span></span></h2>\n' +
-            '  <div class="services-grid">\n' + items + '  </div>\n' +
+            '  <div class="services-grid services-grid--cols-' + count + '">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
 
     function _portfolioHTML(c) {
+        var count = _clampCount(c.__portfolioCount, 3, 2, 4);
         var items = '';
-        for (var i = 1; i <= 3; i++) {
+        for (var i = 1; i <= count; i++) {
             var title = c['project' + i + 'Title'] || 'Project ' + i;
             var tag = c['project' + i + 'Tag'] || 'Design';
             var desc = c['project' + i + 'Desc'] || '';
@@ -830,7 +840,7 @@ window.ArbelCompiler = (function () {
                 '      <div class="portfolio-meta mono"><span data-arbel-id="project-' + i + '-tag" data-arbel-edit="text">' + esc(tag) + '</span></div>\n' +
                 '      <h3 class="portfolio-title" data-arbel-id="project-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
                 '      <p class="portfolio-desc" data-arbel-id="project-' + i + '-desc" data-arbel-edit="text">' + esc(desc) + '</p>\n' +
-                '      <div class="portfolio-num mono">0' + i + '</div>\n' +
+                '      <div class="portfolio-num mono">' + (i < 10 ? '0' + i : i) + '</div>\n' +
                 '    </div>\n' +
                 '  </div>\n';
         }
@@ -838,18 +848,19 @@ window.ArbelCompiler = (function () {
             '<div class="container">\n' +
             '  <div class="section-label mono">' + esc(c.portfolioLabel || 'PORTFOLIO') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="portfolio-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.portfolioHeading || 'Our Work') + '</span></span></h2>\n' +
-            '  <div class="portfolio-grid">\n' + items + '  </div>\n' +
+            '  <div class="portfolio-grid portfolio-grid--cols-' + count + '">\n' + items + '  </div>\n' +
             '</div>\n</section>';
     }
 
     function _aboutHTML(c) {
+        var flip = c.__aboutFlip ? ' about--flip' : '';
         var stats = '';
         for (var i = 1; i <= 3; i++) {
             var val = c['stat' + i + 'Val'] || '--';
             var label = c['stat' + i + 'Label'] || 'Stat';
             stats += '    <div class="stat-block" data-arbel-id="stat-' + i + '"><div class="stat-val" data-arbel-id="stat-' + i + '-val" data-arbel-edit="text">' + esc(val) + '</div><div class="stat-label mono" data-arbel-id="stat-' + i + '-label" data-arbel-edit="text">' + esc(label) + '</div></div>\n';
         }
-        return '<section class="section about" id="about" data-arbel-id="about">\n' +
+        return '<section class="section about' + flip + '" id="about" data-arbel-id="about">\n' +
             '<div class="container">\n' +
             '  <div class="about-grid">\n' +
             '    <div class="about-left">\n' +
@@ -865,12 +876,13 @@ window.ArbelCompiler = (function () {
     }
 
     function _processHTML(c) {
+        var count = _clampCount(c.__processCount, 3, 3, 4);
         var steps = '';
-        for (var i = 1; i <= 3; i++) {
+        for (var i = 1; i <= count; i++) {
             var title = c['step' + i + 'Title'] || 'Step ' + i;
             var desc = c['step' + i + 'Desc'] || '';
             steps += '  <div class="process-card reveal-up" data-arbel-id="process-card-' + i + '">\n' +
-                '    <div class="process-num mono">0' + i + '</div>\n' +
+                '    <div class="process-num mono">' + (i < 10 ? '0' + i : i) + '</div>\n' +
                 '    <h3 class="process-title" data-arbel-id="step-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
                 '    <p class="process-desc" data-arbel-id="step-' + i + '-desc" data-arbel-edit="text">' + esc(desc) + '</p>\n' +
                 '  </div>\n';
@@ -879,7 +891,7 @@ window.ArbelCompiler = (function () {
             '<div class="container">\n' +
             '  <div class="section-label mono">' + esc(c.processLabel || 'PROCESS') + '</div>\n' +
             '  <h2 class="section-heading" data-arbel-id="process-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.processHeading || 'How We Work') + '</span></span></h2>\n' +
-            '  <div class="process-grid">\n' + steps + '  </div>\n' +
+            '  <div class="process-grid process-grid--cols-' + count + '">\n' + steps + '  </div>\n' +
             '</div>\n</section>';
     }
 
@@ -907,18 +919,19 @@ window.ArbelCompiler = (function () {
     }
 
     function _pricingHTML(c) {
+        var accentTier = _clampCount(c.__pricingAccent, 2, 1, 3);
         var tiers = '';
         for (var i = 1; i <= 3; i++) {
             var name = c['tier' + i + 'Name'] || 'Plan ' + i;
             var price = c['tier' + i + 'Price'] || '--';
             var features = (c['tier' + i + 'Features'] || '').split('\n').filter(Boolean);
             var featureList = features.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('\n');
-            var accent = i === 2 ? ' pricing-card--accent' : '';
+            var accent = i === accentTier ? ' pricing-card--accent' : '';
             tiers += '  <div class="pricing-card' + accent + ' reveal-up" data-arbel-id="pricing-card-' + i + '">\n' +
                 '    <h3 class="pricing-name" data-arbel-id="tier-' + i + '-name" data-arbel-edit="text">' + esc(name) + '</h3>\n' +
                 '    <div class="pricing-price" data-arbel-id="tier-' + i + '-price" data-arbel-edit="text">' + esc(price) + '</div>\n' +
                 '    <ul class="pricing-features" data-arbel-id="tier-' + i + '-features">' + featureList + '</ul>\n' +
-                '    <a href="#contact" class="btn' + (i === 2 ? ' btn-primary' : '') + '" data-arbel-id="tier-' + i + '-cta" data-arbel-edit="text">Get Started</a>\n' +
+                '    <a href="#contact" class="btn' + (i === accentTier ? ' btn-primary' : '') + '" data-arbel-id="tier-' + i + '-cta" data-arbel-edit="text">Get Started</a>\n' +
                 '  </div>\n';
         }
         return '<section class="section pricing" id="pricing" data-arbel-id="pricing">\n' +
@@ -994,6 +1007,11 @@ window.ArbelCompiler = (function () {
             } else if (s === 'contact') {
                 sectionsHTML += builder(c, cfg.contactEmail, bgClass) + '\n\n';
             } else {
+                // Inject per-section structural knobs (counts / flip / accent)
+                var counts = cfg.sectionCounts || {};
+                if (counts[s] != null) c['__' + s + 'Count'] = counts[s];
+                if (s === 'about') c.__aboutFlip = !!cfg.aboutFlip;
+                if (s === 'pricing' && cfg.pricingAccent != null) c.__pricingAccent = cfg.pricingAccent;
                 sectionsHTML += builder(c) + '\n\n';
             }
         });
@@ -1229,6 +1247,9 @@ window.ArbelCompiler = (function () {
             '.section-heading .line-inner { display: inline-block; }\n\n' +
             '/* ═══ SERVICES ═══ */\n' +
             '.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 3rem; }\n' +
+            '.services-grid--cols-2 { grid-template-columns: repeat(2, 1fr); max-width: 900px; margin-left: auto; margin-right: auto; }\n' +
+            '.services-grid--cols-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }\n' +
+            '@media (max-width: 768px) { .services-grid--cols-2, .services-grid--cols-4 { grid-template-columns: 1fr; } }\n' +
             '.service-card { padding: 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; transition: border-color 0.3s, transform 0.3s var(--ease); }\n' +
             '.service-card:hover { border-color: var(--accent); transform: translateY(-4px); }\n' +
             '.service-num { color: var(--accent); margin-bottom: 1rem; }\n' +
@@ -1236,6 +1257,9 @@ window.ArbelCompiler = (function () {
             '.service-desc { color: var(--fg2); font-size: 0.9rem; line-height: 1.6; }\n\n' +
             '/* ═══ PORTFOLIO ═══ */\n' +
             '.portfolio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; margin-top: 3rem; }\n' +
+            '.portfolio-grid--cols-2 { grid-template-columns: repeat(2, 1fr); }\n' +
+            '.portfolio-grid--cols-4 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }\n' +
+            '@media (max-width: 768px) { .portfolio-grid--cols-2, .portfolio-grid--cols-4 { grid-template-columns: 1fr; } }\n' +
             '.portfolio-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: border-color 0.3s, transform 0.3s var(--ease); }\n' +
             '.portfolio-card:hover { border-color: var(--accent); transform: translateY(-4px); }\n' +
             '.portfolio-card-inner { padding: 2rem; position: relative; min-height: 200px; display: flex; flex-direction: column; justify-content: flex-end; }\n' +
@@ -1245,6 +1269,8 @@ window.ArbelCompiler = (function () {
             '.portfolio-num { position: absolute; top: 1.5rem; right: 1.5rem; font-size: 3rem; color: var(--border); font-weight: 800; }\n\n' +
             '/* ═══ ABOUT ═══ */\n' +
             '.about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }\n' +
+            '.about--flip .about-grid { direction: rtl; }\n' +
+            '.about--flip .about-grid > * { direction: ltr; }\n' +
             '.about-desc { color: var(--fg2); font-size: 1rem; line-height: 1.7; margin-bottom: 2rem; }\n' +
             '.stats-row { display: flex; gap: 3rem; }\n' +
             '.stat-val { font-size: 2rem; font-weight: 800; color: var(--accent); }\n' +
@@ -1252,6 +1278,7 @@ window.ArbelCompiler = (function () {
             '@media (max-width: 768px) { .about-grid { grid-template-columns: 1fr; gap: 2rem; } }\n\n' +
             '/* ═══ PROCESS ═══ */\n' +
             '.process-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 3rem; }\n' +
+            '.process-grid--cols-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }\n' +
             '.process-card { padding: 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }\n' +
             '.process-num { color: var(--accent); margin-bottom: 1rem; font-size: 1.5rem; font-weight: 700; }\n' +
             '.process-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.75rem; }\n' +

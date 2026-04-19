@@ -375,7 +375,10 @@ window.ArbelAI = (function () {
             '"mode": "classic" — always use classic, do NOT return cinematic.\n\n' +
             'STRUCTURE VARIATION — vary these between regens:\n' +
             '"heroLayout": one of "centered" | "left" | "split" | "minimal". Pick the one that best fits the mood (split for agency/product, left for editorial, minimal for portfolio, centered as safe default).\n' +
-            '"sectionOrder": ordered array of section IDs from ["services","portfolio","about","process","testimonials","pricing","faq","stats"]. Pick 3-5 that fit the business. hero and contact are added automatically.\n\n' +
+            '"sectionOrder": ordered array of section IDs from ["services","portfolio","about","process","testimonials","pricing","faq","stats"]. Pick 3-5 that fit the business. hero and contact are added automatically.\n' +
+            '"sectionCounts": optional object like {"services":2..4,"portfolio":2..4,"process":3..4} — vary card counts between regens.\n' +
+            '"aboutFlip": boolean — flip the about section columns left/right.\n' +
+            '"pricingAccent": 1|2|3 — which pricing tier is highlighted as popular.\n\n' +
             'OPTIONAL "elementOverrides" — apply per-element flair to specific elements by ID. Use sparingly (5-15 entries max). Allowed IDs match patterns: hero-cta, hero-line1/2/3, hero-sub, service-card-1/2/3, service-N-title/desc, portfolio-card-1/2/3, project-N-title/tag/desc, about, about-heading, about-desc, stat-1/2/3, step-N-title/desc, testimonial-card-1/2/3, testimonial-N-quote/name/role, pricing-card-1/2/3, tier-N-name/price/features, faq-item-1/2/3, faq-N-q/a, *-heading.\n' +
             'Each entry can include: { "animation": one of "fadeIn|fadeInUp|fadeInDown|fadeInLeft|fadeInRight|slideUp|slideDown|slideLeft|slideRight|scaleUp|scaleDown|zoomIn|bounceIn|bounceInUp", "hover": one of "lift|scale|glow|tilt|skew|border-glow|brightness|color-shift", "continuous": one of "pulse|float|spin|bounce|shake|swing|breathe|glow-pulse|wobble|flash|headShake|wave-text|drift|sway", "color": "#RRGGBB", "backgroundColor": "#RRGGBB", "borderRadius": "Npx" or "N%" (0-100), "opacity": 0-1 }.\n' +
             'Vary these between regens to give each generation a distinct feel.\n\n' +
@@ -467,6 +470,9 @@ window.ArbelAI = (function () {
             '    "fontPair": "editorial|tech|humanist|display|mono",\n' +
             '    "heroLayout": "centered|left|split|minimal",\n' +
             '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","stats"] pick 3-5,\n' +
+            '    "sectionCounts": {"services":2-4,"portfolio":2-4,"process":3-4},\n' +
+            '    "aboutFlip": true|false,\n' +
+            '    "pricingAccent": 1|2|3,\n' +
             '    "sectionTones": {"services":"dark|light|accent",...},\n' +
             '    "sectionAnims": {"services":"fadeUp|slideLeft|...",...},\n' +
             '    "rationale": "one sentence"\n' +
