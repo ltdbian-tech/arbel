@@ -1403,8 +1403,53 @@
         return (hi + 0.05) / (lo + 0.05);
     }
 
+    // Track previous AI run so we can guarantee variety across regens
+    var _aiLastPresetId = null;
+    var _aiLastDensity = null;
+    var _aiLastCorners = null;
+    var _aiLastFont = null;
+
+    function _pickRandom(arr, exclude) {
+        var pool = arr.filter(function (v) { return v !== exclude; });
+        return pool[Math.floor(Math.random() * pool.length)] || arr[0];
+    }
+
     function _applyDesign(design) {
         if (!design || typeof design !== 'object') return;
+
+        // ─── VARIETY GUARANTEE ─── If the AI returns the same preset two
+        // runs in a row (LLMs love their favourites), force a different one
+        // from the same family so each click feels new.
+        if (typeof design.presetId === 'string' && design.presetId === _aiLastPresetId) {
+            var allIds = ArbelCompiler.getStyles().map(function (s) { return s.id; });
+            design.presetId = _pickRandom(allIds, _aiLastPresetId);
+        }
+        // If AI didn't supply optional design knobs, randomly inject some
+        // so two runs on the same prompt feel distinct even if the AI is lazy.
+        var allDensities = ['compact', 'cozy', 'spacious'];
+        var allCorners   = ['sharp', 'soft', 'pill'];
+        var allFonts     = ['editorial', 'tech', 'humanist', 'display', 'mono'];
+        if (!design.density) design.density = _pickRandom(allDensities, _aiLastDensity);
+        if (!design.corners) design.corners = _pickRandom(allCorners, _aiLastCorners);
+        if (!design.fontPair) design.fontPair = _pickRandom(allFonts, _aiLastFont);
+
+        // Same for sectionTones / sectionAnims — produce a randomized rhythm
+        // so every regen reshuffles the visual cadence.
+        var sectionIds = ['services','portfolio','about','process','testimonials','pricing','faq','contact'];
+        if (!design.sectionTones || typeof design.sectionTones !== 'object') {
+            var tones = ['dark', 'light', 'accent', 'dark']; // weighted toward dark
+            design.sectionTones = {};
+            sectionIds.forEach(function (id, i) {
+                design.sectionTones[id] = tones[(i + Math.floor(Math.random() * tones.length)) % tones.length];
+            });
+        }
+        if (!design.sectionAnims || typeof design.sectionAnims !== 'object') {
+            var anims = ['fadeUp', 'slideLeft', 'slideRight', 'scale', 'stagger', 'blur'];
+            design.sectionAnims = {};
+            sectionIds.forEach(function (id) {
+                design.sectionAnims[id] = anims[Math.floor(Math.random() * anims.length)];
+            });
+        }
 
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
         // This dramatically increases visual variety because each preset
@@ -1568,6 +1613,126 @@
         state.aiDesignTokens = Object.keys(tokens).length ? tokens : null;
         state.aiSectionTones = sectionTones;
         state.aiSectionAnims = sectionAnims;
+
+        // Remember choices so the next regen picks something different
+        _aiLastPresetId = state.style;
+        _aiLastDensity  = design.density || _aiLastDensity;
+        _aiLastCorners  = design.corners || _aiLastCorners;
+        _aiLastFont     = design.fontPair || _aiLastFont;
+
+        // ─── PER-ELEMENT OVERRIDES ─── AI can target specific elements
+        // (hero-cta, service-card-1, project-1-tag, faq-item-2 ...) and apply
+        // animations, hover effects, colors, radius, etc. Everything is
+        // strictly whitelisted — IDs against a regex of known patterns,
+        // properties against a known set, values against type/range.
+        if (design.elementOverrides && typeof design.elementOverrides === 'object') {
+            _applyElementOverrides(design.elementOverrides);
+        } else {
+            // Even when AI didn't return any, sprinkle a few random hover/anim
+            // effects on key elements so each generation has subtle motion variety.
+            _applyElementOverrides(_randomElementSprinkle());
+        }
+    }
+
+    /** Strict whitelist of element IDs the AI is allowed to target.
+     *  Anything else is silently dropped. */
+    var _ELEMENT_ID_PATTERNS = [
+        /^hero-(line[1-3]|sub|cta|content|heading)$/,
+        /^services?-heading$/,
+        /^service-card-[1-3]$/,
+        /^service-[1-3]-(title|desc)$/,
+        /^portfolio-heading$/,
+        /^portfolio-card-[1-3]$/,
+        /^project-[1-3]-(title|tag|desc)$/,
+        /^about(-heading|-desc)?$/,
+        /^stat-[1-3](-val|-label)?$/,
+        /^process-heading$/,
+        /^process-card-[1-3]$/,
+        /^step-[1-3]-(title|desc)$/,
+        /^testimonials-heading$/,
+        /^testimonial-card-[1-3]$/,
+        /^testimonial-[1-3]-(quote|name|role)$/,
+        /^pricing-heading$/,
+        /^pricing-card-[1-3]$/,
+        /^tier-[1-3]-(name|price|features)$/,
+        /^faq-item-[1-3]$/,
+        /^faq-[1-3]-(q|a)$/,
+        /^contact-heading$/
+    ];
+    var _VALID_ANIMATIONS = ['fadeIn','fadeInUp','fadeInDown','fadeInLeft','fadeInRight',
+        'slideUp','slideDown','slideLeft','slideRight','scaleUp','scaleDown',
+        'zoomIn','bounceIn','bounceInUp'];
+    var _VALID_HOVERS = ['lift','scale','glow','tilt','skew','border-glow','brightness','color-shift'];
+    var _VALID_CONTINUOUS = ['none','pulse','float','spin','bounce','shake','swing','breathe',
+        'glow-pulse','wobble','flash','headShake','wave-text','drift','sway'];
+
+    function _isAllowedElementId(id) {
+        if (typeof id !== 'string') return false;
+        for (var i = 0; i < _ELEMENT_ID_PATTERNS.length; i++) {
+            if (_ELEMENT_ID_PATTERNS[i].test(id)) return true;
+        }
+        return false;
+    }
+
+    function _sanitizeOverrideValue(prop, val) {
+        if (val == null) return null;
+        if (prop === 'animation') return _VALID_ANIMATIONS.indexOf(val) !== -1 ? val : null;
+        if (prop === 'hover')     return _VALID_HOVERS.indexOf(val) !== -1 ? val : null;
+        if (prop === 'continuous')return _VALID_CONTINUOUS.indexOf(val) !== -1 ? val : null;
+        if (prop === 'color' || prop === 'backgroundColor') {
+            return _isHexColor(val) ? val : null;
+        }
+        if (prop === 'borderRadius') {
+            // Accept "Npx" or a bare number 0-100
+            if (typeof val === 'number') return Math.max(0, Math.min(100, val)) + 'px';
+            if (typeof val === 'string' && /^\d{1,3}(px|%)?$/.test(val)) return val;
+            return null;
+        }
+        if (prop === 'opacity') {
+            var n = +val;
+            return (isFinite(n) && n >= 0 && n <= 1) ? String(n) : null;
+        }
+        return null;
+    }
+
+    function _applyElementOverrides(map) {
+        if (!map || typeof map !== 'object') return;
+        var ov = state.editorOverrides || {};
+        var props = ['animation','hover','continuous','color','backgroundColor','borderRadius','opacity'];
+        Object.keys(map).forEach(function (id) {
+            if (!_isAllowedElementId(id)) return;
+            var entry = map[id];
+            if (!entry || typeof entry !== 'object') return;
+            if (!ov[id]) ov[id] = {};
+            props.forEach(function (p) {
+                if (entry[p] != null) {
+                    var clean = _sanitizeOverrideValue(p, entry[p]);
+                    if (clean != null) ov[id][p] = clean;
+                }
+            });
+        });
+        state.editorOverrides = ov;
+    }
+
+    /** Generate a tiny random set of safe element overrides (used when the AI
+     *  doesn't supply any). Keeps every regen visually distinct. */
+    function _randomElementSprinkle() {
+        var hovers = ['lift','scale','glow','border-glow'];
+        var anims  = ['fadeInUp','slideUp','zoomIn','scaleUp'];
+        var conts  = ['float','breathe','sway'];
+        var pick = function (arr) { return arr[Math.floor(Math.random() * arr.length)]; };
+        var out = {
+            'hero-cta':       { hover: pick(hovers), animation: pick(anims) },
+            'service-card-1': { hover: pick(hovers), animation: pick(anims) },
+            'service-card-2': { hover: pick(hovers), animation: pick(anims) },
+            'service-card-3': { hover: pick(hovers), animation: pick(anims) },
+            'portfolio-card-1': { hover: pick(hovers) },
+            'portfolio-card-2': { hover: pick(hovers) },
+            'portfolio-card-3': { hover: pick(hovers) }
+        };
+        // 50% chance to add a continuous animation to one stat block
+        if (Math.random() > 0.5) out['stat-1'] = { continuous: pick(conts) };
+        return out;
     }
 
     // Strict validators for brand/SEO fields before they touch the DOM
@@ -1685,6 +1850,10 @@
             els.aiAutoDesignBtn.textContent = 'DESIGNING...';
             els.aiStatus.textContent = 'AI is designing your site (brand, palette, sections, copy)...';
             els.aiStatus.className = 'ai-status ai-status--info';
+
+            // Wipe per-element overrides so each fresh design starts clean
+            // (snapshot already captured the previous state for Undo)
+            state.editorOverrides = {};
 
             ArbelAI.generateDesign(desc, els.industry.value, els.brandName.value)
                 .then(function (result) {

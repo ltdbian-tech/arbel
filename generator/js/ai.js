@@ -100,6 +100,7 @@ window.ArbelAI = (function () {
                 temperature: 1.0,
                 top_p: 0.95,
                 max_tokens: 2800,
+                seed: Math.floor(Math.random() * 2147483647),
                 response_format: { type: 'json_object' }
             })
         });
@@ -128,6 +129,7 @@ window.ArbelAI = (function () {
                     temperature: 1.0,
                     topP: 0.95,
                     maxOutputTokens: 2800,
+                    seed: Math.floor(Math.random() * 2147483647),
                     responseMimeType: 'application/json'
                 }
             })
@@ -235,6 +237,9 @@ window.ArbelAI = (function () {
             '  "sectionAnims": object keyed by the same section ids with value "fade"|"fadeUp"|"slideLeft"|"slideRight"|"scale"|"stagger"|"blur"|"none" — entrance animation per section.\n' +
             'CONTRAST RULE: text must remain readable. If you override bg to a LIGHT color, do not pair it with a pale accent for headings — pick a deep, saturated accent so contrast ratio stays ≥ 4.5.\n' +
             '"mode": "classic" — always use classic, do NOT return cinematic.\n\n' +
+            'OPTIONAL "elementOverrides" — apply per-element flair to specific elements by ID. Use sparingly (5-15 entries max). Allowed IDs match patterns: hero-cta, hero-line1/2/3, hero-sub, service-card-1/2/3, service-N-title/desc, portfolio-card-1/2/3, project-N-title/tag/desc, about, about-heading, about-desc, stat-1/2/3, step-N-title/desc, testimonial-card-1/2/3, testimonial-N-quote/name/role, pricing-card-1/2/3, tier-N-name/price/features, faq-item-1/2/3, faq-N-q/a, *-heading.\n' +
+            'Each entry can include: { "animation": one of "fadeIn|fadeInUp|fadeInDown|fadeInLeft|fadeInRight|slideUp|slideDown|slideLeft|slideRight|scaleUp|scaleDown|zoomIn|bounceIn|bounceInUp", "hover": one of "lift|scale|glow|tilt|skew|border-glow|brightness|color-shift", "continuous": one of "pulse|float|spin|bounce|shake|swing|breathe|glow-pulse|wobble|flash|headShake|wave-text|drift|sway", "color": "#RRGGBB", "backgroundColor": "#RRGGBB", "borderRadius": "Npx" or "N%" (0-100), "opacity": 0-1 }.\n' +
+            'Vary these between regens to give each generation a distinct feel.\n\n' +
             'The "copy" key must contain all of these exact keys (every value non-empty, original, punchy, industry-specific — NO generic phrases like "welcome to our site" or "we build the future"):\n' +
             '{\n' +
             '  "heroLine1":"2-4 words","heroLine2":"1-2 words","heroLine3":"1-2 words italic with period",\n' +
