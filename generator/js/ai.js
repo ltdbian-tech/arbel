@@ -35,6 +35,7 @@ window.ArbelAI = (function () {
 
     const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
     const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
     /** Build the prompt for copy generation */
     function _buildPrompt(description, industry, brandName, sections) {
@@ -214,6 +215,79 @@ window.ArbelAI = (function () {
         throw lastErr || new Error('Gemini API error.');
     }
 
+    /** Call OpenRouter (OpenAI-compatible). Tries a free model first, then a
+     *  paid/premium fallback if the free one is rate-limited. */
+    async function _callOpenRouter(prompt, apiKey) {
+        // Free models with strong JSON output support. Ordered cheap→premium.
+        var models = [
+            'deepseek/deepseek-chat-v3.1:free',
+            'meta-llama/llama-3.3-70b-instruct:free',
+            'google/gemini-2.0-flash-exp:free'
+        ];
+        var lastErr = null;
+
+        for (var mi = 0; mi < models.length; mi++) {
+            var model = models[mi];
+            var attempts = mi === 0 ? 2 : 1;
+
+            for (var attempt = 0; attempt < attempts; attempt++) {
+                var resp = await fetch(OPENROUTER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + apiKey,
+                        'Content-Type': 'application/json',
+                        // Referer + Title help OpenRouter attribute requests
+                        'HTTP-Referer': 'https://arbel.live',
+                        'X-Title': 'Arbel Generator'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        messages: [
+                            { role: 'system', content: 'You are a website copywriter. Return only valid JSON, no markdown.' },
+                            { role: 'user', content: prompt }
+                        ],
+                        temperature: 1.0,
+                        top_p: 0.95,
+                        max_tokens: 2200,
+                        seed: Math.floor(Math.random() * 2147483647),
+                        response_format: { type: 'json_object' }
+                    })
+                });
+
+                if (resp.ok) {
+                    var data = await resp.json();
+                    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                        throw new Error('OpenRouter returned an unexpected response.');
+                    }
+                    var text = data.choices[0].message.content;
+                    return JSON.parse(text);
+                }
+
+                var errData = await resp.json().catch(function () { return {}; });
+                var errMsg = (errData.error && errData.error.message) || 'OpenRouter API error (' + resp.status + ')';
+                lastErr = new Error(errMsg);
+
+                if (resp.status === 429) {
+                    var waitMs = _parseRetryMs(resp, errData);
+                    if (attempt < attempts - 1 && waitMs > 0 && waitMs <= 15000) {
+                        await _sleep(waitMs + 250);
+                        continue;
+                    }
+                    break; // Fall back to next model
+                }
+                throw lastErr;
+            }
+        }
+        throw lastErr || new Error('OpenRouter rate-limited on all fallback models.');
+    }
+
+    /** Pick the right call function for the configured provider */
+    function _callForProvider(provider, prompt, apiKey) {
+        if (provider === 'gemini') return _callGemini(prompt, apiKey);
+        if (provider === 'openrouter') return _callOpenRouter(prompt, apiKey);
+        return _callGroq(prompt, apiKey);
+    }
+
     /** Generate copy using the configured provider */
     async function generateCopy(description, industry, brandName, sections) {
         var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
@@ -223,11 +297,7 @@ window.ArbelAI = (function () {
         if (!description || !description.trim()) throw new Error('Please describe your business first.');
 
         var prompt = _buildPrompt(description, industry, brandName, sections);
-
-        if (provider === 'gemini') {
-            return await _callGemini(prompt, apiKey);
-        }
-        return await _callGroq(prompt, apiKey);
+        return await _callForProvider(provider, prompt, apiKey);
     }
 
     /** Build the full auto-design prompt (design + copy) */
@@ -343,12 +413,82 @@ window.ArbelAI = (function () {
         if (!description || !description.trim()) throw new Error('Please describe your business first.');
 
         var prompt = _buildDesignPrompt(description, industry, brandName);
-        var raw = (provider === 'gemini')
-            ? await _callGemini(prompt, apiKey)
-            : await _callGroq(prompt, apiKey);
+        var raw = await _callForProvider(provider, prompt, apiKey);
 
         // Validate shape — brand is new/required
         if (!raw || typeof raw !== 'object' || !raw.design || !raw.copy || !raw.brand) {
+            throw new Error('AI returned an unexpected shape. Try again.');
+        }
+        return raw;
+    }
+
+    /** Build a slim prompt: design-only, reusing existing brand + copy.
+     *  ~75% fewer output tokens than generateDesign. */
+    function _buildDesignOnlyPrompt(description, industry, brandName) {
+        var moods = [
+            'editorial / high-fashion', 'brutalist / raw', 'neo-minimal / clean',
+            'vaporwave / retro-futurist', 'organic / botanical', 'industrial / monochrome',
+            'playful / maximalist', 'cinematic / moody', 'scandi / warm-neutral',
+            'cyberpunk / neon', 'art-deco / luxe', 'handcrafted / zine'
+        ];
+        var paletteHints = [
+            'warm terracotta + sand + ink', 'deep emerald + gold + cream',
+            'electric magenta + charcoal + white', 'dusty rose + taupe + bone',
+            'cobalt + amber + off-white', 'forest + bronze + parchment',
+            'blush + plum + ivory', 'citrus + navy + snow', 'lilac + sage + midnight',
+            'crimson + black + eggshell', 'turquoise + rust + linen', 'violet + lemon + slate'
+        ];
+        var mood = moods[Math.floor(Math.random() * moods.length)];
+        var palette = paletteHints[Math.floor(Math.random() * paletteHints.length)];
+        var seed = Math.random().toString(36).slice(2, 10);
+
+        var presetCatalogue =
+            'SHADERS: obsidian, aurora, ember, frost, neon, silk. ' +
+            'PARTICLES: constellation, fireflies, snow, nebula, matrix, bokeh, spark, plasma, stardust, rain, vortex, circuits, confetti, galaxy. ' +
+            'BLOBS: morphBlob, lavaLamp, auroraBlob, sunsetBlob, oceanBlob, cosmicBlob. ' +
+            'GRADIENTS: meshGrad, noiseGrad, prism, iridescent, northern. ' +
+            'WAVES: sineWaves, topology, ripple, liquidWave.';
+
+        return 'You are a senior brand designer. Pick a FRESH visual design for this business. Do NOT write copy.\n\n' +
+            'Business: ' + (brandName || '(from description)') + '\n' +
+            'Industry: ' + (industry || '') + '\n' +
+            'Description: ' + description + '\n\n' +
+            'Mood: ' + mood + '\n' +
+            'Palette direction: ' + palette + '\n' +
+            'Variation seed: ' + seed + '\n\n' +
+            'Return ONLY this JSON shape (no markdown):\n' +
+            '{\n' +
+            '  "design": {\n' +
+            '    "presetId": "<one preset id from catalogue>",\n' +
+            '    "accentOverride": "#RRGGBB (optional)",\n' +
+            '    "bgOverride": "#RRGGBB (optional)",\n' +
+            '    "density": "compact|cozy|spacious",\n' +
+            '    "corners": "sharp|soft|pill",\n' +
+            '    "fontPair": "editorial|tech|humanist|display|mono",\n' +
+            '    "heroLayout": "centered|left|split|minimal",\n' +
+            '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","stats"] pick 3-5,\n' +
+            '    "sectionTones": {"services":"dark|light|accent",...},\n' +
+            '    "sectionAnims": {"services":"fadeUp|slideLeft|...",...},\n' +
+            '    "rationale": "one sentence"\n' +
+            '  }\n' +
+            '}\n\n' +
+            'PRESET CATALOGUE: ' + presetCatalogue + '\n' +
+            'Contrast: if bg is light, pick a deep saturated accent (ratio ≥ 4.5). Pick something DIFFERENT from a typical default.';
+    }
+
+    /** Generate ONLY a fresh design — reuses existing copy.
+     *  ~75% fewer output tokens than generateDesign. */
+    async function generateDesignOnly(description, industry, brandName) {
+        var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
+        var apiKey = ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey();
+
+        if (!apiKey) throw new Error('No API key configured. Add your key in the AI panel.');
+
+        var prompt = _buildDesignOnlyPrompt(description || '', industry || '', brandName || '');
+
+        // Smaller expected output — request less to speed up + save tokens
+        var raw = await _callForProvider(provider, prompt, apiKey);
+        if (!raw || typeof raw !== 'object' || !raw.design) {
             throw new Error('AI returned an unexpected shape. Try again.');
         }
         return raw;
@@ -360,12 +500,14 @@ window.ArbelAI = (function () {
         var k = key.trim();
         if (/^gsk_[A-Za-z0-9]{20,}$/.test(k)) return 'groq';
         if (/^AIza[0-9A-Za-z_-]{30,}$/.test(k)) return 'gemini';
+        if (/^sk-or-(v1-)?[A-Za-z0-9_-]{20,}$/.test(k)) return 'openrouter';
         return null;
     }
 
     return {
         generateCopy: generateCopy,
         generateDesign: generateDesign,
+        generateDesignOnly: generateDesignOnly,
         detectProvider: detectProvider
     };
 })();

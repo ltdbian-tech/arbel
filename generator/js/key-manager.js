@@ -45,6 +45,7 @@ window.ArbelKeyManager = (function () {
         /* Text providers */
         groq:       { label: 'Groq (Llama 3.3)',      category: 'text',  keyHint: 'gsk_',    url: 'https://console.groq.com/keys' },
         gemini:     { label: 'Google Gemini',          category: 'text',  keyHint: 'AI',      url: 'https://aistudio.google.com/apikey' },
+        openrouter: { label: 'OpenRouter (multi-model)', category: 'text', keyHint: 'sk-or-', url: 'https://openrouter.ai/keys' },
         /* Video providers */
         replicate:  { label: 'Replicate',              category: 'video', keyHint: 'r8_',     url: 'https://replicate.com/account/api-tokens' },
         runway:     { label: 'Runway (Gen-4)',         category: 'video', keyHint: '',         url: 'https://app.runwayml.com/settings/api-keys' },

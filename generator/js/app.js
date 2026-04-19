@@ -182,6 +182,7 @@
         aiGenerateBtn: $('aiGenerateBtn'),
         aiPreviewBtn: $('aiPreviewBtn'),
         aiAutoDesignBtn: $('aiAutoDesignBtn'),
+        aiRedesignBtn: $('aiRedesignBtn'),
         aiUndoBtn: $('aiUndoBtn'),
         aiStatus: $('aiStatus'),
         // Preview
@@ -1900,6 +1901,11 @@
                         (Array.isArray(result.design && result.design.sections) ? result.design.sections.length : 0) +
                         ' sections, ' + filled + ' copy fields' + note;
                     els.aiStatus.className = 'ai-status ai-status--success';
+                    // Remember this run so the cheap REDESIGN button becomes available
+                    state.aiLastDesc     = desc;
+                    state.aiLastIndustry = els.industry.value;
+                    state.aiLastBrand    = els.brandName.value;
+                    if (els.aiRedesignBtn) els.aiRedesignBtn.style.display = '';
                     _showUndo();
                 })
                 .catch(function (err) {
@@ -1910,6 +1916,50 @@
                     els.aiAutoDesignBtn.disabled = false;
                     els.aiGenerateBtn.disabled = false;
                     els.aiAutoDesignBtn.innerHTML = originalLabel;
+                });
+        });
+    }
+
+    // Redesign-only: reuse existing copy, ask AI for a fresh look.
+    // Much smaller prompt/response — saves ~75% tokens vs full auto-design.
+    if (els.aiRedesignBtn) {
+        els.aiRedesignBtn.addEventListener('click', function () {
+            var desc = (state.aiLastDesc || els.aiPrompt.value || '').trim();
+            if (!desc) {
+                els.aiStatus.textContent = 'Run Generate Website first so I know your business.';
+                els.aiStatus.className = 'ai-status ai-status--error';
+                return;
+            }
+
+            aiLastSnapshot = _snapshotForUndo();
+            var orig = els.aiRedesignBtn.innerHTML;
+            els.aiRedesignBtn.disabled = true;
+            els.aiAutoDesignBtn.disabled = true;
+            els.aiRedesignBtn.textContent = 'REDESIGNING...';
+            els.aiStatus.textContent = 'Picking a fresh design (keeping your copy)...';
+            els.aiStatus.className = 'ai-status ai-status--info';
+
+            // Clear previous per-element overrides so the new design starts clean
+            state.editorOverrides = {};
+
+            ArbelAI.generateDesignOnly(desc, state.aiLastIndustry || els.industry.value, state.aiLastBrand || els.brandName.value)
+                .then(function (result) {
+                    _applyDesign(result.design);
+                    var note = result.design && result.design.rationale
+                        ? (' \u2014 ' + String(result.design.rationale).slice(0, 120))
+                        : '';
+                    els.aiStatus.textContent = 'Redesigned (copy preserved)' + note;
+                    els.aiStatus.className = 'ai-status ai-status--success';
+                    _showUndo();
+                })
+                .catch(function (err) {
+                    els.aiStatus.textContent = 'Error: ' + err.message;
+                    els.aiStatus.className = 'ai-status ai-status--error';
+                })
+                .finally(function () {
+                    els.aiRedesignBtn.disabled = false;
+                    els.aiAutoDesignBtn.disabled = false;
+                    els.aiRedesignBtn.innerHTML = orig;
                 });
         });
     }
