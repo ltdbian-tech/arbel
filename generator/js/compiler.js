@@ -778,7 +778,10 @@ window.ArbelCompiler = (function () {
 
     /* ─── Section HTML generators ─── */
     function _heroHTML(c, bgClass) {
-        return '<section class="hero" id="hero" data-arbel-id="hero">\n' +
+        var layout = (c.__heroLayout || '').toString();
+        var layoutClass = (layout === 'left' || layout === 'split' || layout === 'minimal') ? ' hero--' + layout : '';
+        var decoration = layout === 'split' ? '    <div class="hero-decoration" aria-hidden="true"></div>\n' : '';
+        return '<section class="hero' + layoutClass + '" id="hero" data-arbel-id="hero">\n' +
             '  <div class="' + bgClass + ' hero-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
             '  <div class="hero-content" data-arbel-id="hero-content">\n' +
@@ -791,6 +794,7 @@ window.ArbelCompiler = (function () {
             '    <div class="hero-actions">\n' +
             '      <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'GET STARTED') + '</a>\n' +
             '    </div>\n' +
+            decoration +
             '  </div>\n' +
             '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
             '</section>';
@@ -985,6 +989,7 @@ window.ArbelCompiler = (function () {
             var builder = SECTION_BUILDERS[s];
             if (!builder) return;
             if (s === 'hero') {
+                c.__heroLayout = cfg.heroLayout || '';
                 sectionsHTML += builder(c, bgClass) + '\n\n';
             } else if (s === 'contact') {
                 sectionsHTML += builder(c, cfg.contactEmail, bgClass) + '\n\n';
@@ -1179,11 +1184,30 @@ window.ArbelCompiler = (function () {
             '.hero { position: relative; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }\n' +
             '.hero-bg { position: absolute; inset: 0; }\n' +
             '.hero-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 40%, var(--bg) 100%); pointer-events: none; }\n' +
+            /* Stronger scrim for animated overlays (blob/particle/wave) to keep text legible */
+            (function () {
+                var cat = _getAnimCategory(cfg.style);
+                if (cat === 'blob' || cat === 'particle' || cat === 'wave' || cat === 'gradient') {
+                    return '.hero::after { content:""; position:absolute; inset:0; background: radial-gradient(ellipse at center, color-mix(in srgb, var(--bg) 55%, transparent) 0%, transparent 60%); pointer-events:none; z-index:1; }\n';
+                }
+                return '';
+            })() +
             '.hero-content { position: relative; z-index: 2; text-align: center; padding: 2rem; max-width: 800px; }\n' +
-            '.hero-heading { font-size: clamp(2.5rem, 7vw, 5.5rem); font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem; }\n' +
+            /* Text-shadow halo using bg color — invisible on flat bg, life-saver on blobs */
+            '.hero-heading { font-size: clamp(2.5rem, 7vw, 5.5rem); font-weight: 800; line-height: 1.05; margin-bottom: 1.5rem; text-shadow: 0 2px 24px color-mix(in srgb, var(--bg) 80%, transparent); }\n' +
             '.hero-heading .line { display: block; overflow: hidden; }\n' +
             '.hero-heading .line-inner { display: inline-block; }\n' +
-            '.hero-sub { color: var(--fg2); font-size: 1.05rem; line-height: 1.6; max-width: 500px; margin: 0 auto 2rem; }\n' +
+            '.hero-sub { color: var(--fg2); font-size: 1.05rem; line-height: 1.6; max-width: 500px; margin: 0 auto 2rem; text-shadow: 0 1px 12px color-mix(in srgb, var(--bg) 70%, transparent); }\n' +
+            /* Hero layout variants */
+            '.hero--left .hero-content { text-align: left; margin-left: 8%; margin-right: auto; }\n' +
+            '.hero--left .hero-heading, .hero--left .hero-actions { justify-content: flex-start; }\n' +
+            '.hero--left .hero-sub { margin-left: 0; }\n' +
+            '.hero--split .hero-content { max-width: 1200px; width: 90%; display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; align-items: center; text-align: left; }\n' +
+            '.hero--split .hero-sub { margin-left: 0; }\n' +
+            '.hero--split .hero-decoration { width: 100%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--accent), transparent 70%); opacity: 0.5; filter: blur(20px); }\n' +
+            '.hero--minimal .hero-vignette { display: none; }\n' +
+            '.hero--minimal .hero-heading { font-size: clamp(2rem, 5vw, 3.5rem); }\n' +
+            '@media (max-width: 768px) { .hero--split .hero-content { grid-template-columns: 1fr; } .hero--split .hero-decoration { display:none; } .hero--left .hero-content { margin-left: 5%; } }\n' +
             '.hero-actions { display: flex; gap: 1rem; justify-content: center; }\n' +
             '.scroll-indicator { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: var(--fg2); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }\n' +
             '.scroll-track { width: 1px; height: 40px; background: var(--border); position: relative; overflow: hidden; }\n' +

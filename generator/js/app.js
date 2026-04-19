@@ -1300,6 +1300,9 @@
         snap.aiDesignTokens = state.aiDesignTokens ? Object.assign({}, state.aiDesignTokens) : null;
         snap.aiSectionTones = state.aiSectionTones ? Object.assign({}, state.aiSectionTones) : null;
         snap.aiSectionAnims = state.aiSectionAnims ? Object.assign({}, state.aiSectionAnims) : null;
+        snap.aiHeroLayout   = state.aiHeroLayout || null;
+        snap.aiSectionOrder = state.aiSectionOrder ? state.aiSectionOrder.slice() : null;
+        snap.editorOverrides = state.editorOverrides ? JSON.parse(JSON.stringify(state.editorOverrides)) : null;
         return snap;
     }
 
@@ -1352,6 +1355,9 @@
         state.aiDesignTokens = snap.aiDesignTokens || null;
         state.aiSectionTones = snap.aiSectionTones || null;
         state.aiSectionAnims = snap.aiSectionAnims || null;
+        state.aiHeroLayout   = snap.aiHeroLayout || null;
+        state.aiSectionOrder = snap.aiSectionOrder || null;
+        state.editorOverrides = snap.editorOverrides || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
 
@@ -1449,6 +1455,31 @@
             sectionIds.forEach(function (id) {
                 design.sectionAnims[id] = anims[Math.floor(Math.random() * anims.length)];
             });
+        }
+
+        // ─── STRUCTURAL VARIATION ─── random hero layout + shuffled section order
+        // so each regen changes the page architecture, not just the colors.
+        var layouts = ['centered', 'left', 'split', 'minimal'];
+        if (['centered','left','split','minimal'].indexOf(design.heroLayout) === -1) {
+            design.heroLayout = layouts[Math.floor(Math.random() * layouts.length)];
+        }
+        // Valid section IDs in the compiler. Hero must stay first, contact last.
+        var validSections = ['services','portfolio','about','process','testimonials','pricing','faq','stats'];
+        if (!Array.isArray(design.sectionOrder) || !design.sectionOrder.length) {
+            // Pick 3-5 middle sections at random
+            var shuffled = validSections.slice().sort(function () { return Math.random() - 0.5; });
+            var n = 3 + Math.floor(Math.random() * 3); // 3..5
+            design.sectionOrder = ['hero'].concat(shuffled.slice(0, n)).concat(['contact']);
+        } else {
+            // Sanitize AI-supplied order
+            var clean = ['hero'];
+            design.sectionOrder.forEach(function (s) {
+                if (typeof s === 'string' && validSections.indexOf(s) !== -1 && clean.indexOf(s) === -1) {
+                    clean.push(s);
+                }
+            });
+            clean.push('contact');
+            design.sectionOrder = clean;
         }
 
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
@@ -1613,6 +1644,8 @@
         state.aiDesignTokens = Object.keys(tokens).length ? tokens : null;
         state.aiSectionTones = sectionTones;
         state.aiSectionAnims = sectionAnims;
+        state.aiHeroLayout   = design.heroLayout;
+        state.aiSectionOrder = design.sectionOrder;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2010,6 +2043,8 @@
         }
         if (state.aiSectionTones) cfg.sectionTones = state.aiSectionTones;
         if (state.aiSectionAnims) cfg.sectionAnims = state.aiSectionAnims;
+        if (state.aiHeroLayout)   cfg.heroLayout   = state.aiHeroLayout;
+        if (state.aiSectionOrder && state.aiSectionOrder.length) cfg.sections = state.aiSectionOrder;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();
