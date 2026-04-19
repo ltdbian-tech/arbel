@@ -163,23 +163,43 @@ window.ArbelAI = (function () {
     /** Build the full auto-design prompt (design + copy) */
     function _buildDesignPrompt(description, industry, brandName) {
         return 'You are a senior brand designer and copywriter. Design a complete website for:\n\n' +
-            'Business: ' + (brandName || '(unnamed)') + '\n' +
-            'Industry: ' + (industry || '(not specified)') + '\n' +
+            'Business: ' + (brandName || '(infer a name from the description)') + '\n' +
+            'Industry hint: ' + (industry || '(pick one from the list below)') + '\n' +
             'Description: ' + description + '\n\n' +
-            'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with TWO top-level keys: "design" and "copy".\n\n' +
+            'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with THREE top-level keys: "brand", "design", and "copy".\n\n' +
+            'The "brand" key must be:\n' +
+            '{\n' +
+            '  "name": "the actual brand name — extract from description if mentioned, otherwise invent a fitting one",\n' +
+            '  "tagline": "short memorable tagline (3-8 words)",\n' +
+            '  "industry": one of "agency"|"saas"|"ecommerce"|"restaurant"|"healthcare"|"portfolio"|"fashion"|"realestate"|"fitness"|"education"|"finance"|"legal"|"nonprofit"|"music"|"photography"|"startup"|"other",\n' +
+            '  "email": "a placeholder contact email using the brand name (e.g. hello@arres.co)",\n' +
+            '  "seoTitle": "<=70 char SEO title",\n' +
+            '  "seoDescription": "<=160 char meta description"\n' +
+            '}\n\n' +
             'The "design" key must be:\n' +
             '{\n' +
-            '  "category": one of "particle" | "blob" | "gradient" | "wave" (choose what fits the industry vibe),\n' +
-            '  "colors": ["#RRGGBB accent", "#RRGGBB secondary", "#RRGGBB background"] — background must be very dark (near-black, e.g. #0a0a0f) or very light (near-white),\n' +
-            '  "sections": array of section names to enable from ["services","portfolio","about","process","testimonials","pricing","faq"] — pick 3-6 that fit this business,\n' +
-            '  "mode": "classic" for most businesses; "cinematic" only for luxury/creative/portfolio brands that benefit from a scroll-driven experience,\n' +
-            '  "rationale": one short sentence explaining the visual direction\n' +
+            '  "category": one of "particle"|"blob"|"gradient"|"wave" — match the brand vibe (luxury = blob/gradient, tech = particle, editorial = gradient, playful = wave),\n' +
+            '  "colors": ["#RRGGBB accent", "#RRGGBB secondary", "#RRGGBB background"] — background near-black or near-white, accents must have strong contrast,\n' +
+            '  "params": {\n' +
+            '     // Supply ONLY the params that apply to the chosen category. Use numbers in-range.\n' +
+            '     "count":   20-300   (particle) | 2-8 (blob),\n' +
+            '     "speed":   0.2-3.0  (all),\n' +
+            '     "size":    1-8      (particle),\n' +
+            '     "glow":    0-1      (particle | gradient),\n' +
+            '     "connect": true/false (particle),\n' +
+            '     "blur":    10-80    (blob),\n' +
+            '     "layers":  2-8      (wave),\n' +
+            '     "amplitude": 10-80  (wave)\n' +
+            '  },\n' +
+            '  "sections": array of 3-6 from ["services","portfolio","about","process","testimonials","pricing","faq"],\n' +
+            '  "mode": "classic" for most; "cinematic" for luxury/creative/portfolio/photography brands,\n' +
+            '  "rationale": one sentence explaining the direction\n' +
             '}\n\n' +
-            'The "copy" key must contain all of these exact keys:\n' +
+            'The "copy" key must contain all of these exact keys (all non-empty, original, industry-appropriate):\n' +
             '{\n' +
             '  "heroLine1":"2-4 words","heroLine2":"1-2 words","heroLine3":"1-2 words italic with period",\n' +
             '  "heroSub":"<150 chars","heroCta":"2-3 words uppercase",\n' +
-            '  "servicesHeading":"heading",\n' +
+            '  "servicesHeading":"",\n' +
             '  "service1Title":"","service1Desc":"","service2Title":"","service2Desc":"","service3Title":"","service3Desc":"",\n' +
             '  "portfolioHeading":"",\n' +
             '  "project1Title":"","project1Tag":"","project1Desc":"",\n' +
@@ -197,10 +217,10 @@ window.ArbelAI = (function () {
             '  "faq1Q":"","faq1A":"","faq2Q":"","faq2A":"","faq3Q":"","faq3A":"",\n' +
             '  "contactHeading":"","contactCta":""\n' +
             '}\n\n' +
-            'Colors must have strong contrast with the background. Keep copy tight and industry-appropriate.';
+            'Be adventurous with the palette — vary accents widely across runs. Be specific, punchy, and original in copy (no generic phrases like "welcome to our site"). Every field must be filled.';
     }
 
-    /** Auto-design the full website: palette + sections + mode + copy */
+    /** Auto-design the full website: brand + palette + sections + mode + copy */
     async function generateDesign(description, industry, brandName) {
         var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
         var apiKey = ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey();
@@ -213,8 +233,8 @@ window.ArbelAI = (function () {
             ? await _callGemini(prompt, apiKey)
             : await _callGroq(prompt, apiKey);
 
-        // Validate shape
-        if (!raw || typeof raw !== 'object' || !raw.design || !raw.copy) {
+        // Validate shape — brand is new/required
+        if (!raw || typeof raw !== 'object' || !raw.design || !raw.copy || !raw.brand) {
             throw new Error('AI returned an unexpected shape. Try again.');
         }
         return raw;

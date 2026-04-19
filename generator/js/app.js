@@ -1194,14 +1194,27 @@
         refreshAIKeyState();
     }
 
-    // Eye toggle: briefly flip the input to type=text so the user can verify what they pasted
+    // Eye toggle: works in two modes
+    //  (a) while typing a new key  -> just flip input type between password/text
+    //  (b) after a key is saved (input is empty) -> temporarily inject the stored
+    //      key into the input so the user can visually verify it, then wipe on HIDE.
     if (els.aiKeyToggle) {
         els.aiKeyToggle.addEventListener('click', function () {
-            if (els.aiKeyInput.type === 'password') {
-                els.aiKeyInput.type = 'text';
+            var saved = ArbelKeyManager.hasKey('text');
+            var input = els.aiKeyInput;
+            // Currently hidden -> reveal
+            if (input.type === 'password') {
+                if (!input.value && saved) {
+                    // Populate from storage so SHOW actually shows something
+                    var real = ArbelKeyManager.getKey('text');
+                    if (real) input.value = real;
+                }
+                input.type = 'text';
                 els.aiKeyToggle.textContent = 'HIDE';
             } else {
-                els.aiKeyInput.type = 'password';
+                // Currently visible -> hide, and if the shown value came from storage, wipe it
+                if (saved) input.value = '';
+                input.type = 'password';
                 els.aiKeyToggle.textContent = 'SHOW';
             }
         });
@@ -1257,7 +1270,7 @@
     var aiLastSnapshot = null;
 
     function _snapshotForUndo() {
-        var snap = { content: {}, sections: {}, colors: null, cat: null };
+        var snap = { content: {}, sections: {}, colors: null, cat: null, params: null, brand: {} };
         document.querySelectorAll('.content-input').forEach(function (inp) {
             var k = inp.dataset.key;
             if (k) snap.content[k] = inp.value;
@@ -1266,7 +1279,20 @@
             if (!cb.disabled) snap.sections[cb.dataset.section] = cb.checked;
         });
         if (builderState && builderState.colors) snap.colors = builderState.colors.slice();
-        if (builderState) snap.cat = builderState.cat;
+        if (builderState) {
+            snap.cat = builderState.cat;
+            snap.params = Object.assign({}, builderState.params);
+        }
+        // Brand / SEO fields so Undo fully restores everything
+        snap.brand = {
+            brandName:       els.brandName       ? els.brandName.value       : '',
+            tagline:         els.tagline         ? els.tagline.value         : '',
+            industry:        els.industry        ? els.industry.value        : '',
+            contactEmail:    els.contactEmail    ? els.contactEmail.value    : '',
+            seoTitle:        els.seoTitle        ? els.seoTitle.value        : '',
+            seoDescription:  els.seoDescription  ? els.seoDescription.value  : ''
+        };
+        snap.mode = state.mode;
         return snap;
     }
 
@@ -1282,7 +1308,10 @@
         });
         Object.keys(snap.sections).forEach(function (s) {
             var cb = document.querySelector('[data-section="' + s + '"]');
-            if (cb && !cb.disabled) cb.checked = snap.sections[s];
+            if (cb && !cb.disabled) {
+                cb.checked = snap.sections[s];
+                cb.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         });
         if (snap.colors && builderState) {
             builderState.colors = snap.colors.slice();
@@ -1290,7 +1319,25 @@
                 if (inp && snap.colors[i]) inp.value = snap.colors[i];
             });
         }
-        if (snap.cat && builderState) builderState.cat = snap.cat;
+        if (builderState) {
+            if (snap.cat) builderState.cat = snap.cat;
+            if (snap.params) builderState.params = Object.assign({}, snap.params);
+            if (typeof renderBuilderParams === 'function') try { renderBuilderParams(); } catch (e) { }
+        }
+        if (snap.brand) {
+            if (els.brandName)      els.brandName.value      = snap.brand.brandName || '';
+            if (els.tagline)        els.tagline.value        = snap.brand.tagline || '';
+            if (els.industry)       els.industry.value       = snap.brand.industry || '';
+            if (els.contactEmail)   els.contactEmail.value   = snap.brand.contactEmail || '';
+            if (els.seoTitle)       els.seoTitle.value       = snap.brand.seoTitle || '';
+            if (els.seoDescription) els.seoDescription.value = snap.brand.seoDescription || '';
+        }
+        if (snap.mode && (snap.mode === 'classic' || snap.mode === 'cinematic')) {
+            state.mode = snap.mode;
+            document.querySelectorAll('.mode-card').forEach(function (c) {
+                c.classList.toggle('selected', c.dataset.mode === state.mode);
+            });
+        }
     }
 
     function _applyCopy(copy) {
@@ -1343,6 +1390,23 @@
                 });
             }
         }
+        // Builder params — clamp each to its documented range and ignore anything unknown
+        if (design.params && typeof design.params === 'object' && builderState && builderState.params) {
+            var P = design.params;
+            var clamp = function (n, lo, hi) { n = +n; return (isFinite(n) ? Math.min(hi, Math.max(lo, n)) : null); };
+            var next = Object.assign({}, builderState.params);
+            if (P.count     != null) { var c = clamp(P.count, 2, 300);   if (c != null) next.count = c; }
+            if (P.speed     != null) { var s = clamp(P.speed, 0.2, 3);   if (s != null) next.speed = s; }
+            if (P.size      != null) { var sz = clamp(P.size, 1, 8);     if (sz != null) next.size = sz; }
+            if (P.glow      != null) { var g = clamp(P.glow, 0, 1);      if (g != null) next.glow = g; }
+            if (P.blur      != null) { var b = clamp(P.blur, 10, 80);    if (b != null) next.blur = b; }
+            if (P.layers    != null) { var l = clamp(P.layers, 2, 8);    if (l != null) next.layers = Math.round(l); }
+            if (P.amplitude != null) { var a = clamp(P.amplitude, 10, 80); if (a != null) next.amplitude = a; }
+            if (typeof P.connect === 'boolean') next.connect = P.connect;
+            builderState.params = next;
+            // Re-render the controls if the user is currently on the Style step
+            if (typeof renderBuilderParams === 'function') try { renderBuilderParams(); } catch (e) { }
+        }
         // Sections — only allow known section names; never touch disabled/required ones
         var allowedSections = ['services', 'portfolio', 'about', 'process', 'testimonials', 'pricing', 'faq'];
         if (Array.isArray(design.sections)) {
@@ -1365,6 +1429,52 @@
                 c.classList.toggle('selected', c.dataset.mode === state.mode);
             });
         }
+    }
+
+    // Strict validators for brand/SEO fields before they touch the DOM
+    var _validIndustries = ['agency','saas','ecommerce','restaurant','healthcare','portfolio',
+        'fashion','realestate','fitness','education','finance','legal','nonprofit','music',
+        'photography','startup','other'];
+
+    function _applyBrand(brand) {
+        if (!brand || typeof brand !== 'object') return 0;
+        var count = 0;
+        // All of these are user-owned text fields — we only write to .value (never innerHTML)
+        if (typeof brand.name === 'string' && brand.name.trim() && els.brandName) {
+            els.brandName.value = brand.name.trim().slice(0, 40);
+            els.brandName.dispatchEvent(new Event('input', { bubbles: true }));
+            els.brandName.classList.add('ai-filled');
+            setTimeout(function () { els.brandName.classList.remove('ai-filled'); }, 2400);
+            count++;
+        }
+        if (typeof brand.tagline === 'string' && brand.tagline.trim() && els.tagline) {
+            els.tagline.value = brand.tagline.trim().slice(0, 80);
+            els.tagline.dispatchEvent(new Event('input', { bubbles: true }));
+            els.tagline.classList.add('ai-filled');
+            setTimeout(function () { els.tagline.classList.remove('ai-filled'); }, 2400);
+            count++;
+        }
+        if (typeof brand.industry === 'string' && _validIndustries.indexOf(brand.industry) !== -1 && els.industry) {
+            els.industry.value = brand.industry;
+            els.industry.dispatchEvent(new Event('change', { bubbles: true }));
+            count++;
+        }
+        if (typeof brand.email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(brand.email) && els.contactEmail) {
+            els.contactEmail.value = brand.email.slice(0, 120);
+            els.contactEmail.dispatchEvent(new Event('input', { bubbles: true }));
+            els.contactEmail.classList.add('ai-filled');
+            setTimeout(function () { els.contactEmail.classList.remove('ai-filled'); }, 2400);
+            count++;
+        }
+        if (typeof brand.seoTitle === 'string' && brand.seoTitle.trim() && els.seoTitle) {
+            els.seoTitle.value = brand.seoTitle.trim().slice(0, 70);
+            count++;
+        }
+        if (typeof brand.seoDescription === 'string' && brand.seoDescription.trim() && els.seoDescription) {
+            els.seoDescription.value = brand.seoDescription.trim().slice(0, 160);
+            count++;
+        }
+        return count;
     }
 
     function _showUndo() {
@@ -1435,12 +1545,13 @@
 
             ArbelAI.generateDesign(desc, els.industry.value, els.brandName.value)
                 .then(function (result) {
+                    var brandCount = _applyBrand(result.brand);
                     _applyDesign(result.design);
                     var filled = _applyCopy(result.copy);
                     var note = result.design && result.design.rationale
                         ? (' \u2014 ' + String(result.design.rationale).slice(0, 120))
                         : '';
-                    els.aiStatus.textContent = 'Designed: palette, ' +
+                    els.aiStatus.textContent = 'Designed: ' + brandCount + ' brand fields, palette, ' +
                         (Array.isArray(result.design && result.design.sections) ? result.design.sections.length : 0) +
                         ' sections, ' + filled + ' copy fields' + note;
                     els.aiStatus.className = 'ai-status ai-status--success';
