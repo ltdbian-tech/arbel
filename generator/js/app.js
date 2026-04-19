@@ -1421,12 +1421,14 @@
                 cb.dispatchEvent(new Event('change', { bubbles: true }));
             });
         }
-        // Mode — only accept the two known values
-        if ((design.mode === 'classic' || design.mode === 'cinematic') && design.mode !== state.mode) {
-            state.mode = design.mode;
+        // Mode — cinematic isn't production-ready for AI auto-design yet, so
+        // lock the AI to classic mode even if it returns otherwise. Users can
+        // still switch manually on the Style step.
+        if (state.mode !== 'classic') {
+            state.mode = 'classic';
             var modeCards = document.querySelectorAll('.mode-card');
             modeCards.forEach(function (c) {
-                c.classList.toggle('selected', c.dataset.mode === state.mode);
+                c.classList.toggle('selected', c.dataset.mode === 'classic');
             });
         }
     }

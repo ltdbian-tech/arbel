@@ -218,7 +218,7 @@ window.ArbelAI = (function () {
             '     "amplitude": 10-80  (wave)\n' +
             '  },\n' +
             '  "sections": array of 3-6 from ["services","portfolio","about","process","testimonials","pricing","faq"] — choose what actually fits this business (a restaurant needs FAQ + testimonials, a SaaS needs pricing + process, a portfolio needs portfolio + about, etc.),\n' +
-            '  "mode": "classic" for most; "cinematic" for luxury/creative/portfolio/photography/fashion brands that benefit from scroll-driven storytelling,\n' +
+            '  "mode": "classic" — always use classic for now, do NOT return cinematic,\n' +
             '  "rationale": one sentence explaining the direction (mention mood + palette choice)\n' +
             '}\n\n' +
             'The "copy" key must contain all of these exact keys (every value non-empty, original, punchy, industry-specific — NO generic phrases like "welcome to our site" or "we build the future"):\n' +
