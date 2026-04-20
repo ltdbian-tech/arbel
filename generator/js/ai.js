@@ -37,14 +37,40 @@ window.ArbelAI = (function () {
     const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
     const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
+    // Tone-of-voice catalogue (shared between design + copy prompts)
+    var TONES = [
+        'confident-direct (Apple-like, short declarative sentences, zero fluff)',
+        'warm-friendly (conversational, uses "you", approachable, human)',
+        'bold-provocative (punchy, a little edgy, takes a stance)',
+        'technical-precise (specific numbers, technical terms, no hype)',
+        'editorial-literary (evocative, sensory, reads like a magazine)',
+        'playful-witty (clever wordplay, light humor, never corny)',
+        'minimalist-zen (few words, lots of space, koan-like)',
+        'luxurious-refined (elegant, heritage language, sparse adjectives)'
+    ];
+    var _forcedTone = ''; // set by classic-mode manual dropdown; empty = random
+    function setTone(t) { _forcedTone = t || ''; }
+    function _pickTone() {
+        if (_forcedTone) {
+            // Match prefix (e.g. "confident-direct") to full descriptor
+            for (var i = 0; i < TONES.length; i++) {
+                if (TONES[i].indexOf(_forcedTone) === 0) return TONES[i];
+            }
+            return _forcedTone;
+        }
+        return TONES[Math.floor(Math.random() * TONES.length)];
+    }
+
     /** Build the prompt for copy generation */
     function _buildPrompt(description, industry, brandName, sections) {
         var sectionList = sections.join(', ');
+        var tone = _pickTone();
         return 'You are a professional website copywriter. Generate all website copy for this business:\n\n' +
             'Business: ' + brandName + '\n' +
             'Industry: ' + industry + '\n' +
             'Description: ' + description + '\n' +
-            'Sections needed: ' + sectionList + '\n\n' +
+            'Sections needed: ' + sectionList + '\n' +
+            'TONE OF VOICE (commit fully): ' + tone + '\n\n' +
             'Return a valid JSON object (no markdown, no code blocks, only raw JSON) with these exact keys:\n' +
             '{\n' +
             '  "heroLine1": "short punchy first line (2-4 words)",\n' +
@@ -81,7 +107,8 @@ window.ArbelAI = (function () {
             '  "contactHeading": "heading",\n' +
             '  "contactCta": "CTA text"\n' +
             '}\n\n' +
-            'Make the copy professional, concise, and compelling. Match the tone to the industry.';
+            'Make the copy professional, concise, and compelling. Match the tone to the industry.\n' +
+            'CRITICAL: Every line of copy must reflect the TONE OF VOICE above — voice, rhythm, vocabulary. Avoid generic marketing-speak.';
     }
 
     /** Sleep helper */
@@ -319,6 +346,7 @@ window.ArbelAI = (function () {
         ];
         var mood = moods[Math.floor(Math.random() * moods.length)];
         var palette = paletteHints[Math.floor(Math.random() * paletteHints.length)];
+        var tone = _pickTone();
         var seed = Math.random().toString(36).slice(2, 10);
 
         var presetCatalogue =
@@ -335,6 +363,7 @@ window.ArbelAI = (function () {
             'STYLE DIRECTION FOR THIS RUN (use as inspiration, not quoted text):\n' +
             '  Mood: ' + mood + '\n' +
             '  Palette direction: ' + palette + '\n' +
+            '  Tone of voice (commit fully in every copy field): ' + tone + '\n' +
             '  Variation seed: ' + seed + '\n\n' +
             'IMPORTANT: Do NOT default to generic tech-blue or purple. Match the palette to the industry and mood (beauty=rose/gold/ivory, food=warm tones, finance=muted/serious, nonprofit=earthy, music=bold/saturated, etc.). Be adventurous.\n\n' +
             'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with THREE top-level keys: "brand", "design", and "copy".\n\n' +
@@ -540,6 +569,7 @@ window.ArbelAI = (function () {
         generateCopy: generateCopy,
         generateDesign: generateDesign,
         generateDesignOnly: generateDesignOnly,
-        detectProvider: detectProvider
+        detectProvider: detectProvider,
+        setTone: setTone
     };
 })();

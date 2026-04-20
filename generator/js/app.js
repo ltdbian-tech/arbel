@@ -184,6 +184,7 @@
         optServicesLayout: $('optServicesLayout'),
         optPortfolioLayout: $('optPortfolioLayout'),
         optAboutFlip: $('optAboutFlip'),
+        optToneOfVoice: $('optToneOfVoice'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -2658,25 +2659,8 @@
                     labelStyle: els.optLabelStyle ? els.optLabelStyle.value : '',
                     servicesLayout: els.optServicesLayout ? els.optServicesLayout.value : '',
                     portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
-                    aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false
-                },
-                designOpts: {
-                    heroLayout: els.optHeroLayout ? els.optHeroLayout.value : '',
-                    heroArt: els.optHeroArt ? els.optHeroArt.value : '',
-                    heroEyebrow: els.optHeroEyebrow ? els.optHeroEyebrow.value : '',
-                    typeScale: els.optTypeScale ? els.optTypeScale.value : '',
-                    headingAlign: els.optHeadingAlign ? els.optHeadingAlign.value : '',
-                    containerWidth: els.optContainerWidth ? els.optContainerWidth.value : '',
-                    cardTreatment: els.optCardTreatment ? els.optCardTreatment.value : '',
-                    buttonStyle: els.optButtonStyle ? els.optButtonStyle.value : '',
-                    navStyle: els.optNavStyle ? els.optNavStyle.value : '',
-                    footerStyle: els.optFooterStyle ? els.optFooterStyle.value : '',
-                    sectionRhythm: els.optSectionRhythm ? els.optSectionRhythm.value : '',
-                    dividerStyle: els.optDividerStyle ? els.optDividerStyle.value : '',
-                    labelStyle: els.optLabelStyle ? els.optLabelStyle.value : '',
-                    servicesLayout: els.optServicesLayout ? els.optServicesLayout.value : '',
-                    portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
-                    aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false
+                    aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false,
+                    toneOfVoice: els.optToneOfVoice ? els.optToneOfVoice.value : ''
                 }
             },
             editor: {
@@ -2811,6 +2795,8 @@
             _set(els.optServicesLayout, d.servicesLayout);
             _set(els.optPortfolioLayout, d.portfolioLayout);
             if (els.optAboutFlip) els.optAboutFlip.checked = !!d.aboutFlip;
+            _set(els.optToneOfVoice, d.toneOfVoice);
+            if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(d.toneOfVoice || '');
         }
 
         // Builder state
@@ -3161,6 +3147,10 @@
         el.addEventListener('input', _markDirty);
     });
     if (els.optAboutFlip) els.optAboutFlip.addEventListener('change', _markDirty);
+    if (els.optToneOfVoice) els.optToneOfVoice.addEventListener('change', function () {
+        if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(els.optToneOfVoice.value || '');
+        _markDirty();
+    });
     // Content inputs (delegated)
     if (els.contentEditor) els.contentEditor.addEventListener('input', function (e) {
         if (e.target.classList.contains('content-input')) _markDirty();
