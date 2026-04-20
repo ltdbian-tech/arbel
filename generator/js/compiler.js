@@ -1893,7 +1893,9 @@ window.ArbelCompiler = (function () {
                     '  body.nav-open .header { position: fixed; inset: 0; z-index: 9999; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'backdrop-filter: none; border-bottom: none; display: flex; flex-direction: column; padding: 1rem 2rem; overflow-y: auto; }\n' +
                     '  body.nav-open .header-inner { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; max-width: none; position: relative; }\n' +
                     '  body.nav-open .logo { align-self: flex-start; color: var(--menu-fg, inherit); }\n' +
-                    '  body.nav-open .menu-btn { position: absolute; top: 0; right: 0; }\n' +
+                    // Use position: fixed so the close button is always reachable in the
+                    // top-right corner regardless of ancestor positioning / max-width.
+                    '  body.nav-open .menu-btn { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 10001; }\n' +
                     '  body.nav-open .menu-btn span { background: var(--menu-fg, var(--fg)); }\n' +
                     '  .nav-extra { display: none; width: 100%; }\n' +
                     '  body.nav-open .nav-extra { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 2rem; flex-shrink: 0; color: var(--menu-fg-muted, rgba(255,255,255,0.7)); }\n';
@@ -3072,8 +3074,11 @@ window.ArbelCompiler = (function () {
                 'textAlign', 'textDecoration', 'textTransform', 'color', 'backgroundColor', 'background',
                 'backgroundImage', 'backgroundSize', 'backgroundPosition',
                 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-                'border', 'borderRadius', 'opacity', 'zIndex', 'transform',
-                'filter', 'objectFit', 'visibility', 'position', 'left', 'top', 'width', 'height'];
+                'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+                'border', 'borderRadius', 'opacity', 'zIndex', 'transform', 'transformOrigin',
+                'filter', 'objectFit', 'visibility',
+                'position', 'left', 'top', 'right', 'bottom', 'width', 'height',
+                'maxWidth', 'maxHeight', 'minWidth', 'minHeight'];
             var styleParts = [];
             styleProps.forEach(function (prop) {
                 if (o[prop] !== undefined && o[prop] !== '') {

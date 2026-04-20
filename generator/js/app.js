@@ -2202,7 +2202,9 @@
         /^tier-[1-3]-(name|price|features)$/,
         /^faq-item-[1-3]$/,
         /^faq-[1-3]-(q|a)$/,
-        /^contact-heading$/
+        /^contact-heading$/,
+        // Chrome elements the AI is allowed to reposition / restyle
+        /^(site-header|site-logo|site-nav|menu-btn|nav-extra)$/
     ];
     var _VALID_ANIMATIONS = ['fadeIn','fadeInUp','fadeInDown','fadeInLeft','fadeInRight',
         'slideUp','slideDown','slideLeft','slideRight','scaleUp','scaleDown',
@@ -2237,13 +2239,45 @@
             var n = +val;
             return (isFinite(n) && n >= 0 && n <= 1) ? String(n) : null;
         }
+        // Positioning: keyword enum
+        if (prop === 'position') {
+            return ['static','relative','absolute','fixed','sticky'].indexOf(val) !== -1 ? val : null;
+        }
+        // Offsets / sizes: accept a CSS length token or "auto" or a bare unitless number (→ px)
+        if (prop === 'top' || prop === 'right' || prop === 'bottom' || prop === 'left' ||
+            prop === 'width' || prop === 'height' ||
+            prop === 'maxWidth' || prop === 'maxHeight' || prop === 'minWidth' || prop === 'minHeight' ||
+            prop === 'marginTop' || prop === 'marginRight' || prop === 'marginBottom' || prop === 'marginLeft') {
+            if (val === 'auto' || val === '0') return val;
+            if (typeof val === 'number' && isFinite(val)) return val + 'px';
+            if (typeof val === 'string' && /^-?\d{1,4}(\.\d+)?(px|rem|em|%|vw|vh|svh|dvh)$/.test(val)) return val;
+            return null;
+        }
+        // zIndex: bounded integer
+        if (prop === 'zIndex') {
+            var z = parseInt(val, 10);
+            if (!isFinite(z)) return null;
+            return String(Math.max(-100, Math.min(10002, z)));
+        }
+        // transform: conservative whitelist — only translate/rotate/scale with simple args
+        if (prop === 'transform') {
+            if (typeof val !== 'string') return null;
+            // Allow strings composed only of translate()/translateX()/translateY()/rotate()/scale()/scaleX()/scaleY() calls.
+            if (/^(\s*(translate[XY]?|rotate|scale[XY]?)\(\s*-?\d{1,4}(\.\d+)?(px|deg|rad|%)?\s*(,\s*-?\d{1,4}(\.\d+)?(px|deg|rad|%)?\s*)?\)\s*){1,3}$/.test(val)) return val;
+            return null;
+        }
         return null;
     }
 
     function _applyElementOverrides(map) {
         if (!map || typeof map !== 'object') return;
         var ov = state.editorOverrides || {};
-        var props = ['animation','hover','continuous','color','backgroundColor','borderRadius','opacity'];
+        var props = ['animation','hover','continuous','color','backgroundColor','borderRadius','opacity',
+            // Positioning / layout props the AI can set on allowed elements
+            'position','top','right','bottom','left','zIndex',
+            'width','height','maxWidth','maxHeight','minWidth','minHeight',
+            'marginTop','marginRight','marginBottom','marginLeft',
+            'transform'];
         Object.keys(map).forEach(function (id) {
             if (!_isAllowedElementId(id)) return;
             var entry = map[id];
