@@ -1312,6 +1312,9 @@
         snap.aiNavStyle = state.aiNavStyle || null;
         snap.aiSectionRhythm = state.aiSectionRhythm || null;
         snap.aiHeroEyebrow = state.aiHeroEyebrow || null;
+        snap.aiButtonStyle = state.aiButtonStyle || null;
+        snap.aiTypeScale = state.aiTypeScale || null;
+        snap.aiDividerStyle = state.aiDividerStyle || null;
         snap.editorOverrides = state.editorOverrides ? JSON.parse(JSON.stringify(state.editorOverrides)) : null;
         return snap;
     }
@@ -1376,6 +1379,9 @@
         state.aiNavStyle = snap.aiNavStyle || null;
         state.aiSectionRhythm = snap.aiSectionRhythm || null;
         state.aiHeroEyebrow = snap.aiHeroEyebrow || null;
+        state.aiButtonStyle = snap.aiButtonStyle || null;
+        state.aiTypeScale = snap.aiTypeScale || null;
+        state.aiDividerStyle = snap.aiDividerStyle || null;
         state.editorOverrides = snap.editorOverrides || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
@@ -1575,6 +1581,26 @@
             }
         }
 
+        // ─── BUTTON STYLE ─── default / solid / outline / gradient / sharp / lifted
+        var btnStyles = ['default', 'solid', 'outline', 'gradient', 'sharp', 'lifted'];
+        if (btnStyles.indexOf(design.buttonStyle) === -1) {
+            design.buttonStyle = btnStyles[Math.floor(Math.random() * btnStyles.length)];
+        }
+
+        // ─── TYPE SCALE ─── tight / normal / dramatic — drastically changes heading sizes
+        var typeScales = ['tight', 'normal', 'dramatic'];
+        if (typeScales.indexOf(design.typeScale) === -1) {
+            // lean slightly toward normal so variety isn't jarring
+            var tsPool = ['tight', 'normal', 'normal', 'dramatic'];
+            design.typeScale = tsPool[Math.floor(Math.random() * tsPool.length)];
+        }
+
+        // ─── DIVIDER STYLE ─── visual separator between sections
+        var divs = ['none', 'line', 'gradient', 'numbered', 'dotline'];
+        if (divs.indexOf(design.dividerStyle) === -1) {
+            design.dividerStyle = divs[Math.floor(Math.random() * divs.length)];
+        }
+
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
         // This dramatically increases visual variety because each preset
         // ships curated colors, shaders/particles, and motion.
@@ -1748,6 +1774,9 @@
         state.aiNavStyle      = design.navStyle;
         state.aiSectionRhythm = design.sectionRhythm;
         state.aiHeroEyebrow   = design.heroEyebrow;
+        state.aiButtonStyle   = design.buttonStyle;
+        state.aiTypeScale     = design.typeScale;
+        state.aiDividerStyle  = design.dividerStyle;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2206,6 +2235,9 @@
         if (state.aiNavStyle) cfg.navStyle = state.aiNavStyle;
         if (state.aiSectionRhythm) cfg.sectionRhythm = state.aiSectionRhythm;
         if (state.aiHeroEyebrow) cfg.heroEyebrow = state.aiHeroEyebrow;
+        if (state.aiButtonStyle) cfg.buttonStyle = state.aiButtonStyle;
+        if (state.aiTypeScale) cfg.typeScale = state.aiTypeScale;
+        if (state.aiDividerStyle) cfg.dividerStyle = state.aiDividerStyle;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();

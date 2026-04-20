@@ -384,7 +384,10 @@ window.ArbelAI = (function () {
             '"cardTreatment": "default"|"bordered"|"filled"|"floating"|"minimal"|"glass" — visual style applied to ALL cards (services / portfolio / process / pricing / testimonials).\n' +
             '"navStyle": "default"|"pill"|"minimal"|"ghost" — navigation bar treatment.\n' +
             '"sectionRhythm": "normal"|"compact"|"roomy"|"alternating" — vertical padding cadence between sections.\n' +
-            '"heroEyebrow": optional short string (max 24 chars, UPPERCASE, mono feel) shown as a small badge above the hero heading, or empty string. Examples: "EST. 2019", "NEW · 2025", "INTRODUCING", "// STUDIO".\n\n' +
+            '"heroEyebrow": optional short string (max 24 chars, UPPERCASE, mono feel) shown as a small badge above the hero heading, or empty string. Examples: "EST. 2019", "NEW · 2025", "INTRODUCING", "// STUDIO".\n' +
+            '"buttonStyle": "default"|"solid"|"outline"|"gradient"|"sharp"|"lifted" — shape + fill of every CTA. solid is chunky flat, outline is stroked, gradient is vibrant, sharp is zero-radius editorial, lifted has a drop-shadow that compresses on press.\n' +
+            '"typeScale": "tight"|"normal"|"dramatic" — heading-size profile. tight = editorial, normal = default, dramatic = big brutal display (7rem+ hero).\n' +
+            '"dividerStyle": "none"|"line"|"gradient"|"numbered"|"dotline" — what appears between sections. numbered shows 01, 02, 03 monospace counters in the corner.\n\n' +
             'OPTIONAL "elementOverrides" — apply per-element flair to specific elements by ID. Use sparingly (5-15 entries max). Allowed IDs match patterns: hero-cta, hero-line1/2/3, hero-sub, service-card-1/2/3, service-N-title/desc, portfolio-card-1/2/3, project-N-title/tag/desc, about, about-heading, about-desc, stat-1/2/3, step-N-title/desc, testimonial-card-1/2/3, testimonial-N-quote/name/role, pricing-card-1/2/3, tier-N-name/price/features, faq-item-1/2/3, faq-N-q/a, *-heading.\n' +
             'Each entry can include: { "animation": one of "fadeIn|fadeInUp|fadeInDown|fadeInLeft|fadeInRight|slideUp|slideDown|slideLeft|slideRight|scaleUp|scaleDown|zoomIn|bounceIn|bounceInUp", "hover": one of "lift|scale|glow|tilt|skew|border-glow|brightness|color-shift", "continuous": one of "pulse|float|spin|bounce|shake|swing|breathe|glow-pulse|wobble|flash|headShake|wave-text|drift|sway", "color": "#RRGGBB", "backgroundColor": "#RRGGBB", "borderRadius": "Npx" or "N%" (0-100), "opacity": 0-1 }.\n' +
             'Vary these between regens to give each generation a distinct feel.\n\n' +
@@ -485,6 +488,9 @@ window.ArbelAI = (function () {
             '    "navStyle": "default|pill|minimal|ghost",\n' +
             '    "sectionRhythm": "normal|compact|roomy|alternating",\n' +
             '    "heroEyebrow": "short uppercase badge or empty",\n' +
+            '    "buttonStyle": "default|solid|outline|gradient|sharp|lifted",\n' +
+            '    "typeScale": "tight|normal|dramatic",\n' +
+            '    "dividerStyle": "none|line|gradient|numbered|dotline",\n' +
             '    "sectionTones": {"services":"dark|light|accent",...},\n' +
             '    "sectionAnims": {"services":"fadeUp|slideLeft|...",...},\n' +
             '    "rationale": "one sentence"\n' +

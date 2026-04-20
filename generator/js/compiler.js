@@ -1082,6 +1082,12 @@ window.ArbelCompiler = (function () {
                 if (['pill','minimal','ghost'].indexOf(ns) !== -1) cls.push('nav-' + ns);
                 var rh = cfg.sectionRhythm;
                 if (['compact','roomy','alternating'].indexOf(rh) !== -1) cls.push('rhythm-' + rh);
+                var bs = cfg.buttonStyle;
+                if (['solid','outline','gradient','sharp','lifted'].indexOf(bs) !== -1) cls.push('btn-' + bs);
+                var ts = cfg.typeScale;
+                if (['tight','dramatic'].indexOf(ts) !== -1) cls.push('type-' + ts);
+                var ds = cfg.dividerStyle;
+                if (['line','gradient','numbered','dotline'].indexOf(ds) !== -1) cls.push('div-' + ds);
                 return cls.length ? ' class="' + cls.join(' ') + '"' : '';
             })() + '>\n\n' +
             '  <!-- Preloader -->\n' +
@@ -1276,6 +1282,41 @@ window.ArbelCompiler = (function () {
             '.rhythm-alternating .section:nth-of-type(odd) { padding: 5rem 0; }\n' +
             '.rhythm-alternating .section:nth-of-type(even) { padding: 9rem 0; }\n' +
             '@media (max-width: 768px) { .rhythm-roomy .section { padding: 6rem 0; } .rhythm-alternating .section { padding: 5rem 0 !important; } }\n\n' +
+            '/* ═══ HARDENING — contrast + overflow + readability ═══ */\n' +
+            'html, body { overflow-x: hidden; max-width: 100vw; }\n' +
+            '.container { min-width: 0; }\n' +
+            '.section-heading, .hero-heading, .section-title { word-break: break-word; overflow-wrap: anywhere; }\n' +
+            /* force readable card body text across every card treatment */
+            '.service-desc, .portfolio-desc, .process-desc, .testimonial-quote, .pricing-card p, .pricing-card li { color: color-mix(in srgb, var(--fg) 82%, var(--fg2)); }\n' +
+            /* filled + accent backgrounds darken surface — push body text closer to --fg */
+            '.cards-filled .service-desc, .cards-filled .portfolio-desc, .cards-filled .process-desc, .cards-filled .testimonial-quote, .cards-filled .pricing-card p, .cards-filled .pricing-card li { color: color-mix(in srgb, var(--fg) 92%, transparent); }\n' +
+            '.pricing-card--accent, .pricing-card--accent * { color: var(--fg); }\n' +
+            '.pricing-card--accent .pricing-price, .pricing-card--accent .pricing-name { color: var(--fg); }\n' +
+            /* ensure accent-coloured labels stay visible against surface — auto lift when accent is dim */
+            '.section-label, .service-num, .process-num, .portfolio-meta, .pricing-price { color: color-mix(in srgb, var(--accent) 80%, var(--fg) 20%); }\n' +
+            /* glass cards need extra contrast on mixed backgrounds */
+            '.cards-glass .service-card, .cards-glass .portfolio-card, .cards-glass .process-card, .cards-glass .testimonial-card, .cards-glass .pricing-card { background: color-mix(in srgb, var(--surface) 55%, transparent); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent); }\n' +
+            /* section headings get a subtle halo so animated bgs can never drown them */
+            '.section-heading { text-shadow: 0 2px 20px color-mix(in srgb, var(--bg) 45%, transparent); }\n' +
+            /* narrow viewports — guarantee card grids never overflow the container */
+            '@media (max-width: 520px) { .services-grid, .portfolio-grid, .process-grid, .testimonials-grid, .pricing-grid { grid-template-columns: 1fr !important; } .stats-row { flex-wrap: wrap; gap: 1.25rem !important; } .hero-content { width: 92% !important; } }\n' +
+            /* focus ring for keyboard a11y — auto-adapts to accent */
+            'a:focus-visible, button:focus-visible, .btn:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }\n\n' +
+            '/* ═══ TYPE SCALE (body-class toggle) ═══ */\n' +
+            '.type-tight .hero-heading { font-size: clamp(2rem, 5.2vw, 4rem); letter-spacing: -0.015em; }\n' +
+            '.type-tight .section-heading { font-size: clamp(1.6rem, 3vw, 2.5rem); }\n' +
+            '.type-dramatic .hero-heading { font-size: clamp(3rem, 9vw, 7.5rem); letter-spacing: -0.04em; line-height: 0.98; }\n' +
+            '.type-dramatic .section-heading { font-size: clamp(2.25rem, 5.5vw, 4.5rem); letter-spacing: -0.02em; }\n' +
+            '.type-dramatic .hero-sub { font-size: 1.2rem; max-width: 640px; }\n\n' +
+            '/* ═══ SECTION DIVIDERS (body-class toggles) ═══ */\n' +
+            '.div-line .section + .section { border-top: 1px solid var(--border); }\n' +
+            '.div-dotline .section + .section::before { content:""; display:block; height: 1px; width: 60%; margin: 0 auto; background-image: linear-gradient(to right, var(--border) 50%, transparent 50%); background-size: 10px 1px; position: absolute; top: 0; left: 20%; }\n' +
+            '.div-dotline .section { }\n' +
+            '.div-gradient .section + .section::before { content:""; display:block; height: 1px; width: 100%; background: linear-gradient(to right, transparent, var(--accent), transparent); opacity: 0.35; position: absolute; top: 0; left: 0; }\n' +
+            '.div-numbered { counter-reset: arbel-section; }\n' +
+            '.div-numbered .section { counter-increment: arbel-section; }\n' +
+            '.div-numbered .section::before { content: "0" counter(arbel-section); position: absolute; top: 2rem; right: 2rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.15em; color: var(--fg2); opacity: 0.5; }\n' +
+            '@media (max-width: 768px) { .div-numbered .section::before { top: 1rem; right: 1rem; } }\n\n' +
             '/* ═══ BUTTONS ═══ */\n' +
             '.btn { display: inline-flex; align-items: center; padding: 0.85rem 2rem; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s var(--ease); background: transparent; color: var(--fg); position: relative; overflow: hidden; }\n' +
             '.btn::before { content: ""; position: absolute; inset: 0; background: var(--accent); transform: translateY(100%); transition: transform 0.4s var(--ease); }\n' +
@@ -1284,6 +1325,22 @@ window.ArbelCompiler = (function () {
             '.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }\n' +
             '.btn-primary::before { background: #fff; }\n' +
             '.btn-primary:hover { color: var(--bg); }\n\n' +
+            '/* ═══ BUTTON STYLES (body-class toggles) ═══ */\n' +
+            '.btn-solid .btn { border-radius: 4px; border-width: 0; background: color-mix(in srgb, var(--fg) 10%, transparent); color: var(--fg); }\n' +
+            '.btn-solid .btn-primary { background: var(--accent); color: #fff; }\n' +
+            '.btn-outline .btn { background: transparent; border-width: 2px; border-color: var(--fg); color: var(--fg); }\n' +
+            '.btn-outline .btn::before { display: none; }\n' +
+            '.btn-outline .btn:hover { background: var(--fg); color: var(--bg); }\n' +
+            '.btn-outline .btn-primary { border-color: var(--accent); color: var(--accent); }\n' +
+            '.btn-outline .btn-primary:hover { background: var(--accent); color: #fff; }\n' +
+            '.btn-gradient .btn-primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 40%, var(--fg))); border-color: transparent; box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 35%, transparent); }\n' +
+            '.btn-gradient .btn-primary::before { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 60%, var(--fg)), var(--accent)); }\n' +
+            '.btn-sharp .btn { border-radius: 0; border-width: 1px; padding: 1rem 2.2rem; }\n' +
+            '.btn-sharp .btn-primary { border-color: var(--accent); }\n' +
+            '.btn-lifted .btn { border-radius: 8px; box-shadow: 0 4px 0 0 color-mix(in srgb, var(--bg) 60%, #000); transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.3s var(--ease); }\n' +
+            '.btn-lifted .btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 0 color-mix(in srgb, var(--bg) 60%, #000); }\n' +
+            '.btn-lifted .btn-primary { box-shadow: 0 4px 0 0 color-mix(in srgb, var(--accent) 40%, #000); }\n' +
+            '.btn-lifted .btn-primary:hover { box-shadow: 0 2px 0 0 color-mix(in srgb, var(--accent) 40%, #000); }\n\n' +
             '/* ═══ SECTIONS ═══ */\n' +
             '.section { padding: 8rem 0; position: relative; }\n' +
             '.section-label { color: var(--accent); margin-bottom: 1rem; }\n' +
