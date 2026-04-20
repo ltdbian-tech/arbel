@@ -817,6 +817,20 @@
                                         <button class="gen-btn gen-btn--sm" id="aiPreviewBtn" type="button" title="Jump to the live preview">PREVIEW</button>
                                         <button class="gen-btn gen-btn--sm" id="aiUndoBtn" type="button" style="display:none;" title="Revert AI changes">UNDO</button>
                                     </div>
+                                    <details class="ai-locks" id="aiLocksPanel" style="margin-top:10px;border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface)">
+                                        <summary class="mono" style="cursor:pointer;font-size:0.7rem;letter-spacing:0.08em;color:var(--fg2)">&#128274; AXIS LOCKS <span style="opacity:0.6">(keep these on regen)</span></summary>
+                                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px 14px;margin-top:10px;font-size:0.75rem">
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="preset"><span class="toggle-label">Preset / shader</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="colors"><span class="toggle-label">Colors (accent + bg)</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="fontPair"><span class="toggle-label">Fonts</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="sectionOrder"><span class="toggle-label">Section order</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="heroLayout"><span class="toggle-label">Hero layout</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="cardTreatment"><span class="toggle-label">Card treatment</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="density"><span class="toggle-label">Density / spacing</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="corners"><span class="toggle-label">Corner radius</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="toneOfVoice"><span class="toggle-label">Tone of voice</span></label>
+                                        </div>
+                                    </details>
                                     <div class="ai-status" id="aiStatus"></div>
                                 </div>
 

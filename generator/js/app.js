@@ -1476,6 +1476,31 @@
     function _applyDesign(design) {
         if (!design || typeof design !== 'object') return;
 
+        // ─── AXIS LOCKS ─── If user ticked lock boxes, strip those axes from
+        // the AI's response so the current values survive this regen.
+        var locked = {};
+        document.querySelectorAll('.ai-lock').forEach(function (el) {
+            if (el.checked && el.dataset.lock) locked[el.dataset.lock] = true;
+        });
+        if (locked.preset)       { delete design.presetId; delete design.category; delete design.colors; delete design.params; }
+        if (locked.colors)       { delete design.accentOverride; delete design.bgOverride; if (design.colors) delete design.colors; }
+        if (locked.fontPair)     delete design.fontPair;
+        if (locked.sectionOrder) { delete design.sectionOrder; delete design.sectionCounts; delete design.sectionLayouts; }
+        if (locked.heroLayout)   delete design.heroLayout;
+        if (locked.cardTreatment) delete design.cardTreatment;
+        if (locked.density)      delete design.density;
+        if (locked.corners)      delete design.corners;
+        // toneOfVoice lock: forcibly pin via ArbelAI.setTone (no design-level key)
+        if (locked.toneOfVoice && window.ArbelAI && ArbelAI.setTone && els.optToneOfVoice) {
+            ArbelAI.setTone(els.optToneOfVoice.value || '');
+        }
+        // When colors are locked, preserve the current preset-derived palette:
+        // _applyPreset would overwrite els.accentColor/els.bgColor. Snapshot now,
+        // restore after preset application below.
+        var lockedAccent = locked.colors ? els.accentColor.value : null;
+        var lockedBg     = locked.colors ? els.bgColor.value     : null;
+        var lockedStyle  = locked.preset ? state.style            : null;
+
         // ─── VARIETY GUARANTEE ─── If the AI returns the same preset two
         // runs in a row (LLMs love their favourites), force a different one
         // from the same family so each click feels new.
@@ -1864,6 +1889,18 @@
             // Even when AI didn't return any, sprinkle a few random hover/anim
             // effects on key elements so each generation has subtle motion variety.
             _applyElementOverrides(_randomElementSprinkle());
+        }
+
+        // ─── RESTORE LOCKED AXES ─── some downstream code paths (preset apply,
+        // tokens) may have overwritten locked values; put them back now.
+        if (lockedAccent) els.accentColor.value = lockedAccent;
+        if (lockedBg)     els.bgColor.value     = lockedBg;
+        if (lockedStyle && lockedStyle !== state.style) {
+            state.style = lockedStyle;
+            // Reflect the locked style selection in the UI
+            document.querySelectorAll('.style-card').forEach(function (c) {
+                c.classList.toggle('selected', c.dataset.style === lockedStyle);
+            });
         }
     }
 
@@ -2696,7 +2733,14 @@
                     portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
                     aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false,
                     toneOfVoice: els.optToneOfVoice ? els.optToneOfVoice.value : ''
-                }
+                },
+                aiLocks: (function () {
+                    var out = {};
+                    document.querySelectorAll('.ai-lock').forEach(function (el) {
+                        if (el.checked && el.dataset.lock) out[el.dataset.lock] = true;
+                    });
+                    return out;
+                })()
             },
             editor: {
                 overrides: (window.ArbelEditor && ArbelEditor.getOverrides()) || state.editorOverrides || {},
@@ -2833,6 +2877,12 @@
             if (els.optAboutFlip) els.optAboutFlip.checked = !!d.aboutFlip;
             _set(els.optToneOfVoice, d.toneOfVoice);
             if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(d.toneOfVoice || '');
+        }
+        // AI axis locks
+        if (c.aiLocks && typeof c.aiLocks === 'object') {
+            document.querySelectorAll('.ai-lock').forEach(function (el) {
+                el.checked = !!c.aiLocks[el.dataset.lock];
+            });
         }
 
         // Builder state
