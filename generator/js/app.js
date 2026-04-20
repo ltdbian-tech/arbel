@@ -275,6 +275,72 @@
         });
     })();
 
+    /* ─── Per-Section Regen Buttons ─── */
+    (function initSectionRegen() {
+        // Decorate each .content-section[data-for] header with a "regen" button.
+        // Safe: only touches the CONTENT editor sidebar, never the live iframe or editor overlay.
+        document.querySelectorAll('.content-section[data-for]').forEach(function (sec) {
+            var sid = sec.getAttribute('data-for');
+            if (!sid) return;
+            var title = sec.querySelector('.content-section-title, h4');
+            if (!title || title.querySelector('.section-regen-btn')) return;
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'section-regen-btn';
+            btn.title = 'Regenerate this section with AI';
+            btn.setAttribute('data-section', sid);
+            btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>Regen</span>';
+            title.appendChild(btn);
+        });
+
+        // Click handler — delegated once
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest && e.target.closest('.section-regen-btn');
+            if (!btn) return;
+            e.preventDefault();
+            var sid = btn.getAttribute('data-section');
+            if (!sid || btn.classList.contains('loading')) return;
+
+            if (!window.ArbelAI || !ArbelAI.generateSectionCopy) {
+                _setStatus && _setStatus('AI not available', 'error');
+                return;
+            }
+
+            var desc     = (els.description && els.description.value) || '';
+            var industry = (els.industry && els.industry.value) || '';
+            var brand    = (els.brandName && els.brandName.value) || '';
+
+            if (!desc.trim()) {
+                alert('Add a business description on Step 1 first — AI needs context to regen.');
+                return;
+            }
+
+            btn.classList.add('loading');
+            var origHTML = btn.innerHTML;
+            btn.innerHTML = '<span>…</span>';
+
+            ArbelAI.generateSectionCopy(sid, desc, industry, brand)
+                .then(function (partial) {
+                    if (!partial || typeof partial !== 'object') throw new Error('Empty response');
+                    var filled = _applyCopy(partial);
+                    if (typeof _markDirty === 'function') try { _markDirty(); } catch (e) {}
+                    btn.classList.remove('loading');
+                    btn.innerHTML = origHTML;
+                    // Flash success
+                    btn.classList.add('ok');
+                    setTimeout(function () { btn.classList.remove('ok'); }, 1200);
+                })
+                .catch(function (err) {
+                    btn.classList.remove('loading');
+                    btn.innerHTML = origHTML;
+                    btn.classList.add('err');
+                    setTimeout(function () { btn.classList.remove('err'); }, 1800);
+                    console.warn('[arbel] section regen failed:', err);
+                    alert('Section regen failed: ' + (err && err.message || err));
+                });
+        });
+    })();
+
     /* ─── Consent Gate ─── */
     (function initConsent() {
         var overlay = $('consentOverlay');

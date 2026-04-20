@@ -569,10 +569,82 @@ window.ArbelAI = (function () {
         return null;
     }
 
+    // ─── Per-section regen ────────────────────────────────────────
+    // Keys owned by each section — must match data-key values in index.html
+    var SECTION_KEYS = {
+        hero: ['heroLine1', 'heroLine2', 'heroLine3', 'heroSub', 'heroCta', 'heroCtaSecondary'],
+        services: ['servicesHeading', 'servicesLabel',
+            'service1Title', 'service1Desc', 'service2Title', 'service2Desc',
+            'service3Title', 'service3Desc', 'service4Title', 'service4Desc'],
+        portfolio: ['portfolioHeading', 'portfolioLabel',
+            'project1Title', 'project1Tag', 'project1Desc',
+            'project2Title', 'project2Tag', 'project2Desc',
+            'project3Title', 'project3Tag', 'project3Desc'],
+        about: ['aboutHeading', 'aboutLabel', 'aboutDesc', 'aboutDesc2',
+            'stat1Value', 'stat1Label', 'stat2Value', 'stat2Label', 'stat3Value', 'stat3Label'],
+        process: ['processHeading', 'processLabel',
+            'step1Title', 'step1Desc', 'step2Title', 'step2Desc',
+            'step3Title', 'step3Desc', 'step4Title', 'step4Desc'],
+        testimonials: ['testimonialsHeading', 'testimonialsLabel',
+            'testimonial1Quote', 'testimonial1Name', 'testimonial1Role',
+            'testimonial2Quote', 'testimonial2Name', 'testimonial2Role',
+            'testimonial3Quote', 'testimonial3Name', 'testimonial3Role'],
+        pricing: ['pricingHeading', 'pricingLabel',
+            'tier1Name', 'tier1Price', 'tier1Features',
+            'tier2Name', 'tier2Price', 'tier2Features',
+            'tier3Name', 'tier3Price', 'tier3Features'],
+        faq: ['faqHeading', 'faqLabel',
+            'faq1Q', 'faq1A', 'faq2Q', 'faq2A', 'faq3Q', 'faq3A', 'faq4Q', 'faq4A'],
+        contact: ['contactHeading', 'contactLabel', 'contactDesc', 'contactCta']
+    };
+
+    /**
+     * Regenerate copy for a single section only. Returns an object with
+     * the same shape as a slice of generateCopy's output — caller pipes it
+     * through the existing _applyCopy pipeline so editor state stays intact.
+     */
+    async function generateSectionCopy(sectionId, description, industry, brandName) {
+        var keys = SECTION_KEYS[sectionId];
+        if (!keys) throw new Error('Unknown section: ' + sectionId);
+        var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
+        var apiKey = ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey();
+        if (!apiKey) throw new Error('No API key configured. Add your key in the AI panel.');
+        if (!description || !description.trim()) throw new Error('Add a business description first.');
+
+        var tone = _pickTone();
+        var seed = Math.random().toString(36).slice(2, 8);
+
+        var shape = '{\n' + keys.map(function (k) {
+            return '  "' + k + '": "fresh copy for this field"';
+        }).join(',\n') + '\n}';
+
+        var prompt =
+            'You are a senior copywriter regenerating ONE section of a website.\n\n' +
+            'Business: ' + (brandName || '(infer)') + '\n' +
+            'Industry: ' + (industry || '(infer)') + '\n' +
+            'Description: ' + description + '\n' +
+            'Tone of voice (commit fully): ' + tone + '\n' +
+            'Variation seed (ignore but use for entropy): ' + seed + '\n\n' +
+            'Section to regenerate: "' + sectionId + '"\n\n' +
+            'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with EXACTLY these keys — every value non-empty, punchy, industry-specific, NEW and different from common defaults. No generic phrases.\n\n' +
+            'Shape:\n' + shape + '\n\n' +
+            'Rules:\n' +
+            '- Headings: 2-6 words, specific, memorable\n' +
+            '- Descriptions: 1-2 sentences, concrete, no fluff\n' +
+            '- Price fields (tier*Price): format like "$49/mo" or "Free"\n' +
+            '- Features fields (tier*Features): newline-separated list, 3-5 items\n' +
+            '- Stat values (stat*Value): a number or short phrase like "12+", "98%"\n' +
+            '- Tags (project*Tag): one short label like "Branding", "Web Design"\n' +
+            '- Keep it punchy and on-brand for the tone above.\n';
+
+        return await _callForProvider(provider, prompt, apiKey);
+    }
+
     return {
         generateCopy: generateCopy,
         generateDesign: generateDesign,
         generateDesignOnly: generateDesignOnly,
+        generateSectionCopy: generateSectionCopy,
         detectProvider: detectProvider,
         setTone: setTone
     };

@@ -992,7 +992,31 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     margin-bottom: 16px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
+.section-regen-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 9px;
+    background: rgba(108,92,231,0.1);
+    border: 1px solid rgba(108,92,231,0.3);
+    color: var(--accent, #6C5CE7);
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+    font-family: var(--font-mono, monospace);
+}
+.section-regen-btn:hover { background: rgba(108,92,231,0.2); }
+.section-regen-btn.loading { opacity: 0.6; cursor: wait; }
+.section-regen-btn.ok { background: #2d5a3d; border-color: #2d8f4a; color: #a6e8be; }
+.section-regen-btn.err { background: #5a2d2d; border-color: #8a4a4a; color: #f5bdbd; }
+.section-regen-btn svg { flex-shrink: 0; }
 .service-item, .process-step-edit, .testimonial-edit, .pricing-tier-edit, .faq-edit, .portfolio-item-edit {
     padding: 16px;
     background: var(--surface);
