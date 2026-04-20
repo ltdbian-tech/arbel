@@ -206,6 +206,9 @@
         aiRedesignBtn: $('aiRedesignBtn'),
         aiUndoBtn: $('aiUndoBtn'),
         aiStatus: $('aiStatus'),
+        // Randomizer
+        randomizeBtn: $('randomizeBtn'),
+        randomizeUseAI: $('randomizeUseAI'),
         // Preview
         previewIframe: $('previewIframe'),
         previewFrame: $('previewFrame'),
@@ -248,6 +251,7 @@
             if (r.error) { banner.hidden = true; return; }
             banner.hidden = false;
             banner.classList.remove('audit-ok', 'audit-warn', 'audit-error');
+            var fixedSuffix = r.fixed ? ' (auto-fixed ' + r.fixed + ')' : '';
             if (r.ok) {
                 banner.classList.add('audit-ok');
                 iconEl.textContent = '\u2713';
@@ -256,20 +260,31 @@
                 banner.classList.add('audit-error');
                 iconEl.textContent = '!';
                 labelEl.textContent = 'Audit: ' + r.errors + ' error' + (r.errors > 1 ? 's' : '') +
-                    (r.warnings ? ', ' + r.warnings + ' warning' + (r.warnings > 1 ? 's' : '') : '');
+                    (r.warnings ? ', ' + r.warnings + ' warning' + (r.warnings > 1 ? 's' : '') : '') + fixedSuffix;
             } else {
                 banner.classList.add('audit-warn');
                 iconEl.textContent = '!';
-                labelEl.textContent = 'Audit: ' + r.warnings + ' warning' + (r.warnings > 1 ? 's' : '');
+                labelEl.textContent = 'Audit: ' + r.warnings + ' warning' + (r.warnings > 1 ? 's' : '') + fixedSuffix;
             }
             // Populate list
             list.innerHTML = '';
             (r.issues || []).forEach(function (issue) {
                 var row = document.createElement('div');
                 row.className = 'audit-item';
-                row.innerHTML = '<span class="audit-item-level ' + issue.level + '">' + issue.level + '</span>' +
-                    '<span class="audit-item-msg"></span>';
+                if (issue.fixed) row.classList.add('fixed-it');
+                if (issue.targetId) row.classList.add('jumpable');
+                row.innerHTML = '<span class="audit-item-level ' + issue.level + '">' +
+                    (issue.fixed ? 'fixed' : issue.level) + '</span>' +
+                    '<span class="audit-item-msg"></span>' +
+                    (issue.targetId ? '<span class="audit-fixed-chip" style="background:transparent;color:var(--accent,#6C5CE7);border:1px solid rgba(108,92,231,0.3)">jump \u2192</span>' : '');
                 row.querySelector('.audit-item-msg').textContent = issue.msg;
+                if (issue.targetId) {
+                    row.addEventListener('click', function () {
+                        if (window.ArbelPreview && ArbelPreview.jumpToAudit) {
+                            ArbelPreview.jumpToAudit(issue.targetId);
+                        }
+                    });
+                }
                 list.appendChild(row);
             });
         });
@@ -2316,6 +2331,138 @@
                     els.aiRedesignBtn.innerHTML = orig;
                 });
         });
+    }
+
+    /* ─── Randomize Button (preview toolbar) ─── */
+    // Non-destructive: picks a fresh preset + palette + axes and re-renders the
+    // preview. Respects axis locks. Toggling "AI" on routes the click through
+    // ArbelAI.generateDesignOnly (same as the sidebar redesign button) so users
+    // with a key get LLM-driven variety; toggling off runs locally with zero
+    // token cost.
+    if (els.randomizeBtn) {
+        // Remember user's AI toggle preference across sessions
+        try {
+            var savedAI = localStorage.getItem('arbel-randomize-ai');
+            if (savedAI === '1' && els.randomizeUseAI) els.randomizeUseAI.checked = true;
+        } catch (e) {}
+        if (els.randomizeUseAI) {
+            els.randomizeUseAI.addEventListener('change', function () {
+                try { localStorage.setItem('arbel-randomize-ai', els.randomizeUseAI.checked ? '1' : '0'); } catch (e) {}
+            });
+        }
+
+        els.randomizeBtn.addEventListener('click', function () {
+            _runRandomize(false);
+        });
+
+        // Shift+R shortcut
+        document.addEventListener('keydown', function (e) {
+            if (e.shiftKey && (e.key === 'R' || e.key === 'r') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                var t = e.target;
+                if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+                e.preventDefault();
+                _runRandomize(false);
+            }
+        });
+    }
+
+    /** Run a randomize pass. When useAI=true OR toggle is on + key present,
+     *  route through ArbelAI.generateDesignOnly so the LLM drives the remix.
+     *  Otherwise shuffle locally — random preset, random palette, random axes. */
+    function _runRandomize(force) {
+        var btn = els.randomizeBtn;
+        if (!btn || btn.classList.contains('spinning')) return;
+
+        var wantsAI = !!(els.randomizeUseAI && els.randomizeUseAI.checked);
+        var keyAvailable = !!(window.ArbelKeyManager &&
+            (ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey()));
+        var useAI = wantsAI && keyAvailable &&
+            !!(window.ArbelAI && ArbelAI.generateDesignOnly);
+
+        aiLastSnapshot = _snapshotForUndo();
+        btn.classList.add('spinning');
+        btn.disabled = true;
+
+        var done = function (msg, ok) {
+            btn.classList.remove('spinning');
+            btn.disabled = false;
+            if (els.aiStatus) {
+                els.aiStatus.textContent = msg;
+                els.aiStatus.className = 'ai-status ai-status--' + (ok ? 'success' : 'info');
+            }
+            _showUndo && _showUndo();
+        };
+
+        if (useAI) {
+            var desc = (state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || els.description && els.description.value || '').trim();
+            if (!desc) {
+                // Fall back to local if no description context
+                _runLocalRandomize();
+                done('Randomized locally (add a description to use AI)', true);
+                return;
+            }
+            state.editorOverrides = {};
+            ArbelAI.generateDesignOnly(desc,
+                state.aiLastIndustry || (els.industry && els.industry.value) || '',
+                state.aiLastBrand || (els.brandName && els.brandName.value) || '')
+                .then(function (result) {
+                    _applyDesign(result.design);
+                    if (state.step >= 3) generatePreview();
+                    done('Randomized with AI', true);
+                })
+                .catch(function (err) {
+                    // Fallback: run local if AI fails
+                    _runLocalRandomize();
+                    done('AI failed, randomized locally: ' + (err && err.message || err), false);
+                });
+        } else {
+            _runLocalRandomize();
+            var note = wantsAI && !keyAvailable
+                ? 'Randomized locally (no API key — add one in AI panel for LLM remix)'
+                : 'Randomized locally';
+            done(note, true);
+        }
+    }
+
+    /** Local randomizer: random preset + accent + bg + hand off to _applyDesign
+     *  which will fill the rest (fontPair, cardTreatment, hero layout, etc)
+     *  from its built-in variety logic. Zero API calls, instant. */
+    function _runLocalRandomize() {
+        var styles = ArbelCompiler.getStyles();
+        var pick = styles[Math.floor(Math.random() * styles.length)];
+
+        // Curated accent/bg pairs — warm, cool, mono, luxe, editorial
+        var palettes = [
+            { accent: '#6C5CE7', bg: '#0f0f14' }, // violet / ink
+            { accent: '#FF6B6B', bg: '#1a1212' }, // coral / espresso
+            { accent: '#4ECDC4', bg: '#0d1b1a' }, // teal / deep green
+            { accent: '#F59E0B', bg: '#18140c' }, // amber / warm black
+            { accent: '#EC4899', bg: '#1a0f17' }, // magenta / plum
+            { accent: '#10B981', bg: '#0b1411' }, // emerald / forest
+            { accent: '#3B82F6', bg: '#0a1020' }, // cobalt / navy
+            { accent: '#F97316', bg: '#1a110a' }, // tangerine / bronze
+            { accent: '#A855F7', bg: '#120a1a' }, // violet / midnight
+            { accent: '#E11D48', bg: '#fef6f2' }, // crimson / eggshell (light)
+            { accent: '#0EA5E9', bg: '#f5f9fc' }, // azure / snow (light)
+            { accent: '#65A30D', bg: '#f8faf3' }, // lime / linen (light)
+            { accent: '#D97706', bg: '#fdf8ee' }, // honey / cream (light)
+            { accent: '#be3144', bg: '#f1e8dc' }  // cherry / sand
+        ];
+        var pal = palettes[Math.floor(Math.random() * palettes.length)];
+
+        // Pass through _applyDesign as a partial preset-mode design. Every
+        // other axis (fontPair, density, corners, cardTreatment, heroLayout,
+        // sectionOrder, sectionTones, sectionAnims, ...) is filled by the
+        // auto-inject logic already baked in there. Axis locks are respected.
+        var design = {
+            presetId: pick.id,
+            accentOverride: pal.accent,
+            bgOverride: pal.bg,
+            rationale: 'Local randomize \u2014 ' + pick.name
+        };
+        state.editorOverrides = {};
+        _applyDesign(design);
+        if (state.step >= 3) generatePreview();
     }
 
     /* ─── Build Config Object ─── */

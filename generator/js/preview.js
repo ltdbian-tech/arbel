@@ -225,10 +225,23 @@ window.ArbelPreview = (function () {
         catch (e) { return { issues: issues, error: 'cross-origin' }; }
         if (!doc || !doc.body) return { issues: issues, error: 'no-doc' };
 
+        // Attach a stable per-element id so the banner can jump back to it
+        var _auditSeq = 0;
+        function _tag(el) {
+            if (!el) return null;
+            var id = el.getAttribute('data-arbel-audit');
+            if (!id) {
+                id = 'aud-' + (++_auditSeq);
+                el.setAttribute('data-arbel-audit', id);
+            }
+            return id;
+        }
+
         // 1. Contrast — sample visible text-bearing elements (cap at 200 for perf)
         var textSel = 'h1,h2,h3,h4,p,a,button,span,li,.btn';
         var nodes = Array.prototype.slice.call(doc.querySelectorAll(textSel), 0, 200);
         var seenPairs = {};
+        var fixedCount = 0;
         nodes.forEach(function (el) {
             if (!el.textContent || !el.textContent.trim()) return;
             var s = win.getComputedStyle(el);
@@ -245,10 +258,23 @@ window.ArbelPreview = (function () {
                 var key = s.color + '|' + s.backgroundColor + '|' + el.tagName;
                 if (seenPairs[key]) return;
                 seenPairs[key] = true;
+
+                // ─── AUTO-FIX: nudge foreground color until AA passes ──────
+                var fixedColor = _findAAColor(fg, bg, required);
+                var fixed = false;
+                if (fixedColor) {
+                    el.style.color = 'rgb(' + fixedColor.r + ',' + fixedColor.g + ',' + fixedColor.b + ')';
+                    fixed = true;
+                    fixedCount++;
+                }
+
                 issues.push({
-                    level: ratio < required * 0.7 ? 'error' : 'warn',
+                    level: fixed ? 'warn' : (ratio < required * 0.7 ? 'error' : 'warn'),
                     type: 'contrast',
-                    msg: 'Low contrast ' + ratio.toFixed(2) + ':1 (needs ' + required + ':1) on <' +
+                    fixed: fixed,
+                    targetId: _tag(el),
+                    msg: (fixed ? 'Auto-fixed: ' : '') +
+                         'Low contrast ' + ratio.toFixed(2) + ':1 (needs ' + required + ':1) on <' +
                          el.tagName.toLowerCase() + '> "' +
                          el.textContent.trim().slice(0, 40) + '"'
                 });
@@ -261,6 +287,7 @@ window.ArbelPreview = (function () {
             if (t.length > 120) {
                 issues.push({
                     level: 'warn', type: 'heading-length',
+                    targetId: _tag(h),
                     msg: '<' + h.tagName.toLowerCase() + '> is ' + t.length + ' chars (>120) — "' + t.slice(0, 50) + '…"'
                 });
             }
@@ -268,15 +295,18 @@ window.ArbelPreview = (function () {
 
         // 3. Duplicate CTA text
         var ctaTexts = {};
+        var ctaFirstEl = {};
         doc.querySelectorAll('a.btn, button.btn, .btn').forEach(function (el) {
             var t = (el.textContent || '').trim().toLowerCase();
             if (!t || t.length < 2) return;
             ctaTexts[t] = (ctaTexts[t] || 0) + 1;
+            if (!ctaFirstEl[t]) ctaFirstEl[t] = el;
         });
         Object.keys(ctaTexts).forEach(function (t) {
             if (ctaTexts[t] >= 3) {
                 issues.push({
                     level: 'warn', type: 'cta-duplicate',
+                    targetId: _tag(ctaFirstEl[t]),
                     msg: 'CTA text "' + t + '" appears ' + ctaTexts[t] + '× — consider varying'
                 });
             }
@@ -284,25 +314,27 @@ window.ArbelPreview = (function () {
 
         // 4. Images missing alt
         var imgsNoAlt = 0;
+        var firstImgNoAlt = null;
         doc.querySelectorAll('img').forEach(function (img) {
-            if (!img.hasAttribute('alt')) imgsNoAlt++;
+            if (!img.hasAttribute('alt')) { imgsNoAlt++; if (!firstImgNoAlt) firstImgNoAlt = img; }
         });
         if (imgsNoAlt > 0) {
             issues.push({
                 level: 'warn', type: 'alt',
+                targetId: firstImgNoAlt ? _tag(firstImgNoAlt) : null,
                 msg: imgsNoAlt + ' image(s) missing alt attribute'
             });
         }
 
         // 5. Heading hierarchy — skipped levels (h1→h3, h2→h4, etc)
+        var headingEls = doc.querySelectorAll('h1,h2,h3,h4,h5,h6');
         var levels = [];
-        doc.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(function (h) {
-            levels.push(parseInt(h.tagName.charAt(1), 10));
-        });
+        headingEls.forEach(function (h) { levels.push(parseInt(h.tagName.charAt(1), 10)); });
         for (var i = 1; i < levels.length; i++) {
             if (levels[i] - levels[i - 1] > 1) {
                 issues.push({
                     level: 'warn', type: 'heading-skip',
+                    targetId: _tag(headingEls[i]),
                     msg: 'Heading jumps from h' + levels[i - 1] + ' to h' + levels[i] + ' (skip)'
                 });
                 break;
@@ -310,22 +342,75 @@ window.ArbelPreview = (function () {
         }
 
         // 6. h1 count
-        var h1Count = doc.querySelectorAll('h1').length;
-        if (h1Count === 0) issues.push({ level: 'warn', type: 'h1', msg: 'No <h1> found on page' });
-        else if (h1Count > 1) issues.push({ level: 'warn', type: 'h1', msg: h1Count + ' <h1> elements — use one per page' });
+        var h1s = doc.querySelectorAll('h1');
+        if (h1s.length === 0) issues.push({ level: 'warn', type: 'h1', msg: 'No <h1> found on page' });
+        else if (h1s.length > 1) issues.push({
+            level: 'warn', type: 'h1',
+            targetId: _tag(h1s[1]),
+            msg: h1s.length + ' <h1> elements — use one per page'
+        });
 
         return {
             issues: issues,
             errors: issues.filter(function (i) { return i.level === 'error'; }).length,
             warnings: issues.filter(function (i) { return i.level === 'warn'; }).length,
+            fixed: fixedCount,
             ok: issues.length === 0
         };
+    }
+
+    /** Given an fg color + bg color, walk fg toward darker or lighter until
+     *  the required AA ratio is met. Returns null if impossible. */
+    function _findAAColor(fg, bg, required) {
+        if (!fg || !bg) return null;
+        var bgLum = _relLum(bg);
+        // Bg is light → darken fg toward black; Bg is dark → lighten fg toward white.
+        var targetDir = bgLum > 0.5 ? -1 : 1;
+        var r = fg.r, g = fg.g, b = fg.b;
+        for (var step = 0; step < 30; step++) {
+            r = Math.max(0, Math.min(255, r + targetDir * 9));
+            g = Math.max(0, Math.min(255, g + targetDir * 9));
+            b = Math.max(0, Math.min(255, b + targetDir * 9));
+            var test = { r: r, g: g, b: b, a: 1 };
+            var ratio = _contrast(test, bg);
+            if (ratio != null && ratio >= required) return test;
+            if ((targetDir > 0 && r === 255 && g === 255 && b === 255) ||
+                (targetDir < 0 && r === 0   && g === 0   && b === 0))   break;
+        }
+        return null;
+    }
+
+    /** Scroll to an audit-tagged element in the iframe and flash an outline. */
+    function _jumpToAuditTarget(targetId) {
+        if (!_iframe || !targetId) return;
+        var doc, win;
+        try { doc = _iframe.contentDocument; win = _iframe.contentWindow; }
+        catch (e) { return; }
+        if (!doc) return;
+        var el = doc.querySelector('[data-arbel-audit="' + targetId + '"]');
+        if (!el) return;
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        var prev = el.style.outline;
+        var prevT = el.style.transition;
+        el.style.transition = 'outline 1.4s ease-out, outline-offset 1.4s ease-out';
+        el.style.outline = '3px solid rgba(108,92,231,0.95)';
+        el.style.outlineOffset = '4px';
+        setTimeout(function () {
+            el.style.outline = '3px solid rgba(108,92,231,0)';
+            el.style.outlineOffset = '12px';
+        }, 40);
+        setTimeout(function () {
+            el.style.outline = prev || '';
+            el.style.outlineOffset = '';
+            el.style.transition = prevT || '';
+        }, 1500);
     }
 
     return {
         render: render,
         setDevice: setDevice,
         destroy: destroy,
-        audit: function () { return _iframe ? _audit(_iframe) : null; }
+        audit: function () { return _iframe ? _audit(_iframe) : null; },
+        jumpToAudit: _jumpToAuditTarget
     };
 })();

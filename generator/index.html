@@ -950,6 +950,18 @@
                             </button>
                         </div>
                         <div class="bfs-divider"></div>
+                        <!-- Randomize design (local or AI-powered) -->
+                        <div class="bfs-randomize-wrap">
+                            <button class="bfs-btn bfs-btn--sm bfs-randomize" id="randomizeBtn" title="Randomize design (Shift+R)" type="button">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/><circle cx="16" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="16" r="1.3" fill="currentColor"/><circle cx="16" cy="16" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>
+                                <span>Randomize</span>
+                            </button>
+                            <label class="bfs-randomize-ai" title="Use AI (uses your API key) — off = free local shuffle">
+                                <input type="checkbox" id="randomizeUseAI">
+                                <span>AI</span>
+                            </label>
+                        </div>
+                        <div class="bfs-divider"></div>
                         <div class="bfs-nav-wrap" style="position:relative">
                             <button class="bfs-btn bfs-btn--sm bfs-nav-toggle active" id="editorNavToggle" title="Navigation Settings">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
