@@ -132,6 +132,15 @@ window.ArbelAI = (function () {
     /** Sleep helper */
     function _sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
+    /** fetch() with an abort timeout so a hung provider can never freeze the UI. */
+    function _fetchWithTimeout(url, opts, ms) {
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms || 45000);
+        var o = Object.assign({}, opts || {});
+        if (ctrl) o.signal = ctrl.signal;
+        return fetch(url, o).finally(function () { clearTimeout(timer); });
+    }
+
     /** Parse a retry delay (in ms) from a 429 response. Tries Retry-After header
      *  first, then provider-specific hints in the error body. Caps at 60s. */
     function _parseRetryMs(resp, errData) {
@@ -152,16 +161,17 @@ window.ArbelAI = (function () {
 
     /** Call Groq API with auto-retry on 429 and model fallback */
     async function _callGroq(prompt, apiKey) {
-        // Larger model first, smaller as fallback if the big one is rate-limited
-        var models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
+        // Fast 8B first (1-3s responses, 6k TPM), larger 70B as fallback if rate-limited.
+        // Swapping the order makes the UI feel instant on free tier.
+        var models = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile'];
         var lastErr = null;
 
         for (var mi = 0; mi < models.length; mi++) {
             var model = models[mi];
-            var attempts = mi === 0 ? 3 : 1; // retry the primary, single-shot on fallback
+            var attempts = mi === 0 ? 2 : 1; // one retry on primary, single-shot on fallback
 
             for (var attempt = 0; attempt < attempts; attempt++) {
-                var resp = await fetch(GROQ_URL, {
+                var resp = await _fetchWithTimeout(GROQ_URL, {
                     method: 'POST',
                     headers: {
                         'Authorization': 'Bearer ' + apiKey,
@@ -175,11 +185,11 @@ window.ArbelAI = (function () {
                         ],
                         temperature: 1.0,
                         top_p: 0.95,
-                        max_tokens: 2200,
+                        max_tokens: 1800,
                         seed: Math.floor(Math.random() * 2147483647),
                         response_format: { type: 'json_object' }
                     })
-                });
+                }, 45000);
 
                 if (resp.ok) {
                     var data = await resp.json();
@@ -194,7 +204,7 @@ window.ArbelAI = (function () {
                 // 429 → wait and retry (or break to fall back to smaller model)
                 if (resp.status === 429) {
                     var waitMs = _parseRetryMs(resp, errData);
-                    if (attempt < attempts - 1 && waitMs > 0 && waitMs <= 15000) {
+                    if (attempt < attempts - 1 && waitMs > 0 && waitMs <= 8000) {
                         await _sleep(waitMs + 250);
                         continue;
                     }
@@ -214,7 +224,7 @@ window.ArbelAI = (function () {
     async function _callGemini(prompt, apiKey) {
         var lastErr = null;
         for (var attempt = 0; attempt < 3; attempt++) {
-            var resp = await fetch(GEMINI_URL, {
+            var resp = await _fetchWithTimeout(GEMINI_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -225,12 +235,12 @@ window.ArbelAI = (function () {
                     generationConfig: {
                         temperature: 1.0,
                         topP: 0.95,
-                        maxOutputTokens: 2200,
+                        maxOutputTokens: 1800,
                         seed: Math.floor(Math.random() * 2147483647),
                         responseMimeType: 'application/json'
                     }
                 })
-            });
+            }, 60000);
 
             if (resp.ok) {
                 var data = await resp.json();
@@ -276,7 +286,7 @@ window.ArbelAI = (function () {
             var attempts = mi === 0 ? 2 : 1;
 
             for (var attempt = 0; attempt < attempts; attempt++) {
-                var resp = await fetch(OPENROUTER_URL, {
+                var resp = await _fetchWithTimeout(OPENROUTER_URL, {
                     method: 'POST',
                     headers: {
                         'Authorization': 'Bearer ' + apiKey,
@@ -293,11 +303,11 @@ window.ArbelAI = (function () {
                         ],
                         temperature: 1.0,
                         top_p: 0.95,
-                        max_tokens: 2200,
+                        max_tokens: 1800,
                         seed: Math.floor(Math.random() * 2147483647),
                         response_format: { type: 'json_object' }
                     })
-                });
+                }, 60000);
 
                 if (resp.ok) {
                     var data = await resp.json();
