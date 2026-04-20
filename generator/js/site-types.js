@@ -327,6 +327,11 @@
                 ctaBannerSub:   ['Same-day delivery in most cities. Hassle-free returns up to 30 days.', 'Curated. Responsibly sourced. Shipped carbon-neutral.'],
                 ctaBannerCta:   ['Shop Now', 'Shop the Drop', 'Browse Collection']
             },
+            pageRecipes: [
+                { id: 'shop',    name: 'Shop',    path: '/shop',    sections: ['categoryChips','productGrid','dealBanner','ctaBanner'] },
+                { id: 'about',   name: 'About',   path: '/about',   sections: ['about','team','statsStrip','logoCloud'] },
+                { id: 'contact', name: 'Contact', path: '/contact', sections: [] }
+            ],
             persona: 'consumer shop / DTC brand — portfolio acts as a product grid, pricing reads as bundles, stats are orders-shipped + reviews; copy is aspirational and product-led',
             content: {
                 productGrid: [
@@ -377,6 +382,12 @@
                 ctaBannerSub:   ['Weekends book fast. Reserve a seat for the best table in town.', 'Private dining, seasonal tastings, and weekend brunch.'],
                 ctaBannerCta:   ['Book a Table', 'Reserve Now', 'View Tonight\u2019s Menu']
             },
+            pageRecipes: [
+                { id: 'menu',         name: 'Menu',         path: '/menu',         sections: ['menuSections','ctaBanner'] },
+                { id: 'reservations', name: 'Reservations', path: '/reservations', sections: [] },
+                { id: 'about',        name: 'About',        path: '/about',        sections: ['about','team','statsStrip'] },
+                { id: 'contact',      name: 'Contact',      path: '/contact',      sections: [] }
+            ],
             persona: 'restaurant / hospitality — portfolio is the menu, services are tasting experiences, copy uses sensory language (textures, ingredients, provenance) and reservation CTAs',
             content: {
                 menuSections: [
@@ -545,6 +556,12 @@
                 ctaBannerSub:   ['40+ speakers across three days in Berlin. Pass includes workshops + after-hours mixers.', 'Save $200 before early-bird closes. Workshops fill fast.'],
                 ctaBannerCta:   ['Get Tickets', 'Register Now', 'Claim Early-bird']
             },
+            pageRecipes: [
+                { id: 'program', name: 'Program',  path: '/program',  sections: ['services','statsStrip'] },
+                { id: 'speakers',name: 'Speakers', path: '/speakers', sections: ['team','logoCloud'] },
+                { id: 'tickets', name: 'Tickets',  path: '/tickets',  sections: ['pricing','faq','ctaBanner'] },
+                { id: 'contact', name: 'Contact',  path: '/contact',  sections: [] }
+            ],
             persona: 'live event / conference — date/venue/speakers/tickets are the stars; copy is urgent and countdown-aware; portfolio reads as program sessions'
         },
         app: {
@@ -579,6 +596,11 @@
                 ctaBannerSub:   ['Works on iOS, Android, and the web. No credit card required to start.', 'Join 500,000+ people who get more done with us.'],
                 ctaBannerCta:   ['Download Free', 'Get the App', 'Start Free']
             },
+            pageRecipes: [
+                { id: 'features', name: 'Features', path: '/features', sections: ['services','portfolio','statsStrip'] },
+                { id: 'pricing',  name: 'Pricing',  path: '/pricing',  sections: ['pricing','faq','ctaBanner'] },
+                { id: 'contact',  name: 'Support',  path: '/support',  sections: [] }
+            ],
             persona: 'mobile/SaaS app — download CTAs + App Store badge energy; services = features; pricing = monthly plans; copy is benefit-led and outcome-focused'
         },
         saas: {
@@ -611,6 +633,11 @@
                 ctaBannerSub:   ['No credit card required. Full access to every feature for 14 days.', 'Used by 1,200+ engineering teams — from seed stage to Fortune 100.'],
                 ctaBannerCta:   ['Start Free', 'Book a Demo', 'Talk to Sales']
             },
+            pageRecipes: [
+                { id: 'pricing', name: 'Pricing', path: '/pricing', sections: ['pricing','faq','ctaBanner'] },
+                { id: 'about',   name: 'About',   path: '/about',   sections: ['about','team','statsStrip','logoCloud'] },
+                { id: 'contact', name: 'Contact', path: '/contact', sections: [] }
+            ],
             persona: 'B2B SaaS platform — logoCloud is client proof, pricing is seat-based tiers, features emphasize integrations/security/uptime'
         },
         course: {
@@ -745,6 +772,12 @@
                 ctaBannerSub:   ['Limited runs. Once it\u2019s gone, it\u2019s gone. Sign up for early access to the next capsule.', 'Hand-finished in the atelier. Delivered anywhere in the world.'],
                 ctaBannerCta:   ['Shop the Drop', 'Shop SS26', 'Join the List']
             },
+            pageRecipes: [
+                { id: 'shop',     name: 'Shop',     path: '/shop',     sections: ['lookbookHorizontal','productGrid','ctaBanner'] },
+                { id: 'lookbook', name: 'Lookbook', path: '/lookbook', sections: ['lookbookHorizontal','portfolio'] },
+                { id: 'about',    name: 'Atelier',  path: '/atelier',  sections: ['about','team','statsStrip'] },
+                { id: 'contact',  name: 'Contact',  path: '/contact',  sections: [] }
+            ],
             persona: 'fashion / couture house — lookbook-style portfolio, collection naming conventions (SS26/AW25), boutique-voice copy, stockist namedrop',
             content: {
                 lookbookHorizontal: [

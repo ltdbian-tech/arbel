@@ -3139,6 +3139,46 @@ window.ArbelCompiler = (function () {
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n  </header>\n\n' : '') +
             (function () {
+                // ─── Multi-page section recipe ───
+                // If the page declares a `sections` array, render those
+                // builders (skipping hero to avoid a second giant hero).
+                // The heading block below is still emitted above them as
+                // a lightweight page title so the page has context.
+                if (Array.isArray(page.sections) && page.sections.length) {
+                    var cat2 = _getAnimCategory(cfg.style);
+                    var bgClass2 = cat2 === 'shader' ? 'webgl-bg' : 'anim-bg';
+                    // Shallow content merge so section builders have access
+                    // to both the root cfg.content and any page overrides.
+                    var pageC = Object.assign({}, cfg.content || {}, page.content || {});
+                    // Emit a simple page-intro band first so the page isn't
+                    // anonymous — category label + big heading + optional
+                    // sub. Contact pages still get the form variant below.
+                    var nameLower2 = (page.name || '').toLowerCase();
+                    var isContact2 = nameLower2.indexOf('contact') >= 0 || (page.id || '').indexOf('contact') >= 0;
+                    if (isContact2) {
+                        // Contact page — fall through to the contact
+                        // form branch below by returning an empty string
+                        // here and letting the fallback render. Achieved
+                        // by continuing the IIFE's original path.
+                    } else {
+                        var introHeading = pageC[nameLower2 + 'Heading'] || page.seoTitle || page.name;
+                        var introSub = page.seoDesc || pageC[nameLower2 + 'Sub'] || '';
+                        var introHtml = '  <section class="section page-intro" style="padding-top:10rem;padding-bottom:3rem">\n' +
+                            '    <div class="container">\n' +
+                            '      <span class="section-label mono">' + esc((page.name || '').toUpperCase()) + '</span>\n' +
+                            '      <h1 class="section-heading" data-arbel-id="page-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(introHeading) + '</span></span></h1>\n' +
+                            (introSub ? '      <p style="max-width:640px;color:var(--fg2);line-height:1.8;margin-top:1.25rem" data-arbel-id="page-sub" data-arbel-edit="text">' + esc(introSub) + '</p>\n' : '') +
+                            '    </div>\n  </section>\n\n';
+                        var secHtml = '';
+                        page.sections.forEach(function (sid) {
+                            if (sid === 'hero') return;
+                            var builder = SECTION_BUILDERS && SECTION_BUILDERS[sid];
+                            if (!builder) return;
+                            try { secHtml += builder(pageC, bgClass2) + '\n\n'; } catch (e) {}
+                        });
+                        return introHtml + secHtml;
+                    }
+                }
                 var nameLower = (page.name || '').toLowerCase();
                 var isContact = nameLower.indexOf('contact') >= 0 || (page.id || '').indexOf('contact') >= 0;
                 var fieldStyle = 'width:100%;padding:0.85rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--fg);font-family:inherit;font-size:0.85rem;outline:none;transition:border-color 0.2s;';
@@ -3183,6 +3223,22 @@ window.ArbelCompiler = (function () {
     /* ═══ PUBLIC: Compile full site ═══ */
     function compile(userConfig) {
         var cfg = _defaults(userConfig);
+        // ─── Seed default pages from site-type pageRecipes ───
+        // If caller provided no additional pages (single-page flow), and
+        // the site-type profile ships a multi-page recipe, use it so each
+        // category gets a category-native page structure (shop → /shop +
+        // /about + /contact; restaurant → /menu + /reservations; etc).
+        if ((!cfg.pages || cfg.pages.length <= 1) && window.ArbelSiteType) {
+            var _stp = window.ArbelSiteType.profile(cfg.siteType);
+            if (_stp && Array.isArray(_stp.pageRecipes) && _stp.pageRecipes.length) {
+                var _home = (cfg.pages && cfg.pages[0]) || { id: 'home', name: 'Home', path: '/', isHome: true };
+                _home.isHome = true;
+                var _extra = _stp.pageRecipes.map(function (r) {
+                    return { id: r.id, name: r.name, path: r.path, sections: (r.sections || []).slice(), showInNav: true };
+                });
+                cfg.pages = [_home].concat(_extra);
+            }
+        }
         var cat = _getAnimCategory(cfg.style);
         var files = {
             'index.html': _buildHTML(cfg),
