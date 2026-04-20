@@ -1088,6 +1088,12 @@ window.ArbelCompiler = (function () {
                 if (['tight','dramatic'].indexOf(ts) !== -1) cls.push('type-' + ts);
                 var ds = cfg.dividerStyle;
                 if (['line','gradient','numbered','dotline'].indexOf(ds) !== -1) cls.push('div-' + ds);
+                var fs = cfg.footerStyle;
+                if (['minimal','columns','centered','bigLogo','stripe'].indexOf(fs) !== -1) cls.push('footer-' + fs.toLowerCase());
+                var ls = cfg.labelStyle;
+                if (['bar','dot','number','stripe'].indexOf(ls) !== -1) cls.push('label-' + ls);
+                var ha = cfg.heroArt;
+                if (['grid','lines','circle','dots','cross'].indexOf(ha) !== -1) cls.push('heroart-' + ha);
                 return cls.length ? ' class="' + cls.join(' ') + '"' : '';
             })() + '>\n\n' +
             '  <!-- Preloader -->\n' +
@@ -1113,7 +1119,7 @@ window.ArbelCompiler = (function () {
             '    </div>\n' +
             '  </header>\n\n' : '') +
             '  <main>\n' + sectionsHTML + '  </main>\n\n' +
-            '  <footer class="footer">\n' +
+            '  <footer class="footer" data-brand="' + esc(cfg.brandName) + '">\n' +
             '    <div class="footer-inner">\n' +
             '      <span class="logo">' + esc(cfg.brandName) + '</span>\n' +
             '      <span class="mono">&copy; <script>document.write(new Date().getFullYear())<\/script> All rights reserved.</span>\n' +
@@ -1317,6 +1323,38 @@ window.ArbelCompiler = (function () {
             '.div-numbered .section { counter-increment: arbel-section; }\n' +
             '.div-numbered .section::before { content: "0" counter(arbel-section); position: absolute; top: 2rem; right: 2rem; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.15em; color: var(--fg2); opacity: 0.5; }\n' +
             '@media (max-width: 768px) { .div-numbered .section::before { top: 1rem; right: 1rem; } }\n\n' +
+            '/* ═══ LABEL STYLES (body-class toggles) ═══ */\n' +
+            '.label-bar .section-label { display: inline-flex; align-items: center; gap: 0.75rem; }\n' +
+            '.label-bar .section-label::before { content:""; display: inline-block; width: 32px; height: 2px; background: var(--accent); }\n' +
+            '.label-dot .section-label { display: inline-flex; align-items: center; gap: 0.6rem; }\n' +
+            '.label-dot .section-label::before { content:""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }\n' +
+            '.label-number .services .section-label::after { content:" / 01"; opacity: 0.5; }\n' +
+            '.label-number .portfolio .section-label::after, .label-number #work .section-label::after { content:" / 02"; opacity: 0.5; }\n' +
+            '.label-number .about .section-label::after, .label-number #about .section-label::after { content:" / 03"; opacity: 0.5; }\n' +
+            '.label-number .process .section-label::after, .label-number #process .section-label::after { content:" / 04"; opacity: 0.5; }\n' +
+            '.label-number .testimonials .section-label::after, .label-number #testimonials .section-label::after { content:" / 05"; opacity: 0.5; }\n' +
+            '.label-number .pricing .section-label::after, .label-number #pricing .section-label::after { content:" / 06"; opacity: 0.5; }\n' +
+            '.label-number .contact .section-label::after, .label-number #contact .section-label::after { content:" / 07"; opacity: 0.5; }\n' +
+            '.label-stripe .section-label { display: inline-block; padding: 0.35rem 0.9rem; background: color-mix(in srgb, var(--accent) 15%, transparent); border-left: 2px solid var(--accent); color: var(--fg); }\n\n' +
+            '/* ═══ HERO ART (decorative, body-class toggles) ═══ */\n' +
+            '.heroart-grid .hero::before { content:""; position: absolute; inset: 0; background-image: linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 80px 80px; opacity: 0.35; mask-image: radial-gradient(ellipse at center, #000 30%, transparent 70%); pointer-events: none; z-index: 1; }\n' +
+            '.heroart-lines .hero::before { content:""; position: absolute; inset: 0; background-image: repeating-linear-gradient(90deg, transparent 0, transparent 119px, color-mix(in srgb, var(--fg) 8%, transparent) 119px, color-mix(in srgb, var(--fg) 8%, transparent) 120px); pointer-events: none; z-index: 1; }\n' +
+            '.heroart-circle .hero::before { content:""; position: absolute; top: 50%; right: -200px; transform: translateY(-50%); width: 600px; height: 600px; border: 1px solid var(--accent); border-radius: 50%; opacity: 0.2; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-circle .hero::after { content:""; position: absolute; top: 50%; right: -120px; transform: translateY(-50%); width: 400px; height: 400px; border: 1px solid var(--accent); border-radius: 50%; opacity: 0.15; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-dots .hero::before { content:""; position: absolute; inset: 0; background-image: radial-gradient(circle, var(--fg) 1px, transparent 1.5px); background-size: 32px 32px; opacity: 0.12; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-cross .hero::before { content:"+"; position: absolute; top: 12%; left: 8%; font-size: 2rem; color: var(--accent); opacity: 0.3; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-cross .hero::after { content:"×"; position: absolute; bottom: 18%; right: 10%; font-size: 3rem; color: var(--accent); opacity: 0.25; pointer-events: none; z-index: 1; }\n\n' +
+            '/* ═══ FOOTER STYLES (body-class toggles) ═══ */\n' +
+            '.footer-minimal .footer { padding: 2rem 0; }\n' +
+            '.footer-minimal .footer-inner { justify-content: center; flex-direction: column; gap: 0.5rem; text-align: center; }\n' +
+            '.footer-centered .footer { padding: 4rem 0; text-align: center; }\n' +
+            '.footer-centered .footer-inner { flex-direction: column; gap: 1.5rem; justify-content: center; align-items: center; }\n' +
+            '.footer-biglogo .footer { padding: 6rem 0 2rem; position: relative; overflow: hidden; }\n' +
+            '.footer-biglogo .footer::before { content: attr(data-brand); position: absolute; bottom: -2rem; left: 50%; transform: translateX(-50%); font-family: var(--font-display); font-size: clamp(5rem, 18vw, 14rem); font-weight: 800; color: color-mix(in srgb, var(--fg) 6%, transparent); letter-spacing: -0.04em; white-space: nowrap; pointer-events: none; line-height: 0.9; }\n' +
+            '.footer-stripe .footer { padding: 3rem 0; border-top: 4px solid var(--accent); }\n' +
+            '.footer-columns .footer { padding: 4rem 0 2rem; }\n' +
+            '.footer-columns .footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; align-items: start; }\n' +
+            '@media (max-width: 768px) { .footer-columns .footer-inner { grid-template-columns: 1fr 1fr; gap: 2rem; } .footer-biglogo .footer::before { font-size: 6rem; } }\n\n' +
             '/* ═══ BUTTONS ═══ */\n' +
             '.btn { display: inline-flex; align-items: center; padding: 0.85rem 2rem; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s var(--ease); background: transparent; color: var(--fg); position: relative; overflow: hidden; }\n' +
             '.btn::before { content: ""; position: absolute; inset: 0; background: var(--accent); transform: translateY(100%); transition: transform 0.4s var(--ease); }\n' +
@@ -1458,23 +1496,44 @@ window.ArbelCompiler = (function () {
             }
         }
 
-        // Per-section tones — safe because section IDs are a fixed whitelist
-        var toneRgbVars = {
-            dark:   { bg: 'var(--surface)', fg: 'var(--fg)' },
-            light:  { bg: '#f8f6f1',        fg: '#1a1a22' },
-            accent: { bg: 'var(--accent)',  fg: '#ffffff' }
+        // Per-section tones — safe because section IDs are a fixed whitelist.
+        // We redefine the CSS custom properties inside the section scope so EVERY
+        // descendant (cards, body copy, labels, borders) automatically adapts —
+        // this fixes invisible card text on light/accent-toned sections.
+        var toneVars = {
+            dark: {
+                bg: 'var(--surface)', fg: 'var(--fg)',
+                scope: ''
+            },
+            light: {
+                bg: '#f8f6f1', fg: '#1a1a22',
+                scope: '--fg:#1a1a22;--fg2:#4a4a55;--surface:#ffffff;--border:rgba(0,0,0,0.10);--bg:#f8f6f1;'
+            },
+            accent: {
+                bg: 'var(--accent)', fg: '#ffffff',
+                scope: '--fg:#ffffff;--fg2:rgba(255,255,255,0.82);--surface:color-mix(in srgb, var(--accent) 70%, #000 30%);--border:rgba(255,255,255,0.20);--bg:var(--accent);'
+            }
         };
         if (cfg && cfg.sectionTones && typeof cfg.sectionTones === 'object') {
             css += '\n/* ═══ SECTION TONES (AI) ═══ */\n';
             Object.keys(cfg.sectionTones).forEach(function (id) {
-                var t = toneRgbVars[cfg.sectionTones[id]];
+                var toneName = cfg.sectionTones[id];
+                var t = toneVars[toneName];
                 if (!t) return;
-                // id is whitelisted; still guard just in case
                 if (!/^[a-z]+$/.test(id)) return;
-                css += '#' + id + '{background:' + t.bg + ';color:' + t.fg + ';}\n';
-                css += '#' + id + ' .section-heading,#' + id + ' h2,#' + id + ' h3,#' + id + ' p{color:inherit;}\n';
-                if (cfg.sectionTones[id] === 'light') {
-                    css += '#' + id + ' .service-card,#' + id + ' .portfolio-card,#' + id + ' .process-card,#' + id + ' .testimonial-card,#' + id + ' .pricing-card,#' + id + ' .faq-item{background:rgba(255,255,255,0.7);border-color:rgba(0,0,0,0.08);}\n';
+                css += '#' + id + '{background:' + t.bg + ';color:' + t.fg + ';' + t.scope + '}\n';
+                // Force every text node inside the section to use the scoped foreground.
+                // Without this, elements with explicit var(--fg2) stay dark-theme.
+                css += '#' + id + ' .section-heading,#' + id + ' h2,#' + id + ' h3,#' + id + ' h4,#' + id + ' p,#' + id + ' li,#' + id + ' .service-title,#' + id + ' .portfolio-title,#' + id + ' .process-title,#' + id + ' .testimonial-name,#' + id + ' .pricing-name{color:var(--fg);}\n';
+                css += '#' + id + ' .service-desc,#' + id + ' .portfolio-desc,#' + id + ' .process-desc,#' + id + ' .testimonial-quote,#' + id + ' .testimonial-role,#' + id + ' .stat-label,#' + id + ' .pricing-desc,#' + id + ' .pricing-card li{color:var(--fg2);}\n';
+                if (toneName === 'light') {
+                    css += '#' + id + ' .service-card,#' + id + ' .portfolio-card,#' + id + ' .process-card,#' + id + ' .testimonial-card,#' + id + ' .pricing-card,#' + id + ' .faq-item{background:#ffffff;border-color:rgba(0,0,0,0.10);box-shadow:0 1px 3px rgba(0,0,0,0.04);}\n';
+                    css += '#' + id + ' .portfolio-num{color:rgba(0,0,0,0.08);}\n';
+                }
+                if (toneName === 'accent') {
+                    css += '#' + id + ' .service-card,#' + id + ' .portfolio-card,#' + id + ' .process-card,#' + id + ' .testimonial-card,#' + id + ' .pricing-card,#' + id + ' .faq-item{background:rgba(0,0,0,0.18);border-color:rgba(255,255,255,0.18);}\n';
+                    css += '#' + id + ' .section-label,#' + id + ' .service-num,#' + id + ' .process-num,#' + id + ' .portfolio-meta,#' + id + ' .pricing-price{color:#ffffff;}\n';
+                    css += '#' + id + ' .portfolio-num{color:rgba(255,255,255,0.15);}\n';
                 }
             });
         }

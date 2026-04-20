@@ -1315,6 +1315,9 @@
         snap.aiButtonStyle = state.aiButtonStyle || null;
         snap.aiTypeScale = state.aiTypeScale || null;
         snap.aiDividerStyle = state.aiDividerStyle || null;
+        snap.aiFooterStyle = state.aiFooterStyle || null;
+        snap.aiLabelStyle = state.aiLabelStyle || null;
+        snap.aiHeroArt = state.aiHeroArt || null;
         snap.editorOverrides = state.editorOverrides ? JSON.parse(JSON.stringify(state.editorOverrides)) : null;
         return snap;
     }
@@ -1382,6 +1385,9 @@
         state.aiButtonStyle = snap.aiButtonStyle || null;
         state.aiTypeScale = snap.aiTypeScale || null;
         state.aiDividerStyle = snap.aiDividerStyle || null;
+        state.aiFooterStyle = snap.aiFooterStyle || null;
+        state.aiLabelStyle = snap.aiLabelStyle || null;
+        state.aiHeroArt = snap.aiHeroArt || null;
         state.editorOverrides = snap.editorOverrides || null;
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
@@ -1601,6 +1607,24 @@
             design.dividerStyle = divs[Math.floor(Math.random() * divs.length)];
         }
 
+        // ─── FOOTER STYLE ─── how the page signs off
+        var footers = ['default', 'minimal', 'columns', 'centered', 'bigLogo', 'stripe'];
+        if (footers.indexOf(design.footerStyle) === -1) {
+            design.footerStyle = footers[Math.floor(Math.random() * footers.length)];
+        }
+
+        // ─── SECTION LABEL STYLE ─── prefix/adornment on every section mono label
+        var labels = ['default', 'bar', 'dot', 'number', 'stripe'];
+        if (labels.indexOf(design.labelStyle) === -1) {
+            design.labelStyle = labels[Math.floor(Math.random() * labels.length)];
+        }
+
+        // ─── HERO ART ─── decorative overlay in the hero (on top of the bg animation)
+        var arts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross'];
+        if (arts.indexOf(design.heroArt) === -1) {
+            design.heroArt = arts[Math.floor(Math.random() * arts.length)];
+        }
+
         // ─── PRESET PATH ─── If the AI picked a named preset, use it.
         // This dramatically increases visual variety because each preset
         // ships curated colors, shaders/particles, and motion.
@@ -1777,6 +1801,9 @@
         state.aiButtonStyle   = design.buttonStyle;
         state.aiTypeScale     = design.typeScale;
         state.aiDividerStyle  = design.dividerStyle;
+        state.aiFooterStyle   = design.footerStyle;
+        state.aiLabelStyle    = design.labelStyle;
+        state.aiHeroArt       = design.heroArt;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2238,6 +2265,9 @@
         if (state.aiButtonStyle) cfg.buttonStyle = state.aiButtonStyle;
         if (state.aiTypeScale) cfg.typeScale = state.aiTypeScale;
         if (state.aiDividerStyle) cfg.dividerStyle = state.aiDividerStyle;
+        if (state.aiFooterStyle) cfg.footerStyle = state.aiFooterStyle;
+        if (state.aiLabelStyle) cfg.labelStyle = state.aiLabelStyle;
+        if (state.aiHeroArt) cfg.heroArt = state.aiHeroArt;
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();
