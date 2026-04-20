@@ -3557,6 +3557,13 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _renderPageList();
         _updateUndoButtons();
         _applyDeviceResponsive();
+        // Re-sync iframe: clear stale inline styles left over from the
+        // edits we just undid, then re-apply the restored overrides
+        // (desktop only — mobile/tablet go through responsive CSS).
+        if (_iframe && _activeDevice === 'desktop') {
+            _postIframe('arbel-clear-inlines', {});
+            _restoreDesktopInlines();
+        }
         if (_lastTree.length) _renderElementTree(_lastTree);
         if (_selectedId && _iframe) _postIframe('arbel-select-by-id', { id: _selectedId });
     }
@@ -3575,6 +3582,10 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         _renderPageList();
         _updateUndoButtons();
         _applyDeviceResponsive();
+        if (_iframe && _activeDevice === 'desktop') {
+            _postIframe('arbel-clear-inlines', {});
+            _restoreDesktopInlines();
+        }
         if (_lastTree.length) _renderElementTree(_lastTree);
         if (_selectedId && _iframe) _postIframe('arbel-select-by-id', { id: _selectedId });
     }
