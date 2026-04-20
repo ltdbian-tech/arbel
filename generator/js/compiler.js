@@ -963,6 +963,83 @@ window.ArbelCompiler = (function () {
             '</div>\n</section>';
     }
 
+    function _statsStripHTML(c) {
+        var count = _clampCount(c.__statsStripCount, 4, 3, 5);
+        var items = '';
+        var defaults = [
+            { v: '120+', l: 'Projects' },
+            { v: '98%',  l: 'Retention' },
+            { v: '12',   l: 'Countries' },
+            { v: '2019', l: 'Founded' },
+            { v: '24/7', l: 'Support' }
+        ];
+        for (var i = 1; i <= count; i++) {
+            var v = c['statsStrip' + i + 'Val'] || defaults[i-1].v;
+            var l = c['statsStrip' + i + 'Label'] || defaults[i-1].l;
+            items += '    <div class="stats-strip-item reveal-up" data-arbel-id="stats-strip-' + i + '">\n' +
+                '      <div class="stats-strip-val" data-arbel-id="stats-strip-' + i + '-val" data-arbel-edit="text">' + esc(v) + '</div>\n' +
+                '      <div class="stats-strip-label mono" data-arbel-id="stats-strip-' + i + '-label" data-arbel-edit="text">' + esc(l) + '</div>\n' +
+                '    </div>\n';
+        }
+        return '<section class="section stats-strip" id="statsStrip" data-arbel-id="statsStrip">\n' +
+            '<div class="container">\n' +
+            '  <div class="stats-strip-grid">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    function _logoCloudHTML(c) {
+        var count = _clampCount(c.__logoCloudCount, 6, 4, 8);
+        var items = '';
+        var defaults = ['Acme Co', 'Northwind', 'Globex', 'Initech', 'Umbrella', 'Hooli', 'Soylent', 'Stark'];
+        for (var i = 1; i <= count; i++) {
+            var n = c['logoCloud' + i] || defaults[(i-1) % defaults.length];
+            items += '    <div class="logo-cloud-item" data-arbel-id="logo-cloud-' + i + '" data-arbel-edit="text">' + esc(n) + '</div>\n';
+        }
+        // duplicate for seamless marquee
+        var marquee = items + items;
+        return '<section class="section logo-cloud" id="logoCloud" data-arbel-id="logoCloud">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono logo-cloud-label" data-arbel-id="logoCloud-label" data-arbel-edit="text">' + esc(c.logoCloudLabel || 'TRUSTED BY') + '</div>\n' +
+            '  <div class="logo-cloud-track"><div class="logo-cloud-inner">\n' + marquee + '  </div></div>\n' +
+            '</div>\n</section>';
+    }
+
+    function _ctaBannerHTML(c) {
+        return '<section class="section cta-banner" id="ctaBanner" data-arbel-id="ctaBanner">\n' +
+            '<div class="container cta-banner-inner">\n' +
+            '  <h2 class="cta-banner-heading" data-arbel-id="ctaBanner-heading" data-arbel-edit="text">' + esc(c.ctaBannerHeading || 'Ready to begin?') + '</h2>\n' +
+            '  <p class="cta-banner-sub" data-arbel-id="ctaBanner-sub" data-arbel-edit="text">' + esc(c.ctaBannerSub || 'Reach out and let\u2019s build something people remember.') + '</p>\n' +
+            '  <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="ctaBanner-cta" data-arbel-edit="text">' + esc(c.ctaBannerCta || 'START A PROJECT') + '</a>\n' +
+            '</div>\n</section>';
+    }
+
+    function _teamHTML(c) {
+        var count = _clampCount(c.__teamCount, 3, 2, 4);
+        var items = '';
+        var defaults = [
+            { n: 'Alex Chen',    r: 'Founder / Design' },
+            { n: 'Jordan Rivera', r: 'Engineering Lead' },
+            { n: 'Sam Okafor',   r: 'Creative Director' },
+            { n: 'Morgan Patel', r: 'Client Strategy' }
+        ];
+        for (var i = 1; i <= count; i++) {
+            var n = c['team' + i + 'Name'] || defaults[i-1].n;
+            var r = c['team' + i + 'Role'] || defaults[i-1].r;
+            var initials = n.split(/\s+/).slice(0,2).map(function(w){return w.charAt(0).toUpperCase();}).join('');
+            items += '    <div class="team-card reveal-up" data-arbel-id="team-card-' + i + '">\n' +
+                '      <div class="team-avatar" aria-hidden="true">' + esc(initials) + '</div>\n' +
+                '      <h3 class="team-name" data-arbel-id="team-' + i + '-name" data-arbel-edit="text">' + esc(n) + '</h3>\n' +
+                '      <p class="team-role mono" data-arbel-id="team-' + i + '-role" data-arbel-edit="text">' + esc(r) + '</p>\n' +
+                '    </div>\n';
+        }
+        return '<section class="section team" id="team" data-arbel-id="team">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.teamLabel || 'TEAM') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="team-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.teamHeading || 'The people behind it.') + '</span></span></h2>\n' +
+            '  <div class="team-grid">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
     function _contactHTML(c, email, bgClass) {
         return '<section class="section contact" id="contact" data-arbel-id="contact">\n' +
             '  <div class="' + bgClass + ' contact-bg"></div>\n' +
@@ -989,6 +1066,10 @@ window.ArbelCompiler = (function () {
         testimonials: _testimonialsHTML,
         pricing: _pricingHTML,
         faq: _faqHTML,
+        statsStrip: _statsStripHTML,
+        logoCloud: _logoCloudHTML,
+        ctaBanner: _ctaBannerHTML,
+        team: _teamHTML,
         contact: _contactHTML
     };
 
@@ -1010,19 +1091,29 @@ window.ArbelCompiler = (function () {
             } else if (s === 'contact') {
                 sectionsHTML += builder(c, cfg.contactEmail, bgClass) + '\n\n';
             } else {
-                // Inject per-section structural knobs (counts / flip / accent)
+                // Inject per-section structural knobs (counts / flip / accent / layout)
                 var counts = cfg.sectionCounts || {};
                 if (counts[s] != null) c['__' + s + 'Count'] = counts[s];
                 if (s === 'about') c.__aboutFlip = !!cfg.aboutFlip;
                 if (s === 'pricing' && cfg.pricingAccent != null) c.__pricingAccent = cfg.pricingAccent;
-                sectionsHTML += builder(c) + '\n\n';
+                // Per-section layout variants (grid / list / bento / numbered) — applied as a
+                // class on the section root by adding it to the emitted HTML via replace.
+                var layouts = cfg.sectionLayouts || {};
+                var layoutName = layouts[s];
+                var html = builder(c);
+                if (layoutName && /^[a-z]+$/.test(layoutName)) {
+                    // Add layout class to the section root (first occurrence of `class="section `)
+                    html = html.replace('class="section ' + s + '"', 'class="section ' + s + ' layout-' + layoutName + '"');
+                }
+                sectionsHTML += html + '\n\n';
             }
         });
 
         var navLinks = '';
-        var navMap = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', contact: c.contactNav || 'Contact' };
+        var navMap = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', team: c.teamNav || 'Team', contact: c.contactNav || 'Contact' };
         sections.forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
+            if (s === 'statsStrip' || s === 'logoCloud' || s === 'ctaBanner') return;
             if (navMap[s]) navLinks += '        <a href="#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap[s] + '</a>\n';
         });
         if (cfg.pages) {
@@ -1445,6 +1536,65 @@ window.ArbelCompiler = (function () {
             '.faq-question::after { content: "+"; font-size: 1.2rem; color: var(--accent); transition: transform 0.3s; }\n' +
             '.faq-item[open] .faq-question::after { transform: rotate(45deg); }\n' +
             '.faq-answer { padding: 0 0 1.25rem; color: var(--fg2); line-height: 1.6; }\n\n' +
+            '/* ═══ STATS STRIP ═══ */\n' +
+            '.stats-strip { padding: 5rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }\n' +
+            '.stats-strip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 2rem; text-align: center; }\n' +
+            '.stats-strip-item { }\n' +
+            '.stats-strip-val { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; line-height: 1; color: var(--accent); margin-bottom: 0.5rem; letter-spacing: -0.02em; }\n' +
+            '.stats-strip-label { font-size: 0.7rem; letter-spacing: 0.15em; color: var(--fg2); }\n' +
+            '@media (max-width: 520px) { .stats-strip-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; } }\n\n' +
+            '/* ═══ LOGO CLOUD ═══ */\n' +
+            '.logo-cloud { padding: 4rem 0; overflow: hidden; }\n' +
+            '.logo-cloud-label { text-align: center; margin-bottom: 2rem; }\n' +
+            '.logo-cloud-track { overflow: hidden; mask-image: linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%); }\n' +
+            '.logo-cloud-inner { display: flex; gap: 4rem; white-space: nowrap; animation: arbelMarquee 28s linear infinite; width: max-content; }\n' +
+            '.logo-cloud-item { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--fg); opacity: 0.5; transition: opacity 0.3s; letter-spacing: -0.01em; }\n' +
+            '.logo-cloud-item:hover { opacity: 1; }\n' +
+            '@keyframes arbelMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }\n' +
+            '@media (prefers-reduced-motion: reduce) { .logo-cloud-inner { animation: none; } }\n\n' +
+            '/* ═══ CTA BANNER ═══ */\n' +
+            '.cta-banner { padding: 6rem 0; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: center; position: relative; overflow: hidden; }\n' +
+            '.cta-banner::before { content:""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 120%; aspect-ratio: 2/1; background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 60%); pointer-events: none; }\n' +
+            '.cta-banner-inner { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; }\n' +
+            '.cta-banner-heading { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; margin-bottom: 1rem; letter-spacing: -0.02em; }\n' +
+            '.cta-banner-sub { color: var(--fg2); font-size: 1.05rem; line-height: 1.6; margin-bottom: 2rem; }\n\n' +
+            '/* ═══ TEAM ═══ */\n' +
+            '.team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-top: 3rem; }\n' +
+            '.team-card { text-align: center; padding: 2rem 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; transition: border-color 0.3s, transform 0.3s var(--ease); }\n' +
+            '.team-card:hover { border-color: var(--accent); transform: translateY(-4px); }\n' +
+            '.team-avatar { width: 80px; height: 80px; margin: 0 auto 1rem; border-radius: 50%; background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 30%, var(--fg))); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 800; font-size: 1.5rem; color: #fff; letter-spacing: 0.02em; }\n' +
+            '.team-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }\n' +
+            '.team-role { color: var(--fg2); font-size: 0.7rem; letter-spacing: 0.1em; }\n\n' +
+            '/* ═══ SECTION LAYOUT VARIANTS (per-section) ═══ */\n' +
+            /* services: list — rows instead of grid */
+            '.services.layout-list .services-grid { grid-template-columns: 1fr !important; max-width: 800px; margin-left: auto; margin-right: auto; gap: 0; }\n' +
+            '.services.layout-list .service-card { display: grid; grid-template-columns: 80px 1fr; gap: 1.5rem; align-items: start; padding: 2rem 0; background: transparent !important; border-radius: 0 !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; }\n' +
+            '.services.layout-list .service-card:hover { transform: none; background: color-mix(in srgb, var(--accent) 4%, transparent) !important; }\n' +
+            '.services.layout-list .service-num { font-size: 2rem; color: var(--accent); margin: 0; }\n' +
+            /* services: alternating — two-column zigzag */
+            '.services.layout-alternating .services-grid { grid-template-columns: 1fr !important; gap: 2rem; max-width: 960px; margin-left: auto; margin-right: auto; }\n' +
+            '.services.layout-alternating .service-card { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; padding: 2rem; }\n' +
+            '.services.layout-alternating .service-card:nth-child(even) .service-num { order: 2; text-align: right; }\n' +
+            '@media (max-width: 768px) { .services.layout-alternating .service-card { grid-template-columns: 1fr; gap: 1rem; } }\n' +
+            /* services/portfolio: bento — varied spans */
+            '.services.layout-bento .services-grid, .portfolio.layout-bento .portfolio-grid { grid-template-columns: repeat(6, 1fr) !important; grid-auto-rows: minmax(180px, auto); gap: 1rem; }\n' +
+            '.services.layout-bento .service-card:nth-child(1), .portfolio.layout-bento .portfolio-card:nth-child(1) { grid-column: span 4; grid-row: span 2; }\n' +
+            '.services.layout-bento .service-card:nth-child(2), .portfolio.layout-bento .portfolio-card:nth-child(2) { grid-column: span 2; grid-row: span 1; }\n' +
+            '.services.layout-bento .service-card:nth-child(3), .portfolio.layout-bento .portfolio-card:nth-child(3) { grid-column: span 2; grid-row: span 1; }\n' +
+            '.services.layout-bento .service-card:nth-child(4), .portfolio.layout-bento .portfolio-card:nth-child(4) { grid-column: span 3; grid-row: span 1; }\n' +
+            '.services.layout-bento .service-card:nth-child(5), .portfolio.layout-bento .portfolio-card:nth-child(5) { grid-column: span 3; grid-row: span 1; }\n' +
+            '@media (max-width: 768px) { .services.layout-bento .services-grid, .portfolio.layout-bento .portfolio-grid { grid-template-columns: 1fr !important; grid-auto-rows: auto; } .services.layout-bento .service-card, .portfolio.layout-bento .portfolio-card { grid-column: auto !important; grid-row: auto !important; } }\n' +
+            /* services: numbered-columns — giant numbers as columns */
+            '.services.layout-numbered .services-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; gap: 1rem; }\n' +
+            '.services.layout-numbered .service-card { background: transparent !important; border: 0 !important; padding: 1.5rem 1rem; position: relative; }\n' +
+            '.services.layout-numbered .service-num { font-size: 4rem; font-weight: 800; color: color-mix(in srgb, var(--accent) 25%, transparent); line-height: 1; margin-bottom: 0.5rem; }\n' +
+            /* portfolio: list */
+            '.portfolio.layout-list .portfolio-grid { grid-template-columns: 1fr !important; max-width: 900px; margin-left: auto; margin-right: auto; gap: 0; }\n' +
+            '.portfolio.layout-list .portfolio-card { display: grid; grid-template-columns: 60px 1fr 120px; gap: 2rem; align-items: center; padding: 1.5rem 0; background: transparent !important; border-radius: 0 !important; border: 0 !important; border-bottom: 1px solid var(--border) !important; }\n' +
+            '.portfolio.layout-list .portfolio-card:hover { transform: none; }\n' +
+            '.portfolio.layout-list .portfolio-card-inner { padding: 0; min-height: 0; grid-column: 2; }\n' +
+            '.portfolio.layout-list .portfolio-num { position: static; font-size: 2.5rem; grid-column: 1; }\n' +
+            '@media (max-width: 640px) { .portfolio.layout-list .portfolio-card { grid-template-columns: 50px 1fr; } }\n\n' +
             '/* ═══ CONTACT ═══ */\n' +
             '.contact { min-height: 60vh; display: flex; align-items: center; justify-content: center; text-align: center; position: relative; overflow: hidden; }\n' +
             '.contact-bg { position: absolute; inset: 0; }\n' +

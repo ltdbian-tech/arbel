@@ -375,7 +375,8 @@ window.ArbelAI = (function () {
             '"mode": "classic" — always use classic, do NOT return cinematic.\n\n' +
             'STRUCTURE VARIATION — vary these between regens:\n' +
             '"heroLayout": one of "centered" | "left" | "split" | "minimal". Pick the one that best fits the mood (split for agency/product, left for editorial, minimal for portfolio, centered as safe default).\n' +
-            '"sectionOrder": ordered array of section IDs from ["services","portfolio","about","process","testimonials","pricing","faq","stats"]. Pick 3-5 that fit the business. hero and contact are added automatically.\n' +
+            '"sectionOrder": ordered array of section IDs from ["services","portfolio","about","process","testimonials","pricing","faq","stats","statsStrip","logoCloud","ctaBanner","team"]. Pick 3-6 that fit the business. hero and contact are added automatically. statsStrip is a big-numbers band, logoCloud is a client marquee, ctaBanner is a full-width accent banner, team shows headshots. Mix 1-2 of these extras in for a less template-y shape.\n' +
+            '"sectionLayouts": optional object like {"services":"list|alternating|bento|numbered","portfolio":"list|bento"} — pick different card layouts per section for structural variety. Empty/omitted means use the default grid.\n' +
             '"sectionCounts": optional object like {"services":2..4,"portfolio":2..4,"process":3..4} — vary card counts between regens.\n' +
             '"aboutFlip": boolean — flip the about section columns left/right.\n' +
             '"pricingAccent": 1|2|3 — which pricing tier is highlighted as popular.\n' +
@@ -481,7 +482,8 @@ window.ArbelAI = (function () {
             '    "corners": "sharp|soft|pill",\n' +
             '    "fontPair": "editorial|tech|humanist|display|mono",\n' +
             '    "heroLayout": "centered|left|split|minimal",\n' +
-            '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","stats"] pick 3-5,\n' +
+            '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","statsStrip","logoCloud","ctaBanner","team"] pick 3-6,\n' +
+            '    "sectionLayouts": {"services":"list|alternating|bento|numbered","portfolio":"list|bento"} optional,\n' +
             '    "sectionCounts": {"services":2-4,"portfolio":2-4,"process":3-4},\n' +
             '    "aboutFlip": true|false,\n' +
             '    "pricingAccent": 1|2|3,\n' +

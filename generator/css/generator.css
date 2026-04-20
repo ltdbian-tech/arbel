@@ -866,6 +866,32 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     line-height: 1.5;
 }
 
+/* Design-options grid (manual overrides for AI axes) */
+.design-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px 16px;
+}
+.design-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.design-field--wide {
+    grid-column: 1 / -1;
+}
+.design-field .config-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--fg3);
+}
+.design-field select.design-opt,
+.design-field input.design-opt {
+    width: 100%;
+    min-width: 0;
+}
+
 /* Fields */
 .field {
     margin-bottom: 16px;

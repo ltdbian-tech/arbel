@@ -372,7 +372,161 @@
                                 <label class="toggle-item"><input type="checkbox" data-section="testimonials"><span class="toggle-label">Testimonials</span></label>
                                 <label class="toggle-item"><input type="checkbox" data-section="pricing"><span class="toggle-label">Pricing</span></label>
                                 <label class="toggle-item"><input type="checkbox" data-section="faq"><span class="toggle-label">FAQ</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="statsStrip"><span class="toggle-label">Stats Strip</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="logoCloud"><span class="toggle-label">Logo Cloud</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="ctaBanner"><span class="toggle-label">CTA Banner</span></label>
+                                <label class="toggle-item"><input type="checkbox" data-section="team"><span class="toggle-label">Team</span></label>
                                 <label class="toggle-item locked"><input type="checkbox" checked disabled data-section="contact"><span class="toggle-label">Contact</span><span class="toggle-badge mono">REQUIRED</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Design Options (manual customization; AI also writes these) -->
+                        <div class="config-group">
+                            <h3 class="config-group-title mono">DESIGN OPTIONS</h3>
+                            <p class="config-hint">Optional style tweaks. Leave as <em>Default</em> to use the preset&#8217;s built-in look, or override any axis here. AI regeneration fills these too.</p>
+
+                            <div class="design-grid">
+                                <div class="design-field">
+                                    <label class="config-label mono">Hero Layout</label>
+                                    <select class="gen-input design-opt" id="optHeroLayout">
+                                        <option value="">Default (centered)</option>
+                                        <option value="left">Left-aligned</option>
+                                        <option value="split">Split (glow right)</option>
+                                        <option value="minimal">Minimal</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Hero Art</label>
+                                    <select class="gen-input design-opt" id="optHeroArt">
+                                        <option value="">None</option>
+                                        <option value="grid">Grid mesh</option>
+                                        <option value="lines">Vertical lines</option>
+                                        <option value="circle">Concentric circles</option>
+                                        <option value="dots">Dot field</option>
+                                        <option value="cross">Typographic crosses</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Hero Eyebrow</label>
+                                    <input type="text" class="gen-input design-opt" id="optHeroEyebrow" placeholder="e.g. EST. 2019" maxlength="28">
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Type Scale</label>
+                                    <select class="gen-input design-opt" id="optTypeScale">
+                                        <option value="">Normal</option>
+                                        <option value="tight">Tight (editorial)</option>
+                                        <option value="dramatic">Dramatic (display)</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Heading Align</label>
+                                    <select class="gen-input design-opt" id="optHeadingAlign">
+                                        <option value="">Default (left)</option>
+                                        <option value="center">Centered</option>
+                                        <option value="right">Right</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Container Width</label>
+                                    <select class="gen-input design-opt" id="optContainerWidth">
+                                        <option value="">Normal</option>
+                                        <option value="narrow">Narrow (editorial)</option>
+                                        <option value="wide">Wide (agency)</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Card Treatment</label>
+                                    <select class="gen-input design-opt" id="optCardTreatment">
+                                        <option value="">Default</option>
+                                        <option value="bordered">Bordered</option>
+                                        <option value="filled">Filled (accent tint)</option>
+                                        <option value="floating">Floating (shadow)</option>
+                                        <option value="minimal">Minimal (no box)</option>
+                                        <option value="glass">Glass (frosted)</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Button Style</label>
+                                    <select class="gen-input design-opt" id="optButtonStyle">
+                                        <option value="">Default</option>
+                                        <option value="solid">Solid (chunky)</option>
+                                        <option value="outline">Outline (stroked)</option>
+                                        <option value="gradient">Gradient</option>
+                                        <option value="sharp">Sharp (zero-radius)</option>
+                                        <option value="lifted">Lifted (press-down)</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Nav Style</label>
+                                    <select class="gen-input design-opt" id="optNavStyle">
+                                        <option value="">Default</option>
+                                        <option value="pill">Floating pill</option>
+                                        <option value="minimal">Minimal (no bg)</option>
+                                        <option value="ghost">Ghost (translucent)</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Footer Style</label>
+                                    <select class="gen-input design-opt" id="optFooterStyle">
+                                        <option value="">Default</option>
+                                        <option value="minimal">Minimal</option>
+                                        <option value="columns">Columns (4-col)</option>
+                                        <option value="centered">Centered</option>
+                                        <option value="bigLogo">Big Logo watermark</option>
+                                        <option value="stripe">Accent stripe</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Section Rhythm</label>
+                                    <select class="gen-input design-opt" id="optSectionRhythm">
+                                        <option value="">Normal</option>
+                                        <option value="compact">Compact</option>
+                                        <option value="roomy">Roomy</option>
+                                        <option value="alternating">Alternating</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Section Dividers</label>
+                                    <select class="gen-input design-opt" id="optDividerStyle">
+                                        <option value="">None</option>
+                                        <option value="line">Solid line</option>
+                                        <option value="gradient">Gradient glow</option>
+                                        <option value="numbered">Numbered (01, 02...)</option>
+                                        <option value="dotline">Dotted line</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Section Labels</label>
+                                    <select class="gen-input design-opt" id="optLabelStyle">
+                                        <option value="">Default</option>
+                                        <option value="bar">Bar prefix</option>
+                                        <option value="dot">Glowing dot</option>
+                                        <option value="number">Numbered (/01)</option>
+                                        <option value="stripe">Pill with stripe</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Services Layout</label>
+                                    <select class="gen-input design-opt" id="optServicesLayout">
+                                        <option value="">Grid (default)</option>
+                                        <option value="list">List (rows)</option>
+                                        <option value="alternating">Alternating (zigzag)</option>
+                                        <option value="bento">Bento (varied spans)</option>
+                                        <option value="numbered">Numbered columns</option>
+                                    </select>
+                                </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Portfolio Layout</label>
+                                    <select class="gen-input design-opt" id="optPortfolioLayout">
+                                        <option value="">Grid (default)</option>
+                                        <option value="list">List (rows)</option>
+                                        <option value="bento">Bento (varied spans)</option>
+                                    </select>
+                                </div>
+                                <div class="design-field design-field--wide">
+                                    <label class="config-label mono">About Flip</label>
+                                    <label class="toggle-item" style="margin:0"><input type="checkbox" id="optAboutFlip"><span class="toggle-label">Reverse About section direction (image/stats on left)</span></label>
+                                </div>
                             </div>
                         </div>
 

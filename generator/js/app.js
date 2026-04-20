@@ -167,6 +167,23 @@
         navModeDesktop: $('navModeDesktop'),
         navModeTablet: $('navModeTablet'),
         navModeMobile: $('navModeMobile'),
+        // Design Options (classic-mode manual overrides for AI axes)
+        optHeroLayout: $('optHeroLayout'),
+        optHeroArt: $('optHeroArt'),
+        optHeroEyebrow: $('optHeroEyebrow'),
+        optTypeScale: $('optTypeScale'),
+        optHeadingAlign: $('optHeadingAlign'),
+        optContainerWidth: $('optContainerWidth'),
+        optCardTreatment: $('optCardTreatment'),
+        optButtonStyle: $('optButtonStyle'),
+        optNavStyle: $('optNavStyle'),
+        optFooterStyle: $('optFooterStyle'),
+        optSectionRhythm: $('optSectionRhythm'),
+        optDividerStyle: $('optDividerStyle'),
+        optLabelStyle: $('optLabelStyle'),
+        optServicesLayout: $('optServicesLayout'),
+        optPortfolioLayout: $('optPortfolioLayout'),
+        optAboutFlip: $('optAboutFlip'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -1304,6 +1321,7 @@
         snap.aiHeroLayout   = state.aiHeroLayout || null;
         snap.aiSectionOrder = state.aiSectionOrder ? state.aiSectionOrder.slice() : null;
         snap.aiSectionCounts = state.aiSectionCounts ? Object.assign({}, state.aiSectionCounts) : null;
+        snap.aiSectionLayouts = state.aiSectionLayouts ? Object.assign({}, state.aiSectionLayouts) : null;
         snap.aiAboutFlip    = typeof state.aiAboutFlip === 'boolean' ? state.aiAboutFlip : null;
         snap.aiPricingAccent = state.aiPricingAccent || null;
         snap.aiHeadingAlign = state.aiHeadingAlign || null;
@@ -1374,6 +1392,7 @@
         state.aiHeroLayout   = snap.aiHeroLayout || null;
         state.aiSectionOrder = snap.aiSectionOrder || null;
         state.aiSectionCounts = snap.aiSectionCounts || null;
+        state.aiSectionLayouts = snap.aiSectionLayouts || null;
         state.aiAboutFlip    = typeof snap.aiAboutFlip === 'boolean' ? snap.aiAboutFlip : null;
         state.aiPricingAccent = snap.aiPricingAccent || null;
         state.aiHeadingAlign = snap.aiHeadingAlign || null;
@@ -1790,6 +1809,16 @@
         state.aiHeroLayout   = design.heroLayout;
         state.aiSectionOrder = design.sectionOrder;
         state.aiSectionCounts = design.sectionCounts;
+        // Validate sectionLayouts — only allow known section IDs + known layout values
+        if (design.sectionLayouts && typeof design.sectionLayouts === 'object') {
+            var validSec = { services: 1, portfolio: 1 };
+            var validLay = { list: 1, alternating: 1, bento: 1, numbered: 1, grid: 1 };
+            var sl = {};
+            Object.keys(design.sectionLayouts).forEach(function (k) {
+                if (validSec[k] && validLay[design.sectionLayouts[k]]) sl[k] = design.sectionLayouts[k];
+            });
+            state.aiSectionLayouts = Object.keys(sl).length ? sl : null;
+        }
         state.aiAboutFlip    = design.aboutFlip;
         state.aiPricingAccent = design.pricingAccent;
         state.aiHeadingAlign  = design.headingAlign;
@@ -2156,6 +2185,35 @@
         };
     }
 
+    /** Merge manual design-option dropdowns from the classic wizard onto a cfg.
+     *  Any non-empty value overrides the AI-chosen / default value. This lets
+     *  manual users get the exact same variation capabilities as AI mode. */
+    function _applyManualDesignOpts(cfg) {
+        function v(el) { return (el && typeof el.value === 'string') ? el.value.trim() : ''; }
+        var hero = v(els.optHeroLayout);       if (hero) cfg.heroLayout = hero;
+        var art  = v(els.optHeroArt);          if (art)  cfg.heroArt = art;
+        var eye  = v(els.optHeroEyebrow);      if (eye)  cfg.heroEyebrow = eye;
+        var ts   = v(els.optTypeScale);        if (ts)   cfg.typeScale = ts;
+        var ha   = v(els.optHeadingAlign);     if (ha)   cfg.headingAlign = ha;
+        var cw   = v(els.optContainerWidth);   if (cw)   cfg.containerWidth = cw;
+        var ct   = v(els.optCardTreatment);    if (ct)   cfg.cardTreatment = ct;
+        var bs   = v(els.optButtonStyle);      if (bs)   cfg.buttonStyle = bs;
+        var ns   = v(els.optNavStyle);         if (ns)   cfg.navStyle = ns;
+        var fs   = v(els.optFooterStyle);      if (fs)   cfg.footerStyle = fs;
+        var rh   = v(els.optSectionRhythm);    if (rh)   cfg.sectionRhythm = rh;
+        var ds   = v(els.optDividerStyle);     if (ds)   cfg.dividerStyle = ds;
+        var ls   = v(els.optLabelStyle);       if (ls)   cfg.labelStyle = ls;
+        var sl   = v(els.optServicesLayout);
+        var pl   = v(els.optPortfolioLayout);
+        if (sl || pl) {
+            cfg.sectionLayouts = Object.assign({}, cfg.sectionLayouts || {});
+            if (sl) cfg.sectionLayouts.services = sl;
+            if (pl) cfg.sectionLayouts.portfolio = pl;
+        }
+        if (els.optAboutFlip && els.optAboutFlip.checked) cfg.aboutFlip = true;
+        return cfg;
+    }
+
     function _collectIntegrations() {
         var ga = els.intGaId ? els.intGaId.value.trim() : '';
         var form = els.intFormEndpoint ? els.intFormEndpoint.value.trim() : '';
@@ -2254,6 +2312,7 @@
         if (state.aiHeroLayout)   cfg.heroLayout   = state.aiHeroLayout;
         if (state.aiSectionOrder && state.aiSectionOrder.length) cfg.sections = state.aiSectionOrder;
         if (state.aiSectionCounts) cfg.sectionCounts = state.aiSectionCounts;
+        if (state.aiSectionLayouts) cfg.sectionLayouts = state.aiSectionLayouts;
         if (typeof state.aiAboutFlip === 'boolean') cfg.aboutFlip = state.aiAboutFlip;
         if (state.aiPricingAccent) cfg.pricingAccent = state.aiPricingAccent;
         if (state.aiHeadingAlign) cfg.headingAlign = state.aiHeadingAlign;
@@ -2268,6 +2327,10 @@
         if (state.aiFooterStyle) cfg.footerStyle = state.aiFooterStyle;
         if (state.aiLabelStyle) cfg.labelStyle = state.aiLabelStyle;
         if (state.aiHeroArt) cfg.heroArt = state.aiHeroArt;
+
+        // Manual design-option overrides (classic-wizard dropdowns)
+        // Applied AFTER AI so the user can override any axis by hand.
+        _applyManualDesignOpts(cfg);
 
         // Include pages from editor
         var editorPages = ArbelEditor.getPages();
@@ -2578,6 +2641,42 @@
                     glow: parseFloat(els.particleGlow.value),
                     interact: els.particleInteract.checked,
                     connect: els.particleConnect.checked
+                },
+                designOpts: {
+                    heroLayout: els.optHeroLayout ? els.optHeroLayout.value : '',
+                    heroArt: els.optHeroArt ? els.optHeroArt.value : '',
+                    heroEyebrow: els.optHeroEyebrow ? els.optHeroEyebrow.value : '',
+                    typeScale: els.optTypeScale ? els.optTypeScale.value : '',
+                    headingAlign: els.optHeadingAlign ? els.optHeadingAlign.value : '',
+                    containerWidth: els.optContainerWidth ? els.optContainerWidth.value : '',
+                    cardTreatment: els.optCardTreatment ? els.optCardTreatment.value : '',
+                    buttonStyle: els.optButtonStyle ? els.optButtonStyle.value : '',
+                    navStyle: els.optNavStyle ? els.optNavStyle.value : '',
+                    footerStyle: els.optFooterStyle ? els.optFooterStyle.value : '',
+                    sectionRhythm: els.optSectionRhythm ? els.optSectionRhythm.value : '',
+                    dividerStyle: els.optDividerStyle ? els.optDividerStyle.value : '',
+                    labelStyle: els.optLabelStyle ? els.optLabelStyle.value : '',
+                    servicesLayout: els.optServicesLayout ? els.optServicesLayout.value : '',
+                    portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
+                    aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false
+                },
+                designOpts: {
+                    heroLayout: els.optHeroLayout ? els.optHeroLayout.value : '',
+                    heroArt: els.optHeroArt ? els.optHeroArt.value : '',
+                    heroEyebrow: els.optHeroEyebrow ? els.optHeroEyebrow.value : '',
+                    typeScale: els.optTypeScale ? els.optTypeScale.value : '',
+                    headingAlign: els.optHeadingAlign ? els.optHeadingAlign.value : '',
+                    containerWidth: els.optContainerWidth ? els.optContainerWidth.value : '',
+                    cardTreatment: els.optCardTreatment ? els.optCardTreatment.value : '',
+                    buttonStyle: els.optButtonStyle ? els.optButtonStyle.value : '',
+                    navStyle: els.optNavStyle ? els.optNavStyle.value : '',
+                    footerStyle: els.optFooterStyle ? els.optFooterStyle.value : '',
+                    sectionRhythm: els.optSectionRhythm ? els.optSectionRhythm.value : '',
+                    dividerStyle: els.optDividerStyle ? els.optDividerStyle.value : '',
+                    labelStyle: els.optLabelStyle ? els.optLabelStyle.value : '',
+                    servicesLayout: els.optServicesLayout ? els.optServicesLayout.value : '',
+                    portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
+                    aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false
                 }
             },
             editor: {
@@ -2690,6 +2789,28 @@
             if (els.navModeTablet) els.navModeTablet.value = c.navMode.tablet || 'hamburger';
             if (els.navModeMobile) els.navModeMobile.value = c.navMode.mobile || 'hamburger';
             if (window.ArbelEditor) ArbelEditor.setNavMode(c.navMode);
+        }
+
+        // Manual design-option dropdowns (classic-mode overrides)
+        if (c.designOpts) {
+            var d = c.designOpts;
+            function _set(el, v) { if (el && typeof v === 'string') el.value = v; }
+            _set(els.optHeroLayout, d.heroLayout);
+            _set(els.optHeroArt, d.heroArt);
+            _set(els.optHeroEyebrow, d.heroEyebrow);
+            _set(els.optTypeScale, d.typeScale);
+            _set(els.optHeadingAlign, d.headingAlign);
+            _set(els.optContainerWidth, d.containerWidth);
+            _set(els.optCardTreatment, d.cardTreatment);
+            _set(els.optButtonStyle, d.buttonStyle);
+            _set(els.optNavStyle, d.navStyle);
+            _set(els.optFooterStyle, d.footerStyle);
+            _set(els.optSectionRhythm, d.sectionRhythm);
+            _set(els.optDividerStyle, d.dividerStyle);
+            _set(els.optLabelStyle, d.labelStyle);
+            _set(els.optServicesLayout, d.servicesLayout);
+            _set(els.optPortfolioLayout, d.portfolioLayout);
+            if (els.optAboutFlip) els.optAboutFlip.checked = !!d.aboutFlip;
         }
 
         // Builder state
@@ -3034,6 +3155,12 @@
     els.particleGlow.addEventListener('input', _markDirty);
     // Section toggles
     els.sectionToggles.addEventListener('change', _markDirty);
+    // Design-option dropdowns (classic-mode manual overrides)
+    document.querySelectorAll('.design-opt').forEach(function (el) {
+        el.addEventListener('change', _markDirty);
+        el.addEventListener('input', _markDirty);
+    });
+    if (els.optAboutFlip) els.optAboutFlip.addEventListener('change', _markDirty);
     // Content inputs (delegated)
     if (els.contentEditor) els.contentEditor.addEventListener('input', function (e) {
         if (e.target.classList.contains('content-input')) _markDirty();
