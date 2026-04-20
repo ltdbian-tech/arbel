@@ -1678,12 +1678,32 @@
             design.heroLayout = others[Math.floor(Math.random() * others.length)];
         }
         // Valid section IDs in the compiler. Hero must stay first, contact last.
-        var validSections = ['services','portfolio','about','process','testimonials','pricing','faq','stats'];
+        var validSections = ['services','portfolio','about','process','testimonials','pricing','faq','stats','statsStrip','logoCloud','ctaBanner','team'];
+
+        // ─── SITE-TYPE AWARE SECTION PICKING ─── Infer from description +
+        // industry what KIND of site this is (gaming / shop / portfolio /
+        // blog / event / app / restaurant / agency …) and bias the section
+        // recipe toward sections that make sense for that type. Each recipe
+        // is a pool we sample from so we still get randomness within the
+        // right architecture.
+        var siteType = window.ArbelSiteType
+            ? ArbelSiteType.infer(
+                (state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || (els.description && els.description.value) || ''),
+                (els.industry && els.industry.value) || '')
+            : 'generic';
+        state.aiSiteType = siteType;
+
         if (!Array.isArray(design.sectionOrder) || !design.sectionOrder.length) {
-            // Pick 3-5 middle sections at random
-            var shuffled = validSections.slice().sort(function () { return Math.random() - 0.5; });
-            var n = 3 + Math.floor(Math.random() * 3); // 3..5
-            design.sectionOrder = ['hero'].concat(shuffled.slice(0, n)).concat(['contact']);
+            // Recipe-driven random pick — see ArbelSiteType.recipe()
+            var recipe = window.ArbelSiteType ? ArbelSiteType.recipe(siteType) : null;
+            if (recipe) {
+                design.sectionOrder = recipe;
+            } else {
+                // Fallback: old random shuffle
+                var shuffled = validSections.slice().sort(function () { return Math.random() - 0.5; });
+                var n = 3 + Math.floor(Math.random() * 3);
+                design.sectionOrder = ['hero'].concat(shuffled.slice(0, n)).concat(['contact']);
+            }
         } else {
             // Sanitize AI-supplied order
             var clean = ['hero'];

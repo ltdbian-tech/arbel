@@ -349,6 +349,21 @@ window.ArbelAI = (function () {
         var tone = _pickTone();
         var seed = Math.random().toString(36).slice(2, 10);
 
+        // ─── SITE TYPE ─── Let the local inference engine detect what KIND
+        // of site this is (gaming / shop / portfolio / blog / event / app /
+        // restaurant / …) and suggest a section architecture that fits.
+        // The AI is free to override sectionOrder, but we give it a strong
+        // hint so "valorant gaming page" stops getting agency/services
+        // templates.
+        var siteType = 'generic';
+        var recipeHint = '';
+        if (typeof ArbelSiteType !== 'undefined') {
+            siteType = ArbelSiteType.infer(description, industry);
+            var suggested = ArbelSiteType.recipe(siteType);
+            recipeHint = '\n\nDETECTED SITE TYPE: "' + siteType + '". Suggested section architecture for this type: ' +
+                JSON.stringify(suggested) + '. Follow this shape unless the description clearly calls for different sections. For gaming sites, prefer statsStrip (player counts / awards) + portfolio (game modes / characters / maps) + ctaBanner (download/play). For shops, prefer portfolio (as product grid) + pricing (as product tiers) + testimonials (reviews). For portfolios, prefer portfolio (projects) + about + process. For blogs, prefer portfolio (as posts) + about + ctaBanner (subscribe). For events, prefer statsStrip (dates/venue) + team (speakers) + pricing (tickets). For apps, prefer services (features) + pricing (plans) + statsStrip (downloads/rating). Do NOT blindly copy the "services + portfolio + pricing" agency template onto every site.\n';
+        }
+
         var presetCatalogue =
             'SHADERS: obsidian (luxury/mysterious), aurora (tech/vibrant), ember (food/bold), frost (finance/clinical), neon (gaming/edgy), silk (fashion/elegant).\n' +
             '  PARTICLES: constellation (tech), fireflies (warm/organic), snow (seasonal), nebula (space/premium), matrix (hacker/dev), bokeh (photography/romantic), spark (energy), plasma (sci-fi), stardust (dreamy), rain (moody), vortex (abstract), circuits (hardware), confetti (events), galaxy (epic).\n' +
@@ -364,14 +379,16 @@ window.ArbelAI = (function () {
             '  Mood: ' + mood + '\n' +
             '  Palette direction: ' + palette + '\n' +
             '  Tone of voice (commit fully in every copy field): ' + tone + '\n' +
-            '  Variation seed: ' + seed + '\n\n' +
-            'IMPORTANT: Do NOT default to generic tech-blue or purple. Match the palette to the industry and mood (beauty=rose/gold/ivory, food=warm tones, finance=muted/serious, nonprofit=earthy, music=bold/saturated, etc.). Be adventurous.\n\n' +
+            '  Variation seed: ' + seed + '\n' +
+            recipeHint +
+            'IMPORTANT: Do NOT default to generic tech-blue or purple. Match the palette to the industry and mood (beauty=rose/gold/ivory, food=warm tones, finance=muted/serious, nonprofit=earthy, music=bold/saturated, gaming=neon/dark/saturated, event=bold/hi-contrast, etc.). Be adventurous.\n\n' +
             'Return a valid JSON object (no markdown, no code blocks, raw JSON only) with THREE top-level keys: "brand", "design", and "copy".\n\n' +
             'The "brand" key must be:\n' +
             '{\n' +
             '  "name": "the actual brand name — extract from description if mentioned, otherwise invent a fitting one",\n' +
             '  "tagline": "short memorable tagline (3-8 words) — specific, not generic",\n' +
-            '  "industry": one of "agency"|"saas"|"ecommerce"|"restaurant"|"healthcare"|"portfolio"|"fashion"|"realestate"|"fitness"|"education"|"finance"|"legal"|"nonprofit"|"music"|"photography"|"startup"|"other",\n' +
+            '  "industry": one of "agency"|"saas"|"app"|"ecommerce"|"restaurant"|"healthcare"|"portfolio"|"fashion"|"realestate"|"fitness"|"education"|"finance"|"legal"|"nonprofit"|"music"|"photography"|"gaming"|"blog"|"podcast"|"event"|"startup"|"other",\n' +
+            '  "siteType": "' + siteType + '" (echo the detected site type so downstream code knows what kind of site this is),\n' +
             '  "email": "a placeholder contact email using the brand name (e.g. hello@arres.co)",\n' +
             '  "seoTitle": "<=70 char SEO title",\n' +
             '  "seoDescription": "<=160 char meta description"\n' +
