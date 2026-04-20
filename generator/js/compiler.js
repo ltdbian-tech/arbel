@@ -1803,7 +1803,7 @@ window.ArbelCompiler = (function () {
             metaBlock +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&family=Archivo:wght@400;600;800&family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Raleway:wght@400;500;700&display=swap" rel="stylesheet">\n' +
+            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&family=Archivo:wght@400;600;800&family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Raleway:wght@400;500;700&family=Jost:wght@400;500;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">\n' +
             '  <link rel="stylesheet" href="css/style.css">\n' +
             '</head>\n<body' + (function () {
                 var cls = [];
@@ -2662,6 +2662,84 @@ window.ArbelCompiler = (function () {
                 b + ' .btn-primary { background: var(--accent); color: #fff; text-transform: uppercase; letter-spacing: 0.15em; border-radius: 999px; }\n' +
                 b + ' .cta-banner { background: color-mix(in srgb, var(--accent) 15%, transparent); }\n';
         }
+
+        /* ─── Type-native section polish ─── */
+        if (t === 'shop') {
+            css +=
+                b + ' .product-card { border: none; background: transparent; padding: 0; overflow: hidden; }\n' +
+                b + ' .product-card .product-media { aspect-ratio: 4/5; background: color-mix(in srgb, var(--fg) 4%, transparent); border-radius: calc(var(--radius) * 0.6); overflow: hidden; position: relative; }\n' +
+                b + ' .product-name { font-family: "Fraunces","Instrument Serif",serif; font-weight: 500; font-size: 1.05rem; letter-spacing: -0.005em; margin-top: 0.7rem; }\n' +
+                b + ' .product-price { font-family: "Space Mono","JetBrains Mono",monospace; font-variant-numeric: tabular-nums; color: var(--fg); font-weight: 600; }\n' +
+                b + ' .product-cat { letter-spacing: 0.28em; text-transform: uppercase; font-size: 0.66rem; color: color-mix(in srgb, var(--fg) 55%, transparent); margin-top: 0.7rem; }\n' +
+                b + ' .product-badge { background: var(--accent); color: #fff; font-weight: 700; letter-spacing: 0.1em; border-radius: 999px; padding: 0.2rem 0.55rem; font-size: 0.62rem; position: absolute; top: 0.75rem; left: 0.75rem; }\n' +
+                b + ' .product-add { border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent); background: transparent; color: var(--fg); width: 32px; height: 32px; border-radius: 999px; transition: all 0.25s; }\n' +
+                b + ' .product-add:hover { background: var(--accent); color: #fff; border-color: var(--accent); }\n' +
+                b + ' .category-chip { border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent); background: transparent; padding: 0.55rem 1.1rem; border-radius: 999px; letter-spacing: 0.15em; font-size: 0.72rem; transition: all 0.25s; }\n' +
+                b + ' .category-chip:hover { background: var(--accent); color: #fff; border-color: var(--accent); }\n' +
+                b + ' .deal-banner { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #000)); border-radius: 18px; color: #fff; }\n' +
+                b + ' .deal-banner-heading { font-family: "Fraunces","Instrument Serif",serif; font-weight: 500; }\n';
+        }
+        else if (t === 'fashion') {
+            css +=
+                b + ' .look-card { gap: 1rem; }\n' +
+                b + ' .look-card .look-media { aspect-ratio: 3/4; overflow: hidden; }\n' +
+                b + ' .look-card .look-media img { transition: transform 0.8s var(--ease); }\n' +
+                b + ' .look-num { font-family: "DM Serif Display","Playfair Display",serif; font-style: italic; font-size: 1.4rem; opacity: 0.4; }\n' +
+                b + ' .look-title { font-family: "DM Serif Display","Instrument Serif",serif; font-weight: 400; font-size: clamp(1.2rem, 1.8vw, 1.6rem); letter-spacing: -0.005em; }\n' +
+                b + ' .look-tag { letter-spacing: 0.35em; font-size: 0.66rem; color: color-mix(in srgb, var(--fg) 55%, transparent); }\n' +
+                b + ' .product-card { border: none; background: transparent; padding: 0; }\n' +
+                b + ' .product-card .product-media { aspect-ratio: 3/4; background: color-mix(in srgb, var(--fg) 6%, transparent); }\n' +
+                b + ' .product-name { font-family: "DM Serif Display","Instrument Serif",serif; font-weight: 400; }\n' +
+                b + ' .product-price { font-family: "Jost","Inter",sans-serif; letter-spacing: 0.08em; }\n';
+        }
+        else if (t === 'restaurant') {
+            css +=
+                b + ' .menu-group { border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); padding-top: 1.5rem; margin-top: 2.5rem; }\n' +
+                b + ' .menu-group-heading { font-family: "Cormorant Garamond","Fraunces",serif; font-style: italic; font-weight: 400; color: var(--accent); letter-spacing: 0.05em; font-size: clamp(1.4rem, 2.2vw, 1.8rem); }\n' +
+                b + ' .menu-row { display: grid; grid-template-columns: 1fr auto; gap: 1rem 2rem; align-items: baseline; padding: 1rem 0; border-bottom: 1px dotted color-mix(in srgb, var(--fg) 18%, transparent); }\n' +
+                b + ' .menu-item-name { font-family: "Fraunces","Cormorant Garamond",serif; font-weight: 500; font-size: 1.1rem; margin: 0; }\n' +
+                b + ' .menu-item-desc { font-family: "Lora","Inter",serif; font-style: italic; color: color-mix(in srgb, var(--fg) 70%, transparent); font-size: 0.92rem; margin: 0.2rem 0 0; }\n' +
+                b + ' .menu-item-price { font-family: "Cormorant Garamond","Fraunces",serif; font-weight: 500; font-size: 1.1rem; color: var(--accent); font-variant-numeric: tabular-nums; }\n' +
+                b + ' .menu-tags { letter-spacing: 0.25em; font-size: 0.62rem; color: color-mix(in srgb, var(--accent) 80%, transparent); display: inline-block; margin-top: 0.35rem; }\n';
+        }
+        else if (t === 'gaming') {
+            css +=
+                b + ' .agent-card { position: relative; border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%); }\n' +
+                b + ' .agent-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }\n' +
+                b + ' .agent-name { font-family: "Syne","Archivo Black",sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }\n' +
+                b + ' .agent-role { font-family: "JetBrains Mono","Space Mono",monospace; color: var(--accent); letter-spacing: 0.25em; font-size: 0.72rem; }\n' +
+                b + ' .agent-ability { color: color-mix(in srgb, var(--fg) 75%, transparent); font-size: 0.9rem; }\n' +
+                b + ' .mode-card { border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); background: color-mix(in srgb, var(--fg) 3%, transparent); }\n' +
+                b + ' .mode-name { font-family: "Syne","Archivo Black",sans-serif; font-weight: 800; text-transform: uppercase; }\n' +
+                b + ' .mode-tag { font-family: "JetBrains Mono",monospace; color: var(--accent); letter-spacing: 0.25em; font-size: 0.68rem; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); padding: 0.2rem 0.6rem; display: inline-block; }\n' +
+                b + ' .cinematic-reel { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, #000), #000); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); }\n' +
+                b + ' .cinematic-reel .cinematic-reel-heading { font-family: "Syne","Archivo Black",sans-serif; text-transform: uppercase; letter-spacing: 0.02em; font-weight: 800; }\n';
+        }
+        else if (t === 'music' || t === 'podcast') {
+            css +=
+                b + ' .release-card { gap: 0.5rem; }\n' +
+                b + ' .release-card .release-media { aspect-ratio: 1/1; background: color-mix(in srgb, var(--accent) 15%, #000); overflow: hidden; }\n' +
+                b + ' .release-card .release-media img { transition: transform 0.6s var(--ease); }\n' +
+                b + ' .release-ph { display: flex; align-items: center; justify-content: center; font-family: "Archivo Black","Syne",sans-serif; font-size: 3rem; color: var(--accent); width: 100%; height: 100%; }\n' +
+                b + ' .release-title { font-family: "Archivo Black","Syne",sans-serif; font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; margin-top: 0.35rem; }\n' +
+                b + ' .release-meta { font-family: "Space Mono","JetBrains Mono",monospace; letter-spacing: 0.18em; font-size: 0.68rem; color: color-mix(in srgb, var(--fg) 65%, transparent); text-transform: uppercase; }\n';
+        }
+        else if (t === 'portfolio' || t === 'photography') {
+            css +=
+                b + ' .stat-wall-grid { border-top: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); padding: 2.5rem 0; }\n' +
+                b + ' .stat-wall-cell { border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); padding: 0.5rem 1.5rem; }\n' +
+                b + ' .stat-wall-val { font-family: "Fraunces","Instrument Serif",serif; font-weight: 400; font-size: clamp(2.8rem, 6vw, 5.5rem); letter-spacing: -0.03em; line-height: 0.95; }\n' +
+                b + ' .stat-wall-label { font-family: "Space Mono",monospace; letter-spacing: 0.25em; font-size: 0.7rem; color: color-mix(in srgb, var(--fg) 60%, transparent); margin-top: 0.5rem; }\n' +
+                b + ' .race-table { border-top: 1px solid color-mix(in srgb, var(--fg) 14%, transparent); }\n' +
+                b + ' .race-row { display: grid; grid-template-columns: 140px 1fr auto auto; gap: 1.5rem; padding: 1.1rem 0; border-bottom: 1px solid color-mix(in srgb, var(--fg) 10%, transparent); align-items: baseline; }\n' +
+                b + ' .race-row--head { opacity: 0.55; font-size: 0.7rem; letter-spacing: 0.25em; }\n' +
+                b + ' .race-date { font-family: "Space Mono",monospace; letter-spacing: 0.15em; font-size: 0.78rem; color: color-mix(in srgb, var(--fg) 65%, transparent); }\n' +
+                b + ' .race-event { font-family: "Fraunces","Instrument Serif",serif; font-weight: 400; font-size: 1.05rem; }\n' +
+                b + ' .race-result { font-family: "Space Mono",monospace; font-size: 0.78rem; letter-spacing: 0.1em; }\n' +
+                b + ' .race-points { color: var(--accent); font-family: "Space Mono",monospace; font-size: 0.82rem; }\n' +
+                '@media (max-width: 768px) { ' + b + ' .race-row { grid-template-columns: 90px 1fr; row-gap: 0.25rem; } ' + b + ' .race-result, ' + b + ' .race-points { grid-column: 2; font-size: 0.72rem; } }\n';
+        }
+
         return css;
     }
 

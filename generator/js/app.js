@@ -1732,7 +1732,7 @@
         // so two runs on the same prompt feel distinct even if the AI is lazy.
         var allDensities = ['compact', 'cozy', 'spacious'];
         var allCorners   = ['sharp', 'soft', 'pill'];
-        var allFonts     = ['editorial', 'tech', 'humanist', 'display', 'mono', 'luxe', 'brutalist', 'terminal', 'futurist', 'soft', 'classical', 'modern', 'boutique', 'journal'];
+        var allFonts     = ['editorial', 'tech', 'humanist', 'display', 'mono', 'luxe', 'brutalist', 'terminal', 'futurist', 'soft', 'classical', 'modern', 'boutique', 'journal', 'retail', 'chef', 'arena', 'vinyl', 'runway', 'streetwear', 'athletic', 'magazine'];
         if (!design.density) design.density = _pickRandom(allDensities, _aiLastDensity);
         if (!design.corners) design.corners = _pickRandom(allCorners, _aiLastCorners);
         if (!design.fontPair) design.fontPair = _pickRandom(allFonts, _aiLastFont);
@@ -2057,7 +2057,16 @@
             classical:  { headingFont: '"Crimson Pro", Georgia, serif', bodyFont: '"Lora", Georgia, serif' },
             modern:     { headingFont: '"Plus Jakarta Sans", -apple-system, sans-serif', bodyFont: '"Plus Jakarta Sans", -apple-system, sans-serif' },
             boutique:   { headingFont: '"Cormorant Garamond", Georgia, serif', bodyFont: '"Raleway", -apple-system, sans-serif' },
-            journal:    { headingFont: '"Libre Baskerville", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' }
+            journal:    { headingFont: '"Libre Baskerville", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            // Category-distinctive pairs
+            retail:     { headingFont: '"Fraunces", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            chef:       { headingFont: '"Cormorant Garamond", Georgia, serif', bodyFont: '"Work Sans", -apple-system, sans-serif' },
+            arena:      { headingFont: '"Syne", -apple-system, sans-serif', bodyFont: '"JetBrains Mono", monospace' },
+            vinyl:      { headingFont: '"Archivo Black", Impact, sans-serif', bodyFont: '"Space Mono", monospace' },
+            runway:     { headingFont: '"DM Serif Display", Georgia, serif', bodyFont: '"Jost", -apple-system, sans-serif' },
+            streetwear: { headingFont: '"Archivo", -apple-system, sans-serif', bodyFont: '"Space Grotesk", -apple-system, sans-serif' },
+            athletic:   { headingFont: '"Bebas Neue","Archivo Black",sans-serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            magazine:   { headingFont: '"Playfair Display", Georgia, serif', bodyFont: '"Lora", Georgia, serif' }
         };
         var tokens = {};
         if (design.density && densityMap[design.density]) Object.assign(tokens, densityMap[design.density]);

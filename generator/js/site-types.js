@@ -231,9 +231,11 @@
             presetIds: ['neon', 'matrix', 'plasma', 'circuits', 'galaxy', 'vortex', 'nebula'],
             palettes: [
                 ['#00ffa3', '#060611'], ['#ff2e63', '#0d0b1e'], ['#7c4dff', '#0a0a14'],
-                ['#00e5ff', '#050510'], ['#ffd300', '#12020e'], ['#ff0059', '#080414']
+                ['#00e5ff', '#050510'], ['#ffd300', '#12020e'], ['#ff0059', '#080414'],
+                ['#ff6b35', '#0a0608'], ['#39ff14', '#030308'], ['#ff00ff', '#0a000f'],
+                ['#00b8ff', '#050a14']
             ],
-            fonts: ['tech', 'terminal', 'futurist', 'brutalist', 'mono'],
+            fonts: ['arena', 'tech', 'terminal', 'futurist', 'brutalist', 'mono', 'athletic'],
             corners: ['sharp', 'sharp', 'soft'],
             cardTreatment: ['bordered', 'filled', 'glass'],
             navStyle: ['minimal', 'ghost', 'pill'],
@@ -286,9 +288,11 @@
             presetIds: ['meshGrad', 'iridescent', 'sunsetBlob', 'morphBlob', 'prism'],
             palettes: [
                 ['#ff5c8a', '#fff5f2'], ['#0b0b0b', '#f4efe8'], ['#1a1a1a', '#faf7f0'],
-                ['#c2410c', '#fef3eb'], ['#6d28d9', '#fdf9ff']
+                ['#c2410c', '#fef3eb'], ['#6d28d9', '#fdf9ff'],
+                ['#059669', '#f0fdf4'], ['#0f172a', '#f1f5f9'], ['#be185d', '#fff1f5'],
+                ['#7c2d12', '#fef7ed']
             ],
-            fonts: ['display', 'modern', 'humanist', 'editorial', 'boutique'],
+            fonts: ['retail', 'modern', 'humanist', 'editorial', 'boutique', 'streetwear'],
             corners: ['soft', 'pill', 'soft'],
             cardTreatment: ['floating', 'minimal', 'bordered'],
             navStyle: ['pill', 'minimal', 'default'],
@@ -327,9 +331,11 @@
             presetIds: ['ember', 'lavaLamp', 'auroraBlob', 'sunsetBlob', 'fireflies'],
             palettes: [
                 ['#c2410c', '#1a0f08'], ['#b45309', '#11080a'], ['#92400e', '#14110d'],
-                ['#dc2626', '#0d0604'], ['#f59e0b', '#0f0a07']
+                ['#dc2626', '#0d0604'], ['#f59e0b', '#0f0a07'],
+                ['#713f12', '#fdf6ec'], ['#881337', '#1a0a0f'], ['#166534', '#0a110d'],
+                ['#a16207', '#13100b']
             ],
-            fonts: ['editorial', 'luxe', 'classical', 'humanist'],
+            fonts: ['chef', 'editorial', 'luxe', 'classical', 'humanist'],
             corners: ['soft', 'soft', 'pill'],
             cardTreatment: ['minimal', 'bordered', 'floating'],
             navStyle: ['minimal', 'default'],
@@ -368,9 +374,11 @@
             presetIds: ['obsidian', 'silk', 'noiseGrad', 'iridescent', 'bokeh', 'stardust'],
             palettes: [
                 ['#f5f5f5', '#0a0a0a'], ['#e6b13a', '#111111'], ['#d4d4d4', '#0f0f12'],
-                ['#ff6b6b', '#0a0a0a'], ['#c4a8ff', '#080810']
+                ['#ff6b6b', '#0a0a0a'], ['#c4a8ff', '#080810'],
+                ['#fbbf24', '#18181b'], ['#10b981', '#0a0f0c'], ['#f5f5f5', '#1c1917'],
+                ['#111111', '#fafaf9']
             ],
-            fonts: ['editorial', 'display', 'luxe', 'modern', 'journal'],
+            fonts: ['runway', 'editorial', 'display', 'luxe', 'modern', 'magazine'],
             corners: ['sharp', 'soft'],
             cardTreatment: ['minimal', 'bordered', 'floating'],
             navStyle: ['minimal', 'ghost', 'default'],
@@ -461,7 +469,7 @@
             palettes: [
                 ['#a855f7', '#0e0a1c'], ['#f59e0b', '#130a03'], ['#22d3ee', '#05111a']
             ],
-            fonts: ['display', 'tech', 'editorial', 'humanist'],
+            fonts: ['vinyl', 'display', 'tech', 'editorial', 'humanist'],
             corners: ['pill', 'soft'],
             cardTreatment: ['floating', 'filled', 'glass'],
             navStyle: ['pill', 'default'],
@@ -483,7 +491,7 @@
                 ['#ff2e63', '#0a0a14'], ['#ffd300', '#0b0606'], ['#7c4dff', '#0a0a14'],
                 ['#22d3ee', '#05111a']
             ],
-            fonts: ['display', 'futurist', 'brutalist', 'tech'],
+            fonts: ['arena', 'display', 'futurist', 'brutalist', 'tech'],
             corners: ['sharp', 'pill'],
             cardTreatment: ['bordered', 'filled', 'floating'],
             navStyle: ['pill', 'minimal'],
@@ -656,9 +664,11 @@
             presetIds: ['silk', 'iridescent', 'sunsetBlob', 'noiseGrad', 'obsidian'],
             palettes: [
                 ['#f5f5f5', '#0a0a0a'], ['#0a0a0a', '#f5f5f5'], ['#d4af37', '#1a1208'],
-                ['#ff5c8a', '#fff0f5'], ['#6d28d9', '#fdf9ff']
+                ['#ff5c8a', '#fff0f5'], ['#6d28d9', '#fdf9ff'],
+                ['#7c2d12', '#fef7ed'], ['#292524', '#fafaf9'], ['#701a75', '#fdf4ff'],
+                ['#0c4a6e', '#f0f9ff']
             ],
-            fonts: ['editorial', 'luxe', 'display', 'classical', 'boutique'],
+            fonts: ['runway', 'editorial', 'luxe', 'streetwear', 'boutique', 'magazine'],
             corners: ['sharp'],
             cardTreatment: ['minimal', 'floating'],
             navStyle: ['minimal', 'ghost'],
@@ -695,9 +705,11 @@
             presetIds: ['sineWaves', 'liquidWave', 'ripple', 'neon', 'plasma', 'prism'],
             palettes: [
                 ['#ec4899', '#09090b'], ['#f59e0b', '#0a0a0a'], ['#22d3ee', '#030712'],
-                ['#8b5cf6', '#0a0614']
+                ['#8b5cf6', '#0a0614'],
+                ['#dc2626', '#0a0604'], ['#84cc16', '#0a100a'], ['#f472b6', '#18070f'],
+                ['#fbbf24', '#0f0a02']
             ],
-            fonts: ['display', 'brutalist', 'futurist', 'editorial'],
+            fonts: ['vinyl', 'display', 'brutalist', 'futurist', 'editorial'],
             corners: ['sharp', 'pill'],
             cardTreatment: ['filled', 'bordered', 'floating'],
             navStyle: ['minimal', 'pill'],

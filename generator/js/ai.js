@@ -481,7 +481,7 @@ window.ArbelAI = (function () {
             'BOTH SHAPES MAY ALSO INCLUDE these optional top-level design keys:\n' +
             '  "density":  "compact"|"cozy"|"spacious" — overall vertical spacing,\n' +
             '  "corners":  "sharp"|"soft"|"pill" — button & card roundness,\n' +
-            '  "fontPair": "editorial"|"tech"|"humanist"|"display"|"mono" — typographic personality,\n' +
+            '  "fontPair": "editorial"|"tech"|"humanist"|"display"|"mono"|"luxe"|"brutalist"|"futurist"|"classical"|"modern"|"boutique"|"retail"|"chef"|"arena"|"vinyl"|"runway"|"streetwear"|"athletic"|"magazine" — typographic personality; pick retail/boutique for shops, chef/editorial for restaurants, arena/futurist for gaming, vinyl/brutalist for music, runway/luxe for fashion, streetwear for DTC apparel, magazine for editorial blogs,\n' +
             '  "sectionTones": object keyed by section id (services/portfolio/about/process/testimonials/pricing/faq/contact) with value "dark"|"light"|"accent" — use this to alternate section backgrounds for rhythm; don\'t make every section the same tone,\n' +
             '  "sectionAnims": object keyed by the same section ids with value "fade"|"fadeUp"|"slideLeft"|"slideRight"|"scale"|"stagger"|"blur"|"none" — entrance animation per section.\n' +
             'CONTRAST RULE: text must remain readable. If you override bg to a LIGHT color, do not pair it with a pale accent for headings — pick a deep, saturated accent so contrast ratio stays ≥ 4.5.\n' +
@@ -596,7 +596,7 @@ window.ArbelAI = (function () {
             '    "bgOverride": "#RRGGBB (optional)",\n' +
             '    "density": "compact|cozy|spacious",\n' +
             '    "corners": "sharp|soft|pill",\n' +
-            '    "fontPair": "editorial|tech|humanist|display|mono|luxe|brutalist|terminal|futurist|soft|classical|modern|boutique|journal",\n' +
+            '    "fontPair": "editorial|tech|humanist|display|mono|luxe|brutalist|terminal|futurist|soft|classical|modern|boutique|journal|retail|chef|arena|vinyl|runway|streetwear|athletic|magazine",\n' +
             '    "heroLayout": "centered|left|split|minimal|name-lockup|product-feature|dish-photo|search-first",\n' +
             '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","statsStrip","logoCloud","ctaBanner","team"] pick 3-6,\n' +
             '    "sectionLayouts": {"services":"list|alternating|bento|numbered","portfolio":"list|bento"} optional,\n' +
