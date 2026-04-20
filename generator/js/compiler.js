@@ -1881,7 +1881,8 @@ window.ArbelCompiler = (function () {
                     '  .logo { display: block; color: inherit; }\n' +
                     '  .nav { display: none; }\n' +
                     '  .nav.open { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; margin: auto 0; width: 100%; padding: 2rem 0; }\n' +
-                    '  .nav a, .nav-link { color: var(--menu-fg, #fff); font-size: 1.5rem; text-decoration: none; padding: 0.5rem 1rem; transition: opacity 0.2s; }\n' +
+                    '  .nav a, .nav-link { color: var(--menu-fg, #fff); font-size: 1.5rem; font-weight: 600; text-decoration: none; padding: 0.5rem 1rem; opacity: 1; transition: opacity 0.2s, color 0.2s; }\n' +
+                    '  .nav a:hover, .nav-link:hover { color: var(--accent); }\n' +
                     '  .nav a:hover, .nav-link:hover { opacity: 0.7; }\n' +
                     '  .menu-btn { display: block; z-index: 10000; }\n' +
                     '  .menu-btn.is-active span { background: var(--menu-fg, var(--fg)); }\n' +

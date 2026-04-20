@@ -865,11 +865,97 @@
         return pool[Math.floor(Math.random() * pool.length)];
     }
 
+    /** ═══════════════════════════════════════════════════════════════════
+     *  DESIGN VARIANTS — coherent style "personalities" within a single
+     *  type. Each variant locks a bundle of design axes so that two sites
+     *  in the same category (e.g. shop) can look radically different —
+     *  think walmart.com (big-box) vs amazon.com (marketplace) vs a
+     *  farmer's-market boutique. Picked once per randomize and merged
+     *  on top of the profile defaults.
+     *  ═════════════════════════════════════════════════════════════════ */
+    var VARIANTS = {
+        shop: [
+            { id: 'big-box',     presetId: 'meshGrad',   palette: ['#0071dc', '#ffffff'], font: 'modern',    corners: 'soft',  cardTreatment: 'filled',   typeScale: 'normal',  buttonStyle: 'solid',    navStyle: 'pill',    logoStyle: 'mark-left' },
+            { id: 'marketplace', presetId: 'noiseGrad',  palette: ['#ff9900', '#131921'], font: 'modern',    corners: 'sharp', cardTreatment: 'bordered', typeScale: 'tight',   buttonStyle: 'solid',    navStyle: 'default', logoStyle: 'mark-left' },
+            { id: 'boutique',    presetId: 'silk',       palette: ['#8b6f3e', '#f7f1e3'], font: 'editorial', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'tight',   buttonStyle: 'underline',navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'farm',        presetId: 'auroraBlob', palette: ['#4f7c3a', '#f5ebd7'], font: 'humanist',  corners: 'pill',  cardTreatment: 'floating', typeScale: 'normal',  buttonStyle: 'lifted',   navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'neon-bodega', presetId: 'neon',       palette: ['#ff2d6f', '#0a0a14'], font: 'brutalist', corners: 'sharp', cardTreatment: 'filled',   typeScale: 'dramatic',buttonStyle: 'sharp',    navStyle: 'minimal', logoStyle: 'slash' },
+            { id: 'deal-hunter', presetId: 'ember',      palette: ['#e63946', '#fff9f0'], font: 'display',   corners: 'soft',  cardTreatment: 'filled',   typeScale: 'normal',  buttonStyle: 'gradient', navStyle: 'pill',    logoStyle: 'mark-left' }
+        ],
+        gaming: [
+            { id: 'esports',      presetId: 'neon',       palette: ['#ff2e63', '#05070e'], font: 'tech',      corners: 'sharp', cardTreatment: 'bordered', typeScale: 'dramatic', buttonStyle: 'sharp',  navStyle: 'minimal', logoStyle: 'bracket' },
+            { id: 'aaa-cinematic',presetId: 'obsidian',   palette: ['#d97757', '#0a0605'], font: 'display',   corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'outline',navStyle: 'ghost',   logoStyle: 'monogram' },
+            { id: 'indie',        presetId: 'morphBlob',  palette: ['#f5b700', '#1a1038'], font: 'futurist',  corners: 'pill',  cardTreatment: 'filled',   typeScale: 'normal',   buttonStyle: 'lifted', navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'arcade',       presetId: 'matrix',     palette: ['#39ff14', '#000000'], font: 'brutalist', corners: 'sharp', cardTreatment: 'bordered', typeScale: 'dramatic', buttonStyle: 'sharp',  navStyle: 'minimal', logoStyle: 'slash' },
+            { id: 'competitive',  presetId: 'circuits',   palette: ['#00d4ff', '#030917'], font: 'tech',      corners: 'sharp', cardTreatment: 'filled',   typeScale: 'tight',    buttonStyle: 'solid',  navStyle: 'pill',    logoStyle: 'bracket' },
+            { id: 'cozy',         presetId: 'stardust',   palette: ['#b388ff', '#1a0f2e'], font: 'humanist',  corners: 'pill',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'gradient',navStyle: 'minimal',logoStyle: 'dot' }
+        ],
+        restaurant: [
+            { id: 'trattoria',    presetId: 'silk',       palette: ['#8b1e1e', '#f5eee0'], font: 'editorial', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'tight',    buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'neo-bistro',   presetId: 'obsidian',   palette: ['#d4af37', '#0a0a0a'], font: 'luxe',      corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'outline',   navStyle: 'ghost',   logoStyle: 'monogram' },
+            { id: 'farmhouse',    presetId: 'sunsetBlob', palette: ['#6b4423', '#f4e9d8'], font: 'classical', corners: 'soft',  cardTreatment: 'bordered', typeScale: 'normal',   buttonStyle: 'solid',     navStyle: 'default', logoStyle: 'mark-left' },
+            { id: 'street-food',  presetId: 'ember',      palette: ['#ff4e1a', '#121212'], font: 'brutalist', corners: 'sharp', cardTreatment: 'filled',   typeScale: 'dramatic', buttonStyle: 'sharp',     navStyle: 'minimal', logoStyle: 'slash' },
+            { id: 'ramen-bar',    presetId: 'bokeh',      palette: ['#e63946', '#0c0a0a'], font: 'brutalist', corners: 'sharp', cardTreatment: 'bordered', typeScale: 'normal',   buttonStyle: 'solid',     navStyle: 'pill',    logoStyle: 'bracket' },
+            { id: 'cafe',         presetId: 'noiseGrad',  palette: ['#6f4e37', '#efe6d6'], font: 'humanist',  corners: 'pill',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'lifted',    navStyle: 'pill',    logoStyle: 'dot' }
+        ],
+        portfolio: [
+            { id: 'editorial',    presetId: 'noiseGrad',  palette: ['#f5f5f5', '#0a0a0a'], font: 'editorial', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'brutalist',    presetId: 'obsidian',   palette: ['#ffffff', '#000000'], font: 'brutalist', corners: 'sharp', cardTreatment: 'bordered', typeScale: 'dramatic', buttonStyle: 'sharp',     navStyle: 'minimal', logoStyle: 'slash' },
+            { id: 'warm-indie',   presetId: 'sunsetBlob', palette: ['#ff8c69', '#1a0f0a'], font: 'display',   corners: 'pill',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'gradient',  navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'clean-saas',   presetId: 'meshGrad',   palette: ['#5b6cff', '#f8fafc'], font: 'modern',    corners: 'soft',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'solid',     navStyle: 'default', logoStyle: 'mark-left' },
+            { id: 'athlete',      presetId: 'liquidWave', palette: ['#ff3b30', '#0b0b0b'], font: 'tech',      corners: 'sharp', cardTreatment: 'filled',   typeScale: 'dramatic', buttonStyle: 'sharp',     navStyle: 'ghost',   logoStyle: 'bracket' },
+            { id: 'archive',      presetId: 'frost',      palette: ['#0a0a0a', '#e5e5e5'], font: 'classical', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'tight',    buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' }
+        ],
+        fashion: [
+            { id: 'couture',      presetId: 'silk',       palette: ['#0a0a0a', '#f5f0e8'], font: 'luxe',      corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'streetwear',   presetId: 'obsidian',   palette: ['#ff2d55', '#0a0a0a'], font: 'brutalist', corners: 'sharp', cardTreatment: 'bordered', typeScale: 'dramatic', buttonStyle: 'sharp',     navStyle: 'minimal', logoStyle: 'slash' },
+            { id: 'ethereal',     presetId: 'iridescent', palette: ['#e6ccff', '#1a0b2e'], font: 'editorial', corners: 'soft',  cardTreatment: 'floating', typeScale: 'tight',    buttonStyle: 'gradient',  navStyle: 'ghost',   logoStyle: 'dot' },
+            { id: 'vintage',      presetId: 'sunsetBlob', palette: ['#8b4513', '#faf3e0'], font: 'classical', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'tight',    buttonStyle: 'outline',   navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'y2k',          presetId: 'prism',      palette: ['#ff6ec7', '#0d0d0d'], font: 'futurist',  corners: 'pill',  cardTreatment: 'filled',   typeScale: 'dramatic', buttonStyle: 'lifted',    navStyle: 'pill',    logoStyle: 'bracket' }
+        ],
+        music: [
+            { id: 'underground',  presetId: 'obsidian',   palette: ['#d4af37', '#050505'], font: 'brutalist', corners: 'sharp', cardTreatment: 'bordered', typeScale: 'dramatic', buttonStyle: 'sharp',     navStyle: 'minimal', logoStyle: 'slash' },
+            { id: 'pop',          presetId: 'prism',      palette: ['#ff3d7f', '#0f0a1a'], font: 'display',   corners: 'pill',  cardTreatment: 'filled',   typeScale: 'dramatic', buttonStyle: 'gradient',  navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'indie-folk',   presetId: 'ripple',     palette: ['#a4764c', '#1d140c'], font: 'editorial', corners: 'soft',  cardTreatment: 'minimal',  typeScale: 'normal',   buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'electronic',   presetId: 'plasma',     palette: ['#22d3ee', '#030712'], font: 'futurist',  corners: 'sharp', cardTreatment: 'floating', typeScale: 'tight',    buttonStyle: 'solid',     navStyle: 'ghost',   logoStyle: 'bracket' },
+            { id: 'classical',    presetId: 'sineWaves',  palette: ['#1a1a2e', '#f5f1e8'], font: 'classical', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'outline',   navStyle: 'minimal', logoStyle: 'monogram' }
+        ],
+        ecommerce: null, // alias → shop (resolved at pick time)
+        podcast: [
+            { id: 'npr-style',    presetId: 'noiseGrad',  palette: ['#e63946', '#fdfaf3'], font: 'editorial', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'tight',    buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'true-crime',   presetId: 'obsidian',   palette: ['#c1121f', '#0a0a0a'], font: 'brutalist', corners: 'sharp', cardTreatment: 'bordered', typeScale: 'dramatic', buttonStyle: 'sharp',     navStyle: 'minimal', logoStyle: 'bracket' },
+            { id: 'tech-chat',    presetId: 'circuits',   palette: ['#5b6cff', '#0a0b1a'], font: 'tech',      corners: 'soft',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'solid',     navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'comedy',       presetId: 'spark',      palette: ['#ffb703', '#1a1a1a'], font: 'display',   corners: 'pill',  cardTreatment: 'filled',   typeScale: 'dramatic', buttonStyle: 'gradient',  navStyle: 'pill',    logoStyle: 'mark-left' }
+        ],
+        event: [
+            { id: 'conference',   presetId: 'meshGrad',   palette: ['#0a6fff', '#fafbff'], font: 'modern',    corners: 'soft',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'solid',     navStyle: 'default', logoStyle: 'mark-left' },
+            { id: 'festival',     presetId: 'confetti',   palette: ['#ff006e', '#0a0614'], font: 'display',   corners: 'pill',  cardTreatment: 'filled',   typeScale: 'dramatic', buttonStyle: 'gradient',  navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'gala',         presetId: 'silk',       palette: ['#d4af37', '#0a0a0a'], font: 'luxe',      corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'outline',   navStyle: 'ghost',   logoStyle: 'monogram' },
+            { id: 'hackathon',    presetId: 'matrix',     palette: ['#00ff88', '#000000'], font: 'tech',      corners: 'sharp', cardTreatment: 'bordered', typeScale: 'tight',    buttonStyle: 'sharp',     navStyle: 'minimal', logoStyle: 'bracket' }
+        ],
+        photography: [
+            { id: 'monograph',    presetId: 'obsidian',   palette: ['#ffffff', '#000000'], font: 'editorial', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'underline', navStyle: 'minimal', logoStyle: 'monogram' },
+            { id: 'travel',       presetId: 'sunsetBlob', palette: ['#f4a261', '#1d1412'], font: 'classical', corners: 'soft',  cardTreatment: 'floating', typeScale: 'normal',   buttonStyle: 'gradient',  navStyle: 'pill',    logoStyle: 'dot' },
+            { id: 'fine-art',     presetId: 'noiseGrad',  palette: ['#0a0a0a', '#e5e0d5'], font: 'luxe',      corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'tight',    buttonStyle: 'underline', navStyle: 'ghost',   logoStyle: 'monogram' },
+            { id: 'wedding',      presetId: 'silk',       palette: ['#c9a961', '#faf5ee'], font: 'classical', corners: 'sharp', cardTreatment: 'minimal',  typeScale: 'dramatic', buttonStyle: 'outline',   navStyle: 'minimal', logoStyle: 'monogram' }
+        ]
+    };
+    VARIANTS.ecommerce = VARIANTS.shop;
+
+    /** Pick a random variant for a given type, or null if no variants defined. */
+    function variant(type) {
+        var v = VARIANTS[type];
+        if (!Array.isArray(v) || !v.length) return null;
+        return v[Math.floor(Math.random() * v.length)];
+    }
+
     global.ArbelSiteType = {
         infer: infer,
         recipe: recipe,
         types: types,
         profile: profile,
-        pickFrom: pickFrom
+        pickFrom: pickFrom,
+        variant: variant,
+        variants: function (type) { return VARIANTS[type] || null; }
     };
 })(window);

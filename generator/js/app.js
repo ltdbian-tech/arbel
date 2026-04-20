@@ -1647,6 +1647,40 @@
         var _stProf = window.ArbelSiteType ? ArbelSiteType.profile(_stType) : null;
         var _stPick = window.ArbelSiteType ? ArbelSiteType.pickFrom : function (a) { return Array.isArray(a) && a.length ? a[Math.floor(Math.random() * a.length)] : undefined; };
 
+        // ─── WITHIN-CATEGORY VARIETY ─── Pick one of N pre-bundled design
+        // variants for this type. Each variant is a coherent package
+        // (preset + palette + font + corners + cards + typeScale + buttons +
+        // nav + logo) so that, within the same category, two randomize
+        // clicks can produce radically different-looking sites
+        // (walmart-like vs amazon-like vs boutique, etc.). Axis locks and
+        // explicit AI overrides still win. We rotate variants with an
+        // anti-repeat pointer so consecutive randomizes never match.
+        var _stVar = window.ArbelSiteType && typeof ArbelSiteType.variant === 'function'
+            ? ArbelSiteType.variant(_stType) : null;
+        if (_stVar) {
+            // Anti-repeat: reroll once if same as last
+            if (state._lastVariantId && _stVar.id === state._lastVariantId) {
+                var _stVar2 = ArbelSiteType.variant(_stType);
+                if (_stVar2 && _stVar2.id !== state._lastVariantId) _stVar = _stVar2;
+            }
+            state._lastVariantId = _stVar.id;
+            state.aiVariantId = _stVar.id;
+
+            // Apply variant overrides (each axis only if not locked + not AI-supplied)
+            if (!locked.preset && !design.presetId && _stVar.presetId) design.presetId = _stVar.presetId;
+            if (!locked.colors && !design.accentOverride && !design.bgOverride && Array.isArray(_stVar.palette) && _stVar.palette.length >= 2) {
+                design.accentOverride = _stVar.palette[0];
+                design.bgOverride     = _stVar.palette[1];
+            }
+            if (!locked.fontPair && !design.fontPair && _stVar.font) design.fontPair = _stVar.font;
+            if (!locked.corners  && !design.corners  && _stVar.corners) design.corners = _stVar.corners;
+            if (!locked.cardTreatment && !design.cardTreatment && _stVar.cardTreatment) design.cardTreatment = _stVar.cardTreatment;
+            var _varAxes = ['typeScale','buttonStyle','navStyle','logoStyle'];
+            _varAxes.forEach(function (k) {
+                if (!design[k] && _stVar[k]) design[k] = _stVar[k];
+            });
+        }
+
         if (_stProf) {
             // Preset pool — if AI didn't choose one (or we're randomizing),
             // pick from the profile's preferred preset IDs.
@@ -1724,7 +1758,7 @@
         // ─── STRUCTURAL VARIATION ─── random hero layout + shuffled section order
         // so each regen changes the page architecture, not just the colors.
         var layouts = ['centered', 'left', 'split', 'minimal', 'name-lockup'];
-        if (['centered','left','split','minimal'].indexOf(design.heroLayout) === -1) {
+        if (['centered','left','split','minimal','name-lockup'].indexOf(design.heroLayout) === -1) {
             design.heroLayout = layouts[Math.floor(Math.random() * layouts.length)];
         }
         // Force anti-repeat: if AI picked the same hero layout as last run, rotate.
