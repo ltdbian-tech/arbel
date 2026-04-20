@@ -1757,8 +1757,8 @@
 
         // ─── STRUCTURAL VARIATION ─── random hero layout + shuffled section order
         // so each regen changes the page architecture, not just the colors.
-        var layouts = ['centered', 'left', 'split', 'minimal', 'name-lockup'];
-        if (['centered','left','split','minimal','name-lockup'].indexOf(design.heroLayout) === -1) {
+        var layouts = ['centered', 'left', 'split', 'minimal', 'name-lockup', 'product-feature', 'dish-photo', 'search-first'];
+        if (['centered','left','split','minimal','name-lockup','product-feature','dish-photo','search-first'].indexOf(design.heroLayout) === -1) {
             design.heroLayout = layouts[Math.floor(Math.random() * layouts.length)];
         }
         // Force anti-repeat: if AI picked the same hero layout as last run, rotate.

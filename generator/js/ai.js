@@ -487,7 +487,7 @@ window.ArbelAI = (function () {
             'CONTRAST RULE: text must remain readable. If you override bg to a LIGHT color, do not pair it with a pale accent for headings — pick a deep, saturated accent so contrast ratio stays ≥ 4.5.\n' +
             '"mode": "classic" — always use classic, do NOT return cinematic.\n\n' +
             'STRUCTURE VARIATION — vary these between regens:\n' +
-            '"heroLayout": one of "centered" | "left" | "split" | "minimal". Pick the one that best fits the mood (split for agency/product, left for editorial, minimal for portfolio, centered as safe default).\n' +
+            '"heroLayout": one of "centered" | "left" | "split" | "minimal" | "name-lockup" | "product-feature" | "dish-photo" | "search-first". Pick the one that best fits the mood: split for agency/product, left for editorial, minimal for portfolio, centered as safe default, name-lockup for gaming/fashion/music/portfolio where brand name IS the hero, product-feature for shops where a single product card + price sits beside copy, dish-photo for restaurants using a full-bleed photo backdrop, search-first for marketplace/big-box shops with a prominent search bar as the primary CTA.\n' +
             '"sectionOrder": ordered array of section IDs from ["services","portfolio","about","process","testimonials","pricing","faq","stats","statsStrip","logoCloud","ctaBanner","team"]. Pick 3-6 that fit the business. hero and contact are added automatically. statsStrip is a big-numbers band, logoCloud is a client marquee, ctaBanner is a full-width accent banner, team shows headshots. Mix 1-2 of these extras in for a less template-y shape.\n' +
             '"sectionLayouts": optional object like {"services":"list|alternating|bento|numbered","portfolio":"list|bento"} — pick different card layouts per section for structural variety. Empty/omitted means use the default grid.\n' +
             '"sectionCounts": optional object like {"services":2..4,"portfolio":2..4,"process":3..4} — vary card counts between regens.\n' +
@@ -597,7 +597,7 @@ window.ArbelAI = (function () {
             '    "density": "compact|cozy|spacious",\n' +
             '    "corners": "sharp|soft|pill",\n' +
             '    "fontPair": "editorial|tech|humanist|display|mono|luxe|brutalist|terminal|futurist|soft|classical|modern|boutique|journal",\n' +
-            '    "heroLayout": "centered|left|split|minimal",\n' +
+            '    "heroLayout": "centered|left|split|minimal|name-lockup|product-feature|dish-photo|search-first",\n' +
             '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","statsStrip","logoCloud","ctaBanner","team"] pick 3-6,\n' +
             '    "sectionLayouts": {"services":"list|alternating|bento|numbered","portfolio":"list|bento"} optional,\n' +
             '    "sectionCounts": {"services":2-4,"portfolio":2-4,"process":3-4},\n' +

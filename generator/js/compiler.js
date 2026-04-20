@@ -848,7 +848,8 @@ window.ArbelCompiler = (function () {
 
     function _heroHTML(c, bgClass) {
         var layout = (c.__heroLayout || '').toString();
-        var layoutClass = (layout === 'left' || layout === 'split' || layout === 'minimal' || layout === 'name-lockup') ? ' hero--' + layout : '';
+        var validLayouts = ['left','split','minimal','name-lockup','product-feature','dish-photo','search-first'];
+        var layoutClass = validLayouts.indexOf(layout) !== -1 ? ' hero--' + layout : '';
         var decoration = layout === 'split' ? '    <div class="hero-decoration" aria-hidden="true"></div>\n' : '';
         var eyebrow = c.__heroEyebrow ? '    <div class="hero-eyebrow mono" data-arbel-id="hero-eyebrow" data-arbel-edit="text">' + esc(c.__heroEyebrow) + '</div>\n' : '';
         // Name-lockup: giant brand/player name dominates, headline shrinks to tagline role
@@ -868,6 +869,83 @@ window.ArbelCompiler = (function () {
                 '    <div class="hero-actions">\n' +
                 '      <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'ENTER') + '</a>\n' +
                 '    </div>\n' +
+                '  </div>\n' +
+                '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
+                '</section>';
+        }
+        // Product-feature: left-aligned copy + big product card on the right (shop)
+        if (layout === 'product-feature') {
+            var pImg = c.heroProductImage || c.__productImage || '';
+            var pName = c.heroProductName || c.heroLine2 || 'Featured Drop';
+            var pPrice = c.heroProductPrice || '$49';
+            var pImgHtml = pImg
+                ? '<img src="' + esc(pImg) + '" alt="" loading="eager" data-arbel-id="hero-product-image" />'
+                : '<div class="hero-product-placeholder" aria-hidden="true"></div>';
+            return '<section class="hero hero--product-feature" id="hero" data-arbel-id="hero">\n' +
+                '  <div class="' + bgClass + ' hero-bg"></div>\n' +
+                '  <div class="hero-vignette"></div>\n' +
+                '  <div class="hero-content" data-arbel-id="hero-content">\n' +
+                '    <div class="hero-copy">\n' +
+                eyebrow +
+                '      <h1 class="hero-heading" data-arbel-id="hero-heading">\n' +
+                '        <span class="line"><span class="line-inner" data-arbel-id="hero-line1" data-arbel-edit="text">' + esc(c.heroLine1 || 'New season') + '</span></span>\n' +
+                '        <span class="line"><span class="line-inner" data-arbel-id="hero-line2" data-arbel-edit="text"><em>' + esc(c.heroLine2 || 'just dropped') + '</em></span></span>\n' +
+                '      </h1>\n' +
+                '      <p class="hero-sub" data-arbel-id="hero-sub" data-arbel-edit="text">' + esc(c.heroSub || '') + '</p>\n' +
+                '      <div class="hero-actions">\n' +
+                '        <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'SHOP NOW') + '</a>\n' +
+                '      </div>\n' +
+                '    </div>\n' +
+                '    <div class="hero-product" data-arbel-id="hero-product">\n' +
+                '      <div class="hero-product-media">' + pImgHtml + '</div>\n' +
+                '      <div class="hero-product-info">\n' +
+                '        <div class="hero-product-name" data-arbel-id="hero-product-name" data-arbel-edit="text">' + esc(pName) + '</div>\n' +
+                '        <div class="hero-product-price" data-arbel-id="hero-product-price" data-arbel-edit="text">' + esc(pPrice) + '</div>\n' +
+                '      </div>\n' +
+                '    </div>\n' +
+                '  </div>\n' +
+                '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
+                '</section>';
+        }
+        // Dish-photo: full-bleed photo backdrop with overlay text bottom-left (restaurant)
+        if (layout === 'dish-photo') {
+            var dImg = c.heroDishImage || c.__heroImage || '';
+            var dImgCss = dImg ? 'style="background-image:url(' + esc(dImg).replace(/"/g,'') + ');"' : '';
+            return '<section class="hero hero--dish-photo" id="hero" data-arbel-id="hero">\n' +
+                '  <div class="hero-photo" ' + dImgCss + ' data-arbel-id="hero-photo"></div>\n' +
+                '  <div class="hero-photo-scrim"></div>\n' +
+                '  <div class="hero-content" data-arbel-id="hero-content">\n' +
+                eyebrow +
+                '    <h1 class="hero-heading" data-arbel-id="hero-heading">\n' +
+                '      <span class="line"><span class="line-inner" data-arbel-id="hero-line1" data-arbel-edit="text">' + esc(c.heroLine1 || 'Cooked with') + '</span></span>\n' +
+                '      <span class="line"><span class="line-inner" data-arbel-id="hero-line2" data-arbel-edit="text"><em>' + esc(c.heroLine2 || 'fire & heart.') + '</em></span></span>\n' +
+                '    </h1>\n' +
+                '    <p class="hero-sub" data-arbel-id="hero-sub" data-arbel-edit="text">' + esc(c.heroSub || '') + '</p>\n' +
+                '    <div class="hero-actions">\n' +
+                '      <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'RESERVE') + '</a>\n' +
+                '    </div>\n' +
+                '  </div>\n' +
+                '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
+                '</section>';
+        }
+        // Search-first: centered search bar as primary CTA (shop/marketplace)
+        if (layout === 'search-first') {
+            var placeholder = c.heroSearchPlaceholder || 'Search thousands of products…';
+            return '<section class="hero hero--search-first" id="hero" data-arbel-id="hero">\n' +
+                '  <div class="' + bgClass + ' hero-bg"></div>\n' +
+                '  <div class="hero-vignette"></div>\n' +
+                '  <div class="hero-content" data-arbel-id="hero-content">\n' +
+                eyebrow +
+                '    <h1 class="hero-heading" data-arbel-id="hero-heading">\n' +
+                '      <span class="line"><span class="line-inner" data-arbel-id="hero-line1" data-arbel-edit="text">' + esc(c.heroLine1 || 'Everything you need,') + '</span></span>\n' +
+                '      <span class="line"><span class="line-inner" data-arbel-id="hero-line2" data-arbel-edit="text"><em>' + esc(c.heroLine2 || 'one search away.') + '</em></span></span>\n' +
+                '    </h1>\n' +
+                '    <form class="hero-search" role="search" onsubmit="return false;" data-arbel-id="hero-search">\n' +
+                '      <span class="hero-search-icon" aria-hidden="true">⌕</span>\n' +
+                '      <input type="search" class="hero-search-input" placeholder="' + esc(placeholder) + '" aria-label="Search" />\n' +
+                '      <a href="#contact" class="btn btn-primary hero-search-submit" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'SEARCH') + '</a>\n' +
+                '    </form>\n' +
+                '    <p class="hero-sub" data-arbel-id="hero-sub" data-arbel-edit="text">' + esc(c.heroSub || '') + '</p>\n' +
                 '  </div>\n' +
                 '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
                 '</section>';
@@ -1559,6 +1637,54 @@ window.ArbelCompiler = (function () {
                     if (!c[ckey]) c[ckey] = cn.categoryChips[ci];
                 }
             }
+
+            // ─── AUTO-FILL IMAGES FROM THE IMAGE BANK ───
+            // Any product/look/release/agent/dish slot that's still missing an
+            // Image value gets one picked from the curated Unsplash bank based
+            // on the site type. Stable pseudo-seed from brand name so regens
+            // of the same brand don't reshuffle every image on each rebuild.
+            if (typeof window !== 'undefined' && window.ArbelImageBank) {
+                var _bank = window.ArbelImageBank;
+                var _brandSeed = 0;
+                var _brandStr = String(cfg.brandName || cfg.siteName || cfg.siteType || '');
+                for (var _si = 0; _si < _brandStr.length; _si++) _brandSeed = (_brandSeed * 31 + _brandStr.charCodeAt(_si)) | 0;
+                var _imageTopicForType = {
+                    shop: 'produce', ecommerce: 'produce',
+                    restaurant: 'restaurant-dish',
+                    fashion: 'fashion-model',
+                    music: 'album-art',
+                    podcast: 'album-art',
+                    gaming: 'gaming',
+                    photography: 'portrait',
+                    portfolio: 'design-work',
+                    event: 'conference'
+                };
+                // Allow profile / AI to hint per-section topics
+                var _topics = (stProfile && stProfile.imageTopics) || {};
+                function _fillImages(prefix, defaultTopic, maxN) {
+                    var topic = _topics[prefix] || defaultTopic || 'abstract';
+                    for (var i = 1; i <= maxN; i++) {
+                        var k = prefix + i + 'Image';
+                        // Only auto-fill if slot exists conceptually (a name/title was set)
+                        var exists = c[prefix + i + 'Name'] || c[prefix + i + 'Title'];
+                        if (exists && !c[k]) c[k] = _bank.pick(topic, _brandSeed + i);
+                    }
+                }
+                var _defaultTopic = _imageTopicForType[cfg.siteType] || 'abstract';
+                _fillImages('product', _topics.product  || _defaultTopic, 8);
+                _fillImages('look',    _topics.look     || 'fashion-model', 8);
+                _fillImages('release', _topics.release  || 'album-art', 8);
+                _fillImages('agent',   _topics.agent    || 'gaming', 6);
+                _fillImages('dish',    _topics.dish     || 'restaurant-dish', 8);
+                // Hero product image (product-feature layout) — use same topic
+                if (!c.heroProductImage && cfg.heroLayout === 'product-feature') {
+                    c.heroProductImage = _bank.pick(_topics.heroProduct || _defaultTopic, _brandSeed);
+                }
+                // Hero dish photo (dish-photo layout)
+                if (!c.heroDishImage && cfg.heroLayout === 'dish-photo') {
+                    c.heroDishImage = _bank.pick(_topics.heroDish || 'restaurant-dish', _brandSeed, 1600);
+                }
+            }
             // Singleton sections: dealBanner, cinematicReel — flat fields
             if (cn.dealBanner && typeof cn.dealBanner === 'object') {
                 if (!c.dealBannerTag)     c.dealBannerTag     = cn.dealBanner.tag;
@@ -1943,6 +2069,37 @@ window.ArbelCompiler = (function () {
             '.hero-heading--tagline { font-size: clamp(1rem, 2vw, 1.75rem) !important; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 2rem; }\n' +
             '.hero-heading--tagline em { color: var(--accent); font-style: normal; }\n' +
             'body.sitetype-gaming .hero-lockup, body.sitetype-fashion .hero-lockup { -webkit-text-stroke: 1px color-mix(in srgb, var(--accent) 40%, transparent); }\n' +
+            /* ── Product-feature hero (shop) ── */
+            '.hero--product-feature .hero-content { max-width: 1280px; width: 92%; display: grid; grid-template-columns: 1.1fr 1fr; gap: 3rem; align-items: center; text-align: left; padding: 4rem 0; }\n' +
+            '.hero--product-feature .hero-copy { max-width: 560px; }\n' +
+            '.hero--product-feature .hero-heading, .hero--product-feature .hero-actions { justify-content: flex-start; }\n' +
+            '.hero--product-feature .hero-sub { margin-left: 0; max-width: none; }\n' +
+            '.hero--product-feature .hero-product { position: relative; aspect-ratio: 4/5; border-radius: var(--radius-card, 20px); overflow: hidden; background: color-mix(in srgb, var(--fg) 6%, var(--surface)); border: 1px solid var(--border); box-shadow: 0 30px 80px color-mix(in srgb, var(--bg) 60%, #000 0%); transform: rotate(-1.2deg); transition: transform 0.6s var(--ease); }\n' +
+            '.hero--product-feature .hero-product:hover { transform: rotate(0deg) scale(1.02); }\n' +
+            '.hero--product-feature .hero-product-media { position: absolute; inset: 0; }\n' +
+            '.hero--product-feature .hero-product-media img { width: 100%; height: 100%; object-fit: cover; }\n' +
+            '.hero--product-feature .hero-product-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), transparent 60%); }\n' +
+            '.hero--product-feature .hero-product-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.25rem 1.5rem; background: linear-gradient(to top, color-mix(in srgb, var(--bg) 85%, transparent), transparent); display: flex; justify-content: space-between; align-items: flex-end; color: var(--fg); }\n' +
+            '.hero--product-feature .hero-product-name { font-weight: 600; font-size: 1rem; letter-spacing: -0.01em; }\n' +
+            '.hero--product-feature .hero-product-price { font-family: var(--font-mono); font-size: 1.1rem; color: var(--accent); font-weight: 700; }\n' +
+            /* ── Dish-photo hero (restaurant) ── */
+            '.hero--dish-photo .hero-bg, .hero--dish-photo .hero-vignette { display: none; }\n' +
+            '.hero--dish-photo .hero-photo { position: absolute; inset: 0; background-size: cover; background-position: center; background-color: #1a0e08; }\n' +
+            '.hero--dish-photo .hero-photo-scrim { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.25) 45%, transparent 70%), linear-gradient(to right, rgba(0,0,0,0.55), transparent 45%); pointer-events: none; }\n' +
+            '.hero--dish-photo { color: #fff; }\n' +
+            '.hero--dish-photo .hero-content { text-align: left; max-width: 720px; width: 92%; margin-right: auto; margin-left: clamp(1.5rem, 6vw, 5rem); padding: 0 0 6rem; align-self: flex-end; }\n' +
+            '.hero--dish-photo .hero-heading, .hero--dish-photo .hero-sub { color: #fff; text-shadow: 0 2px 20px rgba(0,0,0,0.55); }\n' +
+            '.hero--dish-photo .hero-actions { justify-content: flex-start; }\n' +
+            '.hero--dish-photo .hero-sub { margin-left: 0; max-width: 520px; }\n' +
+            /* ── Search-first hero (shop/marketplace) ── */
+            '.hero--search-first .hero-content { max-width: 760px; }\n' +
+            '.hero--search-first .hero-search { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 0.4rem 0.5rem 0.4rem 1.25rem; margin: 1.5rem auto 1.25rem; box-shadow: 0 12px 40px color-mix(in srgb, var(--bg) 60%, #000 0%); max-width: 640px; }\n' +
+            '.hero--search-first .hero-search-icon { font-size: 1.2rem; color: var(--fg2); }\n' +
+            '.hero--search-first .hero-search-input { flex: 1; background: transparent; border: none; outline: none; color: var(--fg); font-size: 1rem; padding: 0.75rem 0.5rem; }\n' +
+            '.hero--search-first .hero-search-input::placeholder { color: var(--fg2); }\n' +
+            '.hero--search-first .hero-search-submit { white-space: nowrap; border-radius: 999px; padding: 0.6rem 1.25rem; }\n' +
+            '.hero--search-first .hero-sub { font-size: 0.9rem; opacity: 0.8; }\n' +
+            '@media (max-width: 768px) { .hero--product-feature .hero-content { grid-template-columns: 1fr; } .hero--product-feature .hero-product { transform: none; max-width: 340px; margin: 0 auto; } .hero--search-first .hero-search { flex-wrap: wrap; border-radius: 24px; } .hero--search-first .hero-search-submit { width: 100%; } .hero--dish-photo .hero-content { padding-bottom: 4rem; margin-left: 1.25rem; } }\n' +
             '@media (max-width: 768px) { .hero--split .hero-content { grid-template-columns: 1fr; } .hero--split .hero-decoration { display:none; } .hero--left .hero-content { margin-left: 5%; } }\n' +
             '.hero-actions { display: flex; gap: 1rem; justify-content: center; }\n' +
             '.scroll-indicator { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: var(--fg2); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }\n' +
