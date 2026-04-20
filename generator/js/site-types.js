@@ -79,28 +79,28 @@
     // auto-prepended/appended by app.js.
     var RECIPES = {
         gaming: [
-            ['hero', 'statsStrip', 'portfolio', 'testimonials', 'ctaBanner', 'contact'],
-            ['hero', 'services',   'statsStrip', 'logoCloud', 'faq', 'contact'],
-            ['hero', 'portfolio',  'team', 'testimonials', 'ctaBanner', 'contact'],
-            ['hero', 'statsStrip', 'services', 'portfolio', 'faq', 'contact']
+            ['hero', 'cinematicReel', 'agentRoster', 'gameModes', 'statsStrip', 'ctaBanner', 'contact'],
+            ['hero', 'statsStrip', 'agentRoster', 'gameModes', 'faq', 'contact'],
+            ['hero', 'cinematicReel', 'gameModes', 'statsStrip', 'team', 'contact'],
+            ['hero', 'agentRoster', 'gameModes', 'testimonials', 'ctaBanner', 'contact']
         ],
         shop: [
-            ['hero', 'portfolio', 'testimonials', 'pricing', 'faq', 'contact'],
-            ['hero', 'logoCloud', 'portfolio', 'testimonials', 'ctaBanner', 'contact'],
-            ['hero', 'portfolio', 'about', 'testimonials', 'pricing', 'contact'],
-            ['hero', 'statsStrip','portfolio', 'testimonials', 'faq', 'contact']
+            ['hero', 'categoryChips', 'productGrid', 'dealBanner', 'testimonials', 'contact'],
+            ['hero', 'dealBanner', 'productGrid', 'categoryChips', 'logoCloud', 'contact'],
+            ['hero', 'categoryChips', 'productGrid', 'testimonials', 'ctaBanner', 'contact'],
+            ['hero', 'productGrid', 'dealBanner', 'about', 'faq', 'contact']
         ],
         restaurant: [
-            ['hero', 'services', 'portfolio', 'testimonials', 'contact'],
-            ['hero', 'about', 'services', 'team', 'contact'],
-            ['hero', 'portfolio', 'testimonials', 'ctaBanner', 'contact'],
-            ['hero', 'services', 'statsStrip', 'testimonials', 'contact']
+            ['hero', 'menuSections', 'about', 'team', 'contact'],
+            ['hero', 'menuSections', 'statsStrip', 'testimonials', 'contact'],
+            ['hero', 'about', 'menuSections', 'ctaBanner', 'contact'],
+            ['hero', 'menuSections', 'team', 'testimonials', 'contact']
         ],
         portfolio: [
-            ['hero', 'portfolio', 'about', 'testimonials', 'contact'],
-            ['hero', 'about', 'portfolio', 'process', 'contact'],
-            ['hero', 'portfolio', 'services', 'testimonials', 'contact'],
-            ['hero', 'portfolio', 'statsStrip', 'about', 'contact']
+            ['hero', 'statWall', 'portfolio', 'about', 'contact'],
+            ['hero', 'portfolio', 'raceTimeline', 'about', 'contact'],
+            ['hero', 'portfolio', 'statWall', 'process', 'contact'],
+            ['hero', 'about', 'portfolio', 'statWall', 'contact']
         ],
         photography: [
             ['hero', 'portfolio', 'about', 'testimonials', 'contact'],
@@ -113,9 +113,9 @@
             ['hero', 'about', 'portfolio', 'ctaBanner', 'contact']
         ],
         podcast: [
-            ['hero', 'portfolio', 'about', 'testimonials', 'ctaBanner', 'contact'],
-            ['hero', 'statsStrip', 'portfolio', 'about', 'contact'],
-            ['hero', 'about', 'portfolio', 'logoCloud', 'contact']
+            ['hero', 'releaseGrid', 'about', 'testimonials', 'ctaBanner', 'contact'],
+            ['hero', 'statsStrip', 'releaseGrid', 'about', 'contact'],
+            ['hero', 'about', 'releaseGrid', 'logoCloud', 'contact']
         ],
         event: [
             ['hero', 'statsStrip', 'services', 'team', 'pricing', 'faq', 'contact'],
@@ -153,14 +153,15 @@
             ['hero', 'services', 'process', 'faq', 'contact']
         ],
         fashion: [
-            ['hero', 'portfolio', 'about', 'testimonials', 'contact'],
-            ['hero', 'portfolio', 'logoCloud', 'ctaBanner', 'contact'],
-            ['hero', 'portfolio', 'about', 'ctaBanner', 'contact']
+            ['hero', 'lookbookHorizontal', 'about', 'testimonials', 'contact'],
+            ['hero', 'lookbookHorizontal', 'logoCloud', 'ctaBanner', 'contact'],
+            ['hero', 'lookbookHorizontal', 'about', 'ctaBanner', 'contact'],
+            ['hero', 'about', 'lookbookHorizontal', 'logoCloud', 'contact']
         ],
         music: [
-            ['hero', 'portfolio', 'statsStrip', 'about', 'ctaBanner', 'contact'],
-            ['hero', 'portfolio', 'about', 'testimonials', 'contact'],
-            ['hero', 'statsStrip', 'portfolio', 'logoCloud', 'contact']
+            ['hero', 'releaseGrid', 'statsStrip', 'about', 'ctaBanner', 'contact'],
+            ['hero', 'releaseGrid', 'about', 'testimonials', 'contact'],
+            ['hero', 'statsStrip', 'releaseGrid', 'logoCloud', 'contact']
         ],
         nonprofit: [
             ['hero', 'about', 'statsStrip', 'services', 'testimonials', 'ctaBanner', 'contact'],
@@ -200,5 +201,675 @@
     /** All known types — exposed so UI / AI prompt can list them. */
     function types() { return Object.keys(RECIPES); }
 
-    global.ArbelSiteType = { infer: infer, recipe: recipe, types: types };
+    /* ─── PROFILES ────────────────────────────────────────────────
+     * Per-type design + content personality. Consumed by the compiler
+     * (visual identity CSS, default content fills), by app.js
+     * (palette / preset / font biasing) and by ai.js (persona hint
+     * fed to the LLM so it generates industry-appropriate copy).
+     *
+     * Each profile is an object of POOLS — pick a random member so
+     * we still get variety across regens but stay inside the right
+     * aesthetic lane for the type.
+     *
+     *   presetIds:   preferred animation style IDs (pool)
+     *   palettes:    [accent, bg] hex pairs (pool)
+     *   fonts:       preferred fontPair keys (pool)
+     *   corners, cardTreatment, navStyle, heroLayout, etc. — pools
+     *                of values the app will randomly pick from when
+     *                the axis is unset & unlocked.
+     *   statsStrip:  default {v,l} entries for the big-numbers band
+     *   logoCloud:   default brand names for the trust marquee
+     *   team:        default team member {n,r} entries
+     *   labels:      overrides for services/portfolio/team/stats etc.
+     *                section mono labels (e.g. portfolio → "GAMES")
+     *   persona:     one-line prose hint fed to the AI prompt so
+     *                generated copy matches the type
+     *   bodyClass:   CSS hook (always `sitetype-<type>`)
+     * ─────────────────────────────────────────────────────────── */
+    var PROFILES = {
+        gaming: {
+            presetIds: ['neon', 'matrix', 'plasma', 'circuits', 'galaxy', 'vortex', 'nebula'],
+            palettes: [
+                ['#00ffa3', '#060611'], ['#ff2e63', '#0d0b1e'], ['#7c4dff', '#0a0a14'],
+                ['#00e5ff', '#050510'], ['#ffd300', '#12020e'], ['#ff0059', '#080414']
+            ],
+            fonts: ['tech', 'terminal', 'futurist', 'brutalist', 'mono'],
+            corners: ['sharp', 'sharp', 'soft'],
+            cardTreatment: ['bordered', 'filled', 'glass'],
+            navStyle: ['minimal', 'ghost', 'pill'],
+            heroLayout: ['centered', 'split', 'left'],
+            heroArt: ['grid', 'cross', 'dots'],
+            buttonStyle: ['sharp', 'solid', 'outline'],
+            typeScale: ['dramatic', 'normal'],
+            labelStyle: ['bar', 'stripe', 'number'],
+            dividerStyle: ['numbered', 'line'],
+            logoStyle: ['monogram', 'bracket', 'slash'],
+            cursorStyle: ['crosshair', 'ring-only', 'magnetic'],
+            headingAlign: ['left', 'center'],
+            statsStrip: [
+                { v: '450K', l: 'PLAYERS' }, { v: '2.1M', l: 'MATCHES' },
+                { v: 'RANK #12', l: 'LEADERBOARD' }, { v: '98%', l: 'HEADSHOT' },
+                { v: '1.7K', l: 'HOURS' }
+            ],
+            logoCloud: ['Razer', 'HyperX', 'G FUEL', 'SteelSeries', 'Corsair', 'Twitch', 'Logitech G', 'NVIDIA'],
+            team: [
+                { n: 'Nova Sato', r: 'Team Captain' },
+                { n: 'Rax Duvall', r: 'Duelist / IGL' },
+                { n: 'Echo Vance', r: 'Smokes / Support' },
+                { n: 'Pixel Orta', r: 'Coach' }
+            ],
+            labels: { portfolio: 'GAMEPLAY', services: 'MODES', team: 'ROSTER', process: 'RANKUP', ctaBanner: 'QUEUE UP' },
+            persona: 'high-energy esports / gaming site — expect stats like K/D, rank, hours logged, tournament wins; copy should feel like a clan page or streamer portfolio, NOT a marketing agency',
+            content: {
+                agentRoster: [
+                    { name: 'Vortex', role: 'DUELIST', ability: 'Aggressive entry fragger with time-warp dash' },
+                    { name: 'Cipher', role: 'SENTINEL', ability: 'Lockdown specialist — locks sites with tripwires' },
+                    { name: 'Echo',   role: 'INITIATOR', ability: 'Sonar pulse reveals enemies through walls' },
+                    { name: 'Kairo',  role: 'CONTROLLER', ability: 'Smoke + area denial at long range' }
+                ],
+                gameModes: [
+                    { name: 'Ranked', desc: '5v5 competitive. Climb Iron to Radiant.', tag: 'COMPETITIVE' },
+                    { name: 'Unrated', desc: 'Standard rules, no rank pressure.', tag: 'CASUAL' },
+                    { name: 'Spike Rush', desc: 'Fast-paced bo9 with random buffs.', tag: 'QUICK' },
+                    { name: 'Deathmatch', desc: 'Free-for-all warmup, 10 min.', tag: 'WARMUP' }
+                ],
+                statWall: [
+                    { v: '2.1M+', l: 'Matches Played' },
+                    { v: 'RADIANT', l: 'Peak Rank' },
+                    { v: '1.78', l: 'K/D Ratio' },
+                    { v: '12K',  l: 'Hours Logged' }
+                ],
+                cinematicReel: { heading: 'Enter the arena', sub: 'Five roles. One objective. Zero retries. Queue up free.', cta: 'Play Free', label: 'NOW PLAYING' }
+            }
+        },
+        shop: {
+            presetIds: ['meshGrad', 'iridescent', 'sunsetBlob', 'morphBlob', 'prism'],
+            palettes: [
+                ['#ff5c8a', '#fff5f2'], ['#0b0b0b', '#f4efe8'], ['#1a1a1a', '#faf7f0'],
+                ['#c2410c', '#fef3eb'], ['#6d28d9', '#fdf9ff']
+            ],
+            fonts: ['display', 'modern', 'humanist', 'editorial', 'boutique'],
+            corners: ['soft', 'pill', 'soft'],
+            cardTreatment: ['floating', 'minimal', 'bordered'],
+            navStyle: ['pill', 'minimal', 'default'],
+            heroLayout: ['left', 'split', 'centered'],
+            buttonStyle: ['solid', 'lifted', 'gradient'],
+            typeScale: ['normal', 'dramatic'],
+            labelStyle: ['default', 'dot'],
+            logoStyle: ['mark-left', 'dot', 'underline', ''],
+            headingAlign: ['left', 'center'],
+            statsStrip: [
+                { v: '120K+', l: 'ORDERS SHIPPED' }, { v: '4.9★', l: 'AVG REVIEW' },
+                { v: '48H', l: 'FAST SHIPPING' }, { v: '30 DAY', l: 'RETURNS' }
+            ],
+            logoCloud: ['Vogue', 'Highsnobiety', 'Dazed', 'Hypebeast', 'ELLE', 'GQ', 'Nylon', 'Refinery29'],
+            team: [
+                { n: 'Léa Moreau', r: 'Founder / Creative' },
+                { n: 'Theo Park', r: 'Head of Product' },
+                { n: 'Imani Cole', r: 'Customer Care' }
+            ],
+            labels: { portfolio: 'SHOP', services: 'COLLECTION', pricing: 'BUNDLES', ctaBanner: 'SHOP NOW' },
+            persona: 'consumer shop / DTC brand — portfolio acts as a product grid, pricing reads as bundles, stats are orders-shipped + reviews; copy is aspirational and product-led',
+            content: {
+                productGrid: [
+                    { name: 'Organic Hass Avocado', price: '$1.49', category: 'Produce', badge: 'FRESH' },
+                    { name: 'Sourdough Loaf, bakery-fresh', price: '$4.99', category: 'Bakery', badge: '' },
+                    { name: 'Free-range Eggs, dozen', price: '$5.29', category: 'Dairy', badge: '' },
+                    { name: 'Cold-pressed Orange Juice 1L', price: '$6.49', category: 'Drinks', badge: 'NEW' },
+                    { name: 'Grass-fed Ribeye, 12oz', price: '$18.99', category: 'Butcher', badge: '' },
+                    { name: 'Wild Blueberries, 500g', price: '$7.49', category: 'Produce', badge: '-10%' }
+                ],
+                categoryChips: ['Produce', 'Bakery', 'Dairy', 'Butcher', 'Pantry', 'Drinks', 'Frozen', 'Household'],
+                dealBanner: { tag: 'THIS WEEK ONLY', heading: 'Save up to 30% on fresh produce', sub: 'Same-day delivery on orders over $35. Free pickup, always.', cta: 'Shop Deals' }
+            }
+        },
+        restaurant: {
+            presetIds: ['ember', 'lavaLamp', 'auroraBlob', 'sunsetBlob', 'fireflies'],
+            palettes: [
+                ['#c2410c', '#1a0f08'], ['#b45309', '#11080a'], ['#92400e', '#14110d'],
+                ['#dc2626', '#0d0604'], ['#f59e0b', '#0f0a07']
+            ],
+            fonts: ['editorial', 'luxe', 'classical', 'humanist'],
+            corners: ['soft', 'soft', 'pill'],
+            cardTreatment: ['minimal', 'bordered', 'floating'],
+            navStyle: ['minimal', 'default'],
+            heroLayout: ['centered', 'left', 'split'],
+            heroArt: ['lines', 'dots', 'none'],
+            buttonStyle: ['outline', 'solid'],
+            typeScale: ['normal', 'dramatic'],
+            labelStyle: ['dot', 'default', 'bar'],
+            logoStyle: ['underline', 'mark-left', ''],
+            headingAlign: ['center', 'left'],
+            statsStrip: [
+                { v: 'EST 1994', l: 'FAMILY RECIPE' }, { v: '4.8★', l: 'OVER 1,200 REVIEWS' },
+                { v: '18', l: 'SEASONAL DISHES' }, { v: '100%', l: 'FARM SOURCED' }
+            ],
+            logoCloud: ['Eater', 'Bon Appétit', 'Michelin Guide', 'TimeOut', 'Zagat', 'Condé Nast Traveler'],
+            team: [
+                { n: 'Chef Aurelia Rossi', r: 'Executive Chef' },
+                { n: 'Marco Delacroix', r: 'Sommelier' },
+                { n: 'Yuki Tanaka', r: 'Pastry Chef' }
+            ],
+            labels: { portfolio: 'MENU', services: 'EXPERIENCES', team: 'OUR KITCHEN', ctaBanner: 'RESERVE A TABLE' },
+            persona: 'restaurant / hospitality — portfolio is the menu, services are tasting experiences, copy uses sensory language (textures, ingredients, provenance) and reservation CTAs',
+            content: {
+                menuSections: [
+                    { name: 'Burrata & Heirloom Tomatoes', desc: 'Stracciatella, aged balsamic, torn basil, focaccia.', price: '$17', category: 'Antipasti', tags: 'V' },
+                    { name: 'Beef Carpaccio',              desc: 'Thin-sliced prime, arugula, lemon oil, pecorino.', price: '$19', category: 'Antipasti', tags: '' },
+                    { name: 'Wild-Mushroom Tagliatelle',   desc: 'Hand-cut egg pasta, porcini, thyme butter.',        price: '$26', category: 'Primi', tags: 'V' },
+                    { name: 'Cacio e Pepe',                desc: 'Tonnarelli, pecorino romano, black pepper.',         price: '$22', category: 'Primi', tags: 'V' },
+                    { name: 'Bistecca alla Fiorentina',    desc: '34-day dry-aged T-bone, rosemary, sea salt.',        price: '$68', category: 'Secondi', tags: '' },
+                    { name: 'Branzino al Cartoccio',       desc: 'Whole sea bass, fennel, Amalfi lemon.',             price: '$44', category: 'Secondi', tags: '' },
+                    { name: 'Tiramisu',                    desc: 'Mascarpone, espresso, cocoa, ladyfingers.',         price: '$12', category: 'Dolci', tags: 'V' },
+                    { name: 'Affogato',                    desc: 'Vanilla gelato drowned in a shot of espresso.',     price: '$10', category: 'Dolci', tags: 'V' }
+                ]
+            }
+        },
+        portfolio: {
+            presetIds: ['obsidian', 'silk', 'noiseGrad', 'iridescent', 'bokeh', 'stardust'],
+            palettes: [
+                ['#f5f5f5', '#0a0a0a'], ['#e6b13a', '#111111'], ['#d4d4d4', '#0f0f12'],
+                ['#ff6b6b', '#0a0a0a'], ['#c4a8ff', '#080810']
+            ],
+            fonts: ['editorial', 'display', 'luxe', 'modern', 'journal'],
+            corners: ['sharp', 'soft'],
+            cardTreatment: ['minimal', 'bordered', 'floating'],
+            navStyle: ['minimal', 'ghost', 'default'],
+            heroLayout: ['left', 'minimal', 'split'],
+            typeScale: ['dramatic', 'tight', 'normal'],
+            labelStyle: ['number', 'stripe'],
+            dividerStyle: ['numbered', 'dotline'],
+            logoStyle: ['monogram', 'slash', ''],
+            headingAlign: ['left'],
+            containerWidth: ['narrow', 'normal'],
+            statsStrip: [
+                { v: '48', l: 'SHIPPED PROJECTS' }, { v: '9 YEARS', l: 'CLIENT WORK' },
+                { v: '24', l: 'AWARDS' }, { v: '14', l: 'COUNTRIES' }
+            ],
+            logoCloud: ['Nike', 'Spotify', 'Apple', 'Stripe', 'Figma', 'Linear', 'Notion', 'Vercel'],
+            team: [
+                { n: 'This is me', r: 'Designer' }
+            ],
+            labels: { portfolio: 'SELECTED WORK', about: 'PROFILE', process: 'HOW I WORK' },
+            persona: 'solo/studio portfolio — emphasize individual point of view, case-study projects with client/tag metadata, first-person or studio-voice copy',
+            content: {
+                statWall: [
+                    { v: '48', l: 'Projects Shipped' },
+                    { v: '9 YRS', l: 'Client Work' },
+                    { v: '24', l: 'Awards' },
+                    { v: '14', l: 'Countries' }
+                ],
+                raceTimeline: [
+                    { date: '2026 · Q2', event: 'Stripe — Atlas onboarding redesign', result: 'Shipped', points: '+32%' },
+                    { date: '2026 · Q1', event: 'Linear — Marketing site v3',        result: 'Launched', points: '—' },
+                    { date: '2025 · Q4', event: 'Notion — Calendar product IA',      result: 'Shipped', points: '—' },
+                    { date: '2025 · Q3', event: 'Vercel — DX docs overhaul',         result: 'Launched', points: '—' },
+                    { date: '2025 · Q2', event: 'Figma — Config keynote visuals',    result: 'Delivered', points: '—' }
+                ]
+            }
+        },
+        photography: {
+            presetIds: ['bokeh', 'silk', 'stardust', 'nebula', 'iridescent'],
+            palettes: [
+                ['#fafaf9', '#0c0a09'], ['#d4a373', '#1c120b'], ['#e4c1b3', '#10090a']
+            ],
+            fonts: ['editorial', 'luxe', 'classical', 'display'],
+            corners: ['sharp', 'soft'],
+            cardTreatment: ['minimal', 'floating'],
+            navStyle: ['minimal', 'ghost'],
+            heroLayout: ['minimal', 'left', 'split'],
+            typeScale: ['dramatic', 'tight'],
+            logoStyle: ['slash', 'monogram', ''],
+            labelStyle: ['number', 'default'],
+            headingAlign: ['left', 'center'],
+            statsStrip: [
+                { v: '250+', l: 'WEDDINGS SHOT' }, { v: '32', l: 'EDITORIAL FEATURES' },
+                { v: '12', l: 'YEARS BEHIND LENS' }
+            ],
+            logoCloud: ['Vogue', 'Harper\u2019s Bazaar', 'ELLE', 'Nat Geo', 'National Portrait'],
+            team: [{ n: 'Aria Lin', r: 'Lead Photographer' }, { n: 'Sami Ortega', r: 'Second Shooter' }],
+            labels: { portfolio: 'GALLERY', services: 'SESSIONS', pricing: 'PACKAGES' },
+            persona: 'photography studio — visual-first, minimal copy, gallery-heavy; mention film/digital/lens specifics if hinted, pricing reads as session packages'
+        },
+        blog: {
+            presetIds: ['noiseGrad', 'silk', 'meshGrad', 'obsidian', 'snow'],
+            palettes: [
+                ['#111111', '#faf7f0'], ['#0b0b0b', '#f4efe8'], ['#d97706', '#fffbeb'],
+                ['#1e1b4b', '#f5f3ff']
+            ],
+            fonts: ['editorial', 'classical', 'journal', 'humanist', 'luxe'],
+            corners: ['sharp', 'soft'],
+            cardTreatment: ['minimal', 'bordered'],
+            navStyle: ['minimal', 'default'],
+            heroLayout: ['left', 'minimal'],
+            typeScale: ['tight', 'normal'],
+            logoStyle: ['underline', ''],
+            labelStyle: ['number', 'default', 'bar'],
+            dividerStyle: ['line', 'dotline', 'numbered'],
+            containerWidth: ['narrow', 'normal'],
+            headingAlign: ['left'],
+            statsStrip: [
+                { v: '12K', l: 'SUBSCRIBERS' }, { v: 'WEEKLY', l: 'ESSAYS' },
+                { v: '180', l: 'ARCHIVED POSTS' }
+            ],
+            logoCloud: ['The Verge', 'Wired', 'The Atlantic', 'New Yorker', 'FT', 'Monocle'],
+            team: [{ n: 'The Editor', r: 'Writer' }],
+            labels: { portfolio: 'LATEST ESSAYS', about: 'MASTHEAD', ctaBanner: 'SUBSCRIBE' },
+            persona: 'blog / editorial publication — portfolio cards are essay posts with date/tag/excerpt; use a masthead voice; CTA is newsletter subscribe'
+        },
+        podcast: {
+            presetIds: ['sineWaves', 'ripple', 'liquidWave', 'meshGrad', 'aurora'],
+            palettes: [
+                ['#a855f7', '#0e0a1c'], ['#f59e0b', '#130a03'], ['#22d3ee', '#05111a']
+            ],
+            fonts: ['display', 'tech', 'editorial', 'humanist'],
+            corners: ['pill', 'soft'],
+            cardTreatment: ['floating', 'filled', 'glass'],
+            navStyle: ['pill', 'default'],
+            heroLayout: ['centered', 'split'],
+            buttonStyle: ['solid', 'gradient', 'lifted'],
+            labelStyle: ['dot', 'bar'],
+            statsStrip: [
+                { v: '1.2M', l: 'DOWNLOADS' }, { v: '140', l: 'EPISODES' },
+                { v: '4.9★', l: 'APPLE PODCASTS' }
+            ],
+            logoCloud: ['Spotify', 'Apple Podcasts', 'Overcast', 'Pocket Casts', 'YouTube Music', 'Stitcher'],
+            team: [{ n: 'Host 1', r: 'Host' }, { n: 'Host 2', r: 'Co-host' }, { n: 'Producer', r: 'Producer' }],
+            labels: { portfolio: 'EPISODES', services: 'SEASONS', ctaBanner: 'LISTEN NOW' },
+            persona: 'podcast show — portfolio cards are episode titles with guest/season tags; CTAs push toward Apple/Spotify; tone is conversational'
+        },
+        event: {
+            presetIds: ['neon', 'prism', 'confetti', 'spark', 'iridescent', 'aurora'],
+            palettes: [
+                ['#ff2e63', '#0a0a14'], ['#ffd300', '#0b0606'], ['#7c4dff', '#0a0a14'],
+                ['#22d3ee', '#05111a']
+            ],
+            fonts: ['display', 'futurist', 'brutalist', 'tech'],
+            corners: ['sharp', 'pill'],
+            cardTreatment: ['bordered', 'filled', 'floating'],
+            navStyle: ['pill', 'minimal'],
+            heroLayout: ['centered', 'split'],
+            buttonStyle: ['solid', 'gradient', 'sharp'],
+            typeScale: ['dramatic'],
+            labelStyle: ['number', 'stripe', 'bar'],
+            statsStrip: [
+                { v: 'SEP 12', l: 'DATE' }, { v: 'BERLIN', l: 'VENUE' },
+                { v: '3 DAYS', l: 'DURATION' }, { v: '40+', l: 'SPEAKERS' }
+            ],
+            logoCloud: ['TechCrunch', 'Wired', 'The Verge', 'Fast Company', 'Forbes', 'Sifted'],
+            team: [
+                { n: 'Keynote Speaker', r: 'Opening Keynote' },
+                { n: 'Panel Chair', r: 'Day 1 Host' },
+                { n: 'Workshop Lead', r: 'Labs' }
+            ],
+            labels: { portfolio: 'PROGRAM', team: 'SPEAKERS', pricing: 'TICKETS', ctaBanner: 'GET TICKETS' },
+            persona: 'live event / conference — date/venue/speakers/tickets are the stars; copy is urgent and countdown-aware; portfolio reads as program sessions'
+        },
+        app: {
+            presetIds: ['meshGrad', 'northern', 'morphBlob', 'oceanBlob', 'constellation', 'aurora'],
+            palettes: [
+                ['#6366f1', '#030712'], ['#22d3ee', '#020817'], ['#14b8a6', '#010712'],
+                ['#f472b6', '#0a0614']
+            ],
+            fonts: ['tech', 'modern', 'humanist', 'futurist'],
+            corners: ['soft', 'pill'],
+            cardTreatment: ['glass', 'floating', 'filled'],
+            navStyle: ['pill', 'minimal'],
+            heroLayout: ['split', 'left', 'centered'],
+            buttonStyle: ['gradient', 'solid', 'lifted'],
+            typeScale: ['normal', 'dramatic'],
+            logoStyle: ['mark-left', 'dot', ''],
+            statsStrip: [
+                { v: '500K+', l: 'DOWNLOADS' }, { v: '4.8★', l: 'APP STORE' },
+                { v: '#1', l: 'PRODUCTIVITY' }, { v: '150+', l: 'COUNTRIES' }
+            ],
+            logoCloud: ['Product Hunt', 'TechCrunch', 'The Verge', 'Wired', 'Fast Company', '9to5Mac'],
+            team: [
+                { n: 'Alex Chen', r: 'CEO / Co-founder' },
+                { n: 'Priya Rao', r: 'CTO / Co-founder' },
+                { n: 'Jordan Lee', r: 'Design Lead' }
+            ],
+            labels: { portfolio: 'FEATURES IN ACTION', services: 'FEATURES', pricing: 'PLANS', ctaBanner: 'GET THE APP' },
+            persona: 'mobile/SaaS app — download CTAs + App Store badge energy; services = features; pricing = monthly plans; copy is benefit-led and outcome-focused'
+        },
+        saas: {
+            presetIds: ['meshGrad', 'constellation', 'northern', 'oceanBlob', 'aurora', 'frost'],
+            palettes: [
+                ['#6366f1', '#030712'], ['#0ea5e9', '#020817'], ['#10b981', '#020712'],
+                ['#8b5cf6', '#0a0614']
+            ],
+            fonts: ['tech', 'modern', 'humanist'],
+            corners: ['soft'],
+            cardTreatment: ['glass', 'minimal', 'bordered'],
+            navStyle: ['pill', 'minimal', 'default'],
+            heroLayout: ['split', 'left'],
+            buttonStyle: ['solid', 'gradient'],
+            statsStrip: [
+                { v: '10M+', l: 'API CALLS / DAY' }, { v: '99.99%', l: 'UPTIME' },
+                { v: 'SOC 2', l: 'COMPLIANT' }, { v: '1200+', l: 'TEAMS' }
+            ],
+            logoCloud: ['Stripe', 'Notion', 'Linear', 'Figma', 'Vercel', 'Loom', 'Retool', 'Airtable'],
+            team: [
+                { n: 'Founding Team', r: 'Product' },
+                { n: 'Eng Lead', r: 'Engineering' },
+                { n: 'DX Lead', r: 'Developer Relations' }
+            ],
+            labels: { portfolio: 'CUSTOMERS', services: 'PLATFORM', pricing: 'PRICING', ctaBanner: 'START FREE' },
+            persona: 'B2B SaaS platform — logoCloud is client proof, pricing is seat-based tiers, features emphasize integrations/security/uptime'
+        },
+        course: {
+            presetIds: ['meshGrad', 'northern', 'aurora', 'prism', 'iridescent'],
+            palettes: [
+                ['#f59e0b', '#0c0a09'], ['#8b5cf6', '#0a0614'], ['#10b981', '#020712']
+            ],
+            fonts: ['display', 'editorial', 'humanist', 'modern'],
+            corners: ['soft', 'pill'],
+            cardTreatment: ['filled', 'floating', 'bordered'],
+            navStyle: ['pill', 'default'],
+            heroLayout: ['left', 'split'],
+            buttonStyle: ['solid', 'gradient', 'lifted'],
+            statsStrip: [
+                { v: '8 WEEKS', l: 'COHORT LENGTH' }, { v: '96%', l: 'COMPLETION RATE' },
+                { v: '4K+', l: 'ALUMNI' }, { v: '1:1', l: 'MENTOR RATIO' }
+            ],
+            logoCloud: ['Harvard', 'MIT', 'Stanford', 'Y Combinator', 'On Deck', 'Reforge'],
+            team: [
+                { n: 'Lead Instructor', r: 'Instructor' },
+                { n: 'TA', r: 'Mentor' }
+            ],
+            labels: { portfolio: 'CURRICULUM', services: 'WHAT YOU\u2019LL LEARN', team: 'INSTRUCTORS', pricing: 'ENROLLMENT', ctaBanner: 'APPLY NOW' },
+            persona: 'online course / bootcamp / academy — curriculum modules, cohort dates, instructor bios, apply/enroll CTAs'
+        },
+        fitness: {
+            presetIds: ['ember', 'neon', 'aurora', 'meshGrad', 'plasma'],
+            palettes: [
+                ['#22d3ee', '#020617'], ['#f43f5e', '#09090b'], ['#84cc16', '#0a0a0a']
+            ],
+            fonts: ['brutalist', 'tech', 'futurist', 'display'],
+            corners: ['sharp', 'pill'],
+            cardTreatment: ['filled', 'bordered'],
+            navStyle: ['minimal', 'pill'],
+            heroLayout: ['left', 'split', 'centered'],
+            buttonStyle: ['sharp', 'solid'],
+            typeScale: ['dramatic'],
+            statsStrip: [
+                { v: '12 WEEKS', l: 'PROGRAM' }, { v: '1000+', l: 'MEMBERS' },
+                { v: '5 DAYS', l: 'PER WEEK' }, { v: '4AM–10PM', l: 'OPEN' }
+            ],
+            logoCloud: ['Men\u2019s Health', 'Women\u2019s Health', 'Runner\u2019s World', 'Onnit'],
+            team: [
+                { n: 'Coach K', r: 'Head Coach' },
+                { n: 'Dr. Rivera', r: 'Sports Medicine' },
+                { n: 'Maya Cho', r: 'Nutrition Lead' }
+            ],
+            labels: { portfolio: 'RESULTS', services: 'PROGRAMS', team: 'COACHES', pricing: 'MEMBERSHIP', ctaBanner: 'START TRAINING' },
+            persona: 'gym / fitness studio / coach — results-first, programs instead of services, members instead of customers, urgency and discipline language'
+        },
+        realestate: {
+            presetIds: ['silk', 'obsidian', 'meshGrad', 'noiseGrad', 'bokeh'],
+            palettes: [
+                ['#b08968', '#1c1917'], ['#0b0b0b', '#f4efe8'], ['#d4a373', '#14100d']
+            ],
+            fonts: ['editorial', 'luxe', 'classical', 'display'],
+            corners: ['sharp', 'soft'],
+            cardTreatment: ['minimal', 'floating'],
+            navStyle: ['minimal', 'default'],
+            heroLayout: ['split', 'left', 'minimal'],
+            typeScale: ['normal', 'tight'],
+            logoStyle: ['monogram', 'underline', ''],
+            statsStrip: [
+                { v: '$2.4B', l: 'SOLD VOLUME' }, { v: '420', l: 'LISTINGS CLOSED' },
+                { v: '14 DAYS', l: 'AVG DAYS ON MARKET' }
+            ],
+            logoCloud: ['Sotheby\u2019s', 'Christie\u2019s', 'Compass', 'Douglas Elliman', 'The Agency'],
+            team: [
+                { n: 'Principal Broker', r: 'Managing Broker' },
+                { n: 'Listing Agent', r: 'Senior Agent' }
+            ],
+            labels: { portfolio: 'LISTINGS', services: 'SPECIALTIES', team: 'AGENTS', ctaBanner: 'BOOK A SHOWING' },
+            persona: 'luxury real estate — portfolio cards are listings (address, sqft, price tag), agents instead of team, showing/tour CTAs'
+        },
+        healthcare: {
+            presetIds: ['frost', 'snow', 'meshGrad', 'noiseGrad', 'ripple'],
+            palettes: [
+                ['#0891b2', '#f0f9ff'], ['#059669', '#ecfdf5'], ['#2563eb', '#eff6ff'],
+                ['#0ea5e9', '#0b0f14']
+            ],
+            fonts: ['humanist', 'modern', 'soft'],
+            corners: ['soft', 'pill'],
+            cardTreatment: ['minimal', 'bordered', 'floating'],
+            navStyle: ['default', 'pill'],
+            heroLayout: ['split', 'left', 'centered'],
+            buttonStyle: ['solid', 'outline'],
+            statsStrip: [
+                { v: '15+', l: 'YEARS PRACTICE' }, { v: '4.9★', l: 'PATIENT RATING' },
+                { v: '8,000+', l: 'PATIENTS SEEN' }
+            ],
+            logoCloud: ['Mayo Clinic', 'Johns Hopkins', 'NIH', 'WebMD', 'Cleveland Clinic'],
+            team: [
+                { n: 'Dr. A. Kumar, MD', r: 'Medical Director' },
+                { n: 'Dr. L. Park, DMD', r: 'Specialist' }
+            ],
+            labels: { portfolio: 'TREATMENTS', services: 'SERVICES', team: 'OUR DOCTORS', ctaBanner: 'BOOK A CONSULTATION' },
+            persona: 'clinic / medical practice — trust-building, credentials-heavy, patient-outcome statistics, book-a-consultation CTAs, calm copy'
+        },
+        fashion: {
+            presetIds: ['silk', 'iridescent', 'sunsetBlob', 'noiseGrad', 'obsidian'],
+            palettes: [
+                ['#f5f5f5', '#0a0a0a'], ['#0a0a0a', '#f5f5f5'], ['#d4af37', '#1a1208'],
+                ['#ff5c8a', '#fff0f5'], ['#6d28d9', '#fdf9ff']
+            ],
+            fonts: ['editorial', 'luxe', 'display', 'classical', 'boutique'],
+            corners: ['sharp'],
+            cardTreatment: ['minimal', 'floating'],
+            navStyle: ['minimal', 'ghost'],
+            heroLayout: ['minimal', 'left', 'split'],
+            typeScale: ['dramatic', 'tight'],
+            logoStyle: ['monogram', 'slash', ''],
+            labelStyle: ['number', 'default'],
+            dividerStyle: ['numbered', 'line'],
+            containerWidth: ['wide', 'normal'],
+            headingAlign: ['left'],
+            statsStrip: [
+                { v: 'SS26', l: 'CURRENT COLLECTION' }, { v: '14', l: 'STOCKISTS' },
+                { v: 'MADE IN', l: 'MILANO' }
+            ],
+            logoCloud: ['Vogue', 'Harper\u2019s Bazaar', 'ELLE', 'i-D', 'Dazed', 'AnOther'],
+            team: [
+                { n: 'Creative Director', r: 'Creative Director' },
+                { n: 'Atelier Lead', r: 'Head of Atelier' }
+            ],
+            labels: { portfolio: 'THE COLLECTION', services: 'CAPSULES', team: 'THE HOUSE', ctaBanner: 'SHOP THE DROP' },
+            persona: 'fashion / couture house — lookbook-style portfolio, collection naming conventions (SS26/AW25), boutique-voice copy, stockist namedrop',
+            content: {
+                lookbookHorizontal: [
+                    { title: 'Linen Shirt — Ecru',     tag: 'SS26 · 01' },
+                    { title: 'Wide-leg Trouser — Jet', tag: 'SS26 · 02' },
+                    { title: 'Cropped Blazer — Bone',  tag: 'SS26 · 03' },
+                    { title: 'Silk Slip — Oyster',     tag: 'SS26 · 04' },
+                    { title: 'Knit Cardigan — Flax',   tag: 'SS26 · 05' },
+                    { title: 'Tailored Coat — Taupe',  tag: 'SS26 · 06' }
+                ]
+            }
+        },
+        music: {
+            presetIds: ['sineWaves', 'liquidWave', 'ripple', 'neon', 'plasma', 'prism'],
+            palettes: [
+                ['#ec4899', '#09090b'], ['#f59e0b', '#0a0a0a'], ['#22d3ee', '#030712'],
+                ['#8b5cf6', '#0a0614']
+            ],
+            fonts: ['display', 'brutalist', 'futurist', 'editorial'],
+            corners: ['sharp', 'pill'],
+            cardTreatment: ['filled', 'bordered', 'floating'],
+            navStyle: ['minimal', 'pill'],
+            heroLayout: ['centered', 'left', 'split'],
+            typeScale: ['dramatic'],
+            labelStyle: ['number', 'bar'],
+            logoStyle: ['monogram', 'slash', 'bracket'],
+            statsStrip: [
+                { v: '22M+', l: 'STREAMS' }, { v: '48', l: 'CITY TOUR' },
+                { v: 'OUT NOW', l: 'DEBUT LP' }
+            ],
+            logoCloud: ['Pitchfork', 'Rolling Stone', 'NME', 'FADER', 'NPR', 'Billboard'],
+            team: [
+                { n: 'Lead Vocals', r: 'Vocals' },
+                { n: 'Producer', r: 'Production' }
+            ],
+            labels: { portfolio: 'DISCOGRAPHY', services: 'TOUR DATES', ctaBanner: 'LISTEN EVERYWHERE' },
+            persona: 'band / musician / record label — portfolio is discography, services become tour dates, bold typographic pressroom energy',
+            content: {
+                releaseGrid: [
+                    { title: 'Afterglow',      year: '2026', type: 'LP' },
+                    { title: 'Static Bloom',   year: '2025', type: 'EP' },
+                    { title: 'Night Shift',    year: '2025', type: 'Single' },
+                    { title: 'Paper Moon',     year: '2024', type: 'LP' },
+                    { title: 'Cassiopeia',     year: '2024', type: 'Single' },
+                    { title: 'Velvet / Bruise',year: '2023', type: 'EP' }
+                ]
+            }
+        },
+        nonprofit: {
+            presetIds: ['auroraBlob', 'northern', 'fireflies', 'meshGrad', 'frost'],
+            palettes: [
+                ['#166534', '#f0fdf4'], ['#b45309', '#fffbeb'], ['#15803d', '#ecfdf5'],
+                ['#b91c1c', '#fef2f2']
+            ],
+            fonts: ['humanist', 'editorial', 'classical', 'soft'],
+            corners: ['soft', 'pill'],
+            cardTreatment: ['minimal', 'bordered'],
+            navStyle: ['default', 'minimal'],
+            heroLayout: ['centered', 'left'],
+            buttonStyle: ['solid', 'outline'],
+            statsStrip: [
+                { v: '$12M', l: 'RAISED TO DATE' }, { v: '26', l: 'COUNTRIES' },
+                { v: '48K', l: 'LIVES IMPACTED' }, { v: '100%', l: 'GOES TO PROGRAMS' }
+            ],
+            logoCloud: ['UN', 'UNICEF', 'Gates Foundation', 'Ford Foundation', 'WHO'],
+            team: [
+                { n: 'Executive Director', r: 'Executive Director' },
+                { n: 'Programs Lead', r: 'Programs Director' },
+                { n: 'Field Lead', r: 'Director of Field Ops' }
+            ],
+            labels: { portfolio: 'OUR WORK', services: 'PROGRAMS', team: 'OUR TEAM', pricing: 'WAYS TO GIVE', ctaBanner: 'DONATE NOW' },
+            persona: 'nonprofit / mission-driven — impact numbers, programs (not services), donor CTAs, human story-led copy with no salesy language'
+        },
+        finance: {
+            presetIds: ['frost', 'obsidian', 'constellation', 'meshGrad', 'oceanBlob'],
+            palettes: [
+                ['#d4a373', '#0a0a0a'], ['#16a34a', '#020617'], ['#1e293b', '#f8fafc'],
+                ['#0f172a', '#f1f5f9']
+            ],
+            fonts: ['editorial', 'classical', 'modern', 'luxe'],
+            corners: ['sharp', 'soft'],
+            cardTreatment: ['minimal', 'bordered'],
+            navStyle: ['default', 'minimal'],
+            heroLayout: ['split', 'left'],
+            typeScale: ['tight', 'normal'],
+            logoStyle: ['monogram', 'mark-left', ''],
+            statsStrip: [
+                { v: '$4.2B', l: 'AUM' }, { v: '12%', l: 'AVG ANNUAL RETURN' },
+                { v: '30+ YR', l: 'TRACK RECORD' }, { v: 'SEC', l: 'REGISTERED' }
+            ],
+            logoCloud: ['Bloomberg', 'Reuters', 'WSJ', 'Financial Times', 'Barron\u2019s', 'Forbes'],
+            team: [
+                { n: 'Managing Partner', r: 'Managing Partner' },
+                { n: 'CIO', r: 'Chief Investment Officer' }
+            ],
+            labels: { portfolio: 'PORTFOLIO', services: 'ADVISORY', team: 'PARTNERS', ctaBanner: 'SCHEDULE A CALL' },
+            persona: 'finance / investment / wealth — credibility signals (AUM, track record, regulatory), partner-led bios, advisory CTAs, restrained copy'
+        },
+        legal: {
+            presetIds: ['obsidian', 'frost', 'noiseGrad', 'silk'],
+            palettes: [
+                ['#b08968', '#0c0a09'], ['#1e293b', '#f8fafc'], ['#0f172a', '#f1f5f9']
+            ],
+            fonts: ['classical', 'editorial', 'luxe'],
+            corners: ['sharp'],
+            cardTreatment: ['minimal', 'bordered'],
+            navStyle: ['default', 'minimal'],
+            heroLayout: ['left', 'split'],
+            typeScale: ['tight', 'normal'],
+            logoStyle: ['monogram', ''],
+            containerWidth: ['narrow', 'normal'],
+            statsStrip: [
+                { v: '40+ YRS', l: 'COMBINED EXPERIENCE' }, { v: '96%', l: 'CASE SUCCESS' },
+                { v: '$500M+', l: 'SETTLEMENTS' }
+            ],
+            logoCloud: ['WSJ', 'FT', 'Bloomberg Law', 'Reuters', 'Law360'],
+            team: [
+                { n: 'Senior Partner', r: 'Senior Partner' },
+                { n: 'Associate', r: 'Senior Associate' }
+            ],
+            labels: { portfolio: 'CASE WINS', services: 'PRACTICE AREAS', team: 'OUR ATTORNEYS', ctaBanner: 'SCHEDULE CONSULTATION' },
+            persona: 'law firm / legal practice — practice areas, attorneys (not team), case-win credibility, consultation CTAs, formal voice'
+        },
+        agency: {
+            presetIds: ['obsidian', 'aurora', 'meshGrad', 'noiseGrad', 'silk', 'prism'],
+            palettes: [
+                ['#e6b13a', '#0a0a0a'], ['#ff6b6b', '#0a0a0a'], ['#c4a8ff', '#080810'],
+                ['#f5f5f5', '#0a0a0a']
+            ],
+            fonts: ['editorial', 'display', 'modern', 'brutalist'],
+            corners: ['sharp', 'soft'],
+            cardTreatment: ['minimal', 'bordered', 'floating'],
+            navStyle: ['minimal', 'default'],
+            heroLayout: ['left', 'split'],
+            typeScale: ['dramatic'],
+            statsStrip: [
+                { v: '120+', l: 'PROJECTS' }, { v: '98%', l: 'RETENTION' },
+                { v: '24', l: 'AWARDS' }, { v: '12', l: 'COUNTRIES' }
+            ],
+            logoCloud: ['Nike', 'Spotify', 'Apple', 'Stripe', 'Figma', 'Linear', 'Notion', 'Vercel'],
+            team: [
+                { n: 'Alex Chen', r: 'Founder / Design' },
+                { n: 'Jordan Rivera', r: 'Engineering Lead' },
+                { n: 'Sam Okafor', r: 'Creative Director' }
+            ],
+            labels: { portfolio: 'SELECTED WORK', services: 'CAPABILITIES', process: 'HOW WE WORK', ctaBanner: 'START A PROJECT' },
+            persona: 'creative agency / studio — selected work case studies, capability pillars, senior team bios, project-kickoff CTAs'
+        },
+        generic: {
+            presetIds: ['obsidian', 'meshGrad', 'aurora', 'noiseGrad', 'silk'],
+            palettes: [
+                ['#e6b13a', '#0a0a0a'], ['#c4a8ff', '#080810'], ['#0b0b0b', '#f4efe8']
+            ],
+            fonts: ['modern', 'humanist', 'editorial', 'display'],
+            corners: ['soft'],
+            cardTreatment: ['minimal', 'bordered'],
+            navStyle: ['default', 'minimal'],
+            heroLayout: ['centered', 'left', 'split'],
+            statsStrip: [
+                { v: '120+', l: 'Projects' }, { v: '98%', l: 'Retention' },
+                { v: '12', l: 'Countries' }, { v: '2019', l: 'Founded' }
+            ],
+            logoCloud: ['Acme Co', 'Northwind', 'Globex', 'Initech', 'Umbrella', 'Hooli', 'Soylent', 'Stark'],
+            team: [
+                { n: 'Alex Chen', r: 'Founder / Design' },
+                { n: 'Jordan Rivera', r: 'Engineering Lead' },
+                { n: 'Sam Okafor', r: 'Creative Director' }
+            ],
+            labels: {},
+            persona: 'general business site'
+        }
+    };
+
+    /** Return the design + content profile for a type. Always returns an
+     *  object; falls back to the generic profile for unknown types. */
+    function profile(type) {
+        return PROFILES[type] || PROFILES.generic;
+    }
+
+    /** Pick a random entry from a pool array, or return undefined for empties. */
+    function pickFrom(pool) {
+        if (!Array.isArray(pool) || !pool.length) return undefined;
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    global.ArbelSiteType = {
+        infer: infer,
+        recipe: recipe,
+        types: types,
+        profile: profile,
+        pickFrom: pickFrom
+    };
 })(window);

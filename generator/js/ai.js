@@ -65,12 +65,30 @@ window.ArbelAI = (function () {
     function _buildPrompt(description, industry, brandName, sections) {
         var sectionList = sections.join(', ');
         var tone = _pickTone();
+        // ─── SITE-TYPE PERSONA ─── Same persona lever as the full design
+        // prompt — tells the copywriter what KIND of site this is so
+        // "gaming portfolio" stops getting generic agency services copy.
+        var personaBlock = '';
+        if (typeof ArbelSiteType !== 'undefined') {
+            try {
+                var st = ArbelSiteType.infer(description, industry);
+                var prof = ArbelSiteType.profile(st);
+                if (prof && prof.persona) {
+                    var exStats = Array.isArray(prof.statsStrip)
+                        ? prof.statsStrip.slice(0, 4).map(function (s) { return s.v + ' ' + s.l; }).join(' · ') : '';
+                    personaBlock = 'SITE TYPE: ' + st + '\nPERSONA: ' + prof.persona + '\n' +
+                        (exStats ? 'Example stats tone: ' + exStats + '\n' : '') +
+                        'Every copy field MUST match this persona — do NOT default to generic agency/services language.\n\n';
+                }
+            } catch (e) { /* non-fatal */ }
+        }
         return 'You are a professional website copywriter. Generate all website copy for this business:\n\n' +
             'Business: ' + brandName + '\n' +
             'Industry: ' + industry + '\n' +
             'Description: ' + description + '\n' +
             'Sections needed: ' + sectionList + '\n' +
             'TONE OF VOICE (commit fully): ' + tone + '\n\n' +
+            personaBlock +
             'Return a valid JSON object (no markdown, no code blocks, only raw JSON) with these exact keys:\n' +
             '{\n' +
             '  "heroLine1": "short punchy first line (2-4 words)",\n' +
@@ -362,6 +380,55 @@ window.ArbelAI = (function () {
             var suggested = ArbelSiteType.recipe(siteType);
             recipeHint = '\n\nDETECTED SITE TYPE: "' + siteType + '". Suggested section architecture for this type: ' +
                 JSON.stringify(suggested) + '. Follow this shape unless the description clearly calls for different sections. For gaming sites, prefer statsStrip (player counts / awards) + portfolio (game modes / characters / maps) + ctaBanner (download/play). For shops, prefer portfolio (as product grid) + pricing (as product tiers) + testimonials (reviews). For portfolios, prefer portfolio (projects) + about + process. For blogs, prefer portfolio (as posts) + about + ctaBanner (subscribe). For events, prefer statsStrip (dates/venue) + team (speakers) + pricing (tickets). For apps, prefer services (features) + pricing (plans) + statsStrip (downloads/rating). Do NOT blindly copy the "services + portfolio + pricing" agency template onto every site.\n';
+
+            // ─── PROFILE HINT ─── Inject the type's persona + a few example
+            // content fragments so the AI generates copy that actually fits
+            // (gaming → K/D, WINS, RANK; restaurant → tasting menus; fashion
+            // → collection names; nonprofit → impact numbers). This is the
+            // single biggest lever for breaking the "every site looks like a
+            // generic agency" problem.
+            try {
+                var prof = ArbelSiteType.profile(siteType);
+                if (prof) {
+                    var exStats = Array.isArray(prof.statsStrip)
+                        ? prof.statsStrip.slice(0, 4).map(function (s) { return s.v + ' ' + s.l; }).join(' · ')
+                        : '';
+                    var exLogos = Array.isArray(prof.logoCloud) ? prof.logoCloud.slice(0, 6).join(', ') : '';
+                    var exLabels = prof.labels && typeof prof.labels === 'object'
+                        ? Object.keys(prof.labels).map(function (k) { return k + '→"' + prof.labels[k] + '"'; }).join(', ')
+                        : '';
+                    recipeHint += 'PERSONA: ' + (prof.persona || 'generic business site') + '\n';
+                    if (exStats) recipeHint += 'EXAMPLE STATS for this type (tone reference — invent your own similar): ' + exStats + '\n';
+                    if (exLogos) recipeHint += 'EXAMPLE LOGOCLOUD brands (press/partners/platforms relevant to this type): ' + exLogos + '\n';
+                    if (exLabels) recipeHint += 'SECTION-LABEL OVERRIDES for this type (use these instead of the defaults): ' + exLabels + '\n';
+                    recipeHint += 'Every copy field MUST match the persona above — do NOT default to generic agency/services language.\n';
+
+                    // ─── TYPE-NATIVE SECTION SCHEMAS ───
+                    // If the suggested recipe includes any of the new
+                    // type-native sections, tell the AI exactly which
+                    // copy keys to produce so it fills product grids /
+                    // agent rosters / menu rows / etc. with specific,
+                    // on-persona copy rather than generic filler.
+                    var nativeSchemas = {
+                        productGrid: 'productGrid: for i=1..6 produce product<i>Name (short SKU-like product name), product<i>Price (e.g. "$4.99"), product<i>Category (e.g. "Produce"), product<i>Badge (optional short tag like "NEW", "-20%", "BEST SELLER"). Also set productGridHeading + productGridLabel.',
+                        categoryChips: 'categoryChips: produce 6–8 strings as category1..category8 (short taxonomy names: "Produce", "Bakery", etc.).',
+                        dealBanner: 'dealBanner: set dealBannerTag (short uppercase), dealBannerHeading (offer headline), dealBannerSub (supporting line), dealBannerCta (button text).',
+                        agentRoster: 'agentRoster: for i=1..4 produce agent<i>Name (codename), agent<i>Role (ROLE in uppercase e.g. DUELIST/SENTINEL/INITIATOR/CONTROLLER/TANK/SUPPORT), agent<i>Ability (one sentence describing their signature mechanic). Also set agentRosterHeading.',
+                        cinematicReel: 'cinematicReel: set cinematicReelLabel (short uppercase tag), cinematicReelHeading (bold cinematic tagline), cinematicReelSub (one-sentence hook), cinematicReelCta (e.g. "Play Free", "Watch Trailer").',
+                        gameModes: 'gameModes: for i=1..4 produce mode<i>Name, mode<i>Desc (one sentence), mode<i>Tag (short uppercase category like RANKED/CASUAL/EVENT).',
+                        statWall: 'statWall: for i=1..4 produce wall<i>Val (big number or status — e.g. "2.1M+", "RADIANT", "1.78") and wall<i>Label (short sentence-case label under it).',
+                        raceTimeline: 'raceTimeline: for i=1..5 produce race<i>Date (e.g. "2026 · Q2"), race<i>Event (event/client/track name), race<i>Result (outcome — "Shipped", "P2", "Winner", etc.), race<i>Points (optional metric / dash).',
+                        menuSections: 'menuSections: for i=1..8 produce dish<i>Name, dish<i>Desc (ingredients, one sentence max), dish<i>Price (e.g. "$18"), dish<i>Category (group name like "Antipasti", "Primi", "Dolci" — items with same Category group together), dish<i>Tags (optional comma list like "V,Spicy").',
+                        lookbookHorizontal: 'lookbookHorizontal: for i=1..6 produce look<i>Title (garment / outfit name), look<i>Tag (e.g. "SS26 · 01"). Also lookbookHorizontalHeading.',
+                        releaseGrid: 'releaseGrid: for i=1..6 produce release<i>Title, release<i>Year (YYYY), release<i>Type ("LP" | "EP" | "Single" | "Episode"). Also releaseGridHeading.'
+                    };
+                    var usedNatives = suggested.filter(function (s) { return nativeSchemas[s]; });
+                    if (usedNatives.length) {
+                        recipeHint += '\nSCHEMAS for the type-native sections in this recipe (use these EXACT copy keys in the copy JSON):\n';
+                        usedNatives.forEach(function (s) { recipeHint += '  - ' + nativeSchemas[s] + '\n'; });
+                    }
+                }
+            } catch (e) { /* non-fatal */ }
         }
 
         var presetCatalogue =

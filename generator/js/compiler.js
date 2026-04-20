@@ -1117,6 +1117,309 @@ window.ArbelCompiler = (function () {
             '</section>';
     }
 
+    /* ══════════════════════════════════════════════════════════════
+     * TYPE-NATIVE SECTIONS (Layer 1 — Week-1 cut)
+     *
+     * These sections are what makes a gaming site FEEL like a gaming
+     * site, a grocery store feel like a store, a driver portfolio
+     * feel like an athlete page, etc. They render alongside the
+     * generic services/portfolio/about spine and are wired into
+     * SECTION_BUILDERS so any recipe can use them.
+     *
+     * Schema convention: each item is flat `<prefix><N><Field>` keys
+     * on `c` (matching the existing service1Title / project1Tag
+     * pattern) so the editor and AI can fill them uniformly.
+     * ══════════════════════════════════════════════════════════════ */
+
+    /** Product grid — shop / grocery / ecommerce.
+     *  Fields: product{i}Name, product{i}Price, product{i}Category,
+     *          product{i}Badge (e.g. "NEW", "-20%"), product{i}Image */
+    function _productGridHTML(c) {
+        var count = _clampCount(c.__productGridCount, 6, 3, 8);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var name = c['product' + i + 'Name'] || 'Product ' + i;
+            var price = c['product' + i + 'Price'] || '$—';
+            var cat = c['product' + i + 'Category'] || '';
+            var badge = c['product' + i + 'Badge'] || '';
+            var img = c['product' + i + 'Image'] || '';
+            var imgEl = img
+                ? '<img src="' + escHref(img) + '" alt="' + esc(name) + '" loading="lazy">'
+                : '<div class="product-ph" aria-hidden="true">' + esc(name.charAt(0)) + '</div>';
+            items += '  <article class="product-card reveal-up" data-arbel-id="product-card-' + i + '">\n' +
+                '    <div class="product-media">' + imgEl +
+                (badge ? '<span class="product-badge mono" data-arbel-id="product-' + i + '-badge" data-arbel-edit="text">' + esc(badge) + '</span>' : '') +
+                '</div>\n' +
+                (cat ? '    <div class="product-cat mono" data-arbel-id="product-' + i + '-cat" data-arbel-edit="text">' + esc(cat) + '</div>\n' : '') +
+                '    <h3 class="product-name" data-arbel-id="product-' + i + '-name" data-arbel-edit="text">' + esc(name) + '</h3>\n' +
+                '    <div class="product-row">\n' +
+                '      <span class="product-price" data-arbel-id="product-' + i + '-price" data-arbel-edit="text">' + esc(price) + '</span>\n' +
+                '      <button type="button" class="product-add" aria-label="Add ' + esc(name) + '">+</button>\n' +
+                '    </div>\n' +
+                '  </article>\n';
+        }
+        return '<section class="section productGrid" id="productGrid" data-arbel-id="productGrid">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.productGridLabel || 'SHOP') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="productGrid-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.productGridHeading || 'Featured products') + '</span></span></h2>\n' +
+            '  <div class="product-grid product-grid--cols-' + (count >= 6 ? 4 : 3) + '">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Category chips — horizontal pill row of shop/grocery categories. */
+    function _categoryChipsHTML(c) {
+        var count = _clampCount(c.__categoryChipsCount, 8, 4, 10);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var cat = c['category' + i] || '';
+            if (!cat) continue;
+            items += '  <a href="#productGrid" class="category-chip" data-arbel-id="category-' + i + '" data-arbel-edit="text">' + esc(cat) + '</a>\n';
+        }
+        if (!items) return '';
+        return '<section class="section categoryChips" id="categoryChips" data-arbel-id="categoryChips">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.categoryChipsLabel || 'SHOP BY CATEGORY') + '</div>\n' +
+            '  <div class="category-chips-row">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Deal banner — full-width promo strip for shops. */
+    function _dealBannerHTML(c) {
+        return '<section class="section dealBanner" id="dealBanner" data-arbel-id="dealBanner">\n' +
+            '  <div class="container deal-banner-inner">\n' +
+            '    <div class="deal-banner-tag mono" data-arbel-id="deal-banner-tag" data-arbel-edit="text">' + esc(c.dealBannerTag || 'LIMITED TIME') + '</div>\n' +
+            '    <h2 class="deal-banner-heading" data-arbel-id="deal-banner-heading" data-arbel-edit="text">' + esc(c.dealBannerHeading || 'Save up to 30% this week') + '</h2>\n' +
+            '    <p class="deal-banner-sub" data-arbel-id="deal-banner-sub" data-arbel-edit="text">' + esc(c.dealBannerSub || 'Fresh picks, same-day delivery on orders over $35.') + '</p>\n' +
+            '    <a href="#productGrid" class="btn btn-primary" data-arbel-id="deal-banner-cta" data-arbel-edit="text">' + esc(c.dealBannerCta || 'Shop Deals') + '</a>\n' +
+            '  </div>\n' +
+            '</section>';
+    }
+
+    /** Agent roster — gaming character/class cards.
+     *  Fields: agent{i}Name, agent{i}Role, agent{i}Ability, agent{i}Image */
+    function _agentRosterHTML(c) {
+        var count = _clampCount(c.__agentRosterCount, 4, 3, 6);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var name = c['agent' + i + 'Name'] || 'Agent ' + i;
+            var role = c['agent' + i + 'Role'] || 'Duelist';
+            var ability = c['agent' + i + 'Ability'] || '';
+            var img = c['agent' + i + 'Image'] || '';
+            var mediaEl = img
+                ? '<img src="' + escHref(img) + '" alt="' + esc(name) + '" loading="lazy">'
+                : '<div class="agent-ph" aria-hidden="true">' + esc(name.charAt(0)) + '</div>';
+            items += '  <article class="agent-card reveal-up" data-arbel-id="agent-card-' + i + '">\n' +
+                '    <div class="agent-media">' + mediaEl + '<span class="agent-num mono">0' + i + '</span></div>\n' +
+                '    <div class="agent-role mono" data-arbel-id="agent-' + i + '-role" data-arbel-edit="text">' + esc(role) + '</div>\n' +
+                '    <h3 class="agent-name" data-arbel-id="agent-' + i + '-name" data-arbel-edit="text">' + esc(name) + '</h3>\n' +
+                (ability ? '    <p class="agent-ability" data-arbel-id="agent-' + i + '-ability" data-arbel-edit="text">' + esc(ability) + '</p>\n' : '') +
+                '  </article>\n';
+        }
+        return '<section class="section agentRoster" id="agentRoster" data-arbel-id="agentRoster">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.agentRosterLabel || 'ROSTER') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="agentRoster-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.agentRosterHeading || 'Choose your agent') + '</span></span></h2>\n' +
+            '  <div class="agent-grid agent-grid--cols-' + (count >= 4 ? 4 : 3) + '">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Cinematic reel — full-bleed hero-like panel with big CTA.
+     *  Reuses the hero bg system so it picks up shaders/particles. */
+    function _cinematicReelHTML(c) {
+        return '<section class="section cinematicReel" id="cinematicReel" data-arbel-id="cinematicReel">\n' +
+            '  <div class="cinematic-reel-inner">\n' +
+            '    <div class="section-label mono" data-arbel-id="cinematicReel-label" data-arbel-edit="text">' + esc(c.cinematicReelLabel || 'NOW PLAYING') + '</div>\n' +
+            '    <h2 class="cinematic-reel-heading" data-arbel-id="cinematicReel-heading" data-arbel-edit="text">' + esc(c.cinematicReelHeading || 'Enter the arena') + '</h2>\n' +
+            '    <p class="cinematic-reel-sub" data-arbel-id="cinematicReel-sub" data-arbel-edit="text">' + esc(c.cinematicReelSub || '5v5, tactical, unforgiving. Drop in free.') + '</p>\n' +
+            '    <a href="#cta" class="btn btn-primary" data-arbel-id="cinematicReel-cta" data-arbel-edit="text">' + esc(c.cinematicReelCta || 'Play Free') + '</a>\n' +
+            '  </div>\n' +
+            '</section>';
+    }
+
+    /** Game modes — tabbed or grid cards describing modes/maps/formats. */
+    function _gameModesHTML(c) {
+        var count = _clampCount(c.__gameModesCount, 4, 2, 4);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var name = c['mode' + i + 'Name'] || 'Mode ' + i;
+            var desc = c['mode' + i + 'Desc'] || '';
+            var tag = c['mode' + i + 'Tag'] || '';
+            items += '  <article class="mode-card reveal-up" data-arbel-id="mode-card-' + i + '">\n' +
+                (tag ? '    <div class="mode-tag mono" data-arbel-id="mode-' + i + '-tag" data-arbel-edit="text">' + esc(tag) + '</div>\n' : '') +
+                '    <h3 class="mode-name" data-arbel-id="mode-' + i + '-name" data-arbel-edit="text">' + esc(name) + '</h3>\n' +
+                '    <p class="mode-desc" data-arbel-id="mode-' + i + '-desc" data-arbel-edit="text">' + esc(desc) + '</p>\n' +
+                '  </article>\n';
+        }
+        return '<section class="section gameModes" id="gameModes" data-arbel-id="gameModes">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.gameModesLabel || 'MODES') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="gameModes-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.gameModesHeading || 'How to play') + '</span></span></h2>\n' +
+            '  <div class="mode-grid mode-grid--cols-' + count + '">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Stat wall — huge hero-scale numbers (athlete / driver portfolio).
+     *  Like statsStrip but much larger and grid-arranged. */
+    function _statWallHTML(c) {
+        var count = _clampCount(c.__statWallCount, 4, 3, 6);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var val = c['wall' + i + 'Val'] || '—';
+            var label = c['wall' + i + 'Label'] || 'Stat';
+            items += '  <div class="stat-wall-cell reveal-up" data-arbel-id="stat-wall-' + i + '">\n' +
+                '    <div class="stat-wall-val" data-arbel-id="wall-' + i + '-val" data-arbel-edit="text">' + esc(val) + '</div>\n' +
+                '    <div class="stat-wall-label mono" data-arbel-id="wall-' + i + '-label" data-arbel-edit="text">' + esc(label) + '</div>\n' +
+                '  </div>\n';
+        }
+        return '<section class="section statWall" id="statWall" data-arbel-id="statWall">\n' +
+            '<div class="container">\n' +
+            (c.statWallLabel ? '  <div class="section-label mono">' + esc(c.statWallLabel) + '</div>\n' : '') +
+            (c.statWallHeading ? '  <h2 class="section-heading" data-arbel-id="statWall-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.statWallHeading) + '</span></span></h2>\n' : '') +
+            '  <div class="stat-wall-grid">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Race / career timeline — chronological result list.
+     *  Works for drivers, athletes, musicians' tour history, etc. */
+    function _raceTimelineHTML(c) {
+        var count = _clampCount(c.__raceTimelineCount, 5, 3, 8);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var date = c['race' + i + 'Date'] || '—';
+            var event = c['race' + i + 'Event'] || 'Event ' + i;
+            var result = c['race' + i + 'Result'] || '—';
+            var points = c['race' + i + 'Points'] || '';
+            items += '  <div class="race-row reveal-up" data-arbel-id="race-row-' + i + '">\n' +
+                '    <div class="race-date mono" data-arbel-id="race-' + i + '-date" data-arbel-edit="text">' + esc(date) + '</div>\n' +
+                '    <div class="race-event" data-arbel-id="race-' + i + '-event" data-arbel-edit="text">' + esc(event) + '</div>\n' +
+                '    <div class="race-result" data-arbel-id="race-' + i + '-result" data-arbel-edit="text">' + esc(result) + '</div>\n' +
+                (points ? '    <div class="race-points mono" data-arbel-id="race-' + i + '-points" data-arbel-edit="text">' + esc(points) + '</div>\n' : '    <div class="race-points"></div>\n') +
+                '  </div>\n';
+        }
+        return '<section class="section raceTimeline" id="raceTimeline" data-arbel-id="raceTimeline">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.raceTimelineLabel || 'TIMELINE') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="raceTimeline-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.raceTimelineHeading || 'Latest results') + '</span></span></h2>\n' +
+            '  <div class="race-table" role="table">\n' +
+            '    <div class="race-row race-row--head mono" role="row">\n' +
+            '      <div role="columnheader">Date</div>\n' +
+            '      <div role="columnheader">Event</div>\n' +
+            '      <div role="columnheader">Result</div>\n' +
+            '      <div role="columnheader">Pts</div>\n' +
+            '    </div>\n' +
+            items +
+            '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Menu sections — restaurant dish list grouped visually by section.
+     *  Fields: dish{i}Name, dish{i}Desc, dish{i}Price, dish{i}Category,
+     *          dish{i}Tags (comma list, e.g. "V,Spicy,New") */
+    function _menuSectionsHTML(c) {
+        var count = _clampCount(c.__menuSectionsCount, 6, 3, 10);
+        // Group by category while preserving order of first occurrence
+        var groups = [];
+        var gMap = {};
+        for (var i = 1; i <= count; i++) {
+            var name = c['dish' + i + 'Name'];
+            if (!name) continue;
+            var cat = c['dish' + i + 'Category'] || 'Menu';
+            if (!gMap[cat]) { gMap[cat] = { name: cat, items: [] }; groups.push(gMap[cat]); }
+            gMap[cat].items.push({
+                idx: i,
+                name: name,
+                desc: c['dish' + i + 'Desc'] || '',
+                price: c['dish' + i + 'Price'] || '',
+                tags: (c['dish' + i + 'Tags'] || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean)
+            });
+        }
+        var body = '';
+        groups.forEach(function (g) {
+            body += '  <div class="menu-group">\n';
+            body += '    <h3 class="menu-group-heading">' + esc(g.name) + '</h3>\n';
+            g.items.forEach(function (it) {
+                var tagEl = it.tags.length ? '<span class="menu-tags mono">' + it.tags.map(function (t) { return esc(t); }).join(' · ') + '</span>' : '';
+                body += '    <div class="menu-row" data-arbel-id="menu-row-' + it.idx + '">\n' +
+                    '      <div class="menu-row-left">\n' +
+                    '        <h4 class="menu-item-name" data-arbel-id="dish-' + it.idx + '-name" data-arbel-edit="text">' + esc(it.name) + '</h4>\n' +
+                    (it.desc ? '        <p class="menu-item-desc" data-arbel-id="dish-' + it.idx + '-desc" data-arbel-edit="text">' + esc(it.desc) + '</p>\n' : '') +
+                    (tagEl ? '        ' + tagEl + '\n' : '') +
+                    '      </div>\n' +
+                    '      <div class="menu-item-price" data-arbel-id="dish-' + it.idx + '-price" data-arbel-edit="text">' + esc(it.price) + '</div>\n' +
+                    '    </div>\n';
+            });
+            body += '  </div>\n';
+        });
+        return '<section class="section menuSections" id="menuSections" data-arbel-id="menuSections">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.menuSectionsLabel || 'MENU') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="menuSections-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.menuSectionsHeading || 'The menu') + '</span></span></h2>\n' +
+            '  <div class="menu-groups">\n' + body + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
+    /** Lookbook horizontal — fashion editorial horizontal-scroll gallery.
+     *  Fields: look{i}Title, look{i}Tag, look{i}Image */
+    function _lookbookHorizontalHTML(c) {
+        var count = _clampCount(c.__lookbookHorizontalCount, 5, 3, 8);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var title = c['look' + i + 'Title'] || 'Look ' + i;
+            var tag = c['look' + i + 'Tag'] || '';
+            var img = c['look' + i + 'Image'] || '';
+            var mediaEl = img
+                ? '<img src="' + escHref(img) + '" alt="' + esc(title) + '" loading="lazy">'
+                : '<div class="look-ph" aria-hidden="true"></div>';
+            items += '  <article class="look-card" data-arbel-id="look-card-' + i + '">\n' +
+                '    <div class="look-media">' + mediaEl + '</div>\n' +
+                '    <div class="look-meta">\n' +
+                '      <span class="look-num mono">' + (i < 10 ? '0' + i : i) + '</span>\n' +
+                (tag ? '      <span class="look-tag mono" data-arbel-id="look-' + i + '-tag" data-arbel-edit="text">' + esc(tag) + '</span>\n' : '') +
+                '      <h3 class="look-title" data-arbel-id="look-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
+                '    </div>\n' +
+                '  </article>\n';
+        }
+        return '<section class="section lookbookHorizontal" id="lookbookHorizontal" data-arbel-id="lookbookHorizontal">\n' +
+            '<div class="container lookbook-head">\n' +
+            '  <div class="section-label mono">' + esc(c.lookbookHorizontalLabel || 'LOOKBOOK') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="lookbookHorizontal-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.lookbookHorizontalHeading || 'The new edit') + '</span></span></h2>\n' +
+            '</div>\n' +
+            '<div class="lookbook-scroller" role="region" aria-label="Lookbook">\n' +
+            '  <div class="lookbook-track">\n' + items + '  </div>\n' +
+            '</div>\n' +
+            '</section>';
+    }
+
+    /** Release grid — music / podcast catalog.
+     *  Fields: release{i}Title, release{i}Year, release{i}Type, release{i}Image */
+    function _releaseGridHTML(c) {
+        var count = _clampCount(c.__releaseGridCount, 6, 3, 8);
+        var items = '';
+        for (var i = 1; i <= count; i++) {
+            var title = c['release' + i + 'Title'] || 'Release ' + i;
+            var year = c['release' + i + 'Year'] || '';
+            var type = c['release' + i + 'Type'] || 'Single';
+            var img = c['release' + i + 'Image'] || '';
+            var mediaEl = img
+                ? '<img src="' + escHref(img) + '" alt="' + esc(title) + '" loading="lazy">'
+                : '<div class="release-ph" aria-hidden="true">' + esc(title.charAt(0)) + '</div>';
+            items += '  <article class="release-card reveal-up" data-arbel-id="release-card-' + i + '">\n' +
+                '    <div class="release-media">' + mediaEl + '</div>\n' +
+                '    <div class="release-meta mono">\n' +
+                '      <span data-arbel-id="release-' + i + '-type" data-arbel-edit="text">' + esc(type) + '</span>' +
+                (year ? ' · <span data-arbel-id="release-' + i + '-year" data-arbel-edit="text">' + esc(year) + '</span>' : '') +
+                '\n    </div>\n' +
+                '    <h3 class="release-title" data-arbel-id="release-' + i + '-title" data-arbel-edit="text">' + esc(title) + '</h3>\n' +
+                '  </article>\n';
+        }
+        return '<section class="section releaseGrid" id="releaseGrid" data-arbel-id="releaseGrid">\n' +
+            '<div class="container">\n' +
+            '  <div class="section-label mono">' + esc(c.releaseGridLabel || 'DISCOGRAPHY') + '</div>\n' +
+            '  <h2 class="section-heading" data-arbel-id="releaseGrid-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(c.releaseGridHeading || 'Releases') + '</span></span></h2>\n' +
+            '  <div class="release-grid release-grid--cols-' + (count >= 4 ? 4 : 3) + '">\n' + items + '  </div>\n' +
+            '</div>\n</section>';
+    }
+
     /* ─── Section builder map ─── */
     var SECTION_BUILDERS = {
         hero: _heroHTML,
@@ -1131,7 +1434,19 @@ window.ArbelCompiler = (function () {
         logoCloud: _logoCloudHTML,
         ctaBanner: _ctaBannerHTML,
         team: _teamHTML,
-        contact: _contactHTML
+        contact: _contactHTML,
+        // ─── Type-native sections (Week-1 cut) ───
+        productGrid: _productGridHTML,
+        categoryChips: _categoryChipsHTML,
+        dealBanner: _dealBannerHTML,
+        agentRoster: _agentRosterHTML,
+        cinematicReel: _cinematicReelHTML,
+        gameModes: _gameModesHTML,
+        statWall: _statWallHTML,
+        raceTimeline: _raceTimelineHTML,
+        menuSections: _menuSectionsHTML,
+        lookbookHorizontal: _lookbookHorizontalHTML,
+        releaseGrid: _releaseGridHTML
     };
 
     /* ─── Main HTML builder ─── */
@@ -1140,6 +1455,104 @@ window.ArbelCompiler = (function () {
         var bgClass = cat === 'shader' ? 'webgl-bg' : 'anim-bg';
         var sections = cfg.sections || ['hero', 'services', 'about', 'contact'];
         var c = cfg.content || {};
+
+        // ─── SITE-TYPE CONTENT DEFAULTS ─── When a site type is known
+        // (gaming / restaurant / fashion / saas / …) pull industry-specific
+        // fallback values for statsStrip, logoCloud, team and section
+        // labels. User-supplied `c` always wins — these only fill blanks.
+        var stProfile = null;
+        if (cfg.siteType && typeof window !== 'undefined' && window.ArbelSiteType) {
+            stProfile = window.ArbelSiteType.profile(cfg.siteType);
+        }
+        if (stProfile) {
+            // statsStrip defaults (up to 5)
+            if (Array.isArray(stProfile.statsStrip)) {
+                for (var si = 0; si < stProfile.statsStrip.length && si < 5; si++) {
+                    var sKey = 'statsStrip' + (si + 1);
+                    if (!c[sKey + 'Val'])   c[sKey + 'Val']   = stProfile.statsStrip[si].v;
+                    if (!c[sKey + 'Label']) c[sKey + 'Label'] = stProfile.statsStrip[si].l;
+                }
+            }
+            // logoCloud defaults (up to 8)
+            if (Array.isArray(stProfile.logoCloud)) {
+                for (var li = 0; li < stProfile.logoCloud.length && li < 8; li++) {
+                    var lKey = 'logoCloud' + (li + 1);
+                    if (!c[lKey]) c[lKey] = stProfile.logoCloud[li];
+                }
+            }
+            // team defaults (up to 4)
+            if (Array.isArray(stProfile.team)) {
+                for (var ti = 0; ti < stProfile.team.length && ti < 4; ti++) {
+                    var tKey = 'team' + (ti + 1);
+                    if (!c[tKey + 'Name']) c[tKey + 'Name'] = stProfile.team[ti].n;
+                    if (!c[tKey + 'Role']) c[tKey + 'Role'] = stProfile.team[ti].r;
+                }
+            }
+            // Section mono labels — override defaults like "PORTFOLIO" → "GAMEPLAY"
+            if (stProfile.labels && typeof stProfile.labels === 'object') {
+                var labMap = {
+                    services: 'servicesLabel', portfolio: 'portfolioLabel',
+                    about: 'aboutLabel', process: 'processLabel',
+                    testimonials: 'testimonialsLabel', pricing: 'pricingLabel',
+                    faq: 'faqLabel', team: 'teamLabel', contact: 'contactLabel',
+                    logoCloud: 'logoCloudLabel'
+                };
+                Object.keys(stProfile.labels).forEach(function (k) {
+                    var field = labMap[k];
+                    if (field && !c[field]) c[field] = stProfile.labels[k];
+                });
+                // ctaBanner heading hint (when not explicitly set)
+                if (stProfile.labels.ctaBanner && !c.ctaBannerCta) c.ctaBannerCta = stProfile.labels.ctaBanner;
+            }
+
+            // ─── TYPE-NATIVE SECTION DEFAULTS ───
+            // Fill in product/agent/dish/look/release/etc items from the
+            // profile's `content` block when the user / AI hasn't supplied
+            // them. Each entry uses the same flat <prefix><N><Field> keys
+            // the section builder reads from `c`.
+            var cn = stProfile.content || {};
+            function _fill(arr, prefix, fields) {
+                if (!Array.isArray(arr)) return;
+                arr.forEach(function (item, idx) {
+                    var n = idx + 1;
+                    Object.keys(fields).forEach(function (srcKey) {
+                        var dstKey = prefix + n + fields[srcKey];
+                        if (c[dstKey] == null || c[dstKey] === '') {
+                            if (item[srcKey] != null) c[dstKey] = item[srcKey];
+                        }
+                    });
+                });
+            }
+            _fill(cn.productGrid, 'product', { name: 'Name', price: 'Price', category: 'Category', badge: 'Badge', image: 'Image' });
+            _fill(cn.agentRoster, 'agent',   { name: 'Name', role: 'Role', ability: 'Ability', image: 'Image' });
+            _fill(cn.gameModes,   'mode',    { name: 'Name', desc: 'Desc', tag: 'Tag' });
+            _fill(cn.statWall,    'wall',    { v: 'Val', l: 'Label' });
+            _fill(cn.raceTimeline,'race',    { date: 'Date', event: 'Event', result: 'Result', points: 'Points' });
+            _fill(cn.menuSections,'dish',    { name: 'Name', desc: 'Desc', price: 'Price', category: 'Category', tags: 'Tags' });
+            _fill(cn.lookbookHorizontal, 'look', { title: 'Title', tag: 'Tag', image: 'Image' });
+            _fill(cn.releaseGrid, 'release', { title: 'Title', year: 'Year', type: 'Type', image: 'Image' });
+            // categoryChips: simple string array
+            if (Array.isArray(cn.categoryChips)) {
+                for (var ci = 0; ci < cn.categoryChips.length && ci < 10; ci++) {
+                    var ckey = 'category' + (ci + 1);
+                    if (!c[ckey]) c[ckey] = cn.categoryChips[ci];
+                }
+            }
+            // Singleton sections: dealBanner, cinematicReel — flat fields
+            if (cn.dealBanner && typeof cn.dealBanner === 'object') {
+                if (!c.dealBannerTag)     c.dealBannerTag     = cn.dealBanner.tag;
+                if (!c.dealBannerHeading) c.dealBannerHeading = cn.dealBanner.heading;
+                if (!c.dealBannerSub)     c.dealBannerSub     = cn.dealBanner.sub;
+                if (!c.dealBannerCta)     c.dealBannerCta     = cn.dealBanner.cta;
+            }
+            if (cn.cinematicReel && typeof cn.cinematicReel === 'object') {
+                if (!c.cinematicReelLabel)   c.cinematicReelLabel   = cn.cinematicReel.label;
+                if (!c.cinematicReelHeading) c.cinematicReelHeading = cn.cinematicReel.heading;
+                if (!c.cinematicReelSub)     c.cinematicReelSub     = cn.cinematicReel.sub;
+                if (!c.cinematicReelCta)     c.cinematicReelCta     = cn.cinematicReel.cta;
+            }
+        }
+
         var sectionsHTML = '';
 
         sections.forEach(function (s) {
@@ -1171,10 +1584,29 @@ window.ArbelCompiler = (function () {
         });
 
         var navLinks = '';
-        var navMap = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', team: c.teamNav || 'Team', contact: c.contactNav || 'Contact' };
+        var navMap = {
+            services: c.servicesNav || 'Services',
+            portfolio: c.portfolioNav || 'Work',
+            about: c.aboutNav || 'About',
+            process: c.processNav || 'Process',
+            pricing: c.pricingNav || 'Pricing',
+            team: c.teamNav || 'Team',
+            contact: c.contactNav || 'Contact',
+            // Type-native section nav labels
+            productGrid:        c.productGridNav        || 'Shop',
+            categoryChips:      c.categoryChipsNav      || 'Categories',
+            agentRoster:        c.agentRosterNav        || 'Agents',
+            gameModes:          c.gameModesNav          || 'Modes',
+            statWall:           c.statWallNav           || 'Stats',
+            raceTimeline:       c.raceTimelineNav       || 'Results',
+            menuSections:       c.menuSectionsNav       || 'Menu',
+            lookbookHorizontal: c.lookbookHorizontalNav || 'Lookbook',
+            releaseGrid:        c.releaseGridNav        || 'Music'
+        };
         sections.forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
             if (s === 'statsStrip' || s === 'logoCloud' || s === 'ctaBanner') return;
+            if (s === 'dealBanner' || s === 'cinematicReel') return;
             if (navMap[s]) navLinks += '        <a href="#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap[s] + '</a>\n';
         });
         if (cfg.pages) {
@@ -1251,6 +1683,7 @@ window.ArbelCompiler = (function () {
                 if (['grid','lines','circle','dots','cross'].indexOf(ha) !== -1) cls.push('heroart-' + ha);
                 var cs = cfg.cursorStyle;
                 if (['ring-only','dot-only','crosshair','spotlight','magnetic','none'].indexOf(cs) !== -1) cls.push('cursor-' + cs);
+                if (cfg.siteType && /^[a-z]+$/.test(cfg.siteType)) cls.push('sitetype-' + cfg.siteType);
                 return cls.length ? ' class="' + cls.join(' ') + '"' : '';
             })() + '>\n\n' +
             '  <!-- Preloader -->\n' +
@@ -1377,7 +1810,16 @@ window.ArbelCompiler = (function () {
             '.cursor-magnetic .cursor-ring { width: 24px; height: 24px; top: -9px; left: -9px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 20%, transparent); }\n' +
             '.cursor-magnetic .cursor-dot { background: var(--accent); mix-blend-mode: normal; }\n' +
             '.cursor-none * { cursor: default !important; }\n' +
-            '.cursor-none .cursor { display: none; }\n\n' +
+            '.cursor-none .cursor { display: none; }\n' +
+            /* Mobile / narrow viewports: hide custom cursor entirely. This
+             * catches the preview iframe's mobile device mode (where pointer
+             * is still "fine" because the host has a mouse, so pointer:coarse
+             * doesn't match) and kills the stuck spotlight disk at 0,0. */
+            '@media (max-width: 768px) {\n' +
+            '  .cursor { display: none !important; }\n' +
+            '  body.cursor-spotlight { cursor: auto !important; }\n' +
+            '  body.cursor-none * { cursor: auto !important; }\n' +
+            '}\n\n' +
             '/* ═══ NOISE ═══ */\n' +
             '.noise-bg { position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: 0.035; background: url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E"); }\n\n' +
             (cfg.navEnabled !== false ?
@@ -1726,17 +2168,293 @@ window.ArbelCompiler = (function () {
             '/* ═══ REVEAL ANIMATIONS ═══ */\n' +
             '.reveal-up { will-change: transform, opacity; }\n' +
             '.line-inner { display: inline-block; will-change: transform; }\n\n' +
+            '/* ═══ TYPE-NATIVE SECTIONS ═══ */\n' +
+            /* — Product grid (shop / grocery) — */
+            '.product-grid { display: grid; gap: 1.5rem; margin-top: 3rem; }\n' +
+            '.product-grid--cols-3 { grid-template-columns: repeat(3, 1fr); }\n' +
+            '.product-grid--cols-4 { grid-template-columns: repeat(4, 1fr); }\n' +
+            '.product-card { background: var(--surface, color-mix(in srgb, var(--fg) 3%, transparent)); border: 1px solid var(--border); border-radius: calc(var(--radius) * 0.7); padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; transition: transform 0.3s var(--ease), border-color 0.3s; }\n' +
+            '.product-card:hover { transform: translateY(-4px); border-color: var(--accent); }\n' +
+            '.product-media { position: relative; aspect-ratio: 1; border-radius: calc(var(--radius) * 0.5); overflow: hidden; background: color-mix(in srgb, var(--fg) 4%, transparent); display: flex; align-items: center; justify-content: center; }\n' +
+            '.product-media img { width: 100%; height: 100%; object-fit: cover; display: block; }\n' +
+            '.product-ph { font-family: var(--font-display); font-size: 3rem; font-weight: 800; color: color-mix(in srgb, var(--fg) 25%, transparent); }\n' +
+            '.product-badge { position: absolute; top: 0.6rem; left: 0.6rem; background: var(--accent); color: #000; font-size: 0.65rem; letter-spacing: 0.1em; padding: 0.25rem 0.5rem; border-radius: 999px; font-weight: 700; }\n' +
+            '.product-cat { font-size: 0.7rem; color: var(--fg2); letter-spacing: 0.15em; text-transform: uppercase; }\n' +
+            '.product-name { font-size: 1rem; font-weight: 600; line-height: 1.3; margin: 0; }\n' +
+            '.product-row { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 0.5rem; }\n' +
+            '.product-price { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; color: var(--accent); }\n' +
+            '.product-add { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--fg); font-size: 1.1rem; line-height: 1; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }\n' +
+            '.product-add:hover { background: var(--accent); color: #000; border-color: var(--accent); }\n' +
+            /* — Category chips — */
+            '.category-chips-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }\n' +
+            '.category-chip { padding: 0.6rem 1.2rem; border: 1px solid var(--border); border-radius: 999px; color: var(--fg); text-decoration: none; font-size: 0.85rem; transition: background 0.2s, color 0.2s, border-color 0.2s; }\n' +
+            '.category-chip:hover { background: var(--accent); color: #000; border-color: var(--accent); }\n' +
+            /* — Deal banner — */
+            '.dealBanner { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--bg)) 0%, var(--bg) 100%); padding: 4rem 0; }\n' +
+            '.deal-banner-inner { text-align: center; }\n' +
+            '.deal-banner-tag { color: var(--accent); letter-spacing: 0.25em; text-transform: uppercase; font-size: 0.75rem; margin-bottom: 0.8rem; }\n' +
+            '.deal-banner-heading { font-family: var(--font-display); font-size: clamp(1.8rem, 5vw, 3.2rem); font-weight: 800; margin: 0 0 1rem; letter-spacing: -0.02em; }\n' +
+            '.deal-banner-sub { color: var(--fg2); font-size: 1.05rem; max-width: 500px; margin: 0 auto 2rem; }\n' +
+            /* — Agent roster (gaming) — */
+            '.agent-grid { display: grid; gap: 1.25rem; margin-top: 3rem; }\n' +
+            '.agent-grid--cols-3 { grid-template-columns: repeat(3, 1fr); }\n' +
+            '.agent-grid--cols-4 { grid-template-columns: repeat(4, 1fr); }\n' +
+            '.agent-card { position: relative; background: color-mix(in srgb, var(--fg) 3%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: calc(var(--radius) * 0.7); overflow: hidden; transition: transform 0.3s var(--ease), border-color 0.3s; }\n' +
+            '.agent-card:hover { transform: translateY(-4px); border-color: var(--accent); }\n' +
+            '.agent-media { position: relative; aspect-ratio: 3/4; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, var(--bg)) 0%, var(--bg) 100%); display: flex; align-items: flex-end; justify-content: center; }\n' +
+            '.agent-media img { width: 100%; height: 100%; object-fit: cover; }\n' +
+            '.agent-ph { font-family: var(--font-display); font-size: 5rem; font-weight: 900; color: color-mix(in srgb, var(--accent) 35%, transparent); }\n' +
+            '.agent-num { position: absolute; top: 0.75rem; right: 0.85rem; font-family: var(--font-mono); color: var(--accent); font-size: 0.85rem; letter-spacing: 0.1em; }\n' +
+            '.agent-role { padding: 1rem 1rem 0; color: var(--accent); letter-spacing: 0.25em; font-size: 0.7rem; text-transform: uppercase; }\n' +
+            '.agent-name { padding: 0.3rem 1rem 0; font-size: 1.25rem; font-weight: 700; margin: 0; letter-spacing: -0.01em; text-transform: uppercase; }\n' +
+            '.agent-ability { padding: 0.5rem 1rem 1rem; color: var(--fg2); font-size: 0.9rem; line-height: 1.5; margin: 0; }\n' +
+            /* — Cinematic reel — */
+            '.cinematicReel { position: relative; min-height: 70vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 6rem 2rem; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--bg)) 0%, var(--bg) 70%); overflow: hidden; }\n' +
+            '.cinematicReel::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 0%, var(--bg) 80%); pointer-events: none; }\n' +
+            '.cinematic-reel-inner { position: relative; z-index: 2; max-width: 900px; }\n' +
+            '.cinematic-reel-heading { font-family: var(--font-display); font-size: clamp(2.5rem, 8vw, 6rem); font-weight: 900; line-height: 0.95; margin: 1rem 0 1.2rem; letter-spacing: -0.03em; text-transform: uppercase; }\n' +
+            '.cinematic-reel-sub { color: var(--fg2); font-size: 1.15rem; line-height: 1.5; max-width: 520px; margin: 0 auto 2rem; }\n' +
+            /* — Game modes — */
+            '.mode-grid { display: grid; gap: 1rem; margin-top: 3rem; }\n' +
+            '.mode-grid--cols-2 { grid-template-columns: repeat(2, 1fr); }\n' +
+            '.mode-grid--cols-3 { grid-template-columns: repeat(3, 1fr); }\n' +
+            '.mode-grid--cols-4 { grid-template-columns: repeat(4, 1fr); }\n' +
+            '.mode-card { padding: 1.5rem; border: 1px solid var(--border); border-radius: calc(var(--radius) * 0.6); background: color-mix(in srgb, var(--fg) 2%, transparent); transition: border-color 0.3s, transform 0.3s var(--ease); }\n' +
+            '.mode-card:hover { border-color: var(--accent); transform: translateY(-3px); }\n' +
+            '.mode-tag { display: inline-block; color: var(--accent); letter-spacing: 0.2em; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 0.6rem; padding: 0.2rem 0.5rem; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 4px; }\n' +
+            '.mode-name { font-size: 1.35rem; font-weight: 700; margin: 0 0 0.5rem; letter-spacing: -0.01em; }\n' +
+            '.mode-desc { color: var(--fg2); font-size: 0.95rem; line-height: 1.55; margin: 0; }\n' +
+            /* — Stat wall (huge numbers) — */
+            '.stat-wall-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem 1rem; margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 3rem; }\n' +
+            '.stat-wall-cell { text-align: left; padding: 0 1rem; border-left: 2px solid color-mix(in srgb, var(--accent) 35%, transparent); }\n' +
+            '.stat-wall-val { font-family: var(--font-display); font-size: clamp(3rem, 7vw, 5.5rem); font-weight: 900; line-height: 0.95; color: var(--accent); letter-spacing: -0.04em; }\n' +
+            '.stat-wall-label { color: var(--fg2); letter-spacing: 0.25em; font-size: 0.75rem; text-transform: uppercase; margin-top: 0.5rem; }\n' +
+            /* — Race / career timeline — */
+            '.race-table { margin-top: 2.5rem; border-top: 1px solid var(--border); }\n' +
+            '.race-row { display: grid; grid-template-columns: 110px 1fr 1fr 60px; gap: 1rem; padding: 1.15rem 0.5rem; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.2s; }\n' +
+            '.race-row:not(.race-row--head):hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }\n' +
+            '.race-row--head { color: var(--fg2); letter-spacing: 0.2em; font-size: 0.7rem; text-transform: uppercase; padding: 0.75rem 0.5rem; }\n' +
+            '.race-date { color: var(--fg2); font-size: 0.85rem; letter-spacing: 0.1em; }\n' +
+            '.race-event { font-size: 1rem; font-weight: 600; }\n' +
+            '.race-result { color: var(--accent); font-family: var(--font-display); font-weight: 700; }\n' +
+            '.race-points { text-align: right; color: var(--fg2); font-size: 0.9rem; }\n' +
+            /* — Menu sections (restaurant) — */
+            '.menu-groups { margin-top: 2.5rem; display: grid; gap: 3rem; }\n' +
+            '.menu-group-heading { font-family: var(--font-display); font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 600; letter-spacing: 0.02em; margin: 0 0 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--border); }\n' +
+            '.menu-row { display: flex; gap: 2rem; align-items: baseline; padding: 1rem 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 70%, transparent); }\n' +
+            '.menu-row-left { flex: 1; min-width: 0; }\n' +
+            '.menu-item-name { font-size: 1.1rem; font-weight: 600; margin: 0; letter-spacing: -0.005em; }\n' +
+            '.menu-item-desc { color: var(--fg2); font-size: 0.9rem; line-height: 1.5; margin: 0.3rem 0 0; }\n' +
+            '.menu-tags { display: inline-block; margin-top: 0.35rem; color: var(--accent); letter-spacing: 0.15em; font-size: 0.7rem; text-transform: uppercase; }\n' +
+            '.menu-item-price { font-family: var(--font-display); font-weight: 700; font-size: 1.1rem; color: var(--accent); white-space: nowrap; }\n' +
+            /* — Lookbook horizontal (fashion) — */
+            '.lookbook-head { margin-bottom: 2rem; }\n' +
+            '.lookbook-scroller { overflow-x: auto; overflow-y: hidden; padding: 0 2rem 1rem; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }\n' +
+            '.lookbook-scroller::-webkit-scrollbar { height: 6px; }\n' +
+            '.lookbook-scroller::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 3px; }\n' +
+            '.lookbook-track { display: flex; gap: 1.5rem; }\n' +
+            '.look-card { flex: 0 0 auto; width: clamp(240px, 32vw, 400px); scroll-snap-align: start; display: flex; flex-direction: column; gap: 0.75rem; }\n' +
+            '.look-media { aspect-ratio: 3/4; background: color-mix(in srgb, var(--fg) 5%, transparent); border-radius: calc(var(--radius) * 0.5); overflow: hidden; }\n' +
+            '.look-media img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s var(--ease); }\n' +
+            '.look-card:hover .look-media img { transform: scale(1.05); }\n' +
+            '.look-ph { width: 100%; height: 100%; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), transparent); }\n' +
+            '.look-meta { display: flex; flex-direction: column; gap: 0.2rem; }\n' +
+            '.look-num { color: var(--fg2); letter-spacing: 0.15em; font-size: 0.75rem; }\n' +
+            '.look-tag { color: var(--accent); letter-spacing: 0.2em; font-size: 0.7rem; text-transform: uppercase; }\n' +
+            '.look-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; margin: 0; letter-spacing: -0.005em; }\n' +
+            /* — Release grid (music / podcast) — */
+            '.release-grid { display: grid; gap: 1.5rem; margin-top: 2.5rem; }\n' +
+            '.release-grid--cols-3 { grid-template-columns: repeat(3, 1fr); }\n' +
+            '.release-grid--cols-4 { grid-template-columns: repeat(4, 1fr); }\n' +
+            '.release-card { display: flex; flex-direction: column; gap: 0.6rem; }\n' +
+            '.release-media { aspect-ratio: 1; border-radius: calc(var(--radius) * 0.5); overflow: hidden; background: color-mix(in srgb, var(--fg) 5%, transparent); display: flex; align-items: center; justify-content: center; transition: transform 0.3s var(--ease); }\n' +
+            '.release-card:hover .release-media { transform: scale(1.02); }\n' +
+            '.release-media img { width: 100%; height: 100%; object-fit: cover; }\n' +
+            '.release-ph { font-family: var(--font-display); font-size: 3rem; font-weight: 900; color: color-mix(in srgb, var(--accent) 45%, transparent); }\n' +
+            '.release-meta { color: var(--fg2); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; }\n' +
+            '.release-title { font-size: 1.05rem; font-weight: 600; margin: 0; letter-spacing: -0.005em; }\n' +
+            /* — Mobile responsive for type-native sections — */
+            '@media (max-width: 768px) {\n' +
+            '  .product-grid--cols-3, .product-grid--cols-4 { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }\n' +
+            '  .product-card { padding: 0.75rem; }\n' +
+            '  .product-name { font-size: 0.9rem; }\n' +
+            '  .product-price { font-size: 1rem; }\n' +
+            '  .agent-grid--cols-3, .agent-grid--cols-4 { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }\n' +
+            '  .mode-grid--cols-2, .mode-grid--cols-3, .mode-grid--cols-4 { grid-template-columns: 1fr; }\n' +
+            '  .cinematicReel { min-height: 60vh; padding: 4rem 1.25rem; }\n' +
+            '  .stat-wall-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem 0.5rem; padding-top: 2rem; }\n' +
+            '  .stat-wall-cell { padding: 0 0.5rem; }\n' +
+            '  .race-row { grid-template-columns: 80px 1fr 80px; gap: 0.5rem; padding: 0.75rem 0.25rem; font-size: 0.85rem; }\n' +
+            '  .race-row .race-points { display: none; }\n' +
+            '  .race-row--head :nth-child(4) { display: none; }\n' +
+            '  .menu-row { flex-direction: column; gap: 0.25rem; align-items: flex-start; }\n' +
+            '  .menu-item-price { align-self: flex-end; margin-top: -1.5rem; }\n' +
+            '  .look-card { width: 70vw; }\n' +
+            '  .lookbook-scroller { padding: 0 1rem 1rem; }\n' +
+            '  .release-grid--cols-3, .release-grid--cols-4 { grid-template-columns: repeat(2, 1fr); gap: 1rem; }\n' +
+            '  .category-chip { padding: 0.5rem 1rem; font-size: 0.8rem; }\n' +
+            '}\n\n' +
             '/* ═══ WEBGL / PARTICLES ═══ */\n' +
             '.webgl-bg, .anim-bg { position: absolute; inset: 0; overflow: hidden; }\n' +
             '.webgl-bg canvas, .anim-bg canvas { width: 100% !important; height: 100% !important; display: block; }\n\n' +
             '/* ═══ RESPONSIVE ═══ */\n' +
             '@media (max-width: 768px) {\n' +
-            '  .section { padding: 5rem 0; }\n' +
-            '  .hero-heading { font-size: clamp(2rem, 8vw, 3.5rem); }\n' +
-            '  .stats-row { gap: 1.5rem; }\n' +
+            '  .container { padding: 0 1.25rem; }\n' +
+            '  .header { padding: 0.75rem 1.25rem; }\n' +
+            '  .header-inner { max-width: none; }\n' +
+            '  .section { padding: 4rem 0; }\n' +
+            '  .hero-content { padding: 1.5rem 1.25rem; max-width: 100%; }\n' +
+            '  .hero-heading { font-size: clamp(2rem, 9vw, 3.5rem) !important; letter-spacing: -0.02em; }\n' +
+            '  .hero-sub { font-size: 1rem; max-width: 100%; }\n' +
+            '  .hero-actions { flex-wrap: wrap; }\n' +
+            '  .section-heading { font-size: clamp(1.6rem, 6vw, 2.5rem) !important; }\n' +
+            '  .stats-row { gap: 1.5rem; flex-wrap: wrap; }\n' +
             '  .stat-val { font-size: 1.5rem; }\n' +
+            '  .services-grid, .portfolio-grid, .process-grid, .team-grid, .pricing-grid, .stats-strip-grid, .testimonials-grid { grid-template-columns: 1fr !important; gap: 1.25rem; }\n' +
+            '  .about-grid { grid-template-columns: 1fr !important; gap: 2rem; }\n' +
+            '  .footer-inner { flex-direction: column; gap: 1rem; text-align: center; max-width: none; }\n' +
+            '  .cta-banner { padding: 4rem 1.25rem; }\n' +
+            '  .cta-banner-heading { font-size: clamp(1.6rem, 7vw, 2.5rem); }\n' +
+            '  /* Tame dramatic type-scale on narrow screens */\n' +
+            '  .type-dramatic .hero-heading { font-size: clamp(2.25rem, 10vw, 4rem) !important; }\n' +
+            '  .type-dramatic .section-heading { font-size: clamp(1.8rem, 7vw, 3rem) !important; }\n' +
+            '  /* Keep side-scrolling marquee from pushing width > viewport */\n' +
+            '  .logo-cloud-inner { flex-wrap: nowrap; }\n' +
             '}\n' +
-            _buildTokenOverrides(dt, cfg);
+            _buildTokenOverrides(dt, cfg) +
+            _buildSiteTypeCSS(cfg);
+    }
+
+    /** Per-site-type visual identity layer. Applied via body[data-sitetype=…]
+     *  / body.sitetype-<t> so a gaming site actually LOOKS like a gaming site,
+     *  a restaurant site feels warm & menu-ish, fashion is big-serif editorial,
+     *  etc. Scoped to body.sitetype-<t> so it only kicks in for the matching
+     *  type and never leaks to other sites. */
+    function _buildSiteTypeCSS(cfg) {
+        var t = cfg.siteType;
+        if (!t) return '';
+        var css = '\n/* ═══ SITE-TYPE IDENTITY: ' + t + ' ═══ */\n';
+        var b = 'body.sitetype-' + t;
+
+        if (t === 'gaming') {
+            css +=
+                b + ' .hero-heading, ' + b + ' .section-heading { letter-spacing: 0.02em; text-transform: uppercase; }\n' +
+                b + ' .hero-heading .line-inner { text-shadow: 0 0 18px var(--accent), 0 0 36px color-mix(in srgb, var(--accent) 40%, transparent); }\n' +
+                b + ' .hero-eyebrow, ' + b + ' .section-label { color: var(--accent); letter-spacing: 0.28em; }\n' +
+                b + ' .service-card, ' + b + ' .portfolio-card, ' + b + ' .pricing-card, ' + b + ' .process-card, ' + b + ' .team-card {\n' +
+                '  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);\n' +
+                '  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);\n' +
+                '  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 60%);\n' +
+                '  position: relative;\n}\n' +
+                b + ' .service-card::before, ' + b + ' .portfolio-card::before {\n' +
+                '  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;\n' +
+                '  background: linear-gradient(90deg, transparent, var(--accent), transparent);\n}\n' +
+                b + ' .btn-primary { text-transform: uppercase; letter-spacing: 0.2em; font-weight: 700; box-shadow: 0 0 0 1px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 60%, transparent); }\n' +
+                b + ' .stats-strip-val { font-family: "JetBrains Mono","Space Mono",monospace; color: var(--accent); text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent); }\n' +
+                b + ' .stats-strip-label { color: color-mix(in srgb, var(--accent) 70%, #aaa); letter-spacing: 0.3em; }\n' +
+                b + ' .portfolio-num, ' + b + ' .service-num, ' + b + ' .process-num { color: var(--accent); font-family: "JetBrains Mono","Space Mono",monospace; }\n' +
+                /* On narrow mobile, soften the uppercase letter-spacing so long
+                 * words like "EXPERIENCE" or "TOURNAMENT" don't overflow. */
+                '@media (max-width: 768px) {\n' +
+                '  ' + b + ' .hero-heading, ' + b + ' .section-heading { letter-spacing: 0; }\n' +
+                '  ' + b + ' .btn-primary { letter-spacing: 0.1em; padding: 0.85rem 1.5rem; }\n' +
+                '}\n';
+        }
+        else if (t === 'shop' || t === 'fashion') {
+            css +=
+                b + ' .hero-heading, ' + b + ' .section-heading { font-family: "Fraunces","DM Serif Display","Playfair Display",serif; letter-spacing: -0.02em; }\n' +
+                b + ' .hero-heading em, ' + b + ' .section-heading em { font-style: italic; color: var(--accent); }\n' +
+                b + ' .section-label, ' + b + ' .hero-eyebrow { letter-spacing: 0.4em; font-size: 0.72rem; }\n' +
+                b + ' .portfolio-card { aspect-ratio: 3 / 4; display: flex; flex-direction: column; justify-content: flex-end; border: none; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), color-mix(in srgb, var(--bg) 80%, #000 20%)); padding: 2rem; }\n' +
+                b + ' .portfolio-card-inner { padding: 0; }\n' +
+                b + ' .portfolio-title { font-family: "Fraunces","Playfair Display",serif; font-size: clamp(1.4rem, 2.2vw, 2rem); letter-spacing: -0.01em; }\n' +
+                b + ' .portfolio-meta { letter-spacing: 0.35em; color: color-mix(in srgb, var(--accent) 80%, #888); }\n' +
+                b + ' .portfolio-num { font-family: "Instrument Serif","Cormorant Garamond",serif; font-style: italic; font-size: 2.4rem; opacity: 0.35; }\n' +
+                (t === 'fashion' ? b + ' .hero-heading .line-inner { font-size: clamp(3.5rem, 11vw, 10rem); line-height: 0.95; }\n' : '') +
+                b + ' .btn-primary { letter-spacing: 0.25em; text-transform: uppercase; font-weight: 500; }\n';
+        }
+        else if (t === 'restaurant') {
+            css +=
+                b + ' .hero-heading, ' + b + ' .section-heading { font-family: "Fraunces","Cormorant Garamond","Playfair Display",serif; font-weight: 400; letter-spacing: -0.01em; }\n' +
+                b + ' .hero-heading em, ' + b + ' .section-heading em { font-style: italic; color: var(--accent); }\n' +
+                b + ' .service-card, ' + b + ' .portfolio-card, ' + b + ' .process-card {\n' +
+                '  border: none; border-top: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);\n' +
+                '  border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);\n' +
+                '  background: transparent; padding: 2rem 0; border-radius: 0;\n}\n' +
+                b + ' .portfolio-card-inner { display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: baseline; }\n' +
+                b + ' .portfolio-title { font-family: "Fraunces",serif; font-size: clamp(1.2rem, 2vw, 1.6rem); font-weight: 500; }\n' +
+                b + ' .portfolio-meta { letter-spacing: 0.3em; font-size: 0.72rem; color: color-mix(in srgb, var(--accent) 70%, #999); }\n' +
+                b + ' .portfolio-desc { font-style: italic; color: color-mix(in srgb, #fff 70%, transparent); }\n' +
+                b + ' .portfolio-num { display: none; }\n' +
+                b + ' .section-label { font-family: "Fraunces",serif; font-style: italic; letter-spacing: 0.05em; text-transform: none; font-size: 1rem; color: var(--accent); }\n' +
+                b + ' .btn-primary { border-radius: 2px; letter-spacing: 0.2em; }\n';
+        }
+        else if (t === 'portfolio' || t === 'photography' || t === 'blog') {
+            css +=
+                b + ' .hero-heading { font-family: "Fraunces","DM Serif Display","Playfair Display",serif; letter-spacing: -0.03em; font-weight: 500; }\n' +
+                b + ' .hero-heading em, ' + b + ' .section-heading em { font-style: italic; color: var(--accent); }\n' +
+                b + ' .section-heading { font-family: "Fraunces","Instrument Serif",serif; font-weight: 400; font-size: clamp(2rem, 5vw, 4rem); }\n' +
+                b + ' .section-label { letter-spacing: 0.35em; font-size: 0.7rem; }\n' +
+                b + ' .portfolio-card { border: none; border-top: 1px solid color-mix(in srgb, #fff 12%, transparent); padding: 2.5rem 0; border-radius: 0; background: transparent; }\n' +
+                b + ' .portfolio-card:last-child { border-bottom: 1px solid color-mix(in srgb, #fff 12%, transparent); }\n' +
+                b + ' .portfolio-card-inner { display: grid; grid-template-columns: 80px 1fr auto; gap: 2rem; align-items: baseline; }\n' +
+                b + ' .portfolio-num { position: static; font-family: "Space Mono","JetBrains Mono",monospace; font-size: 0.85rem; opacity: 0.5; }\n' +
+                b + ' .portfolio-title { font-family: "Fraunces","Instrument Serif",serif; font-weight: 400; font-size: clamp(1.4rem, 2.4vw, 2.2rem); }\n' +
+                b + ' .portfolio-meta { order: 3; font-size: 0.72rem; letter-spacing: 0.3em; }\n' +
+                b + ' .portfolio-grid { display: block; }\n' +
+                (t === 'blog' ? b + ' .portfolio-card-inner::after { content: "→"; font-size: 1.4rem; color: var(--accent); align-self: center; }\n' : '');
+        }
+        else if (t === 'saas' || t === 'app') {
+            css +=
+                b + ' .hero-heading { font-family: "Inter","DM Sans","Plus Jakarta Sans",sans-serif; letter-spacing: -0.035em; font-weight: 800; }\n' +
+                b + ' .hero-sub { font-family: "Inter",sans-serif; font-size: 1.15rem; color: color-mix(in srgb, #fff 75%, transparent); }\n' +
+                b + ' .service-card, ' + b + ' .pricing-card, ' + b + ' .portfolio-card, ' + b + ' .process-card {\n' +
+                '  background: color-mix(in srgb, #fff 4%, transparent);\n' +
+                '  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);\n' +
+                '  border: 1px solid color-mix(in srgb, #fff 10%, transparent);\n' +
+                '  border-radius: 16px;\n}\n' +
+                b + ' .pricing-card--accent { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent) 4%, transparent)); border-color: color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 10px 40px -10px color-mix(in srgb, var(--accent) 40%, transparent); }\n' +
+                b + ' .btn-primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #fff)); border: none; }\n' +
+                b + ' .stats-strip-val { font-variant-numeric: tabular-nums; font-weight: 800; font-size: clamp(1.8rem, 3vw, 2.6rem); }\n' +
+                b + ' .logo-cloud-item { font-family: "Inter",sans-serif; font-weight: 600; opacity: 0.55; }\n';
+        }
+        else if (t === 'event' || t === 'music' || t === 'podcast') {
+            css +=
+                b + ' .hero-heading { font-family: "Syne","Archivo Black","Bricolage Grotesque",sans-serif; font-weight: 800; letter-spacing: -0.04em; text-transform: uppercase; }\n' +
+                b + ' .hero-heading .line-inner { font-size: clamp(3rem, 10vw, 9rem); line-height: 0.92; }\n' +
+                '@media (max-width: 768px) { ' + b + ' .hero-heading .line-inner { font-size: clamp(2.25rem, 11vw, 4rem); } }\n' +
+                b + ' .section-label { font-family: "Space Mono","JetBrains Mono",monospace; letter-spacing: 0.3em; color: var(--accent); }\n' +
+                b + ' .service-card, ' + b + ' .portfolio-card, ' + b + ' .pricing-card { background: color-mix(in srgb, var(--accent) 10%, transparent); border: 2px solid var(--accent); border-radius: 18px; }\n' +
+                b + ' .btn-primary { background: var(--accent); color: #000; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; border-radius: 999px; padding: 1rem 2.5rem; }\n' +
+                (t === 'event' ? b + ' .stats-strip-val { font-family: "Archivo Black","Syne",sans-serif; font-size: clamp(2rem, 4vw, 3.2rem); text-transform: uppercase; }\n' : '');
+        }
+        else if (t === 'course' || t === 'fitness') {
+            css +=
+                b + ' .hero-heading { font-family: "Syne","Bricolage Grotesque","Archivo",sans-serif; font-weight: 800; letter-spacing: -0.03em; }\n' +
+                b + ' .service-card, ' + b + ' .pricing-card, ' + b + ' .process-card { background: color-mix(in srgb, var(--accent) 6%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); }\n' +
+                b + ' .pricing-card--accent { background: var(--accent); color: #000; }\n' +
+                b + ' .pricing-card--accent .pricing-name, ' + b + ' .pricing-card--accent .pricing-price, ' + b + ' .pricing-card--accent .pricing-features li { color: #000; }\n' +
+                b + ' .btn-primary { text-transform: uppercase; font-weight: 700; letter-spacing: 0.12em; }\n';
+        }
+        else if (t === 'realestate' || t === 'legal' || t === 'finance' || t === 'healthcare') {
+            css +=
+                b + ' .hero-heading { font-family: "Fraunces","Cormorant Garamond","Libre Baskerville",serif; font-weight: 500; letter-spacing: -0.02em; }\n' +
+                b + ' .section-heading { font-family: "Fraunces","Cormorant Garamond",serif; font-weight: 400; }\n' +
+                b + ' .section-label { font-family: "Inter",sans-serif; letter-spacing: 0.3em; font-size: 0.7rem; color: color-mix(in srgb, var(--accent) 80%, #999); }\n' +
+                b + ' .service-card, ' + b + ' .portfolio-card, ' + b + ' .team-card {\n' +
+                '  border: none; border-top: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);\n' +
+                '  background: transparent; border-radius: 0; padding: 2rem 0;\n}\n' +
+                b + ' .btn-primary { border-radius: 2px; text-transform: uppercase; letter-spacing: 0.2em; font-weight: 500; }\n' +
+                b + ' .stats-strip-val { font-family: "Fraunces","Cormorant Garamond",serif; font-weight: 400; }\n';
+        }
+        else if (t === 'nonprofit') {
+            css +=
+                b + ' .hero-heading { font-family: "Fraunces","Lora","Crimson Pro",serif; font-weight: 500; }\n' +
+                b + ' .stats-strip-val { font-family: "Fraunces",serif; color: var(--accent); font-weight: 500; }\n' +
+                b + ' .btn-primary { background: var(--accent); color: #fff; text-transform: uppercase; letter-spacing: 0.15em; border-radius: 999px; }\n' +
+                b + ' .cta-banner { background: color-mix(in srgb, var(--accent) 15%, transparent); }\n';
+        }
+        return css;
     }
 
     /** Apply AI-chosen design tokens (density / corners / typography / section tones / anims)

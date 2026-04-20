@@ -1632,6 +1632,61 @@
         var lockedBg     = locked.colors ? els.bgColor.value     : null;
         var lockedStyle  = locked.preset ? state.style            : null;
 
+        // ─── SITE-TYPE PROFILE BIAS ─── Resolve siteType early so we can
+        // nudge random axes toward the profile's personality when the AI
+        // (or user) didn't pin a value. A gaming profile will bias preset
+        // toward neon/matrix/plasma + tech fonts + sharp corners + neon
+        // palette; a restaurant profile will bias toward warm blob presets
+        // + serif fonts + soft corners + warm palette. Axis locks always
+        // beat profile bias.
+        var _stType = window.ArbelSiteType ? ArbelSiteType.infer(
+            (state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || (els.description && els.description.value) || ''),
+            (els.industry && els.industry.value) || ''
+        ) : 'generic';
+        state.aiSiteType = _stType;
+        var _stProf = window.ArbelSiteType ? ArbelSiteType.profile(_stType) : null;
+        var _stPick = window.ArbelSiteType ? ArbelSiteType.pickFrom : function (a) { return Array.isArray(a) && a.length ? a[Math.floor(Math.random() * a.length)] : undefined; };
+
+        if (_stProf) {
+            // Preset pool — if AI didn't choose one (or we're randomizing),
+            // pick from the profile's preferred preset IDs.
+            if (!locked.preset && !design.presetId && !design.category && _stProf.presetIds) {
+                var _pp = _stPick(_stProf.presetIds);
+                if (_pp) design.presetId = _pp;
+            }
+            // Palette — if AI didn't override colors, seed with a profile
+            // palette pair on ~60% of runs so the type actually reads visually.
+            if (!locked.colors && !design.accentOverride && !design.bgOverride && _stProf.palettes && Math.random() < 0.6) {
+                var pair = _stPick(_stProf.palettes);
+                if (Array.isArray(pair) && pair.length >= 2) {
+                    design.accentOverride = pair[0];
+                    design.bgOverride = pair[1];
+                }
+            }
+            // Font — bias toward profile font pool when AI was silent.
+            if (!locked.fontPair && !design.fontPair && _stProf.fonts) {
+                design.fontPair = _stPick(_stProf.fonts);
+            }
+            // Corners — bias toward profile corner pool.
+            if (!locked.corners && !design.corners && _stProf.corners) {
+                design.corners = _stPick(_stProf.corners);
+            }
+            // Card treatment — bias per profile.
+            if (!locked.cardTreatment && !design.cardTreatment && _stProf.cardTreatment) {
+                design.cardTreatment = _stPick(_stProf.cardTreatment);
+            }
+            // Other structural axes — only bias when the AI was silent and
+            // the axis isn't locked. These rarely conflict so we set them
+            // optimistically.
+            var _stAxes = ['navStyle','heroLayout','heroArt','buttonStyle','typeScale','labelStyle','dividerStyle','logoStyle','cursorStyle','headingAlign','containerWidth'];
+            _stAxes.forEach(function (k) {
+                if (!design[k] && _stProf[k]) {
+                    var v = _stPick(_stProf[k]);
+                    if (v !== undefined) design[k] = v;
+                }
+            });
+        }
+
         // ─── VARIETY GUARANTEE ─── If the AI returns the same preset two
         // runs in a row (LLMs love their favourites), force a different one
         // from the same family so each click feels new.
@@ -1678,20 +1733,14 @@
             design.heroLayout = others[Math.floor(Math.random() * others.length)];
         }
         // Valid section IDs in the compiler. Hero must stay first, contact last.
-        var validSections = ['services','portfolio','about','process','testimonials','pricing','faq','stats','statsStrip','logoCloud','ctaBanner','team'];
+        var validSections = ['services','portfolio','about','process','testimonials','pricing','faq','stats','statsStrip','logoCloud','ctaBanner','team',
+            // Type-native sections (Week-1 cut)
+            'productGrid','categoryChips','dealBanner','agentRoster','cinematicReel','gameModes','statWall','raceTimeline','menuSections','lookbookHorizontal','releaseGrid'];
 
-        // ─── SITE-TYPE AWARE SECTION PICKING ─── Infer from description +
-        // industry what KIND of site this is (gaming / shop / portfolio /
-        // blog / event / app / restaurant / agency …) and bias the section
-        // recipe toward sections that make sense for that type. Each recipe
-        // is a pool we sample from so we still get randomness within the
-        // right architecture.
-        var siteType = window.ArbelSiteType
-            ? ArbelSiteType.infer(
-                (state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || (els.description && els.description.value) || ''),
-                (els.industry && els.industry.value) || '')
-            : 'generic';
-        state.aiSiteType = siteType;
+        // ─── SITE-TYPE AWARE SECTION PICKING ─── siteType was resolved
+        // at the top of this function; reuse it here to pick a matching
+        // section recipe when the AI didn't supply one.
+        var siteType = state.aiSiteType || 'generic';
 
         if (!Array.isArray(design.sectionOrder) || !design.sectionOrder.length) {
             // Recipe-driven random pick — see ArbelSiteType.recipe()
@@ -2718,6 +2767,17 @@
             seo: _collectSeo(),
             integrations: _collectIntegrations()
         };
+
+        // ─── SITE TYPE ─── Always infer from description + industry so the
+        // compiler can apply site-type-specific visual identity CSS, content
+        // defaults (stats/logoCloud/team) and section-label overrides. Reuse
+        // the one stashed by the last AI run if present; otherwise infer now.
+        if (state.aiSiteType) {
+            cfg.siteType = state.aiSiteType;
+        } else if (window.ArbelSiteType) {
+            var desc = (state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || (els.description && els.description.value) || '');
+            cfg.siteType = ArbelSiteType.infer(desc, els.industry.value || '');
+        }
 
         // If builder mode was used, override style to use the builder's first category preset
         // and override animation params from builder controls
