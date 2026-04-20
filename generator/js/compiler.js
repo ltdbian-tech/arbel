@@ -1159,7 +1159,7 @@ window.ArbelCompiler = (function () {
             metaBlock +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +
+            '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;700&family=DM+Serif+Display&family=DM+Sans:wght@400;500;700&family=Archivo:wght@400;600;800&family=Archivo+Black&family=JetBrains+Mono:wght@400;700&family=Syne:wght@500;700;800&family=Manrope:wght@400;500;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital@0;1&family=Raleway:wght@400;500;700&display=swap" rel="stylesheet">\n' +
             '  <link rel="stylesheet" href="css/style.css">\n' +
             '</head>\n<body' + (function () {
                 var cls = [];

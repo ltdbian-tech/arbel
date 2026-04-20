@@ -509,7 +509,7 @@ window.ArbelAI = (function () {
             '    "bgOverride": "#RRGGBB (optional)",\n' +
             '    "density": "compact|cozy|spacious",\n' +
             '    "corners": "sharp|soft|pill",\n' +
-            '    "fontPair": "editorial|tech|humanist|display|mono",\n' +
+            '    "fontPair": "editorial|tech|humanist|display|mono|luxe|brutalist|terminal|futurist|soft|classical|modern|boutique|journal",\n' +
             '    "heroLayout": "centered|left|split|minimal",\n' +
             '    "sectionOrder": ["services","portfolio","about","process","testimonials","pricing","faq","statsStrip","logoCloud","ctaBanner","team"] pick 3-6,\n' +
             '    "sectionLayouts": {"services":"list|alternating|bento|numbered","portfolio":"list|bento"} optional,\n' +

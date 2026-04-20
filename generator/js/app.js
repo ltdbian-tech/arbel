@@ -174,6 +174,7 @@
         optTypeScale: $('optTypeScale'),
         optHeadingAlign: $('optHeadingAlign'),
         optContainerWidth: $('optContainerWidth'),
+        optFontPair: $('optFontPair'),
         optCardTreatment: $('optCardTreatment'),
         optButtonStyle: $('optButtonStyle'),
         optNavStyle: $('optNavStyle'),
@@ -1486,7 +1487,7 @@
         // so two runs on the same prompt feel distinct even if the AI is lazy.
         var allDensities = ['compact', 'cozy', 'spacious'];
         var allCorners   = ['sharp', 'soft', 'pill'];
-        var allFonts     = ['editorial', 'tech', 'humanist', 'display', 'mono'];
+        var allFonts     = ['editorial', 'tech', 'humanist', 'display', 'mono', 'luxe', 'brutalist', 'terminal', 'futurist', 'soft', 'classical', 'modern', 'boutique', 'journal'];
         if (!design.density) design.density = _pickRandom(allDensities, _aiLastDensity);
         if (!design.corners) design.corners = _pickRandom(allCorners, _aiLastCorners);
         if (!design.fontPair) design.fontPair = _pickRandom(allFonts, _aiLastFont);
@@ -1744,11 +1745,21 @@
         };
         var cornersMap = { sharp: 2, soft: 10, pill: 24 };
         var fontPairs = {
-            editorial: { headingFont: '"Instrument Serif", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
-            tech:      { headingFont: '"Space Grotesk", -apple-system, sans-serif', bodyFont: '"Inter", -apple-system, sans-serif' },
-            humanist:  { headingFont: '"Fraunces", Georgia, serif', bodyFont: '"Work Sans", -apple-system, sans-serif' },
-            display:   { headingFont: '"Playfair Display", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
-            mono:      { headingFont: '"Space Mono", monospace', bodyFont: '"IBM Plex Mono", monospace' }
+            editorial:  { headingFont: '"Instrument Serif", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            tech:       { headingFont: '"Space Grotesk", -apple-system, sans-serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            humanist:   { headingFont: '"Fraunces", Georgia, serif', bodyFont: '"Work Sans", -apple-system, sans-serif' },
+            display:    { headingFont: '"Playfair Display", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+            mono:       { headingFont: '"Space Mono", monospace', bodyFont: '"IBM Plex Mono", monospace' },
+            // Added pairings — extended catalogue
+            luxe:       { headingFont: '"DM Serif Display", Georgia, serif', bodyFont: '"DM Sans", -apple-system, sans-serif' },
+            brutalist:  { headingFont: '"Archivo Black", Impact, sans-serif', bodyFont: '"Archivo", -apple-system, sans-serif' },
+            terminal:   { headingFont: '"JetBrains Mono", monospace', bodyFont: '"JetBrains Mono", monospace' },
+            futurist:   { headingFont: '"Syne", -apple-system, sans-serif', bodyFont: '"Manrope", -apple-system, sans-serif' },
+            soft:       { headingFont: '"Bricolage Grotesque", -apple-system, sans-serif', bodyFont: '"Manrope", -apple-system, sans-serif' },
+            classical:  { headingFont: '"Crimson Pro", Georgia, serif', bodyFont: '"Lora", Georgia, serif' },
+            modern:     { headingFont: '"Plus Jakarta Sans", -apple-system, sans-serif', bodyFont: '"Plus Jakarta Sans", -apple-system, sans-serif' },
+            boutique:   { headingFont: '"Cormorant Garamond", Georgia, serif', bodyFont: '"Raleway", -apple-system, sans-serif' },
+            journal:    { headingFont: '"Libre Baskerville", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' }
         };
         var tokens = {};
         if (design.density && densityMap[design.density]) Object.assign(tokens, densityMap[design.density]);
@@ -2212,6 +2223,29 @@
             if (pl) cfg.sectionLayouts.portfolio = pl;
         }
         if (els.optAboutFlip && els.optAboutFlip.checked) cfg.aboutFlip = true;
+        // Font pair — translate semantic ID → concrete headingFont/bodyFont tokens
+        var fp = v(els.optFontPair);
+        if (fp) {
+            var manualFontPairs = {
+                editorial:  { headingFont: '"Instrument Serif", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+                tech:       { headingFont: '"Space Grotesk", -apple-system, sans-serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+                humanist:   { headingFont: '"Fraunces", Georgia, serif', bodyFont: '"Work Sans", -apple-system, sans-serif' },
+                display:    { headingFont: '"Playfair Display", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' },
+                mono:       { headingFont: '"Space Mono", monospace', bodyFont: '"IBM Plex Mono", monospace' },
+                luxe:       { headingFont: '"DM Serif Display", Georgia, serif', bodyFont: '"DM Sans", -apple-system, sans-serif' },
+                brutalist:  { headingFont: '"Archivo Black", Impact, sans-serif', bodyFont: '"Archivo", -apple-system, sans-serif' },
+                terminal:   { headingFont: '"JetBrains Mono", monospace', bodyFont: '"JetBrains Mono", monospace' },
+                futurist:   { headingFont: '"Syne", -apple-system, sans-serif', bodyFont: '"Manrope", -apple-system, sans-serif' },
+                soft:       { headingFont: '"Bricolage Grotesque", -apple-system, sans-serif', bodyFont: '"Manrope", -apple-system, sans-serif' },
+                classical:  { headingFont: '"Crimson Pro", Georgia, serif', bodyFont: '"Lora", Georgia, serif' },
+                modern:     { headingFont: '"Plus Jakarta Sans", -apple-system, sans-serif', bodyFont: '"Plus Jakarta Sans", -apple-system, sans-serif' },
+                boutique:   { headingFont: '"Cormorant Garamond", Georgia, serif', bodyFont: '"Raleway", -apple-system, sans-serif' },
+                journal:    { headingFont: '"Libre Baskerville", Georgia, serif', bodyFont: '"Inter", -apple-system, sans-serif' }
+            };
+            if (manualFontPairs[fp]) {
+                cfg.designTokens = Object.assign({}, cfg.designTokens || {}, manualFontPairs[fp]);
+            }
+        }
         return cfg;
     }
 
@@ -2650,6 +2684,7 @@
                     typeScale: els.optTypeScale ? els.optTypeScale.value : '',
                     headingAlign: els.optHeadingAlign ? els.optHeadingAlign.value : '',
                     containerWidth: els.optContainerWidth ? els.optContainerWidth.value : '',
+                    fontPair: els.optFontPair ? els.optFontPair.value : '',
                     cardTreatment: els.optCardTreatment ? els.optCardTreatment.value : '',
                     buttonStyle: els.optButtonStyle ? els.optButtonStyle.value : '',
                     navStyle: els.optNavStyle ? els.optNavStyle.value : '',
@@ -2785,6 +2820,7 @@
             _set(els.optTypeScale, d.typeScale);
             _set(els.optHeadingAlign, d.headingAlign);
             _set(els.optContainerWidth, d.containerWidth);
+            _set(els.optFontPair, d.fontPair);
             _set(els.optCardTreatment, d.cardTreatment);
             _set(els.optButtonStyle, d.buttonStyle);
             _set(els.optNavStyle, d.navStyle);
