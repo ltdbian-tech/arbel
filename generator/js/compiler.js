@@ -1702,7 +1702,7 @@ window.ArbelCompiler = (function () {
                 var ls = cfg.labelStyle;
                 if (['bar','dot','number','stripe'].indexOf(ls) !== -1) cls.push('label-' + ls);
                 var ha = cfg.heroArt;
-                if (['grid','lines','circle','dots','cross'].indexOf(ha) !== -1) cls.push('heroart-' + ha);
+                if (['grid','lines','circle','dots','cross','blob','wave','triangle','zigzag','arc','rings','stripes','scribble','checker'].indexOf(ha) !== -1) cls.push('heroart-' + ha);
                 var cs = cfg.cursorStyle;
                 if (['ring-only','dot-only','crosshair','spotlight','magnetic','none'].indexOf(cs) !== -1) cls.push('cursor-' + cs);
                 if (cfg.siteType && /^[a-z]+$/.test(cfg.siteType)) cls.push('sitetype-' + cfg.siteType);
@@ -1893,10 +1893,15 @@ window.ArbelCompiler = (function () {
                     '  body.nav-open .header { position: fixed; inset: 0; z-index: 9999; ' + (cfg.menuBgEnabled !== false ? 'background: var(--menu-bg, rgba(10,10,15,0.95)); ' : 'background: rgba(10,10,15,0.95); ') + 'backdrop-filter: none; border-bottom: none; display: flex; flex-direction: column; padding: 1rem 2rem; overflow-y: auto; }\n' +
                     '  body.nav-open .header-inner { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; max-width: none; position: relative; }\n' +
                     '  body.nav-open .logo { align-self: flex-start; color: var(--menu-fg, inherit); }\n' +
-                    // Use position: fixed so the close button is always reachable in the
-                    // top-right corner regardless of ancestor positioning / max-width.
-                    '  body.nav-open .menu-btn { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 10001; }\n' +
-                    '  body.nav-open .menu-btn span { background: var(--menu-fg, var(--fg)); }\n' +
+                    // Close button — always reachable, always visible. Fixed to iframe/viewport
+                    // top-right with a high contrast chip so it cannot disappear into the overlay.
+                    '  body.nav-open .menu-btn { position: fixed; top: 1.25rem; right: 1.5rem; z-index: 10001; width: 44px; height: 44px; padding: 12px; border-radius: 50%; background: color-mix(in srgb, var(--menu-fg, #fff) 14%, transparent); backdrop-filter: blur(6px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); transition: background 0.2s, transform 0.2s; }\n' +
+                    '  body.nav-open .menu-btn:hover { background: color-mix(in srgb, var(--menu-fg, #fff) 24%, transparent); transform: scale(1.05); }\n' +
+                    '  body.nav-open .menu-btn span { background: var(--menu-fg, #fff); height: 2.5px; border-radius: 2px; left: 12px; right: 12px; width: auto; }\n' +
+                    '  body.nav-open .menu-btn span:first-child { top: 50%; }\n' +
+                    '  body.nav-open .menu-btn span:last-child { bottom: auto; top: 50%; }\n' +
+                    '  body.nav-open .menu-btn.is-active span:first-child { transform: translateY(-50%) rotate(45deg); }\n' +
+                    '  body.nav-open .menu-btn.is-active span:last-child { transform: translateY(-50%) rotate(-45deg); }\n' +
                     '  .nav-extra { display: none; width: 100%; }\n' +
                     '  body.nav-open .nav-extra { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 1rem 2rem; flex-shrink: 0; color: var(--menu-fg-muted, rgba(255,255,255,0.7)); }\n';
                 if (bp) return '@media (max-width: ' + bp + 'px) {\n' + hamburgerCSS + '}\n\n';
@@ -2022,6 +2027,19 @@ window.ArbelCompiler = (function () {
             '.heroart-dots .hero::before { content:""; position: absolute; inset: 0; background-image: radial-gradient(circle, var(--fg) 1px, transparent 1.5px); background-size: 32px 32px; opacity: 0.12; pointer-events: none; z-index: 1; }\n' +
             '.heroart-cross .hero::before { content:"+"; position: absolute; top: 12%; left: 8%; font-size: 2rem; color: var(--accent); opacity: 0.3; pointer-events: none; z-index: 1; }\n' +
             '.heroart-cross .hero::after { content:"×"; position: absolute; bottom: 18%; right: 10%; font-size: 3rem; color: var(--accent); opacity: 0.25; pointer-events: none; z-index: 1; }\n\n' +
+            // New organic/geometric hero shapes
+            '.heroart-blob .hero::before { content:""; position: absolute; top: -10%; right: -15%; width: 70vmin; height: 70vmin; background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 65%); filter: blur(40px); border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; opacity: 0.55; pointer-events: none; z-index: 1; animation: blob-drift 22s ease-in-out infinite; }\n' +
+            '@keyframes blob-drift { 0%,100% { transform: translate(0,0) rotate(0deg); } 50% { transform: translate(-6%,4%) rotate(40deg); } }\n' +
+            '.heroart-wave .hero::after { content:""; position: absolute; left: 0; right: 0; bottom: 0; height: 18vh; background: url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 1440 200\' preserveAspectRatio=\'none\'><path d=\'M0,100 C240,180 480,20 720,100 C960,180 1200,20 1440,100 L1440,200 L0,200 Z\' fill=\'%23fff\' fill-opacity=\'0.06\'/></svg>") center/100% 100% no-repeat; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-triangle .hero::before { content:""; position: absolute; top: 15%; left: 7%; width: 0; height: 0; border-left: 40px solid transparent; border-right: 40px solid transparent; border-bottom: 70px solid color-mix(in srgb, var(--accent) 55%, transparent); opacity: 0.4; pointer-events: none; z-index: 1; animation: slow-spin 30s linear infinite; }\n' +
+            '.heroart-triangle .hero::after { content:""; position: absolute; bottom: 12%; right: 8%; width: 0; height: 0; border-left: 60px solid transparent; border-right: 60px solid transparent; border-top: 104px solid color-mix(in srgb, var(--fg) 12%, transparent); pointer-events: none; z-index: 1; }\n' +
+            '@keyframes slow-spin { to { transform: rotate(360deg); } }\n' +
+            '.heroart-zigzag .hero::before { content:""; position: absolute; inset: 0; background-image: linear-gradient(135deg, transparent 48%, color-mix(in srgb, var(--fg) 10%, transparent) 49%, color-mix(in srgb, var(--fg) 10%, transparent) 51%, transparent 52%), linear-gradient(-135deg, transparent 48%, color-mix(in srgb, var(--fg) 10%, transparent) 49%, color-mix(in srgb, var(--fg) 10%, transparent) 51%, transparent 52%); background-size: 60px 60px; opacity: 0.35; pointer-events: none; z-index: 1; mask-image: linear-gradient(180deg, transparent, #000 30%, #000 70%, transparent); }\n' +
+            '.heroart-arc .hero::before { content:""; position: absolute; left: -30vmin; bottom: -30vmin; width: 90vmin; height: 90vmin; border: 2px solid var(--accent); border-radius: 50%; opacity: 0.35; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-rings .hero::before { content:""; position: absolute; top: 50%; left: 50%; width: 140vmin; height: 140vmin; transform: translate(-50%, -50%); background: repeating-radial-gradient(circle, transparent 0 48px, color-mix(in srgb, var(--accent) 35%, transparent) 48px 50px); opacity: 0.18; pointer-events: none; z-index: 1; mask-image: radial-gradient(circle, #000 20%, transparent 75%); }\n' +
+            '.heroart-stripes .hero::before { content:""; position: absolute; inset: 0; background-image: repeating-linear-gradient(20deg, transparent 0 30px, color-mix(in srgb, var(--accent) 40%, transparent) 30px 32px); opacity: 0.18; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-scribble .hero::before { content:""; position: absolute; top: 10%; right: 8%; width: 240px; height: 120px; background: url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 240 120\' fill=\'none\' stroke=\'%23fff\' stroke-opacity=\'0.5\' stroke-width=\'2\'><path d=\'M10 60 C 30 10, 60 110, 90 60 S 150 10, 180 60 S 230 110, 230 60\'/></svg>") center/contain no-repeat; pointer-events: none; z-index: 1; }\n' +
+            '.heroart-checker .hero::before { content:""; position: absolute; inset: 0; background-image: linear-gradient(45deg, color-mix(in srgb, var(--fg) 8%, transparent) 25%, transparent 25%, transparent 75%, color-mix(in srgb, var(--fg) 8%, transparent) 75%), linear-gradient(45deg, color-mix(in srgb, var(--fg) 8%, transparent) 25%, transparent 25%, transparent 75%, color-mix(in srgb, var(--fg) 8%, transparent) 75%); background-position: 0 0, 40px 40px; background-size: 80px 80px; opacity: 0.5; pointer-events: none; z-index: 1; mask-image: radial-gradient(circle at 70% 30%, #000, transparent 60%); }\n\n' +
             '/* ═══ FOOTER STYLES (body-class toggles) ═══ */\n' +
             '.footer-minimal .footer { padding: 2rem 0; }\n' +
             '.footer-minimal .footer-inner { justify-content: center; flex-direction: column; gap: 0.5rem; text-align: center; }\n' +
@@ -2692,11 +2710,20 @@ window.ArbelCompiler = (function () {
             '// Mobile menu\n' +
             'var menuBtn=document.getElementById("menuBtn");\n' +
             'var nav=document.getElementById("nav");\n' +
+            'function closeNav(){if(!nav)return;nav.classList.remove("open");if(menuBtn)menuBtn.classList.remove("is-active");document.body.classList.remove("nav-open");}\n' +
             'if(menuBtn&&nav){\n' +
-            '  menuBtn.addEventListener("click",function(){var isOpen=nav.classList.toggle("open");menuBtn.classList.toggle("is-active");document.body.classList.toggle("nav-open",isOpen);});\n' +
-            '  nav.querySelectorAll(".nav-link").forEach(function(link){\n' +
-            '    link.addEventListener("click",function(){nav.classList.remove("open");menuBtn.classList.remove("is-active");document.body.classList.remove("nav-open");});\n' +
+            '  menuBtn.addEventListener("click",function(e){e.stopPropagation();var isOpen=nav.classList.toggle("open");menuBtn.classList.toggle("is-active");document.body.classList.toggle("nav-open",isOpen);});\n' +
+            '  nav.querySelectorAll("a, .nav-link").forEach(function(link){\n' +
+            '    link.addEventListener("click",function(){closeNav();});\n' +
             '  });\n' +
+            '  // Close on backdrop tap (anywhere outside the nav links + menu button)\n' +
+            '  document.addEventListener("click",function(e){\n' +
+            '    if(!document.body.classList.contains("nav-open"))return;\n' +
+            '    if(nav.contains(e.target)||menuBtn.contains(e.target))return;\n' +
+            '    closeNav();\n' +
+            '  });\n' +
+            '  // Close on Escape\n' +
+            '  document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.body.classList.contains("nav-open"))closeNav();});\n' +
             '}\n\n' : '') +
             '// Smooth anchor scroll\n' +
             'document.querySelectorAll(\'a[href^="#"]\').forEach(function(a){\n' +

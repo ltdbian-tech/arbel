@@ -504,7 +504,7 @@ window.ArbelAI = (function () {
             '"dividerStyle": "none"|"line"|"gradient"|"numbered"|"dotline" — what appears between sections. numbered shows 01, 02, 03 monospace counters in the corner.\n' +
             '"footerStyle": "default"|"minimal"|"columns"|"centered"|"bigLogo"|"stripe" — footer treatment. bigLogo puts a giant faded brand watermark behind the footer.\n' +
             '"labelStyle": "default"|"bar"|"dot"|"number"|"stripe" — adornment on every section mono label. number prefixes /01, /02 etc. bar adds a 32px accent line prefix.\n' +
-            '"heroArt": "none"|"grid"|"lines"|"circle"|"dots"|"cross" — decorative overlay added to the hero on top of the bg animation.\n' +
+            '"heroArt": "none"|"grid"|"lines"|"circle"|"dots"|"cross"|"blob"|"wave"|"triangle"|"zigzag"|"arc"|"rings"|"stripes"|"scribble"|"checker" — decorative overlay added to the hero on top of the bg animation. Mix these up between regens: blob/arc/rings for organic moods, triangle/zigzag/stripes/checker for geometric, scribble for playful, wave for fluid.\n' +
             '"logoStyle": ""|"monogram"|"mark-left"|"dot"|"bracket"|"underline"|"slash" — how the site logo renders. Empty = plain wordmark. monogram = initials-in-box, mark-left = geometric svg mark beside wordmark, dot = accent dot prefix, bracket = [ wordmark ], underline = animated accent underline on hover, slash = // mono prefix. Pick something that fits the mood.\n' +
             '"cursorStyle": ""|"ring-only"|"dot-only"|"crosshair"|"magnetic"|"spotlight"|"none" — custom cursor treatment. Empty = default dot-and-ring. ring-only = just the accent ring, dot-only = just an accent dot, crosshair = editorial precision cross, magnetic = tinted accent halo, spotlight = darkens the page around the cursor (drama!), none = hide the custom cursor. Use spotlight sparingly.\n\n' +
             'OPTIONAL "elementOverrides" — apply per-element flair to specific elements by ID. Use sparingly (5-15 entries max). Allowed IDs match patterns: hero-cta, hero-line1/2/3, hero-sub, service-card-1/2/3, service-N-title/desc, portfolio-card-1/2/3, project-N-title/tag/desc, about, about-heading, about-desc, stat-1/2/3, step-N-title/desc, testimonial-card-1/2/3, testimonial-N-quote/name/role, pricing-card-1/2/3, tier-N-name/price/features, faq-item-1/2/3, faq-N-q/a, *-heading, AND chrome IDs you may reposition/restyle: site-header, site-logo, site-nav, menu-btn, nav-extra.\n' +
@@ -614,7 +614,7 @@ window.ArbelAI = (function () {
             '    "dividerStyle": "none|line|gradient|numbered|dotline",\n' +
             '    "footerStyle": "default|minimal|columns|centered|bigLogo|stripe",\n' +
             '    "labelStyle": "default|bar|dot|number|stripe",\n' +
-            '    "heroArt": "none|grid|lines|circle|dots|cross",\n' +
+            '    "heroArt": "none|grid|lines|circle|dots|cross|blob|wave|triangle|zigzag|arc|rings|stripes|scribble|checker",\n' +
             '    "logoStyle": "|monogram|mark-left|dot|bracket|underline|slash",\n' +
             '    "cursorStyle": "|ring-only|dot-only|crosshair|magnetic|spotlight|none",\n' +
             '    "sectionTones": {"services":"dark|light|accent",...},\n' +

@@ -2687,7 +2687,7 @@
         var typeScales = ['tight', 'normal', 'dramatic'];
         var rhythms = ['normal', 'compact', 'roomy', 'alternating'];
         var dividers = ['none', 'line', 'gradient', 'numbered', 'dotline'];
-        var heroArts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross'];
+        var heroArts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross', 'blob', 'wave', 'triangle', 'zigzag', 'arc', 'rings', 'stripes', 'scribble', 'checker'];
         var labels   = ['default', 'bar', 'dot', 'number', 'stripe'];
 
         var heroLayout   = _pickDiff(heroLayouts, _localLastHero);
