@@ -427,6 +427,34 @@ window.ArbelAI = (function () {
                         recipeHint += '\nSCHEMAS for the type-native sections in this recipe (use these EXACT copy keys in the copy JSON):\n';
                         usedNatives.forEach(function (s) { recipeHint += '  - ' + nativeSchemas[s] + '\n'; });
                     }
+
+                    // ─── MULTI-PAGE RECIPE ───
+                    if (Array.isArray(prof.pageRecipes) && prof.pageRecipes.length) {
+                        var pagePaths = prof.pageRecipes.map(function (p) {
+                            return p.name + ' (' + p.path + ' → ' + (p.sections || []).join('+') + ')';
+                        }).join(', ');
+                        recipeHint += '\nDEFAULT MULTI-PAGE STRUCTURE for this type (auto-generated unless you override): ' + pagePaths + '. You MAY return an optional top-level design.pages array to customize, OR omit to accept the defaults.\n';
+                    }
+
+                    // ─── NAV EXTRA + FOOTER ───
+                    if (prof.navExtra && prof.navExtra.label) {
+                        recipeHint += 'DEFAULT NAV-EXTRA CTA for this type: "' + prof.navExtra.label + '" (' + (prof.navExtra.kind || 'button') + '). You MAY override via design.navExtra={label,href,kind} or set design.navExtraDisabled=true.\n';
+                    }
+                    if (prof.footerRecipe && Array.isArray(prof.footerRecipe.columns)) {
+                        var colHeads = prof.footerRecipe.columns.map(function (c) { return c.heading; }).join(' / ');
+                        recipeHint += 'DEFAULT FOOTER COLUMNS for this type: ' + colHeads + '. Copy already stocked with category-appropriate links (hours, shipping, streaming, docs, etc). Only override design.footerRecipe when the brand has distinctive links to showcase.\n';
+                    }
+
+                    // ─── CTA COPY POOL ───
+                    if (prof.cta && typeof prof.cta === 'object') {
+                        var ctaPicks = [];
+                        ['heroCta','ctaBannerHeading','ctaBannerCta'].forEach(function (k) {
+                            if (Array.isArray(prof.cta[k]) && prof.cta[k].length) ctaPicks.push(k + '=e.g. "' + prof.cta[k][0] + '"');
+                        });
+                        if (ctaPicks.length) {
+                            recipeHint += 'DEFAULT CTA VOICE for this type (' + ctaPicks.join('; ') + '). You MAY invent more specific copy in the copy JSON, but stay in this voice — not generic "Get Started".\n';
+                        }
+                    }
                 }
             } catch (e) { /* non-fatal */ }
         }
@@ -507,6 +535,9 @@ window.ArbelAI = (function () {
             '"heroArt": "none"|"grid"|"lines"|"circle"|"dots"|"cross"|"blob"|"wave"|"triangle"|"zigzag"|"arc"|"rings"|"stripes"|"scribble"|"checker" — decorative overlay added to the hero on top of the bg animation. Mix these up between regens: blob/arc/rings for organic moods, triangle/zigzag/stripes/checker for geometric, scribble for playful, wave for fluid.\n' +
             '"logoStyle": ""|"monogram"|"mark-left"|"dot"|"bracket"|"underline"|"slash" — how the site logo renders. Empty = plain wordmark. monogram = initials-in-box, mark-left = geometric svg mark beside wordmark, dot = accent dot prefix, bracket = [ wordmark ], underline = animated accent underline on hover, slash = // mono prefix. Pick something that fits the mood.\n' +
             '"cursorStyle": ""|"ring-only"|"dot-only"|"crosshair"|"magnetic"|"spotlight"|"none" — custom cursor treatment. Empty = default dot-and-ring. ring-only = just the accent ring, dot-only = just an accent dot, crosshair = editorial precision cross, magnetic = tinted accent halo, spotlight = darkens the page around the cursor (drama!), none = hide the custom cursor. Use spotlight sparingly.\n\n' +
+            'OPTIONAL MULTI-PAGE: "pages": array of {id, name, path, sections[]}. First entry should be home (isHome:true, path:"/", any sections accepted). Each extra page declares its own section list from the standard + type-native pool (e.g. shop → /shop with [categoryChips, productGrid, dealBanner, ctaBanner]; restaurant → /menu with [menuSections]; contact pages use empty sections[] to get the built-in form). Leave this OUT to accept the type default.\n' +
+            'OPTIONAL "navExtra": {label, href, kind:"button"|"icon-cart"|"text"} — override the per-type nav CTA. Set "navExtraDisabled":true to hide it.\n' +
+            'OPTIONAL "footerRecipe": {tagline, columns:[{heading, items:[{label,href} or "plain string"]}]} — 3-4 columns of category-relevant footer links. Only provide when brand has distinctive links worth showcasing.\n\n' +
             'OPTIONAL "elementOverrides" — apply per-element flair to specific elements by ID. Use sparingly (5-15 entries max). Allowed IDs match patterns: hero-cta, hero-line1/2/3, hero-sub, service-card-1/2/3, service-N-title/desc, portfolio-card-1/2/3, project-N-title/tag/desc, about, about-heading, about-desc, stat-1/2/3, step-N-title/desc, testimonial-card-1/2/3, testimonial-N-quote/name/role, pricing-card-1/2/3, tier-N-name/price/features, faq-item-1/2/3, faq-N-q/a, *-heading, AND chrome IDs you may reposition/restyle: site-header, site-logo, site-nav, menu-btn, nav-extra.\n' +
             'Each entry can include: { "animation": one of "fadeIn|fadeInUp|fadeInDown|fadeInLeft|fadeInRight|slideUp|slideDown|slideLeft|slideRight|scaleUp|scaleDown|zoomIn|bounceIn|bounceInUp", "hover": one of "lift|scale|glow|tilt|skew|border-glow|brightness|color-shift", "continuous": one of "pulse|float|spin|bounce|shake|swing|breathe|glow-pulse|wobble|flash|headShake|wave-text|drift|sway", "color": "#RRGGBB", "backgroundColor": "#RRGGBB", "borderRadius": "Npx" or "N%" (0-100), "opacity": 0-1, and OPTIONAL POSITIONING: "position": "static|relative|absolute|fixed|sticky", "top"/"right"/"bottom"/"left": CSS length like "1rem"|"24px"|"10%"|"auto", "zIndex": integer (-100..10002), "width"/"height"/"maxWidth"/"minWidth"/"maxHeight"/"minHeight": CSS length, "marginTop/Right/Bottom/Left": CSS length, "transform": simple translate/rotate/scale only e.g. "translateY(-4px)" }.\n' +
             'POSITIONING GUIDANCE: only set these when an element is genuinely misplaced or you want a deliberate layered effect (e.g. pin site-logo top-left at "1.25rem/1.5rem" with position:fixed; float menu-btn top-right; nudge nav-extra). DO NOT arbitrarily reposition card grids or hero content — those have their own layout engine.\n' +

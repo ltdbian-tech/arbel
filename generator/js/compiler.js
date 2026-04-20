@@ -114,8 +114,8 @@ window.ArbelCompiler = (function () {
         if (cfg.navExtraHtml === '' || cfg.navExtraDisabled) return '';
         if (typeof cfg.navExtraHtml === 'string' && cfg.navExtraHtml) return cfg.navExtraHtml;
         var stp = (window.ArbelSiteType && window.ArbelSiteType.profile) ? window.ArbelSiteType.profile(cfg.siteType) : null;
-        if (!stp || !stp.navExtra) return '';
-        var ne = stp.navExtra; // { label, href, kind }
+        var ne = (cfg.navExtra && typeof cfg.navExtra === 'object') ? cfg.navExtra : (stp && stp.navExtra);
+        if (!ne || !ne.label) return '';
         var label = esc(ne.label || 'Start');
         var href = ne.href || '#contact';
         var kind = ne.kind || 'button'; // 'button' | 'icon-cart' | 'text'

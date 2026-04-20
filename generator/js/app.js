@@ -2172,6 +2172,11 @@
         state.aiHeroArt       = design.heroArt;
         state.aiLogoStyle     = design.logoStyle;
         state.aiCursorStyle   = design.cursorStyle;
+        // New category-aware axes — pages + per-type chrome overrides.
+        state.aiPages         = Array.isArray(design.pages) ? design.pages : null;
+        state.aiNavExtra      = (design.navExtra && typeof design.navExtra === 'object') ? design.navExtra : null;
+        state.aiNavExtraDisabled = design.navExtraDisabled === true;
+        state.aiFooterRecipe  = (design.footerRecipe && typeof design.footerRecipe === 'object') ? design.footerRecipe : null;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2979,6 +2984,12 @@
         if (state.aiHeroArt) cfg.heroArt = state.aiHeroArt;
         if (state.aiLogoStyle) cfg.logoStyle = state.aiLogoStyle;
         if (state.aiCursorStyle) cfg.cursorStyle = state.aiCursorStyle;
+        // Pass new category-aware overrides into the compiler config.
+        if (state.aiNavExtra) cfg.navExtraHtml = null; // let compiler use stProfile or cfg.navExtra
+        if (state.aiNavExtra) cfg.navExtra = state.aiNavExtra;
+        if (state.aiNavExtraDisabled) cfg.navExtraDisabled = true;
+        if (state.aiFooterRecipe) cfg.footerRecipe = state.aiFooterRecipe;
+        if (state.aiPages) cfg.pages = state.aiPages;
 
         // Manual design-option overrides (classic-wizard dropdowns)
         // Applied AFTER AI so the user can override any axis by hand.
