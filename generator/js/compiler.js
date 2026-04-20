@@ -848,9 +848,30 @@ window.ArbelCompiler = (function () {
 
     function _heroHTML(c, bgClass) {
         var layout = (c.__heroLayout || '').toString();
-        var layoutClass = (layout === 'left' || layout === 'split' || layout === 'minimal') ? ' hero--' + layout : '';
+        var layoutClass = (layout === 'left' || layout === 'split' || layout === 'minimal' || layout === 'name-lockup') ? ' hero--' + layout : '';
         var decoration = layout === 'split' ? '    <div class="hero-decoration" aria-hidden="true"></div>\n' : '';
         var eyebrow = c.__heroEyebrow ? '    <div class="hero-eyebrow mono" data-arbel-id="hero-eyebrow" data-arbel-edit="text">' + esc(c.__heroEyebrow) + '</div>\n' : '';
+        // Name-lockup: giant brand/player name dominates, headline shrinks to tagline role
+        if (layout === 'name-lockup') {
+            var brandName = c.__brandName || c.heroBrand || c.heroLine1 || 'BRAND';
+            return '<section class="hero hero--name-lockup" id="hero" data-arbel-id="hero">\n' +
+                '  <div class="' + bgClass + ' hero-bg"></div>\n' +
+                '  <div class="hero-vignette"></div>\n' +
+                '  <div class="hero-content" data-arbel-id="hero-content">\n' +
+                eyebrow +
+                '    <div class="hero-lockup" data-arbel-id="hero-lockup" data-arbel-edit="text">' + esc(brandName).toUpperCase() + '</div>\n' +
+                '    <h1 class="hero-heading hero-heading--tagline" data-arbel-id="hero-heading">\n' +
+                '      <span class="line"><span class="line-inner" data-arbel-id="hero-line1" data-arbel-edit="text">' + esc(c.heroLine1 || 'Bold tagline') + '</span></span>\n' +
+                '      <span class="line"><span class="line-inner" data-arbel-id="hero-line2" data-arbel-edit="text"><em>' + esc(c.heroLine2 || 'that defines you') + '</em></span></span>\n' +
+                '    </h1>\n' +
+                '    <p class="hero-sub" data-arbel-id="hero-sub" data-arbel-edit="text">' + esc(c.heroSub || '') + '</p>\n' +
+                '    <div class="hero-actions">\n' +
+                '      <a href="#contact" class="btn btn-primary magnetic" data-arbel-id="hero-cta" data-arbel-edit="text">' + esc(c.heroCta || 'ENTER') + '</a>\n' +
+                '    </div>\n' +
+                '  </div>\n' +
+                '  <div class="scroll-indicator mono"><span>SCROLL</span><div class="scroll-track"><div class="scroll-thumb"></div></div></div>\n' +
+                '</section>';
+        }
         return '<section class="hero' + layoutClass + '" id="hero" data-arbel-id="hero">\n' +
             '  <div class="' + bgClass + ' hero-bg"></div>\n' +
             '  <div class="hero-vignette"></div>\n' +
@@ -1561,6 +1582,7 @@ window.ArbelCompiler = (function () {
             if (s === 'hero') {
                 c.__heroLayout = cfg.heroLayout || '';
                 c.__heroEyebrow = cfg.heroEyebrow || '';
+                c.__brandName = cfg.brandName || cfg.siteName || '';
                 sectionsHTML += builder(c, bgClass) + '\n\n';
             } else if (s === 'contact') {
                 sectionsHTML += builder(c, cfg.contactEmail, bgClass) + '\n\n';
@@ -1907,6 +1929,12 @@ window.ArbelCompiler = (function () {
             '.hero--split .hero-decoration { grid-column: 2; grid-row: 1 / span 3; width: 100%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, var(--accent), transparent 70%); opacity: 0.35; filter: blur(24px); pointer-events: none; }\n' +
             '.hero--minimal .hero-vignette { display: none; }\n' +
             '.hero--minimal .hero-heading { font-size: clamp(2rem, 5vw, 3.5rem); }\n' +
+            /* ── Name lockup hero: giant brand/player name dominates ── */
+            '.hero--name-lockup .hero-content { max-width: 1400px; width: 100%; padding: 2rem clamp(1rem, 4vw, 4rem); }\n' +
+            '.hero-lockup { display: block; font-family: inherit; font-weight: 900; font-size: clamp(3.25rem, 18vw, 15rem); line-height: 0.85; letter-spacing: -0.05em; text-transform: uppercase; margin-bottom: 1.5rem; color: var(--fg); text-shadow: 0 0 48px color-mix(in srgb, var(--accent) 35%, transparent), 0 2px 32px color-mix(in srgb, var(--bg) 70%, transparent); overflow-wrap: break-word; word-break: normal; }\n' +
+            '.hero-heading--tagline { font-size: clamp(1rem, 2vw, 1.75rem) !important; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-bottom: 2rem; }\n' +
+            '.hero-heading--tagline em { color: var(--accent); font-style: normal; }\n' +
+            'body.sitetype-gaming .hero-lockup, body.sitetype-fashion .hero-lockup { -webkit-text-stroke: 1px color-mix(in srgb, var(--accent) 40%, transparent); }\n' +
             '@media (max-width: 768px) { .hero--split .hero-content { grid-template-columns: 1fr; } .hero--split .hero-decoration { display:none; } .hero--left .hero-content { margin-left: 5%; } }\n' +
             '.hero-actions { display: flex; gap: 1rem; justify-content: center; }\n' +
             '.scroll-indicator { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: var(--fg2); display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }\n' +
@@ -1938,7 +1966,7 @@ window.ArbelCompiler = (function () {
             '/* ═══ HARDENING — contrast + overflow + readability ═══ */\n' +
             'html, body { overflow-x: hidden; max-width: 100vw; }\n' +
             '.container { min-width: 0; }\n' +
-            '.section-heading, .hero-heading, .section-title { word-break: break-word; overflow-wrap: anywhere; }\n' +
+            '.section-heading, .hero-heading, .section-title { overflow-wrap: break-word; word-break: normal; hyphens: auto; }\n' +
             /* force readable card body text across every card treatment */
             '.service-desc, .portfolio-desc, .process-desc, .testimonial-quote, .pricing-card p, .pricing-card li { color: color-mix(in srgb, var(--fg) 82%, var(--fg2)); }\n' +
             /* filled + accent backgrounds darken surface — push body text closer to --fg */
@@ -2305,6 +2333,8 @@ window.ArbelCompiler = (function () {
             '  .section { padding: 4rem 0; }\n' +
             '  .hero-content { padding: 1.5rem 1.25rem; max-width: 100%; }\n' +
             '  .hero-heading { font-size: clamp(2rem, 9vw, 3.5rem) !important; letter-spacing: -0.02em; }\n' +
+            '  .hero-lockup { font-size: clamp(2.5rem, 18vw, 6rem); letter-spacing: -0.04em; }\n' +
+            '  .hero-heading--tagline { font-size: clamp(0.85rem, 3.2vw, 1.1rem) !important; }\n' +
             '  .hero-sub { font-size: 1rem; max-width: 100%; }\n' +
             '  .hero-actions { flex-wrap: wrap; }\n' +
             '  .section-heading { font-size: clamp(1.6rem, 6vw, 2.5rem) !important; }\n' +

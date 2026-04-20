@@ -1723,7 +1723,7 @@
 
         // ─── STRUCTURAL VARIATION ─── random hero layout + shuffled section order
         // so each regen changes the page architecture, not just the colors.
-        var layouts = ['centered', 'left', 'split', 'minimal'];
+        var layouts = ['centered', 'left', 'split', 'minimal', 'name-lockup'];
         if (['centered','left','split','minimal'].indexOf(design.heroLayout) === -1) {
             design.heroLayout = layouts[Math.floor(Math.random() * layouts.length)];
         }
@@ -1742,6 +1742,38 @@
         // section recipe when the AI didn't supply one.
         var siteType = state.aiSiteType || 'generic';
 
+        // ─── TYPE DENYLIST + REQUIRED CORE ───
+        // Per-type "generic agency" sections that should NOT appear on
+        // type-native sites, plus a minimum set of signature sections the
+        // final sectionOrder MUST contain so the result actually looks
+        // like a gaming/shop/restaurant/etc page regardless of what the
+        // AI suggested.
+        var TYPE_DENY = {
+            gaming:      ['services','pricing','portfolio','process','faq','team'],
+            shop:        ['services','process','about'],
+            ecommerce:   ['services','process','about'],
+            restaurant:  ['services','portfolio','process','pricing','faq'],
+            portfolio:   ['services','pricing','faq'],
+            photography: ['services','pricing','faq','process'],
+            fashion:     ['services','pricing','portfolio','process','faq'],
+            music:       ['services','pricing','portfolio','process','faq'],
+            podcast:     ['services','pricing','portfolio','process','faq'],
+            event:       ['services','process','faq'],
+            blog:        ['services','pricing','process']
+        };
+        var TYPE_CORE = {
+            gaming:      ['cinematicReel','agentRoster','gameModes'],
+            shop:        ['productGrid','categoryChips'],
+            ecommerce:   ['productGrid','categoryChips'],
+            restaurant:  ['menuSections'],
+            portfolio:   ['statWall','raceTimeline'],
+            fashion:     ['lookbookHorizontal'],
+            music:       ['releaseGrid'],
+            podcast:     ['releaseGrid']
+        };
+        var deny = TYPE_DENY[siteType] || [];
+        var core = TYPE_CORE[siteType] || [];
+
         if (!Array.isArray(design.sectionOrder) || !design.sectionOrder.length) {
             // Recipe-driven random pick — see ArbelSiteType.recipe()
             var recipe = window.ArbelSiteType ? ArbelSiteType.recipe(siteType) : null;
@@ -1754,12 +1786,19 @@
                 design.sectionOrder = ['hero'].concat(shuffled.slice(0, n)).concat(['contact']);
             }
         } else {
-            // Sanitize AI-supplied order
+            // Sanitize AI-supplied order; filter denylist for this type
             var clean = ['hero'];
             design.sectionOrder.forEach(function (s) {
-                if (typeof s === 'string' && validSections.indexOf(s) !== -1 && clean.indexOf(s) === -1) {
+                if (typeof s === 'string'
+                    && validSections.indexOf(s) !== -1
+                    && deny.indexOf(s) === -1
+                    && clean.indexOf(s) === -1) {
                     clean.push(s);
                 }
+            });
+            // Force-inject any missing required core sections (after hero, before contact)
+            core.forEach(function (s) {
+                if (clean.indexOf(s) === -1) clean.push(s);
             });
             clean.push('contact');
             design.sectionOrder = clean;
