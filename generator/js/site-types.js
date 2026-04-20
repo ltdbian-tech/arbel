@@ -261,6 +261,13 @@
                 { n: 'Pixel Orta', r: 'Coach' }
             ],
             labels: { portfolio: 'GAMEPLAY', services: 'MODES', team: 'ROSTER', process: 'RANKUP', ctaBanner: 'QUEUE UP' },
+            cta: {
+                heroCta:        ['PLAY FREE', 'QUEUE UP', 'ENTER ARENA', 'DROP IN', 'JOIN SQUAD'],
+                heroCtaSecondary:['WATCH TRAILER', 'VIEW ROSTER', 'SEE MODES'],
+                ctaBannerHeading:['Ready to drop in?', 'Enter the arena.', 'One match. One objective.'],
+                ctaBannerSub:   ['Free to play. Queue up now and climb the ranks.', 'Five roles. Infinite outcomes. No subscription.'],
+                ctaBannerCta:   ['PLAY FREE', 'QUEUE UP', 'DOWNLOAD NOW']
+            },
             persona: 'high-energy esports / gaming site — expect stats like K/D, rank, hours logged, tournament wins; copy should feel like a clan page or streamer portfolio, NOT a marketing agency',
             content: {
                 agentRoster: [
@@ -313,6 +320,13 @@
                 { n: 'Imani Cole', r: 'Customer Care' }
             ],
             labels: { portfolio: 'SHOP', services: 'COLLECTION', pricing: 'BUNDLES', ctaBanner: 'SHOP NOW' },
+            cta: {
+                heroCta:        ['Shop Now', 'Browse Collection', 'Add to Cart', 'Start Shopping'],
+                heroCtaSecondary:['View Lookbook', 'See What\u2019s New'],
+                ctaBannerHeading:['Free shipping on orders over $75.', 'The new drop is here.', 'Good things ship fast.'],
+                ctaBannerSub:   ['Same-day delivery in most cities. Hassle-free returns up to 30 days.', 'Curated. Responsibly sourced. Shipped carbon-neutral.'],
+                ctaBannerCta:   ['Shop Now', 'Shop the Drop', 'Browse Collection']
+            },
             persona: 'consumer shop / DTC brand — portfolio acts as a product grid, pricing reads as bundles, stats are orders-shipped + reviews; copy is aspirational and product-led',
             content: {
                 productGrid: [
@@ -356,6 +370,13 @@
                 { n: 'Yuki Tanaka', r: 'Pastry Chef' }
             ],
             labels: { portfolio: 'MENU', services: 'EXPERIENCES', team: 'OUR KITCHEN', ctaBanner: 'RESERVE A TABLE' },
+            cta: {
+                heroCta:        ['Book a Table', 'Reserve', 'View Menu', 'Order Online'],
+                heroCtaSecondary:['See the Menu', 'Find Us', 'Call Us'],
+                ctaBannerHeading:['Come sit at our table.', 'Saturday night has a seat for you.', 'Dinner is on.'],
+                ctaBannerSub:   ['Weekends book fast. Reserve a seat for the best table in town.', 'Private dining, seasonal tastings, and weekend brunch.'],
+                ctaBannerCta:   ['Book a Table', 'Reserve Now', 'View Tonight\u2019s Menu']
+            },
             persona: 'restaurant / hospitality — portfolio is the menu, services are tasting experiences, copy uses sensory language (textures, ingredients, provenance) and reservation CTAs',
             content: {
                 menuSections: [
@@ -483,6 +504,13 @@
             logoCloud: ['Spotify', 'Apple Podcasts', 'Overcast', 'Pocket Casts', 'YouTube Music', 'Stitcher'],
             team: [{ n: 'Host 1', r: 'Host' }, { n: 'Host 2', r: 'Co-host' }, { n: 'Producer', r: 'Producer' }],
             labels: { portfolio: 'EPISODES', services: 'SEASONS', ctaBanner: 'LISTEN NOW' },
+            cta: {
+                heroCta:        ['Listen Now', 'Play Latest', 'Subscribe', 'Latest Episode'],
+                heroCtaSecondary:['Apple Podcasts', 'Spotify', 'All Episodes'],
+                ctaBannerHeading:['New episodes every Tuesday.', 'Tap in.', 'Never miss an episode.'],
+                ctaBannerSub:   ['Subscribe on Apple Podcasts, Spotify, Overcast, or anywhere you listen.', 'Honest conversations with the people building the future.'],
+                ctaBannerCta:   ['Subscribe', 'Listen Now', 'Latest Episode']
+            },
             persona: 'podcast show — portfolio cards are episode titles with guest/season tags; CTAs push toward Apple/Spotify; tone is conversational'
         },
         event: {
@@ -510,6 +538,13 @@
                 { n: 'Workshop Lead', r: 'Labs' }
             ],
             labels: { portfolio: 'PROGRAM', team: 'SPEAKERS', pricing: 'TICKETS', ctaBanner: 'GET TICKETS' },
+            cta: {
+                heroCta:        ['Get Tickets', 'Register', 'Save Your Spot', 'Buy Pass'],
+                heroCtaSecondary:['View Program', 'Speaker Lineup', 'Venue Info'],
+                ctaBannerHeading:['Early-bird ends Friday.', 'Last call for early-bird.', 'Only 200 seats left.'],
+                ctaBannerSub:   ['40+ speakers across three days in Berlin. Pass includes workshops + after-hours mixers.', 'Save $200 before early-bird closes. Workshops fill fast.'],
+                ctaBannerCta:   ['Get Tickets', 'Register Now', 'Claim Early-bird']
+            },
             persona: 'live event / conference — date/venue/speakers/tickets are the stars; copy is urgent and countdown-aware; portfolio reads as program sessions'
         },
         app: {
@@ -537,6 +572,13 @@
                 { n: 'Jordan Lee', r: 'Design Lead' }
             ],
             labels: { portfolio: 'FEATURES IN ACTION', services: 'FEATURES', pricing: 'PLANS', ctaBanner: 'GET THE APP' },
+            cta: {
+                heroCta:        ['Download Free', 'Get the App', 'Try Free', 'Start Free Trial'],
+                heroCtaSecondary:['App Store', 'Google Play', 'See Features'],
+                ctaBannerHeading:['Free to download. Free to use.', 'Try it free for 14 days.', 'Ready when you are.'],
+                ctaBannerSub:   ['Works on iOS, Android, and the web. No credit card required to start.', 'Join 500,000+ people who get more done with us.'],
+                ctaBannerCta:   ['Download Free', 'Get the App', 'Start Free']
+            },
             persona: 'mobile/SaaS app — download CTAs + App Store badge energy; services = features; pricing = monthly plans; copy is benefit-led and outcome-focused'
         },
         saas: {
@@ -562,6 +604,13 @@
                 { n: 'DX Lead', r: 'Developer Relations' }
             ],
             labels: { portfolio: 'CUSTOMERS', services: 'PLATFORM', pricing: 'PRICING', ctaBanner: 'START FREE' },
+            cta: {
+                heroCta:        ['Start Free', 'Try Free', 'Book a Demo', 'Get Started'],
+                heroCtaSecondary:['Book a Demo', 'See Pricing', 'Read Docs'],
+                ctaBannerHeading:['Start free. Upgrade when you\u2019re ready.', 'Book a 15-minute demo.', 'Ship faster, starting today.'],
+                ctaBannerSub:   ['No credit card required. Full access to every feature for 14 days.', 'Used by 1,200+ engineering teams — from seed stage to Fortune 100.'],
+                ctaBannerCta:   ['Start Free', 'Book a Demo', 'Talk to Sales']
+            },
             persona: 'B2B SaaS platform — logoCloud is client proof, pricing is seat-based tiers, features emphasize integrations/security/uptime'
         },
         course: {
@@ -689,6 +738,13 @@
                 { n: 'Atelier Lead', r: 'Head of Atelier' }
             ],
             labels: { portfolio: 'THE COLLECTION', services: 'CAPSULES', team: 'THE HOUSE', ctaBanner: 'SHOP THE DROP' },
+            cta: {
+                heroCta:        ['Shop the Drop', 'View Lookbook', 'Shop SS26', 'Explore Collection'],
+                heroCtaSecondary:['The Lookbook', 'The Story', 'Stockists'],
+                ctaBannerHeading:['The SS26 collection is live.', 'Every piece. Made to last.', 'The drop lands today.'],
+                ctaBannerSub:   ['Limited runs. Once it\u2019s gone, it\u2019s gone. Sign up for early access to the next capsule.', 'Hand-finished in the atelier. Delivered anywhere in the world.'],
+                ctaBannerCta:   ['Shop the Drop', 'Shop SS26', 'Join the List']
+            },
             persona: 'fashion / couture house — lookbook-style portfolio, collection naming conventions (SS26/AW25), boutique-voice copy, stockist namedrop',
             content: {
                 lookbookHorizontal: [
@@ -727,6 +783,13 @@
                 { n: 'Producer', r: 'Production' }
             ],
             labels: { portfolio: 'DISCOGRAPHY', services: 'TOUR DATES', ctaBanner: 'LISTEN EVERYWHERE' },
+            cta: {
+                heroCta:        ['Listen Now', 'Play', 'Stream', 'Tour Tickets'],
+                heroCtaSecondary:['Spotify', 'Apple Music', 'Tour Dates'],
+                ctaBannerHeading:['Out everywhere.', 'On tour — 48 cities.', 'The new LP is live.'],
+                ctaBannerSub:   ['Stream the debut LP on Spotify, Apple Music, and Tidal.', 'Catch us on stage in a city near you this summer.'],
+                ctaBannerCta:   ['Listen Now', 'Stream on Spotify', 'Tour Tickets']
+            },
             persona: 'band / musician / record label — portfolio is discography, services become tour dates, bold typographic pressroom energy',
             content: {
                 releaseGrid: [
@@ -762,6 +825,13 @@
                 { n: 'Field Lead', r: 'Director of Field Ops' }
             ],
             labels: { portfolio: 'OUR WORK', services: 'PROGRAMS', team: 'OUR TEAM', pricing: 'WAYS TO GIVE', ctaBanner: 'DONATE NOW' },
+            cta: {
+                heroCta:        ['Donate Now', 'Give Today', 'Join Us', 'Volunteer'],
+                heroCtaSecondary:['Our Programs', 'Annual Report', 'Get Involved'],
+                ctaBannerHeading:['Every dollar reaches the field.', 'Stand with us.', 'Change lives, today.'],
+                ctaBannerSub:   ['100% of donations go directly to programs. Overhead is funded separately.', 'Your monthly gift keeps programs running year-round.'],
+                ctaBannerCta:   ['Donate Now', 'Give Monthly', 'Volunteer']
+            },
             persona: 'nonprofit / mission-driven — impact numbers, programs (not services), donor CTAs, human story-led copy with no salesy language'
         },
         finance: {

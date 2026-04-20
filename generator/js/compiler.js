@@ -1698,6 +1698,26 @@ window.ArbelCompiler = (function () {
                 if (!c.cinematicReelSub)     c.cinematicReelSub     = cn.cinematicReel.sub;
                 if (!c.cinematicReelCta)     c.cinematicReelCta     = cn.cinematicReel.cta;
             }
+
+            // ─── CTA COPY POOL ───
+            // Seeded pick from per-type cta pools so heroCta / ctaBanner
+            // copy feels on-brand. Same brand name → same seeded picks so
+            // regens stay stable.
+            if (stProfile.cta && typeof stProfile.cta === 'object') {
+                var _ctaSeed = 0;
+                var _ctaBrand = String(cfg.brandName || cfg.siteName || cfg.siteType || '');
+                for (var _ci = 0; _ci < _ctaBrand.length; _ci++) _ctaSeed = (_ctaSeed * 31 + _ctaBrand.charCodeAt(_ci)) | 0;
+                var _ctaPick = function (key, offset) {
+                    var arr = stProfile.cta[key];
+                    if (!Array.isArray(arr) || !arr.length) return null;
+                    return arr[Math.abs(_ctaSeed + (offset || 0)) % arr.length];
+                };
+                if (!c.heroCta)          c.heroCta          = _ctaPick('heroCta', 0);
+                if (!c.heroCtaSecondary) c.heroCtaSecondary = _ctaPick('heroCtaSecondary', 1);
+                if (!c.ctaBannerHeading) c.ctaBannerHeading = _ctaPick('ctaBannerHeading', 2);
+                if (!c.ctaBannerSub)     c.ctaBannerSub     = _ctaPick('ctaBannerSub', 3);
+                if (!c.ctaBannerCta)     c.ctaBannerCta     = _ctaPick('ctaBannerCta', 4);
+            }
         }
 
         var sectionsHTML = '';

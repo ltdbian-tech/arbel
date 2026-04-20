@@ -1748,7 +1748,25 @@
             });
         }
         if (!design.sectionAnims || typeof design.sectionAnims !== 'object') {
-            var anims = ['fadeUp', 'slideLeft', 'slideRight', 'scale', 'stagger', 'blur'];
+            // Per-site-type motion profiles — keep the rhythm on-brand
+            // instead of fully random. Fashion floats slowly, gaming snaps,
+            // shops pop, portfolios blur-in, restaurants drift.
+            var motionByType = {
+                gaming:      ['slideLeft', 'slideRight', 'stagger', 'scale'],
+                esports:     ['slideLeft', 'slideRight', 'stagger', 'scale'],
+                shop:        ['fadeUp', 'stagger', 'scale', 'fadeUp'],
+                fashion:     ['fade', 'fadeUp', 'blur', 'fade'],
+                restaurant:  ['fade', 'fadeUp', 'fade'],
+                music:       ['slideLeft', 'scale', 'stagger', 'slideRight'],
+                podcast:     ['fadeUp', 'stagger', 'fade'],
+                portfolio:   ['blur', 'fadeUp', 'fade'],
+                photography: ['fade', 'blur', 'fadeUp'],
+                event:       ['slideLeft', 'scale', 'stagger'],
+                saas:        ['fadeUp', 'slideLeft', 'stagger'],
+                app:         ['fadeUp', 'slideLeft', 'stagger'],
+                blog:        ['fadeUp', 'fade', 'blur']
+            };
+            var anims = motionByType[state.aiSiteType] || ['fadeUp', 'slideLeft', 'slideRight', 'scale', 'stagger', 'blur'];
             design.sectionAnims = {};
             sectionIds.forEach(function (id) {
                 design.sectionAnims[id] = anims[Math.floor(Math.random() * anims.length)];
