@@ -573,6 +573,18 @@
                                         <option value="slash">Mono slash prefix</option>
                                     </select>
                                 </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Cursor Style</label>
+                                    <select class="gen-input design-opt" id="optCursorStyle">
+                                        <option value="">Default (dot + ring)</option>
+                                        <option value="ring-only">Ring only (accent outline)</option>
+                                        <option value="dot-only">Dot only (accent fill)</option>
+                                        <option value="crosshair">Crosshair</option>
+                                        <option value="magnetic">Magnetic (tinted halo)</option>
+                                        <option value="spotlight">Spotlight (dim page)</option>
+                                        <option value="none">None (native cursor)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
@@ -841,6 +853,8 @@
                                             <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="density"><span class="toggle-label">Density / spacing</span></label>
                                             <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="corners"><span class="toggle-label">Corner radius</span></label>
                                             <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="toneOfVoice"><span class="toggle-label">Tone of voice</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="logoStyle"><span class="toggle-label">Logo style</span></label>
+                                            <label class="toggle-item" style="margin:0"><input type="checkbox" class="ai-lock" data-lock="cursorStyle"><span class="toggle-label">Cursor style</span></label>
                                         </div>
                                     </details>
                                     <div class="ai-status" id="aiStatus"></div>
@@ -1104,6 +1118,15 @@
                     <!-- Canvas / Iframe Preview -->
                     <div class="bfs-canvas" id="bfsCanvas">
                         <div class="preview-container" id="previewContainer">
+                            <!-- Self-audit banner -->
+                            <div class="audit-banner" id="auditBanner" hidden>
+                                <button class="audit-summary" id="auditSummary" type="button" aria-expanded="false">
+                                    <span class="audit-icon" id="auditIcon">?</span>
+                                    <span class="audit-label mono" id="auditLabel">Audit: ready</span>
+                                    <span class="audit-chev">▾</span>
+                                </button>
+                                <div class="audit-list" id="auditList" hidden></div>
+                            </div>
                             <div class="preview-frame" id="previewFrame">
                                 <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin" allow="autoplay" title="Website preview"></iframe>
                             </div>

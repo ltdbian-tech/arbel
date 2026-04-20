@@ -187,6 +187,7 @@
         optAboutFlip: $('optAboutFlip'),
         optToneOfVoice: $('optToneOfVoice'),
         optLogoStyle: $('optLogoStyle'),
+        optCursorStyle: $('optCursorStyle'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -225,6 +226,54 @@
         repoLink: $('repoLink'),
         retryDeploy: $('retryDeploy')
     };
+
+    /* ─── Self-Audit Banner Wiring ─── */
+    (function initAuditBanner() {
+        var banner = $('auditBanner');
+        var summary = $('auditSummary');
+        var list = $('auditList');
+        var iconEl = $('auditIcon');
+        var labelEl = $('auditLabel');
+        if (!banner || !summary) return;
+
+        summary.addEventListener('click', function () {
+            var open = banner.getAttribute('data-open') === 'true';
+            banner.setAttribute('data-open', open ? 'false' : 'true');
+            summary.setAttribute('aria-expanded', open ? 'false' : 'true');
+            list.hidden = open;
+        });
+
+        window.addEventListener('arbel:audit', function (e) {
+            var r = e.detail || {};
+            if (r.error) { banner.hidden = true; return; }
+            banner.hidden = false;
+            banner.classList.remove('audit-ok', 'audit-warn', 'audit-error');
+            if (r.ok) {
+                banner.classList.add('audit-ok');
+                iconEl.textContent = '\u2713';
+                labelEl.textContent = 'Audit: all clean';
+            } else if (r.errors > 0) {
+                banner.classList.add('audit-error');
+                iconEl.textContent = '!';
+                labelEl.textContent = 'Audit: ' + r.errors + ' error' + (r.errors > 1 ? 's' : '') +
+                    (r.warnings ? ', ' + r.warnings + ' warning' + (r.warnings > 1 ? 's' : '') : '');
+            } else {
+                banner.classList.add('audit-warn');
+                iconEl.textContent = '!';
+                labelEl.textContent = 'Audit: ' + r.warnings + ' warning' + (r.warnings > 1 ? 's' : '');
+            }
+            // Populate list
+            list.innerHTML = '';
+            (r.issues || []).forEach(function (issue) {
+                var row = document.createElement('div');
+                row.className = 'audit-item';
+                row.innerHTML = '<span class="audit-item-level ' + issue.level + '">' + issue.level + '</span>' +
+                    '<span class="audit-item-msg"></span>';
+                row.querySelector('.audit-item-msg').textContent = issue.msg;
+                list.appendChild(row);
+            });
+        });
+    })();
 
     /* ─── Consent Gate ─── */
     (function initConsent() {
@@ -1872,6 +1921,7 @@
         state.aiLabelStyle    = design.labelStyle;
         state.aiHeroArt       = design.heroArt;
         state.aiLogoStyle     = design.logoStyle;
+        state.aiCursorStyle   = design.cursorStyle;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2263,6 +2313,7 @@
         }
         if (els.optAboutFlip && els.optAboutFlip.checked) cfg.aboutFlip = true;
         var lg = v(els.optLogoStyle);          if (lg)   cfg.logoStyle = lg;
+        var cu = v(els.optCursorStyle);        if (cu)   cfg.cursorStyle = cu;
         // Font pair — translate semantic ID → concrete headingFont/bodyFont tokens
         var fp = v(els.optFontPair);
         if (fp) {
@@ -2403,6 +2454,7 @@
         if (state.aiLabelStyle) cfg.labelStyle = state.aiLabelStyle;
         if (state.aiHeroArt) cfg.heroArt = state.aiHeroArt;
         if (state.aiLogoStyle) cfg.logoStyle = state.aiLogoStyle;
+        if (state.aiCursorStyle) cfg.cursorStyle = state.aiCursorStyle;
 
         // Manual design-option overrides (classic-wizard dropdowns)
         // Applied AFTER AI so the user can override any axis by hand.
@@ -2571,6 +2623,17 @@
         els.deployProgress.style.display = '';
         els.deployError.style.display = 'none';
 
+        // Emit portable design-tokens manifest alongside the built site (if available)
+        try {
+            if (ArbelCompiler.buildTokensJSON && state.compiledFiles) {
+                var _tokCfg = buildConfig();
+                state.compiledFiles['tokens.json'] = ArbelCompiler.buildTokensJSON(_tokCfg);
+                if (ArbelCompiler.buildTokensCSS) {
+                    state.compiledFiles['tokens.css'] = ArbelCompiler.buildTokensCSS(_tokCfg);
+                }
+            }
+        } catch (e) { /* non-fatal */ }
+
         // Deploy progress UI
         var steps = ['ds1', 'ds2', 'ds3', 'ds4'];
 
@@ -2737,7 +2800,8 @@
                     portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
                     aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false,
                     toneOfVoice: els.optToneOfVoice ? els.optToneOfVoice.value : '',
-                    logoStyle: els.optLogoStyle ? els.optLogoStyle.value : ''
+                    logoStyle: els.optLogoStyle ? els.optLogoStyle.value : '',
+                    cursorStyle: els.optCursorStyle ? els.optCursorStyle.value : ''
                 },
                 aiLocks: (function () {
                     var out = {};
@@ -2882,6 +2946,7 @@
             if (els.optAboutFlip) els.optAboutFlip.checked = !!d.aboutFlip;
             _set(els.optToneOfVoice, d.toneOfVoice);
             _set(els.optLogoStyle, d.logoStyle);
+            _set(els.optCursorStyle, d.cursorStyle);
             if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(d.toneOfVoice || '');
         }
         // AI axis locks

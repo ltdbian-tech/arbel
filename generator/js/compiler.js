@@ -55,6 +55,27 @@ window.ArbelCompiler = (function () {
         return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
     }
 
+    /** Generate an inline SVG favicon data URI from the brand initial + accent color.
+     *  Returns <link> tags for favicon + apple-touch-icon + SVG theme color meta. */
+    function _faviconTags(cfg) {
+        var initial = _initials(cfg.brandName);
+        var accent  = cfg.accent || '#6C5CE7';
+        // SVG favicon — crisp at any size, ~300B inline
+        var svg =
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+            '<rect width="64" height="64" rx="14" fill="' + esc(accent) + '"/>' +
+            '<text x="50%" y="54%" text-anchor="middle" dominant-baseline="middle" ' +
+            'font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" ' +
+            'font-size="34" font-weight="800" fill="#fff" letter-spacing="-1">' +
+            esc(initial) + '</text></svg>';
+        var dataUri = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        var tags = '';
+        tags += '  <link rel="icon" type="image/svg+xml" href="' + dataUri + '">\n';
+        tags += '  <link rel="apple-touch-icon" href="' + dataUri + '">\n';
+        tags += '  <meta name="theme-color" content="' + esc(accent) + '">\n';
+        return tags;
+    }
+
     /** Render the site logo. cfg.logoStyle controls which mark is produced.
      *  Returns inner HTML for the <a class="logo"> element (or full element when footer=true). */
     function _renderLogoInner(cfg) {
@@ -1179,6 +1200,9 @@ window.ArbelCompiler = (function () {
         }
         if (seo.favicon) {
             metaBlock += '  <link rel="icon" href="' + escHref(seo.favicon) + '">\n';
+        } else {
+            // Auto-generate an inline SVG favicon from brand initial + accent color
+            metaBlock += _faviconTags(cfg);
         }
         // Open Graph
         metaBlock += '  <meta property="og:type" content="website">\n';
@@ -1225,6 +1249,8 @@ window.ArbelCompiler = (function () {
                 if (['bar','dot','number','stripe'].indexOf(ls) !== -1) cls.push('label-' + ls);
                 var ha = cfg.heroArt;
                 if (['grid','lines','circle','dots','cross'].indexOf(ha) !== -1) cls.push('heroart-' + ha);
+                var cs = cfg.cursorStyle;
+                if (['ring-only','dot-only','crosshair','spotlight','magnetic','none'].indexOf(cs) !== -1) cls.push('cursor-' + cs);
                 return cls.length ? ' class="' + cls.join(' ') + '"' : '';
             })() + '>\n\n' +
             '  <!-- Preloader -->\n' +
@@ -1318,7 +1344,22 @@ window.ArbelCompiler = (function () {
             '.cursor { position: fixed; top: 0; left: 0; z-index: 10000; pointer-events: none; mix-blend-mode: difference; }\n' +
             '.cursor-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); }\n' +
             '.cursor-ring { width: 36px; height: 36px; border: 1.5px solid rgba(255,255,255,0.5); border-radius: 50%; position: absolute; top: -15px; left: -15px; transform: translate(-50%, -50%); transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s; }\n' +
-            '@media (pointer: coarse) { .cursor { display: none; } }\n\n' +
+            '@media (pointer: coarse) { .cursor { display: none; } }\n' +
+            '/* Cursor variants (body.cursor-<name>) */\n' +
+            '.cursor-ring-only .cursor-dot { display: none; }\n' +
+            '.cursor-ring-only .cursor-ring { border-width: 2px; border-color: var(--accent); }\n' +
+            '.cursor-dot-only .cursor-ring { display: none; }\n' +
+            '.cursor-dot-only .cursor-dot { width: 10px; height: 10px; background: var(--accent); mix-blend-mode: normal; }\n' +
+            '.cursor-crosshair .cursor-ring { width: 48px; height: 48px; border-color: transparent; background: linear-gradient(var(--accent),var(--accent)) center/2px 100% no-repeat, linear-gradient(var(--accent),var(--accent)) center/100% 2px no-repeat; border-radius: 0; }\n' +
+            '.cursor-crosshair .cursor-dot { display: none; }\n' +
+            '.cursor-spotlight { cursor: none; }\n' +
+            '.cursor-spotlight .cursor { mix-blend-mode: normal; }\n' +
+            '.cursor-spotlight .cursor-dot { display: none; }\n' +
+            '.cursor-spotlight .cursor-ring { width: 340px; height: 340px; top: -170px; left: -170px; border: none; border-radius: 50%; background: radial-gradient(circle, transparent 0%, rgba(0,0,0,0.85) 70%); mix-blend-mode: multiply; }\n' +
+            '.cursor-magnetic .cursor-ring { width: 24px; height: 24px; top: -9px; left: -9px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 20%, transparent); }\n' +
+            '.cursor-magnetic .cursor-dot { background: var(--accent); mix-blend-mode: normal; }\n' +
+            '.cursor-none * { cursor: default !important; }\n' +
+            '.cursor-none .cursor { display: none; }\n\n' +
             '/* ═══ NOISE ═══ */\n' +
             '.noise-bg { position: fixed; inset: 0; z-index: 9998; pointer-events: none; opacity: 0.035; background: url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E"); }\n\n' +
             (cfg.navEnabled !== false ?
@@ -2028,6 +2069,7 @@ window.ArbelCompiler = (function () {
             '  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
             '  <title>' + esc(page.seoTitle || page.name) + ' \u2014 ' + esc(cfg.brandName) + '</title>\n' +
             (page.seoDesc ? '  <meta name="description" content="' + esc(page.seoDesc) + '">\n' : '') +
+            _faviconTags(cfg) +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
             '  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">\n' +
@@ -2575,6 +2617,95 @@ window.ArbelCompiler = (function () {
         return _getAnimJsFile(_getAnimCategory(style));
     }
 
+    /** Emit a portable design-tokens manifest (JSON) covering every axis the
+     *  user or AI picked. Lets designers/devs import the system elsewhere. */
+    function buildTokensJSON(cfg) {
+        cfg = _defaults(cfg);
+        var dt = cfg.designTokens || {};
+        var tokens = {
+            $schema: 'https://arbel.live/schemas/tokens.v1.json',
+            generator: 'arbel',
+            version: 1,
+            brand: {
+                name: cfg.brandName,
+                tagline: cfg.tagline || '',
+                initial: _initials(cfg.brandName)
+            },
+            color: {
+                accent: cfg.accent,
+                background: dt.bg || cfg.bgColor || null,
+                foreground: dt.text || null,
+                foregroundMuted: dt.textMuted || null,
+                surface: dt.surface || null,
+                border: dt.border || null
+            },
+            typography: {
+                headingFont: dt.headingFont || null,
+                bodyFont: dt.bodyFont || null,
+                baseSize: dt.baseSize || null,
+                scale: dt.scale || null
+            },
+            space: {
+                unit: dt.spaceUnit || null
+            },
+            radius: dt.radius != null ? dt.radius : null,
+            axes: {
+                style: cfg.style,
+                heroLayout: cfg.heroLayout || null,
+                heroArt: cfg.heroArt || null,
+                heroEyebrow: cfg.heroEyebrow || null,
+                typeScale: cfg.typeScale || null,
+                headingAlign: cfg.headingAlign || null,
+                containerWidth: cfg.containerWidth || null,
+                cardTreatment: cfg.cardTreatment || null,
+                buttonStyle: cfg.buttonStyle || null,
+                navStyle: cfg.navStyle || null,
+                footerStyle: cfg.footerStyle || null,
+                sectionRhythm: cfg.sectionRhythm || null,
+                dividerStyle: cfg.dividerStyle || null,
+                labelStyle: cfg.labelStyle || null,
+                logoStyle: cfg.logoStyle || null,
+                cursorStyle: cfg.cursorStyle || null,
+                aboutFlip: !!cfg.aboutFlip,
+                pricingAccent: cfg.pricingAccent || null
+            },
+            sections: {
+                order: cfg.sectionOrder || null,
+                counts: cfg.sectionCounts || null,
+                layouts: cfg.sectionLayouts || null,
+                tones: cfg.sectionTones || null,
+                anims: cfg.sectionAnims || null
+            }
+        };
+        return JSON.stringify(tokens, null, 2);
+    }
+
+    /** Emit the same axes as a CSS custom-properties file for drop-in consumption. */
+    function buildTokensCSS(cfg) {
+        cfg = _defaults(cfg);
+        var dt = cfg.designTokens || {};
+        var lines = [
+            '/* Arbel design tokens — auto-generated',
+            ' * Drop into any project: <link rel="stylesheet" href="tokens.css"> or @import.',
+            ' */',
+            ':root {',
+            '  --arbel-accent: ' + (cfg.accent || '#6C5CE7') + ';'
+        ];
+        if (dt.bg) lines.push('  --arbel-bg: ' + dt.bg + ';');
+        if (dt.text) lines.push('  --arbel-fg: ' + dt.text + ';');
+        if (dt.textMuted) lines.push('  --arbel-fg-muted: ' + dt.textMuted + ';');
+        if (dt.surface) lines.push('  --arbel-surface: ' + dt.surface + ';');
+        if (dt.border) lines.push('  --arbel-border: ' + dt.border + ';');
+        if (dt.headingFont) lines.push('  --arbel-font-heading: ' + dt.headingFont + ';');
+        if (dt.bodyFont)    lines.push('  --arbel-font-body: '    + dt.bodyFont + ';');
+        if (dt.baseSize)    lines.push('  --arbel-base-size: '    + dt.baseSize + 'px;');
+        if (dt.scale)       lines.push('  --arbel-scale: '        + dt.scale + ';');
+        if (dt.spaceUnit)   lines.push('  --arbel-space-unit: '   + dt.spaceUnit + 'px;');
+        if (dt.radius != null) lines.push('  --arbel-radius: ' + dt.radius + 'px;');
+        lines.push('}');
+        return lines.join('\n') + '\n';
+    }
+
     return {
         compile: compile,
         getStyles: getStyles,
@@ -2583,6 +2714,8 @@ window.ArbelCompiler = (function () {
         getAnimConfig: getAnimConfig,
         getAnimCategory: getAnimCategory,
         buildAnimJS: buildAnimJS,
-        getAnimJsFile: getAnimJsFile
+        getAnimJsFile: getAnimJsFile,
+        buildTokensJSON: buildTokensJSON,
+        buildTokensCSS: buildTokensCSS
     };
 })();

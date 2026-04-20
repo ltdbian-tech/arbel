@@ -142,6 +142,15 @@ window.ArbelPreview = (function () {
                     try { iframe.contentWindow.scrollTo(0, savedScrollY); } catch (e) {}
                 }, 80);
             }
+            // Run self-audit once the preview paints (non-fatal)
+            setTimeout(function () {
+                try {
+                    var report = _audit(iframe);
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('arbel:audit', { detail: report }));
+                    }
+                } catch (e) { /* ignore */ }
+            }, 400);
         };
         iframe.addEventListener('load', onLoad);
 
@@ -177,9 +186,146 @@ window.ArbelPreview = (function () {
         _iframe = null;
     }
 
+    // ─────────────────────────────────────────────────────────────
+    // SELF-AUDIT — WCAG contrast, heading length, CTA dup, alt, h-hierarchy
+    // ─────────────────────────────────────────────────────────────
+    function _parseColor(str) {
+        if (!str) return null;
+        var m = str.match(/rgba?\(([^)]+)\)/);
+        if (!m) return null;
+        var parts = m[1].split(',').map(function (s) { return parseFloat(s.trim()); });
+        if (parts.length < 3 || parts.some(isNaN)) return null;
+        return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+    }
+    function _relLum(c) {
+        function ch(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+        return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+    }
+    function _contrast(fg, bg) {
+        if (!fg || !bg) return null;
+        var L1 = _relLum(fg), L2 = _relLum(bg);
+        var hi = Math.max(L1, L2), lo = Math.min(L1, L2);
+        return (hi + 0.05) / (lo + 0.05);
+    }
+    /** Walk up ancestors to find first opaque background color */
+    function _effectiveBg(el, win) {
+        var cur = el;
+        while (cur && cur.nodeType === 1) {
+            var s = win.getComputedStyle(cur);
+            var c = _parseColor(s.backgroundColor);
+            if (c && c.a > 0.5) return c;
+            cur = cur.parentElement;
+        }
+        return { r: 255, g: 255, b: 255, a: 1 };
+    }
+    function _audit(iframe) {
+        var issues = [];
+        var doc, win;
+        try { doc = iframe.contentDocument; win = iframe.contentWindow; }
+        catch (e) { return { issues: issues, error: 'cross-origin' }; }
+        if (!doc || !doc.body) return { issues: issues, error: 'no-doc' };
+
+        // 1. Contrast — sample visible text-bearing elements (cap at 200 for perf)
+        var textSel = 'h1,h2,h3,h4,p,a,button,span,li,.btn';
+        var nodes = Array.prototype.slice.call(doc.querySelectorAll(textSel), 0, 200);
+        var seenPairs = {};
+        nodes.forEach(function (el) {
+            if (!el.textContent || !el.textContent.trim()) return;
+            var s = win.getComputedStyle(el);
+            if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) < 0.3) return;
+            var fg = _parseColor(s.color);
+            var bg = _effectiveBg(el, win);
+            var ratio = _contrast(fg, bg);
+            if (ratio == null) return;
+            var fontSize = parseFloat(s.fontSize) || 16;
+            var fontWeight = parseInt(s.fontWeight, 10) || 400;
+            var isLarge = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
+            var required = isLarge ? 3.0 : 4.5;
+            if (ratio < required) {
+                var key = s.color + '|' + s.backgroundColor + '|' + el.tagName;
+                if (seenPairs[key]) return;
+                seenPairs[key] = true;
+                issues.push({
+                    level: ratio < required * 0.7 ? 'error' : 'warn',
+                    type: 'contrast',
+                    msg: 'Low contrast ' + ratio.toFixed(2) + ':1 (needs ' + required + ':1) on <' +
+                         el.tagName.toLowerCase() + '> "' +
+                         el.textContent.trim().slice(0, 40) + '"'
+                });
+            }
+        });
+
+        // 2. Headings too long (>120 chars)
+        doc.querySelectorAll('h1,h2,h3').forEach(function (h) {
+            var t = (h.textContent || '').trim();
+            if (t.length > 120) {
+                issues.push({
+                    level: 'warn', type: 'heading-length',
+                    msg: '<' + h.tagName.toLowerCase() + '> is ' + t.length + ' chars (>120) — "' + t.slice(0, 50) + '…"'
+                });
+            }
+        });
+
+        // 3. Duplicate CTA text
+        var ctaTexts = {};
+        doc.querySelectorAll('a.btn, button.btn, .btn').forEach(function (el) {
+            var t = (el.textContent || '').trim().toLowerCase();
+            if (!t || t.length < 2) return;
+            ctaTexts[t] = (ctaTexts[t] || 0) + 1;
+        });
+        Object.keys(ctaTexts).forEach(function (t) {
+            if (ctaTexts[t] >= 3) {
+                issues.push({
+                    level: 'warn', type: 'cta-duplicate',
+                    msg: 'CTA text "' + t + '" appears ' + ctaTexts[t] + '× — consider varying'
+                });
+            }
+        });
+
+        // 4. Images missing alt
+        var imgsNoAlt = 0;
+        doc.querySelectorAll('img').forEach(function (img) {
+            if (!img.hasAttribute('alt')) imgsNoAlt++;
+        });
+        if (imgsNoAlt > 0) {
+            issues.push({
+                level: 'warn', type: 'alt',
+                msg: imgsNoAlt + ' image(s) missing alt attribute'
+            });
+        }
+
+        // 5. Heading hierarchy — skipped levels (h1→h3, h2→h4, etc)
+        var levels = [];
+        doc.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(function (h) {
+            levels.push(parseInt(h.tagName.charAt(1), 10));
+        });
+        for (var i = 1; i < levels.length; i++) {
+            if (levels[i] - levels[i - 1] > 1) {
+                issues.push({
+                    level: 'warn', type: 'heading-skip',
+                    msg: 'Heading jumps from h' + levels[i - 1] + ' to h' + levels[i] + ' (skip)'
+                });
+                break;
+            }
+        }
+
+        // 6. h1 count
+        var h1Count = doc.querySelectorAll('h1').length;
+        if (h1Count === 0) issues.push({ level: 'warn', type: 'h1', msg: 'No <h1> found on page' });
+        else if (h1Count > 1) issues.push({ level: 'warn', type: 'h1', msg: h1Count + ' <h1> elements — use one per page' });
+
+        return {
+            issues: issues,
+            errors: issues.filter(function (i) { return i.level === 'error'; }).length,
+            warnings: issues.filter(function (i) { return i.level === 'warn'; }).length,
+            ok: issues.length === 0
+        };
+    }
+
     return {
         render: render,
         setDevice: setDevice,
-        destroy: destroy
+        destroy: destroy,
+        audit: function () { return _iframe ? _audit(_iframe) : null; }
     };
 })();
