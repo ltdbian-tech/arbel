@@ -491,6 +491,46 @@ window.ArbelAI = (function () {
         return raw;
     }
 
+    /** Slim prompt: design-only, reuses existing copy (~75% fewer output tokens). */
+    function _buildDesignOnlyPrompt(description, industry, brandName) {
+        var moods = ['editorial','brutalist','neo-minimal','vaporwave','organic','industrial','playful','cinematic','scandi','cyberpunk','art-deco','handcrafted'];
+        var palettes = ['terracotta+sand+ink','emerald+gold+cream','magenta+charcoal+white','rose+taupe+bone','cobalt+amber+off-white','forest+bronze+parchment','blush+plum+ivory','citrus+navy+snow','lilac+sage+midnight','crimson+black+eggshell','turquoise+rust+linen','violet+lemon+slate'];
+        var mood = moods[Math.floor(Math.random()*moods.length)];
+        var palette = palettes[Math.floor(Math.random()*palettes.length)];
+        var seed = Math.random().toString(36).slice(2,10);
+        var presetIds = 'obsidian, aurora, ember, frost, neon, silk, constellation, fireflies, snow, nebula, matrix, bokeh, spark, plasma, stardust, rain, vortex, circuits, confetti, galaxy, morphBlob, lavaLamp, auroraBlob, sunsetBlob, oceanBlob, cosmicBlob, meshGrad, noiseGrad, prism, iridescent, northern, sineWaves, topology, ripple, liquidWave';
+        return 'You are a brand designer. Pick a FRESH visual design. No copy. Return raw JSON only.\n\n' +
+            'Business: ' + (brandName||'(from description)') + '\nIndustry: ' + (industry||'') + '\nDescription: ' + description + '\n' +
+            'Mood: ' + mood + ' · Palette: ' + palette + ' · Seed: ' + seed + '\n\n' +
+            'Shape: { "design": {\n' +
+            '  presetId: one of [' + presetIds + '], accentOverride?:#RRGGBB, bgOverride?:#RRGGBB,\n' +
+            '  density:"compact|cozy|spacious", corners:"sharp|soft|pill", containerWidth:"narrow|normal|wide", typeScale:"tight|normal|dramatic",\n' +
+            '  fontPair:"editorial|tech|humanist|display|mono|luxe|brutalist|futurist|classical|modern|boutique|retail|chef|arena|vinyl|runway|streetwear|athletic|magazine",\n' +
+            '  heroLayout:"centered|left|split|minimal|name-lockup|product-feature|dish-photo|search-first",\n' +
+            '  sectionOrder: 3-6 from [services,portfolio,about,process,testimonials,pricing,faq,statsStrip,logoCloud,ctaBanner,team],\n' +
+            '  cardTreatment:"default|bordered|filled|floating|minimal|glass", navStyle:"default|pill|minimal|ghost", buttonStyle:"default|solid|outline|gradient|sharp|lifted",\n' +
+            '  sectionRhythm:"normal|compact|roomy|alternating", dividerStyle:"none|line|gradient|numbered|dotline", footerStyle:"default|minimal|columns|centered|bigLogo|stripe", labelStyle:"default|bar|dot|number|stripe",\n' +
+            '  heroArt:"none|grid|lines|circle|dots|cross|blob|wave|triangle|zigzag|arc|rings|stripes|scribble|checker",\n' +
+            '  logoStyle:""|"monogram|mark-left|dot|bracket|underline|slash", cursorStyle:""|"ring-only|dot-only|crosshair|magnetic|spotlight|none",\n' +
+            '  sectionTones:{id:"dark|light|accent"}, sectionAnims:{id:"fade|fadeUp|slideLeft|slideRight|scale|stagger|blur|none"},\n' +
+            '  aboutFlip:bool, pricingAccent:1|2|3, headingAlign:"left|center|right", heroEyebrow:"≤24ch uppercase or empty",\n' +
+            '  rationale:"one sentence"\n' +
+            '} }\nContrast ≥ 4.5. Pick something distinct from a default.';
+    }
+
+    /** Generate ONLY a fresh design — reuses existing copy. */
+    async function generateDesignOnly(description, industry, brandName) {
+        var provider = ArbelKeyManager.getProvider('text') || ArbelKeyManager.getProvider();
+        var apiKey = ArbelKeyManager.getKey('text') || ArbelKeyManager.getKey();
+        if (!apiKey) throw new Error('No API key configured. Add your key in the AI panel.');
+        var prompt = _buildDesignOnlyPrompt(description || '', industry || '', brandName || '');
+        var raw = await _callForProvider(provider, prompt, apiKey);
+        if (!raw || typeof raw !== 'object' || !raw.design) {
+            throw new Error('AI returned an unexpected shape. Try again.');
+        }
+        return raw;
+    }
+
     /** Infer provider from an API key prefix — used for the provider auto-detect UX */
     function detectProvider(key) {
         if (!key || typeof key !== 'string') return null;
