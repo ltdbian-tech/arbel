@@ -107,6 +107,68 @@ window.ArbelCompiler = (function () {
         }
     }
 
+    /** Build a per-type "nav extra" snippet — e.g. gaming shows a QUEUE
+     *  button, shop shows Cart, restaurant shows Book, music shows Listen.
+     *  Falls back to empty string so classic sites still render clean. */
+    function _renderNavExtra(cfg) {
+        if (cfg.navExtraHtml === '' || cfg.navExtraDisabled) return '';
+        if (typeof cfg.navExtraHtml === 'string' && cfg.navExtraHtml) return cfg.navExtraHtml;
+        var stp = (window.ArbelSiteType && window.ArbelSiteType.profile) ? window.ArbelSiteType.profile(cfg.siteType) : null;
+        if (!stp || !stp.navExtra) return '';
+        var ne = stp.navExtra; // { label, href, kind }
+        var label = esc(ne.label || 'Start');
+        var href = ne.href || '#contact';
+        var kind = ne.kind || 'button'; // 'button' | 'icon-cart' | 'text'
+        if (kind === 'icon-cart') {
+            return '<a href="' + href + '" class="nav-extra-cart" data-arbel-id="nav-extra-cart" aria-label="Cart">' +
+                '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' +
+                '<span class="nav-extra-cart-label" data-arbel-edit="text">' + label + '</span>' +
+                '</a>';
+        }
+        if (kind === 'text') {
+            return '<a href="' + href + '" class="nav-extra-link" data-arbel-id="nav-extra-cta" data-arbel-edit="text">' + label + '</a>';
+        }
+        // default: primary button
+        return '<a href="' + href + '" class="btn btn-primary nav-extra-cta" data-arbel-id="nav-extra-cta" data-arbel-edit="text">' + label + '</a>';
+    }
+
+    /** Build a category-aware rich footer when the profile declares a
+     *  footerRecipe. Returns the inner HTML for the footer-inner container
+     *  (columns, copy, tagline, etc). Falls back to null so the caller can
+     *  render the existing minimal footer. */
+    function _renderRichFooter(cfg) {
+        var stp = (window.ArbelSiteType && window.ArbelSiteType.profile) ? window.ArbelSiteType.profile(cfg.siteType) : null;
+        var recipe = cfg.footerRecipe || (stp && stp.footerRecipe);
+        if (!recipe || !Array.isArray(recipe.columns) || !recipe.columns.length) return null;
+        var brand = esc(cfg.brandName || 'Brand');
+        var tagline = esc(recipe.tagline || cfg.tagline || '');
+        var logoHtml = '<span class="logo logo--' + (cfg.logoStyle || 'wordmark') + '">' + _renderLogoInner(cfg) + '</span>';
+        var colsHtml = '';
+        recipe.columns.forEach(function (col, i) {
+            var heading = esc(col.heading || '');
+            var items = '';
+            (col.items || []).forEach(function (it, j) {
+                if (typeof it === 'string') {
+                    items += '<li data-arbel-id="footer-col' + (i+1) + '-' + (j+1) + '" data-arbel-edit="text">' + esc(it) + '</li>';
+                } else if (it && it.label) {
+                    var href = it.href || '#';
+                    items += '<li><a href="' + href + '" data-arbel-id="footer-col' + (i+1) + '-' + (j+1) + '" data-arbel-edit="text">' + esc(it.label) + '</a></li>';
+                }
+            });
+            colsHtml +=
+                '      <div class="footer-col">\n' +
+                '        <div class="footer-col-heading" data-arbel-id="footer-col' + (i+1) + '-heading" data-arbel-edit="text">' + heading + '</div>\n' +
+                '        <ul class="footer-col-list">' + items + '</ul>\n' +
+                '      </div>\n';
+        });
+        return '      <div class="footer-brand-col">\n' +
+            '        ' + logoHtml + '\n' +
+            (tagline ? '        <p class="footer-tagline" data-arbel-id="footer-tagline" data-arbel-edit="text">' + tagline + '</p>\n' : '') +
+            '        <p class="footer-copy mono">&copy; <script>document.write(new Date().getFullYear())<\/script> ' + brand + '</p>\n' +
+            '      </div>\n' +
+            colsHtml;
+    }
+
     /** Build full site config with defaults */
     function _defaults(cfg) {
         var d = Object.assign({
@@ -1872,17 +1934,25 @@ window.ArbelCompiler = (function () {
             '      <a href="#" class="logo logo--' + (cfg.logoStyle || 'wordmark') + '" data-arbel-id="site-logo" data-arbel-edit="text">' + _renderLogoInner(cfg) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks +
             '      </nav>\n' +
-            '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
+            '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra">' + _renderNavExtra(cfg) + '</div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n' +
             '  </header>\n\n' : '') +
             '  <main>\n' + sectionsHTML + '  </main>\n\n' +
-            '  <footer class="footer" data-brand="' + esc(cfg.brandName) + '">\n' +
-            '    <div class="footer-inner">\n' +
-            '      <span class="logo logo--' + (cfg.logoStyle || 'wordmark') + '">' + _renderLogoInner(cfg) + '</span>\n' +
-            '      <span class="mono">&copy; <script>document.write(new Date().getFullYear())<\/script> All rights reserved.</span>\n' +
-            '    </div>\n' +
-            '  </footer>\n\n' +
+            (function () {
+                var rich = _renderRichFooter(cfg);
+                if (rich) {
+                    return '  <footer class="footer footer-columns" data-brand="' + esc(cfg.brandName) + '">\n' +
+                        '    <div class="footer-inner">\n' + rich + '    </div>\n' +
+                        '  </footer>\n\n';
+                }
+                return '  <footer class="footer" data-brand="' + esc(cfg.brandName) + '">\n' +
+                    '    <div class="footer-inner">\n' +
+                    '      <span class="logo logo--' + (cfg.logoStyle || 'wordmark') + '">' + _renderLogoInner(cfg) + '</span>\n' +
+                    '      <span class="mono">&copy; <script>document.write(new Date().getFullYear())<\/script> All rights reserved.</span>\n' +
+                    '    </div>\n' +
+                    '  </footer>\n\n';
+            }()) +
             '  <div class="arbel-badge">built with <a href="https://arbel.live" target="_blank" rel="noopener">arbel.live</a></div>\n\n' +
             (cat === 'shader' ? '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' : '') +
             '  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>\n' +
@@ -2228,6 +2298,26 @@ window.ArbelCompiler = (function () {
             '.footer-columns .footer { padding: 4rem 0 2rem; }\n' +
             '.footer-columns .footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; align-items: start; }\n' +
             '@media (max-width: 768px) { .footer-columns .footer-inner { grid-template-columns: 1fr 1fr; gap: 2rem; } .footer-biglogo .footer::before { font-size: 6rem; } }\n\n' +
+            '/* ═══ RICH FOOTER (profile-driven) ═══ */\n' +
+            '.footer-columns .footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; align-items: start; padding: 2rem 2rem 0; }\n' +
+            '.footer-columns .footer-brand-col { display: flex; flex-direction: column; gap: 0.9rem; max-width: 320px; }\n' +
+            '.footer-columns .footer-tagline { color: var(--fg2); font-size: 0.82rem; line-height: 1.6; margin: 0; }\n' +
+            '.footer-columns .footer-copy { color: var(--fg2); font-size: 0.7rem; margin-top: auto; opacity: 0.8; }\n' +
+            '.footer-columns .footer-col { display: flex; flex-direction: column; gap: 0.6rem; }\n' +
+            '.footer-columns .footer-col-heading { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg); opacity: 0.72; margin-bottom: 0.4rem; }\n' +
+            '.footer-columns .footer-col-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.4rem; }\n' +
+            '.footer-columns .footer-col-list li { color: var(--fg2); font-size: 0.82rem; line-height: 1.5; }\n' +
+            '.footer-columns .footer-col-list a { color: inherit; text-decoration: none; transition: color 0.2s var(--ease); }\n' +
+            '.footer-columns .footer-col-list a:hover { color: var(--accent); }\n' +
+            '@media (max-width: 768px) { .footer-columns .footer-inner { grid-template-columns: 1fr; gap: 2rem; } .footer-columns .footer-brand-col { max-width: none; } }\n\n' +
+            '/* ═══ NAV EXTRA (per-type CTA) ═══ */\n' +
+            '.nav-extra .btn.nav-extra-cta { padding: 0.6rem 1.3rem; font-size: 0.65rem; }\n' +
+            '.nav-extra .nav-extra-link { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg); text-decoration: none; padding: 0.5rem 0.75rem; transition: color 0.2s var(--ease); }\n' +
+            '.nav-extra .nav-extra-link:hover { color: var(--accent); }\n' +
+            '.nav-extra .nav-extra-cart { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.9rem; border: 1px solid var(--border); border-radius: 999px; color: var(--fg); text-decoration: none; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.2s var(--ease); }\n' +
+            '.nav-extra .nav-extra-cart:hover { border-color: var(--accent); color: var(--accent); }\n' +
+            '.nav-extra .nav-extra-cart svg { flex-shrink: 0; }\n' +
+            '@media (max-width: 720px) { .nav-extra .nav-extra-cart-label { display: none; } }\n\n' +
             '/* ═══ BUTTONS ═══ */\n' +
             '.btn { display: inline-flex; align-items: center; padding: 0.85rem 2rem; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s var(--ease); background: transparent; color: var(--fg); position: relative; overflow: hidden; }\n' +
             '.btn::before { content: ""; position: absolute; inset: 0; background: var(--accent); transform: translateY(100%); transition: transform 0.4s var(--ease); }\n' +
@@ -3135,7 +3225,7 @@ window.ArbelCompiler = (function () {
             '  <header class="header" id="header">\n    <div class="header-inner">\n' +
             '      <a href="' + prefix + '" class="logo logo--' + (cfg.logoStyle || 'wordmark') + '" data-arbel-id="site-logo" data-arbel-edit="text">' + _renderLogoInner(cfg) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks2 + '      </nav>\n' +
-            '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
+            '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra">' + _renderNavExtra(cfg) + '</div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +
             '    </div>\n  </header>\n\n' : '') +
             (function () {
@@ -3206,9 +3296,15 @@ window.ArbelCompiler = (function () {
                     (pageBody && pageBody !== pageDesc ? '    <p style="max-width:640px;color:var(--fg2);line-height:1.85;margin-top:1.25rem" data-arbel-id="page-body" data-arbel-edit="text">' + esc(pageBody) + '</p>\n' : '') +
                     '  </section>\n\n';
             }()) +
-            '  <footer class="footer">\n    <div class="footer-inner">\n' +
-            '      <p class="footer-copy">&copy; <script>document.write(new Date().getFullYear())<\/script> ' + esc(cfg.brandName) + '</p>\n' +
-            '    </div>\n  </footer>\n\n' +
+            (function () {
+                var rich2 = _renderRichFooter(cfg);
+                if (rich2) {
+                    return '  <footer class="footer footer-columns">\n    <div class="footer-inner">\n' + rich2 + '    </div>\n  </footer>\n\n';
+                }
+                return '  <footer class="footer">\n    <div class="footer-inner">\n' +
+                    '      <p class="footer-copy">&copy; <script>document.write(new Date().getFullYear())<\/script> ' + esc(cfg.brandName) + '</p>\n' +
+                    '    </div>\n  </footer>\n\n';
+            }()) +
             '  <div class="arbel-badge">built with <a href="https://arbel.live" target="_blank" rel="noopener">arbel.live</a></div>\n\n' +
             (cat === 'shader' ? '  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>\n' : '') +
             '  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"><\/script>\n' +

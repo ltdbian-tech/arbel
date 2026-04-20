@@ -269,6 +269,15 @@
                 ctaBannerCta:   ['PLAY FREE', 'QUEUE UP', 'DOWNLOAD NOW']
             },
             persona: 'high-energy esports / gaming site — expect stats like K/D, rank, hours logged, tournament wins; copy should feel like a clan page or streamer portfolio, NOT a marketing agency',
+            navExtra: { label: 'QUEUE UP', href: '#contact', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Queue fast. Rank faster. Always-on servers worldwide.',
+                columns: [
+                    { heading: 'PLAY',       items: [{ label: 'Modes',    href: '#gameModes' }, { label: 'Roster',   href: '#agentRoster' }, { label: 'Patch Notes', href: '#' }] },
+                    { heading: 'COMMUNITY',  items: [{ label: 'Discord',  href: '#' }, { label: 'Twitch',       href: '#' }, { label: 'Reddit',      href: '#' }] },
+                    { heading: 'SUPPORT',    items: [{ label: 'Server Status', href: '#' }, { label: 'Report a Bug', href: '#' }, { label: 'Terms',       href: '#' }] }
+                ]
+            },
             content: {
                 agentRoster: [
                     { name: 'Vortex', role: 'DUELIST', ability: 'Aggressive entry fragger with time-warp dash' },
@@ -333,6 +342,15 @@
                 { id: 'contact', name: 'Contact', path: '/contact', sections: [] }
             ],
             persona: 'consumer shop / DTC brand — portfolio acts as a product grid, pricing reads as bundles, stats are orders-shipped + reviews; copy is aspirational and product-led',
+            navExtra: { label: 'Cart', href: '#', kind: 'icon-cart' },
+            footerRecipe: {
+                tagline: 'Curated goods, shipped fast. Free returns within 30 days.',
+                columns: [
+                    { heading: 'SHOP',     items: [{ label: 'All Products', href: '/shop' }, { label: 'New Arrivals',   href: '/shop#new' }, { label: 'Bundles',  href: '#pricing' }] },
+                    { heading: 'HELP',     items: [{ label: 'Shipping',     href: '/contact' }, { label: 'Returns',        href: '/contact' }, { label: 'Contact',  href: '/contact' }] },
+                    { heading: 'COMPANY',  items: [{ label: 'About',        href: '/about' },   { label: 'Stockists',      href: '#' },         { label: 'Journal',  href: '#' }] }
+                ]
+            },
             content: {
                 productGrid: [
                     { name: 'Organic Hass Avocado', price: '$1.49', category: 'Produce', badge: 'FRESH' },
@@ -389,6 +407,15 @@
                 { id: 'contact',      name: 'Contact',      path: '/contact',      sections: [] }
             ],
             persona: 'restaurant / hospitality — portfolio is the menu, services are tasting experiences, copy uses sensory language (textures, ingredients, provenance) and reservation CTAs',
+            navExtra: { label: 'Book a Table', href: '/reservations', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Open for dinner Tuesday – Sunday. Brunch on weekends.',
+                columns: [
+                    { heading: 'HOURS',    items: ['Tue – Thu  5 – 10pm', 'Fri – Sat  5 – 11pm', 'Sun brunch  11 – 3pm', 'Closed Mondays'] },
+                    { heading: 'VISIT',    items: [{ label: 'Reservations', href: '/reservations' }, { label: 'Private Dining', href: '/contact' }, { label: 'Gift Cards', href: '#' }] },
+                    { heading: 'FOLLOW',   items: [{ label: 'Instagram',    href: '#' },              { label: 'Newsletter',     href: '#' },          { label: 'Press',      href: '#' }] }
+                ]
+            },
             content: {
                 menuSections: [
                     { name: 'Burrata & Heirloom Tomatoes', desc: 'Stracciatella, aged balsamic, torn basil, focaccia.', price: '$17', category: 'Antipasti', tags: 'V' },
@@ -523,6 +550,16 @@
                 ctaBannerCta:   ['Subscribe', 'Listen Now', 'Latest Episode']
             },
             persona: 'podcast show — portfolio cards are episode titles with guest/season tags; CTAs push toward Apple/Spotify; tone is conversational'
+        ,
+            navExtra: { label: 'Listen', href: '#contact', kind: 'button' },
+            footerRecipe: {
+                tagline: 'New episodes every Tuesday. Subscribe anywhere you listen.',
+                columns: [
+                    { heading: 'LISTEN',  items: [{ label: 'Apple Podcasts', href: '#' }, { label: 'Spotify', href: '#' }, { label: 'Overcast', href: '#' }, { label: 'RSS', href: '#' }] },
+                    { heading: 'SHOW',    items: [{ label: 'All Episodes', href: '#portfolio' }, { label: 'Guests',  href: '#' }, { label: 'Transcripts', href: '#' }] },
+                    { heading: 'ABOUT',   items: [{ label: 'The Hosts',    href: '#' },          { label: 'Press',   href: '#' }, { label: 'Contact',     href: '/contact' }] }
+                ]
+            }
         },
         event: {
             presetIds: ['neon', 'prism', 'confetti', 'spark', 'iridescent', 'aurora'],
@@ -563,6 +600,16 @@
                 { id: 'contact', name: 'Contact',  path: '/contact',  sections: [] }
             ],
             persona: 'live event / conference — date/venue/speakers/tickets are the stars; copy is urgent and countdown-aware; portfolio reads as program sessions'
+        ,
+            navExtra: { label: 'Get Tickets', href: '/tickets', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Three days. 40+ speakers. One unforgettable room.',
+                columns: [
+                    { heading: 'ATTEND',  items: [{ label: 'Tickets',   href: '/tickets' }, { label: 'Program',  href: '/program' }, { label: 'Speakers',  href: '/speakers' }] },
+                    { heading: 'VENUE',   items: [{ label: 'Location',  href: '#' },         { label: 'Hotels',   href: '#' },        { label: 'Travel',    href: '#' }] },
+                    { heading: 'CONTACT', items: [{ label: 'Press',     href: '#' },         { label: 'Sponsors', href: '#' },        { label: 'Help',      href: '/contact' }] }
+                ]
+            }
         },
         app: {
             presetIds: ['meshGrad', 'northern', 'morphBlob', 'oceanBlob', 'constellation', 'aurora'],
@@ -602,6 +649,16 @@
                 { id: 'contact',  name: 'Support',  path: '/support',  sections: [] }
             ],
             persona: 'mobile/SaaS app — download CTAs + App Store badge energy; services = features; pricing = monthly plans; copy is benefit-led and outcome-focused'
+        ,
+            navExtra: { label: 'Download', href: '/features', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Works on iOS, Android, and the web. Free to download.',
+                columns: [
+                    { heading: 'PRODUCT', items: [{ label: 'Features', href: '/features' }, { label: 'Pricing', href: '/pricing' }, { label: 'Changelog', href: '#' }] },
+                    { heading: 'SUPPORT', items: [{ label: 'Help Center', href: '/support' }, { label: 'Status', href: '#' }, { label: 'Contact',   href: '/support' }] },
+                    { heading: 'COMPANY', items: [{ label: 'About',     href: '#about' },     { label: 'Privacy', href: '#' }, { label: 'Terms',     href: '#' }] }
+                ]
+            }
         },
         saas: {
             presetIds: ['meshGrad', 'constellation', 'northern', 'oceanBlob', 'aurora', 'frost'],
@@ -639,6 +696,16 @@
                 { id: 'contact', name: 'Contact', path: '/contact', sections: [] }
             ],
             persona: 'B2B SaaS platform — logoCloud is client proof, pricing is seat-based tiers, features emphasize integrations/security/uptime'
+        ,
+            navExtra: { label: 'Start Free', href: '/contact', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Trusted by 1,200+ engineering teams. SOC 2 Type II certified.',
+                columns: [
+                    { heading: 'PRODUCT',  items: [{ label: 'Platform',  href: '#services' }, { label: 'Pricing', href: '/pricing' }, { label: 'Integrations', href: '#' }, { label: 'Changelog', href: '#' }] },
+                    { heading: 'DEVELOPERS', items: [{ label: 'Docs',    href: '#' }, { label: 'API Reference', href: '#' }, { label: 'Status', href: '#' }] },
+                    { heading: 'COMPANY',  items: [{ label: 'About',    href: '/about' }, { label: 'Customers', href: '#portfolio' }, { label: 'Security', href: '#' }, { label: 'Contact', href: '/contact' }] }
+                ]
+            }
         },
         course: {
             presetIds: ['meshGrad', 'northern', 'aurora', 'prism', 'iridescent'],
@@ -779,6 +846,15 @@
                 { id: 'contact',  name: 'Contact',  path: '/contact',  sections: [] }
             ],
             persona: 'fashion / couture house — lookbook-style portfolio, collection naming conventions (SS26/AW25), boutique-voice copy, stockist namedrop',
+            navExtra: { label: 'Shop', href: '/shop', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Limited runs. Hand-finished in the atelier. Shipped worldwide.',
+                columns: [
+                    { heading: 'THE HOUSE', items: [{ label: 'Atelier',  href: '/atelier' }, { label: 'Lookbook',    href: '/lookbook' }, { label: 'Stockists', href: '#' }] },
+                    { heading: 'SHOP',      items: [{ label: 'SS26',     href: '/shop' },    { label: 'Archive',      href: '/shop#archive' }, { label: 'Care Guide', href: '#' }] },
+                    { heading: 'CLIENT',    items: [{ label: 'Sizing',   href: '#' },         { label: 'Shipping',    href: '/contact' },      { label: 'Contact',   href: '/contact' }] }
+                ]
+            },
             content: {
                 lookbookHorizontal: [
                     { title: 'Linen Shirt — Ecru',     tag: 'SS26 · 01' },
@@ -824,6 +900,15 @@
                 ctaBannerCta:   ['Listen Now', 'Stream on Spotify', 'Tour Tickets']
             },
             persona: 'band / musician / record label — portfolio is discography, services become tour dates, bold typographic pressroom energy',
+            navExtra: { label: 'Listen', href: '#contact', kind: 'button' },
+            footerRecipe: {
+                tagline: 'Streaming everywhere. New LP out now.',
+                columns: [
+                    { heading: 'LISTEN',  items: [{ label: 'Spotify',  href: '#' }, { label: 'Apple Music', href: '#' }, { label: 'Bandcamp', href: '#' }, { label: 'Tidal', href: '#' }] },
+                    { heading: 'TOUR',    items: [{ label: 'All Dates', href: '#services' }, { label: 'VIP Packages', href: '#' }, { label: 'Book the Band', href: '/contact' }] },
+                    { heading: 'FOLLOW',  items: [{ label: 'Instagram', href: '#' }, { label: 'YouTube',      href: '#' }, { label: 'Newsletter',    href: '#' }] }
+                ]
+            },
             content: {
                 releaseGrid: [
                     { title: 'Afterglow',      year: '2026', type: 'LP' },
