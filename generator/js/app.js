@@ -2426,38 +2426,135 @@
 
     /** Local randomizer: random preset + accent + bg + hand off to _applyDesign
      *  which will fill the rest (fontPair, cardTreatment, hero layout, etc)
-     *  from its built-in variety logic. Zero API calls, instant. */
+     *  from its built-in variety logic. Zero API calls, instant.
+     *  Tracks last-run choices so sequential clicks feel genuinely distinct. */
+    var _localLastPresetId = null;
+    var _localLastPaletteIdx = -1;
+    var _localLastHero = null;
+    var _localLastCard = null;
+    var _localLastButton = null;
+    var _localLastFont = null;
+    var _localLastFooter = null;
+    var _localLastTypeScale = null;
+    var _localLastRhythm = null;
+    var _localLastDivider = null;
+    var _localLastHeroArt = null;
+    var _localLastLabel = null;
+
+    function _pickDiff(arr, last) {
+        var pool = arr.filter(function (v) { return v !== last; });
+        if (!pool.length) pool = arr;
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
     function _runLocalRandomize() {
         var styles = ArbelCompiler.getStyles();
-        var pick = styles[Math.floor(Math.random() * styles.length)];
 
-        // Curated accent/bg pairs — warm, cool, mono, luxe, editorial
+        // ─── Preset anti-repeat ──
+        var styleIds = styles.map(function (s) { return s.id; });
+        var pickId = _pickDiff(styleIds, _localLastPresetId);
+        var pick = styles.find(function (s) { return s.id === pickId; }) || styles[0];
+
+        // ─── 30-entry palette pool covering dark/light, neon, pastel,
+        // brutalist, editorial, luxe, mono, high-contrast. Anti-repeat by idx.
         var palettes = [
+            // Dark + vivid
             { accent: '#6C5CE7', bg: '#0f0f14' }, // violet / ink
-            { accent: '#FF6B6B', bg: '#1a1212' }, // coral / espresso
-            { accent: '#4ECDC4', bg: '#0d1b1a' }, // teal / deep green
+            { accent: '#FF6B6B', bg: '#1a0f0f' }, // coral / espresso
+            { accent: '#4ECDC4', bg: '#0a1817' }, // teal / deep green
             { accent: '#F59E0B', bg: '#18140c' }, // amber / warm black
             { accent: '#EC4899', bg: '#1a0f17' }, // magenta / plum
             { accent: '#10B981', bg: '#0b1411' }, // emerald / forest
             { accent: '#3B82F6', bg: '#0a1020' }, // cobalt / navy
             { accent: '#F97316', bg: '#1a110a' }, // tangerine / bronze
             { accent: '#A855F7', bg: '#120a1a' }, // violet / midnight
-            { accent: '#E11D48', bg: '#fef6f2' }, // crimson / eggshell (light)
-            { accent: '#0EA5E9', bg: '#f5f9fc' }, // azure / snow (light)
-            { accent: '#65A30D', bg: '#f8faf3' }, // lime / linen (light)
-            { accent: '#D97706', bg: '#fdf8ee' }, // honey / cream (light)
-            { accent: '#be3144', bg: '#f1e8dc' }  // cherry / sand
+            // Neon / cyber
+            { accent: '#00FFB2', bg: '#05070d' }, // mint neon / void
+            { accent: '#FF00AA', bg: '#07050d' }, // hot pink / void
+            { accent: '#00D4FF', bg: '#06101a' }, // cyan / deep navy
+            { accent: '#FAFF00', bg: '#0a0a0a' }, // yellow / jet
+            // Luxe / editorial dark
+            { accent: '#D4AF37', bg: '#0f0c08' }, // gold / onyx
+            { accent: '#E8E4D9', bg: '#141410' }, // ivory / charcoal
+            { accent: '#C9A961', bg: '#1a1612' }, // champagne / bronze
+            // Light / eggshell
+            { accent: '#E11D48', bg: '#fef6f2' }, // crimson / eggshell
+            { accent: '#0EA5E9', bg: '#f5f9fc' }, // azure / snow
+            { accent: '#65A30D', bg: '#f8faf3' }, // lime / linen
+            { accent: '#D97706', bg: '#fdf8ee' }, // honey / cream
+            { accent: '#be3144', bg: '#f1e8dc' }, // cherry / sand
+            { accent: '#1E293B', bg: '#FAF8F2' }, // slate / bone
+            { accent: '#7c3aed', bg: '#f8f5ff' }, // violet / mist
+            // Pastel
+            { accent: '#ff8fa3', bg: '#fff5f7' }, // rose / blush
+            { accent: '#7dd3fc', bg: '#f0faff' }, // sky / ice
+            { accent: '#c4b5fd', bg: '#faf7ff' }, // lavender / frost
+            // Brutalist / mono
+            { accent: '#FF4500', bg: '#ffffff' }, // orange / white
+            { accent: '#0000FF', bg: '#ffff00' }, // blue / yellow (bold)
+            { accent: '#ffffff', bg: '#000000' }, // white / black (mono)
+            { accent: '#ff0040', bg: '#111111' }  // red / near-black
         ];
-        var pal = palettes[Math.floor(Math.random() * palettes.length)];
+        var palIdx;
+        do { palIdx = Math.floor(Math.random() * palettes.length); }
+        while (palIdx === _localLastPaletteIdx && palettes.length > 1);
+        var pal = palettes[palIdx];
 
-        // Pass through _applyDesign as a partial preset-mode design. Every
-        // other axis (fontPair, density, corners, cardTreatment, heroLayout,
-        // sectionOrder, sectionTones, sectionAnims, ...) is filled by the
-        // auto-inject logic already baked in there. Axis locks are respected.
+        // ─── Force-rotate key visual axes so the page architecture shifts
+        // every click — not just the palette. _applyDesign respects any
+        // explicit axis value we pass (and falls back to random if null).
+        var heroLayouts = ['centered', 'left', 'split', 'minimal'];
+        var cardTreats  = ['default', 'bordered', 'filled', 'floating', 'minimal', 'glass'];
+        var buttonStyles = ['default', 'solid', 'outline', 'gradient', 'sharp', 'lifted'];
+        var fontPairs = ['editorial', 'tech', 'humanist', 'display', 'mono', 'luxe', 'brutalist', 'terminal', 'futurist', 'soft', 'classical', 'modern', 'boutique', 'journal'];
+        var footers  = ['default', 'minimal', 'columns', 'centered', 'bigLogo', 'stripe'];
+        var typeScales = ['tight', 'normal', 'dramatic'];
+        var rhythms = ['normal', 'compact', 'roomy', 'alternating'];
+        var dividers = ['none', 'line', 'gradient', 'numbered', 'dotline'];
+        var heroArts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross'];
+        var labels   = ['default', 'bar', 'dot', 'number', 'stripe'];
+
+        var heroLayout   = _pickDiff(heroLayouts, _localLastHero);
+        var cardTreat    = _pickDiff(cardTreats,  _localLastCard);
+        var buttonStyle  = _pickDiff(buttonStyles, _localLastButton);
+        var fontPair     = _pickDiff(fontPairs,   _localLastFont);
+        var footerStyle  = _pickDiff(footers,     _localLastFooter);
+        var typeScale    = _pickDiff(typeScales,  _localLastTypeScale);
+        var sectionRhythm= _pickDiff(rhythms,     _localLastRhythm);
+        var dividerStyle = _pickDiff(dividers,    _localLastDivider);
+        var heroArt      = _pickDiff(heroArts,    _localLastHeroArt);
+        var labelStyle   = _pickDiff(labels,      _localLastLabel);
+
+        _localLastPresetId   = pickId;
+        _localLastPaletteIdx = palIdx;
+        _localLastHero       = heroLayout;
+        _localLastCard       = cardTreat;
+        _localLastButton     = buttonStyle;
+        _localLastFont       = fontPair;
+        _localLastFooter     = footerStyle;
+        _localLastTypeScale  = typeScale;
+        _localLastRhythm     = sectionRhythm;
+        _localLastDivider    = dividerStyle;
+        _localLastHeroArt    = heroArt;
+        _localLastLabel      = labelStyle;
+
+        // Density / corners / heading-align / container-width also rotated
+        // through _applyDesign's built-in random-fill (we pass nothing so it
+        // picks fresh each time and its anti-repeat guarantees change).
         var design = {
-            presetId: pick.id,
+            presetId:      pickId,
             accentOverride: pal.accent,
-            bgOverride: pal.bg,
+            bgOverride:     pal.bg,
+            heroLayout:     heroLayout,
+            cardTreatment:  cardTreat,
+            buttonStyle:    buttonStyle,
+            fontPair:       fontPair,
+            footerStyle:    footerStyle,
+            typeScale:      typeScale,
+            sectionRhythm:  sectionRhythm,
+            dividerStyle:   dividerStyle,
+            heroArt:        heroArt,
+            labelStyle:     labelStyle,
             rationale: 'Local randomize \u2014 ' + pick.name
         };
         state.editorOverrides = {};
