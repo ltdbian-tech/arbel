@@ -46,6 +46,46 @@ window.ArbelCompiler = (function () {
         return esc(str);
     }
 
+    /** Derive up to 2 initials from a brand name (e.g. "Spice Root" → "SR", "Arbel" → "A"). */
+    function _initials(name) {
+        if (!name) return 'A';
+        var words = String(name).trim().split(/\s+/).filter(Boolean);
+        if (words.length === 0) return 'A';
+        if (words.length === 1) return words[0].charAt(0).toUpperCase();
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    /** Render the site logo. cfg.logoStyle controls which mark is produced.
+     *  Returns inner HTML for the <a class="logo"> element (or full element when footer=true). */
+    function _renderLogoInner(cfg) {
+        var name = esc(cfg.brandName || 'Brand');
+        var initials = esc(_initials(cfg.brandName));
+        var style = cfg.logoStyle || '';
+        switch (style) {
+            case 'monogram':
+                // Square box with initials, no wordmark
+                return '<span class="logo-mono" aria-label="' + name + '">' + initials + '</span>';
+            case 'mark-left':
+                // Geometric SVG mark beside the wordmark
+                return '<span class="logo-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg></span>' +
+                       '<span class="logo-text">' + name + '</span>';
+            case 'dot':
+                // Accent dot before wordmark
+                return '<span class="logo-dot" aria-hidden="true"></span><span class="logo-text">' + name + '</span>';
+            case 'bracket':
+                // Bracketed mono-style wordmark
+                return '<span class="logo-bracket">[&nbsp;</span><span class="logo-text">' + name + '</span><span class="logo-bracket">&nbsp;]</span>';
+            case 'underline':
+                // Wordmark with animated accent underline
+                return '<span class="logo-text logo-underline">' + name + '</span>';
+            case 'slash':
+                // Mono-style with leading slash
+                return '<span class="logo-slash">//</span><span class="logo-text">' + name + '</span>';
+            default:
+                return name;
+        }
+    }
+
     /** Build full site config with defaults */
     function _defaults(cfg) {
         var d = Object.assign({
@@ -1202,7 +1242,7 @@ window.ArbelCompiler = (function () {
             '  <!-- Header -->\n' +
             '  <header class="header" id="header">\n' +
             '    <div class="header-inner">\n' +
-            '      <a href="#" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
+            '      <a href="#" class="logo logo--' + (cfg.logoStyle || 'wordmark') + '" data-arbel-id="site-logo" data-arbel-edit="text">' + _renderLogoInner(cfg) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks +
             '      </nav>\n' +
             '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
@@ -1212,7 +1252,7 @@ window.ArbelCompiler = (function () {
             '  <main>\n' + sectionsHTML + '  </main>\n\n' +
             '  <footer class="footer" data-brand="' + esc(cfg.brandName) + '">\n' +
             '    <div class="footer-inner">\n' +
-            '      <span class="logo">' + esc(cfg.brandName) + '</span>\n' +
+            '      <span class="logo logo--' + (cfg.logoStyle || 'wordmark') + '">' + _renderLogoInner(cfg) + '</span>\n' +
             '      <span class="mono">&copy; <script>document.write(new Date().getFullYear())<\/script> All rights reserved.</span>\n' +
             '    </div>\n' +
             '  </footer>\n\n' +
@@ -1286,6 +1326,18 @@ window.ArbelCompiler = (function () {
             '.header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 1rem 2rem; background: rgba(10,10,15,0.8); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); }\n' +
             '.header-inner { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }\n' +
             '.logo { font-family: var(--font-display); font-size: 1.3rem; }\n' +
+            '/* Logo-style variants (cfg.logoStyle) */\n' +
+            '.logo { display: inline-flex; align-items: center; gap: 0.5em; text-decoration: none; color: inherit; }\n' +
+            '.logo-mono { display: inline-flex; align-items: center; justify-content: center; width: 2.1em; height: 2.1em; border-radius: 6px; background: var(--accent); color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 0.85em; letter-spacing: -0.02em; }\n' +
+            '.logo--monogram { font-size: 1.1rem; }\n' +
+            '.logo-mark { display: inline-flex; color: var(--accent); }\n' +
+            '.logo-dot { display: inline-block; width: 0.55em; height: 0.55em; border-radius: 50%; background: var(--accent); margin-right: 0.15em; }\n' +
+            '.logo-bracket { color: var(--accent); font-family: var(--font-mono); font-size: 0.85em; opacity: 0.7; }\n' +
+            '.logo-slash { color: var(--accent); font-family: var(--font-mono); font-size: 0.85em; margin-right: 0.2em; opacity: 0.75; }\n' +
+            '.logo-underline { position: relative; padding-bottom: 2px; }\n' +
+            '.logo-underline::after { content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 2px; background: var(--accent); transform: scaleX(0.3); transform-origin: left; transition: transform 0.3s var(--ease); }\n' +
+            '.logo:hover .logo-underline::after { transform: scaleX(1); }\n' +
+            '.logo-text { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }\n' +
             '.nav { display: flex; gap: 2rem; align-items: center; }\n' +
             '.nav-link { font-size: 0.85rem; color: var(--fg2); transition: color 0.3s; }\n' +
             '.nav-link:hover { color: var(--fg); }\n' +
@@ -1985,7 +2037,7 @@ window.ArbelCompiler = (function () {
             '  <div class="noise-bg"></div>\n\n' +
             (cfg.navEnabled !== false ?
             '  <header class="header" id="header">\n    <div class="header-inner">\n' +
-            '      <a href="' + prefix + '" class="logo" data-arbel-id="site-logo" data-arbel-edit="text">' + esc(cfg.brandName) + '</a>\n' +
+            '      <a href="' + prefix + '" class="logo logo--' + (cfg.logoStyle || 'wordmark') + '" data-arbel-id="site-logo" data-arbel-edit="text">' + _renderLogoInner(cfg) + '</a>\n' +
             '      <nav class="nav" id="nav" data-arbel-id="site-nav">\n' + navLinks2 + '      </nav>\n' +
             '      <div class="nav-extra" id="navExtra" data-arbel-id="nav-extra"></div>\n' +
             '      <button class="menu-btn" id="menuBtn" data-arbel-id="menu-btn" aria-label="Menu"><span></span><span></span></button>\n' +

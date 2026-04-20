@@ -186,6 +186,7 @@
         optPortfolioLayout: $('optPortfolioLayout'),
         optAboutFlip: $('optAboutFlip'),
         optToneOfVoice: $('optToneOfVoice'),
+        optLogoStyle: $('optLogoStyle'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -1870,6 +1871,7 @@
         state.aiFooterStyle   = design.footerStyle;
         state.aiLabelStyle    = design.labelStyle;
         state.aiHeroArt       = design.heroArt;
+        state.aiLogoStyle     = design.logoStyle;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2260,6 +2262,7 @@
             if (pl) cfg.sectionLayouts.portfolio = pl;
         }
         if (els.optAboutFlip && els.optAboutFlip.checked) cfg.aboutFlip = true;
+        var lg = v(els.optLogoStyle);          if (lg)   cfg.logoStyle = lg;
         // Font pair — translate semantic ID → concrete headingFont/bodyFont tokens
         var fp = v(els.optFontPair);
         if (fp) {
@@ -2399,6 +2402,7 @@
         if (state.aiFooterStyle) cfg.footerStyle = state.aiFooterStyle;
         if (state.aiLabelStyle) cfg.labelStyle = state.aiLabelStyle;
         if (state.aiHeroArt) cfg.heroArt = state.aiHeroArt;
+        if (state.aiLogoStyle) cfg.logoStyle = state.aiLogoStyle;
 
         // Manual design-option overrides (classic-wizard dropdowns)
         // Applied AFTER AI so the user can override any axis by hand.
@@ -2732,7 +2736,8 @@
                     servicesLayout: els.optServicesLayout ? els.optServicesLayout.value : '',
                     portfolioLayout: els.optPortfolioLayout ? els.optPortfolioLayout.value : '',
                     aboutFlip: els.optAboutFlip ? !!els.optAboutFlip.checked : false,
-                    toneOfVoice: els.optToneOfVoice ? els.optToneOfVoice.value : ''
+                    toneOfVoice: els.optToneOfVoice ? els.optToneOfVoice.value : '',
+                    logoStyle: els.optLogoStyle ? els.optLogoStyle.value : ''
                 },
                 aiLocks: (function () {
                     var out = {};
@@ -2876,6 +2881,7 @@
             _set(els.optPortfolioLayout, d.portfolioLayout);
             if (els.optAboutFlip) els.optAboutFlip.checked = !!d.aboutFlip;
             _set(els.optToneOfVoice, d.toneOfVoice);
+            _set(els.optLogoStyle, d.logoStyle);
             if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(d.toneOfVoice || '');
         }
         // AI axis locks

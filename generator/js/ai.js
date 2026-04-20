@@ -420,7 +420,8 @@ window.ArbelAI = (function () {
             '"dividerStyle": "none"|"line"|"gradient"|"numbered"|"dotline" — what appears between sections. numbered shows 01, 02, 03 monospace counters in the corner.\n' +
             '"footerStyle": "default"|"minimal"|"columns"|"centered"|"bigLogo"|"stripe" — footer treatment. bigLogo puts a giant faded brand watermark behind the footer.\n' +
             '"labelStyle": "default"|"bar"|"dot"|"number"|"stripe" — adornment on every section mono label. number prefixes /01, /02 etc. bar adds a 32px accent line prefix.\n' +
-            '"heroArt": "none"|"grid"|"lines"|"circle"|"dots"|"cross" — decorative overlay added to the hero on top of the bg animation.\n\n' +
+            '"heroArt": "none"|"grid"|"lines"|"circle"|"dots"|"cross" — decorative overlay added to the hero on top of the bg animation.\n' +
+            '"logoStyle": ""|"monogram"|"mark-left"|"dot"|"bracket"|"underline"|"slash" — how the site logo renders. Empty = plain wordmark. monogram = initials-in-box, mark-left = geometric svg mark beside wordmark, dot = accent dot prefix, bracket = [ wordmark ], underline = animated accent underline on hover, slash = // mono prefix. Pick something that fits the mood.\n\n' +
             'OPTIONAL "elementOverrides" — apply per-element flair to specific elements by ID. Use sparingly (5-15 entries max). Allowed IDs match patterns: hero-cta, hero-line1/2/3, hero-sub, service-card-1/2/3, service-N-title/desc, portfolio-card-1/2/3, project-N-title/tag/desc, about, about-heading, about-desc, stat-1/2/3, step-N-title/desc, testimonial-card-1/2/3, testimonial-N-quote/name/role, pricing-card-1/2/3, tier-N-name/price/features, faq-item-1/2/3, faq-N-q/a, *-heading.\n' +
             'Each entry can include: { "animation": one of "fadeIn|fadeInUp|fadeInDown|fadeInLeft|fadeInRight|slideUp|slideDown|slideLeft|slideRight|scaleUp|scaleDown|zoomIn|bounceIn|bounceInUp", "hover": one of "lift|scale|glow|tilt|skew|border-glow|brightness|color-shift", "continuous": one of "pulse|float|spin|bounce|shake|swing|breathe|glow-pulse|wobble|flash|headShake|wave-text|drift|sway", "color": "#RRGGBB", "backgroundColor": "#RRGGBB", "borderRadius": "Npx" or "N%" (0-100), "opacity": 0-1 }.\n' +
             'Vary these between regens to give each generation a distinct feel.\n\n' +
@@ -528,6 +529,7 @@ window.ArbelAI = (function () {
             '    "footerStyle": "default|minimal|columns|centered|bigLogo|stripe",\n' +
             '    "labelStyle": "default|bar|dot|number|stripe",\n' +
             '    "heroArt": "none|grid|lines|circle|dots|cross",\n' +
+            '    "logoStyle": "|monogram|mark-left|dot|bracket|underline|slash",\n' +
             '    "sectionTones": {"services":"dark|light|accent",...},\n' +
             '    "sectionAnims": {"services":"fadeUp|slideLeft|...",...},\n' +
             '    "rationale": "one sentence"\n' +
