@@ -4646,9 +4646,22 @@ window.ArbelCinematicEditor = (function () {
                 if (zoomVal) zoomVal.textContent = _zoom + '%';
             });
         }
-        // Click zoom label to reset zoom + pan
+        // Click zoom label to type a custom zoom value; double-click to reset zoom + pan
         if (zoomVal) {
+            zoomVal.style.cursor = 'pointer';
+            zoomVal.title = 'Click to type a zoom value, double-click to reset to 100%';
             zoomVal.addEventListener('click', function () {
+                var current = parseInt(String(zoomVal.textContent).replace('%',''), 10) || _zoom;
+                var input = window.prompt('Zoom (30–200%)', String(current));
+                if (input === null) return;
+                var v = parseInt(String(input).replace('%','').trim(), 10);
+                if (isNaN(v)) return;
+                _zoom = Math.max(30, Math.min(200, v));
+                _applyZoom();
+                zoomVal.textContent = _zoom + '%';
+            });
+            zoomVal.addEventListener('dblclick', function (e) {
+                e.stopPropagation();
                 _zoom = 100;
                 _panOffset.x = 0;
                 _panOffset.y = 0;

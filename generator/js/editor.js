@@ -1325,6 +1325,27 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         var zoomVal = _qs('#zoomVal');
         _on('#zoomIn', 'click', function () { _zoom = Math.min(_zoom + 10, 200); _applyZoom(); if (zoomVal) zoomVal.textContent = _zoom + '%'; });
         _on('#zoomOut', 'click', function () { _zoom = Math.max(_zoom - 10, 50); _applyZoom(); if (zoomVal) zoomVal.textContent = _zoom + '%'; });
+        // Click zoom % label to type a custom value; double-click to reset to 100%.
+        if (zoomVal) {
+            zoomVal.style.cursor = 'pointer';
+            zoomVal.title = 'Click to type a zoom value, double-click to reset to 100%';
+            zoomVal.addEventListener('click', function () {
+                var current = parseInt(String(zoomVal.textContent).replace('%',''), 10) || _zoom;
+                var input = window.prompt('Zoom (50–200%)', String(current));
+                if (input === null) return;
+                var v = parseInt(String(input).replace('%','').trim(), 10);
+                if (isNaN(v)) return;
+                _zoom = Math.max(50, Math.min(200, v));
+                _applyZoom();
+                zoomVal.textContent = _zoom + '%';
+            });
+            zoomVal.addEventListener('dblclick', function (e) {
+                e.stopPropagation();
+                _zoom = 100;
+                _applyZoom();
+                zoomVal.textContent = '100%';
+            });
+        }
         _on('#bfsFullscreen', 'click', function () {
             if (!document.fullscreenElement) _container.requestFullscreen().catch(function () {});
             else document.exitFullscreen();
