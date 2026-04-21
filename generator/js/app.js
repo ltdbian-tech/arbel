@@ -2191,6 +2191,47 @@
         state.aiNavExtraDisabled = design.navExtraDisabled === true;
         state.aiFooterRecipe  = (design.footerRecipe && typeof design.footerRecipe === 'object') ? design.footerRecipe : null;
 
+        // ─── UI SYNC ─── reflect everything the AI picked in the Style-panel
+        // controls so the user can SEE what was chosen and tweak it by hand.
+        // Without this, effects like `cursorStyle: "spotlight"` appear in the
+        // preview with no matching dropdown state — and the user can't turn
+        // them off manually.
+        var _syncSel = function (el, v) {
+            if (!el || v == null) return;
+            // Only assign if the option exists; otherwise leave the user's prior pick alone.
+            if (typeof v === 'string' && el.tagName === 'SELECT') {
+                for (var i = 0; i < el.options.length; i++) {
+                    if (el.options[i].value === v) { el.value = v; el.dispatchEvent(new Event('change', { bubbles: true })); return; }
+                }
+            } else if (typeof v === 'string') {
+                el.value = v;
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        };
+        _syncSel(els.optHeroLayout,      design.heroLayout);
+        _syncSel(els.optDensity,         design.density);
+        _syncSel(els.optCorners,         design.corners);
+        _syncSel(els.optHeroArt,         design.heroArt);
+        _syncSel(els.optHeroEyebrow,     design.heroEyebrow);
+        _syncSel(els.optTypeScale,       design.typeScale);
+        _syncSel(els.optHeadingAlign,    design.headingAlign);
+        _syncSel(els.optContainerWidth,  design.containerWidth);
+        _syncSel(els.optFontPair,        design.fontPair);
+        _syncSel(els.optCardTreatment,   design.cardTreatment);
+        _syncSel(els.optButtonStyle,     design.buttonStyle);
+        _syncSel(els.optNavStyle,        design.navStyle);
+        _syncSel(els.optFooterStyle,     design.footerStyle);
+        _syncSel(els.optSectionRhythm,   design.sectionRhythm);
+        _syncSel(els.optDividerStyle,    design.dividerStyle);
+        _syncSel(els.optLabelStyle,      design.labelStyle);
+        _syncSel(els.optLogoStyle,       design.logoStyle);
+        _syncSel(els.optCursorStyle,     design.cursorStyle);
+        if (design.sectionLayouts) {
+            _syncSel(els.optServicesLayout,  design.sectionLayouts.services);
+            _syncSel(els.optPortfolioLayout, design.sectionLayouts.portfolio);
+        }
+        if (els.optAboutFlip) els.optAboutFlip.checked = !!design.aboutFlip;
+
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
         _aiLastDensity  = design.density || _aiLastDensity;
