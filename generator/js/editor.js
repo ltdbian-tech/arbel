@@ -2554,11 +2554,26 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
 
     function _showPageSettings(page) {
         var old = _qs('#arbelPageDialog'); if (old) old.remove();
+        // All section IDs the compiler knows how to render on a subpage.
+        // Kept in sync with ADV_SECTION_IDS + page-friendly sections.
+        var PAGE_SECTIONS = [
+            'about', 'services', 'portfolio', 'productGrid', 'lookbookHorizontal',
+            'categoryChips', 'menuList', 'pricing', 'team', 'process',
+            'testimonials', 'faq', 'statsStrip', 'logoCloud',
+            'dealBanner', 'ctaBanner'
+        ];
+        var currentSecs = Array.isArray(page.sections) ? page.sections.slice() : [];
+        var secsHtml = PAGE_SECTIONS.map(function (sid) {
+            var on = currentSecs.indexOf(sid) >= 0;
+            return '<label class="arbel-page-sec-row" style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:12px;cursor:pointer">' +
+                '<input type="checkbox" class="dlgEditSec" data-sid="' + sid + '"' + (on ? ' checked' : '') + '>' +
+                '<span>' + sid + '</span></label>';
+        }).join('');
         var overlay = document.createElement('div');
         overlay.id = 'arbelPageDialog';
         overlay.className = 'arbel-dialog-overlay';
         overlay.innerHTML =
-            '<div class="arbel-dialog">' +
+            '<div class="arbel-dialog" style="max-width:520px">' +
                 '<div class="arbel-dialog-title">Page Settings — ' + _escHtml(page.name) + '</div>' +
                 '<label class="arbel-dialog-label">Page Name</label>' +
                 '<input type="text" class="arbel-dialog-input" id="dlgEditName" value="' + _escHtml(page.name).replace(/"/g, '&quot;') + '">' +
@@ -2571,6 +2586,9 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 '<label class="arbel-dialog-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">' +
                     '<input type="checkbox" id="dlgEditNav"' + (page.showInNav ? ' checked' : '') + '> Show in navigation' +
                 '</label>' +
+                (page.isHome ? '' :
+                    ('<label class="arbel-dialog-label" style="margin-top:10px">Sections on this page <span style="opacity:0.6;font-weight:400">(scroll-order; leave all unchecked for a simple intro page)</span></label>' +
+                    '<div class="arbel-page-sec-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--arbel-border,#333);border-radius:6px;padding:8px 10px;background:var(--arbel-bg2,#0a0a0a)">' + secsHtml + '</div>')) +
                 '<div class="arbel-dialog-actions">' +
                     '<button class="arbel-dialog-btn arbel-dialog-cancel">Cancel</button>' +
                     '<button class="arbel-dialog-btn arbel-dialog-confirm">Save</button>' +
@@ -2601,8 +2619,20 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             page.seoTitle = overlay.querySelector('#dlgEditSeoTitle').value.trim() || '';
             page.seoDesc = overlay.querySelector('#dlgEditSeoDesc').value.trim() || '';
             page.showInNav = overlay.querySelector('#dlgEditNav').checked;
+            if (!page.isHome) {
+                var picked = [];
+                overlay.querySelectorAll('.dlgEditSec').forEach(function (cb) {
+                    if (cb.checked) picked.push(cb.dataset.sid);
+                });
+                page.sections = picked;
+            }
             _updatePageSelect();
             _renderPageList();
+            // Notify app so it recompiles + re-renders the preview to
+            // reflect the new section list immediately (manual-mode sync).
+            try {
+                window.dispatchEvent(new CustomEvent('arbel:pagesUpdated', { detail: { pageId: page.id } }));
+            } catch (e) {}
             overlay.remove();
         });
         nameIn.focus();

@@ -309,6 +309,14 @@
             if (!state.compiledFiles) return;
             try { reloadPreview(); } catch (e) { /* ignore */ }
         });
+        // When a page's sections/name/path/seo are edited in the Pages tab
+        // dialog, recompile so the preview shows the new structure.
+        window.addEventListener('arbel:pagesUpdated', function () {
+            try {
+                if (typeof generatePreview === 'function') generatePreview();
+                _markDirty && _markDirty();
+            } catch (e) { /* ignore */ }
+        });
     })();
 
     /* ─── Per-Section Regen Buttons ─── */
