@@ -188,6 +188,16 @@
         optToneOfVoice: $('optToneOfVoice'),
         optLogoStyle: $('optLogoStyle'),
         optCursorStyle: $('optCursorStyle'),
+        optPricingAccent: $('optPricingAccent'),
+        // Advanced Design (JSON) editor — designer-facing manual control over
+        // every complex axis the AI can set (sectionTones, elementOverrides,
+        // pages, navExtra, footerRecipe, etc.).
+        advDesignJson: $('advDesignJson'),
+        advDesignApplyBtn: $('advDesignApplyBtn'),
+        advDesignResetBtn: $('advDesignResetBtn'),
+        advDesignFormatBtn: $('advDesignFormatBtn'),
+        advDesignStatus: $('advDesignStatus'),
+        advDesignDetails: $('advDesignDetails'),
         backToStyle: $('backToStyle'),
         toPreview: $('toPreview'),
         // AI
@@ -2231,6 +2241,21 @@
             _syncSel(els.optPortfolioLayout, design.sectionLayouts.portfolio);
         }
         if (els.optAboutFlip) els.optAboutFlip.checked = !!design.aboutFlip;
+        // Pricing accent is numeric (1|2|3) in state but the SELECT stores it as a string
+        if (els.optPricingAccent) {
+            var pav = design.pricingAccent != null ? String(design.pricingAccent) : '';
+            _syncSel(els.optPricingAccent, pav);
+        }
+
+        // ─── ADVANCED JSON ─── stash the full design payload and mirror it
+        // into the designer-facing JSON editor so every axis — even ones
+        // without a dedicated dropdown (sectionTones, sectionAnims,
+        // elementOverrides, pages, navExtra, footerRecipe, sectionCounts,
+        // designTokens) — can be read and tweaked by hand.
+        try {
+            state.lastAiDesign = JSON.parse(JSON.stringify(design));
+        } catch (e) { state.lastAiDesign = null; }
+        _populateAdvDesignEditor(state.lastAiDesign);
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -2858,6 +2883,77 @@
         };
     }
 
+    /* ─── ADVANCED DESIGN JSON EDITOR ─────────────────────────────────────
+     * Designer-facing manual control over every complex axis the AI can set
+     * (sectionTones, sectionAnims, elementOverrides, pages, navExtra,
+     * footerRecipe, etc.). Exposes the full design payload in a textarea so
+     * users can read what the AI picked and override anything by hand.
+     * The Apply button feeds edited JSON right back through `_applyDesign`,
+     * which re-validates every axis and re-syncs the simple dropdowns. */
+    function _populateAdvDesignEditor(design) {
+        if (!els.advDesignJson) return;
+        try {
+            els.advDesignJson.value = design
+                ? JSON.stringify(design, null, 2)
+                : '';
+            if (els.advDesignStatus) els.advDesignStatus.textContent = '';
+        } catch (e) {
+            els.advDesignJson.value = '';
+        }
+    }
+
+    function _wireAdvancedDesign() {
+        if (!els.advDesignApplyBtn) return;
+        var showStatus = function (msg, kind) {
+            if (!els.advDesignStatus) return;
+            els.advDesignStatus.textContent = msg || '';
+            els.advDesignStatus.className = 'ai-status' + (kind ? ' ai-status--' + kind : '');
+        };
+        els.advDesignApplyBtn.addEventListener('click', function () {
+            var txt = (els.advDesignJson && els.advDesignJson.value || '').trim();
+            if (!txt) { showStatus('Paste or generate a design JSON first.', 'error'); return; }
+            var parsed;
+            try { parsed = JSON.parse(txt); }
+            catch (err) { showStatus('JSON parse error: ' + err.message, 'error'); return; }
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                showStatus('Design JSON must be a plain object.', 'error'); return;
+            }
+            try {
+                _applyDesign(parsed);
+                _markDirty();
+                // Re-compile + re-render preview so changes show immediately.
+                if (typeof generatePreview === 'function') generatePreview();
+                showStatus('Applied. Preview updated.', 'success');
+            } catch (err) {
+                showStatus('Apply failed: ' + err.message, 'error');
+            }
+        });
+        els.advDesignResetBtn.addEventListener('click', function () {
+            if (!state.lastAiDesign) {
+                showStatus('No AI design captured yet.', 'error'); return;
+            }
+            _populateAdvDesignEditor(state.lastAiDesign);
+            try {
+                _applyDesign(JSON.parse(JSON.stringify(state.lastAiDesign)));
+                _markDirty();
+                if (typeof generatePreview === 'function') generatePreview();
+                showStatus('Reset to last AI design.', 'success');
+            } catch (err) {
+                showStatus('Reset failed: ' + err.message, 'error');
+            }
+        });
+        els.advDesignFormatBtn.addEventListener('click', function () {
+            var txt = (els.advDesignJson.value || '').trim();
+            if (!txt) return;
+            try {
+                els.advDesignJson.value = JSON.stringify(JSON.parse(txt), null, 2);
+                showStatus('Formatted.', 'success');
+            } catch (err) {
+                showStatus('Cannot format — invalid JSON: ' + err.message, 'error');
+            }
+        });
+    }
+
     /** Merge manual design-option dropdowns from the classic wizard onto a cfg.
      *  Any non-empty value overrides the AI-chosen / default value. This lets
      *  manual users get the exact same variation capabilities as AI mode. */
@@ -2886,6 +2982,11 @@
         if (els.optAboutFlip && els.optAboutFlip.checked) cfg.aboutFlip = true;
         var lg = v(els.optLogoStyle);          if (lg)   cfg.logoStyle = lg;
         var cu = v(els.optCursorStyle);        if (cu)   cfg.cursorStyle = cu;
+        var pa = v(els.optPricingAccent);
+        if (pa) {
+            var paN = parseInt(pa, 10);
+            if (paN >= 1 && paN <= 3) cfg.pricingAccent = paN;
+        }
         // Font pair — translate semantic ID → concrete headingFont/bodyFont tokens
         var fp = v(els.optFontPair);
         if (fp) {
@@ -3897,6 +3998,8 @@
         if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(els.optToneOfVoice.value || '');
         _markDirty();
     });
+    // Advanced Design (JSON) editor — Apply / Reset / Format buttons
+    _wireAdvancedDesign();
     // Content inputs (delegated)
     if (els.contentEditor) els.contentEditor.addEventListener('input', function (e) {
         if (e.target.classList.contains('content-input')) _markDirty();

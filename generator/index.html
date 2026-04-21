@@ -590,7 +590,35 @@
                                         <option value="none">None (native cursor)</option>
                                     </select>
                                 </div>
+                                <div class="design-field">
+                                    <label class="config-label mono">Pricing Accent Card</label>
+                                    <select class="gen-input design-opt" id="optPricingAccent">
+                                        <option value="">Auto (random)</option>
+                                        <option value="1">Card 1 highlighted</option>
+                                        <option value="2">Card 2 highlighted</option>
+                                        <option value="3">Card 3 highlighted</option>
+                                    </select>
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Advanced Design (JSON) — full manual control over every axis the AI can pick -->
+                        <div class="config-group" id="advancedDesignGroup">
+                            <h3 class="config-group-title mono">ADVANCED <span style="opacity:0.55;font-weight:normal;font-size:0.7rem">(designer mode)</span></h3>
+                            <p class="config-hint">Every axis the AI can set — section tones, section animations, pages, nav extras, footer recipe, element overrides, design tokens. Edit the JSON and click <b>Apply</b> to override anything by hand.</p>
+                            <details id="advDesignDetails" style="margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface)">
+                                <summary class="mono" style="cursor:pointer;font-size:0.7rem;letter-spacing:0.08em;color:var(--fg2)">&#9881; DESIGN JSON EDITOR</summary>
+                                <div style="margin-top:10px">
+                                    <textarea id="advDesignJson" class="gen-textarea" rows="14" spellcheck="false" placeholder="Run an AI generation to populate — or paste a design JSON object here." style="font-family:var(--font-mono,monospace);font-size:0.72rem;line-height:1.45;white-space:pre"></textarea>
+                                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+                                        <button class="gen-btn gen-btn--sm gen-btn--accent" id="advDesignApplyBtn" type="button" title="Validate JSON and apply every axis to the preview">APPLY JSON</button>
+                                        <button class="gen-btn gen-btn--sm" id="advDesignResetBtn" type="button" title="Restore to the last AI-generated design">RESET TO AI</button>
+                                        <button class="gen-btn gen-btn--sm" id="advDesignFormatBtn" type="button" title="Pretty-print the JSON">FORMAT</button>
+                                    </div>
+                                    <div class="ai-status" id="advDesignStatus" style="margin-top:8px"></div>
+                                    <p class="config-hint" style="margin-top:8px;font-size:0.68rem;opacity:0.7">Shape: <code>{ sectionTones, sectionAnims, sectionLayouts, sectionCounts, pages, navExtra, footerRecipe, elementOverrides, heroLayout, cardTreatment, ... }</code>. Unknown keys are ignored.</p>
+                                </div>
+                            </details>
                         </div>
 
                         <!-- Section Content Editor -->
@@ -4306,18 +4334,18 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="js/key-manager.js?v=20260421b"></script>
-    <script src="js/auth.js?v=20260421b"></script>
-    <script src="js/site-types.js?v=20260421b"></script>
-    <script src="js/image-bank.js?v=20260421b"></script>
-    <script src="js/ai.js?v=20260421b"></script>
-    <script src="js/ai-media.js?v=20260421b"></script>
-    <script src="js/compiler.js?v=20260421b"></script>
-    <script src="js/cinematic-compiler.js?v=20260421b"></script>
-    <script src="js/preview.js?v=20260421b"></script>
-    <script src="js/editor.js?v=20260421b"></script>
-    <script src="js/cinematic-editor.js?v=20260421b"></script>
-    <script src="js/deploy.js?v=20260421b"></script>
-    <script src="js/app.js?v=20260421b"></script>
+    <script src="js/key-manager.js?v=20260421c"></script>
+    <script src="js/auth.js?v=20260421c"></script>
+    <script src="js/site-types.js?v=20260421c"></script>
+    <script src="js/image-bank.js?v=20260421c"></script>
+    <script src="js/ai.js?v=20260421c"></script>
+    <script src="js/ai-media.js?v=20260421c"></script>
+    <script src="js/compiler.js?v=20260421c"></script>
+    <script src="js/cinematic-compiler.js?v=20260421c"></script>
+    <script src="js/preview.js?v=20260421c"></script>
+    <script src="js/editor.js?v=20260421c"></script>
+    <script src="js/cinematic-editor.js?v=20260421c"></script>
+    <script src="js/deploy.js?v=20260421c"></script>
+    <script src="js/app.js?v=20260421c"></script>
 </body>
 </html>
