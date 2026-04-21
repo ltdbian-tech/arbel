@@ -300,6 +300,17 @@
         });
     })();
 
+    /* ─── Page change → refresh preview iframe ─── */
+    (function initPageSwitch() {
+        // When the user clicks a page in the Pages tab, re-render the iframe
+        // with that page's compiled HTML. We do not recompile (faster) and
+        // keep any editor overrides intact.
+        window.addEventListener('arbel:pageChange', function () {
+            if (!state.compiledFiles) return;
+            try { reloadPreview(); } catch (e) { /* ignore */ }
+        });
+    })();
+
     /* ─── Per-Section Regen Buttons ─── */
     (function initSectionRegen() {
         // Decorate each .content-section[data-for] header with a "regen" button.
@@ -2238,6 +2249,46 @@
         state.aiNavExtraDisabled = design.navExtraDisabled === true;
         state.aiFooterRecipe  = (design.footerRecipe && typeof design.footerRecipe === 'object') ? design.footerRecipe : null;
 
+        // Apply AI-proposed pages to the Pages-tab editor so the designer
+        // can see/edit them. AI payload entries look like
+        //   { id, name, path, sections, seoTitle?, seoDesc? }
+        // We merge with the existing editor _pages[] — keep the user's
+        // home page intact, accept new non-home pages the AI invented.
+        if (state.aiPages && window.ArbelEditor && typeof ArbelEditor.setPages === 'function') {
+            try {
+                var existing = ArbelEditor.getPages() || [];
+                var home = existing.find(function (p) { return p.isHome; }) ||
+                    { id: 'home', name: 'Home', path: '/', isHome: true, showInNav: false };
+                var cleaned = [home];
+                var seenPaths = { '/': 1, '': 1 };
+                state.aiPages.forEach(function (p) {
+                    if (!p || typeof p !== 'object') return;
+                    if (p.isHome) return; // home handled
+                    var name = (typeof p.name === 'string' && p.name.trim()) ? p.name.trim().slice(0, 40) : null;
+                    if (!name) return;
+                    var path = (typeof p.path === 'string' && p.path.trim()) ? p.path.trim() : '/' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                    if (!path.match(/^\//)) path = '/' + path;
+                    var norm = path.replace(/^\//, '').replace(/\/$/, '');
+                    if (seenPaths[norm]) return;
+                    seenPaths[norm] = 1;
+                    var id = (typeof p.id === 'string' && p.id) ? p.id : 'page-ai-' + Math.random().toString(36).slice(2, 8);
+                    var entry = {
+                        id: id,
+                        name: name,
+                        path: path,
+                        isHome: false,
+                        showInNav: p.showInNav !== false, // default true — AI pages are meant to be navigable
+                        _pathCustomized: true
+                    };
+                    if (typeof p.seoTitle === 'string' && p.seoTitle.trim()) entry.seoTitle = p.seoTitle.trim().slice(0, 80);
+                    if (typeof p.seoDesc === 'string' && p.seoDesc.trim()) entry.seoDesc = p.seoDesc.trim().slice(0, 200);
+                    if (Array.isArray(p.sections)) entry.sections = p.sections.slice(0, 12);
+                    cleaned.push(entry);
+                });
+                ArbelEditor.setPages(cleaned);
+            } catch (err) { console.warn('AI pages merge failed:', err); }
+        }
+
         // ─── UI SYNC ─── reflect everything the AI picked in the Style-panel
         // controls so the user can SEE what was chosen and tweak it by hand.
         // Without this, effects like `cursorStyle: "spotlight"` appear in the
@@ -3523,6 +3574,24 @@
     }
 
     /* ─── PREVIEW ─── */
+    /** Resolve the compiled-file path for the page currently selected in
+     * the Pages tab. Returns "about/index.html", "about-us/index.html",
+     * etc., or undefined when the home page is active. */
+    function _currentPagePath() {
+        try {
+            var id = ArbelEditor.getCurrentPage ? ArbelEditor.getCurrentPage() : 'home';
+            if (!id || id === 'home') return undefined;
+            var pages = ArbelEditor.getPages() || [];
+            for (var i = 0; i < pages.length; i++) {
+                if (pages[i].id === id && !pages[i].isHome) {
+                    var slug = (pages[i].path || '/' + pages[i].id).replace(/^\//, '').replace(/\/$/, '');
+                    return slug ? slug + '/index.html' : undefined;
+                }
+            }
+        } catch (e) { /* fall through to home */ }
+        return undefined;
+    }
+
     function generatePreview() {
         var config = buildConfig();
         try {
@@ -3532,7 +3601,7 @@
             return;
         }
         var editorScript = ArbelEditor.getOverlayScript();
-        ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
+        ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript, _currentPagePath());
 
         // Destroy cinematic editor if active (L1: prevent both editors running)
         ArbelCinematicEditor.destroy();
@@ -3582,7 +3651,7 @@
         var editorScript = ArbelEditor.getOverlayScript();
         var savedOverrides = ArbelEditor.getOverrides();
         ArbelEditor.destroy();
-        ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript);
+        ArbelPreview.render(els.previewIframe, state.compiledFiles, editorScript, _currentPagePath());
         ArbelEditor.init(els.previewIframe, els.builderFS, function (overrides) {
             state.editorOverrides = overrides;
             try { localStorage.setItem('arbel_editor_overrides', JSON.stringify(overrides)); } catch (e) {}

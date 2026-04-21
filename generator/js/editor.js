@@ -2443,9 +2443,23 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         if (!_container) return;
         _on('#addPageBtn', 'click', function () { _showAddPageDialog(); });
         _on('#delPageBtn', 'click', function () { _deleteCurrentPage(); });
-        _on('#pageSelect', 'change', function () { _currentPage = this.value; _renderPageList(); });
+        _on('#pageSelect', 'change', function () {
+            _currentPage = this.value;
+            _renderPageList();
+            _notifyPageChange();
+        });
         _on('#addPageBtn2', 'click', function () { _showAddPageDialog(); });
         _renderPageList();
+    }
+
+    /** Fire an event so the preview layer can re-render for the new page
+     * and listeners (app.js) can recompile if needed. */
+    function _notifyPageChange() {
+        try {
+            window.dispatchEvent(new CustomEvent('arbel:pageChange', {
+                detail: { pageId: _currentPage }
+            }));
+        } catch (e) { /* ignore */ }
     }
 
     function _slugify(str) {
@@ -2621,6 +2635,7 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 _currentPage = page.id;
                 _updatePageSelect();
                 _renderPageList();
+                _notifyPageChange();
             });
 
             /* Double-click name to inline rename (name only, id stays stable) */
@@ -4248,7 +4263,25 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
         getVideoConfig: function () { return { frames: _videoFrames, config: _videoConfig }; },
         setVideoConfig: function (vc) { if (vc) { _videoConfig = vc.config || _videoConfig; _videoFrames = vc.frames || _videoFrames; } },
         getPages: function () { return _pages; },
-        setPages: function (p) { if (Array.isArray(p)) _pages = p; },
+        setPages: function (p) {
+            if (!Array.isArray(p)) return;
+            _pages = p;
+            // Keep _currentPage valid — fall back to 'home' if the id vanished.
+            var found = false;
+            for (var i = 0; i < _pages.length; i++) {
+                if (_pages[i].id === _currentPage) { found = true; break; }
+            }
+            if (!found) _currentPage = (_pages[0] && _pages[0].id) || 'home';
+            try { _updatePageSelect(); _renderPageList(); } catch (e) {}
+        },
+        getCurrentPage: function () { return _currentPage; },
+        setCurrentPage: function (id) {
+            if (typeof id !== 'string') return;
+            for (var i = 0; i < _pages.length; i++) {
+                if (_pages[i].id === id) { _currentPage = id; break; }
+            }
+            try { _updatePageSelect(); _renderPageList(); } catch (e) {}
+        },
         getNavMode: function () { return _navMode; },
         setNavMode: function (m) { if (m) { _navMode = { desktop: m.desktop || 'links', tablet: m.tablet || 'hamburger', mobile: m.mobile || 'hamburger' }; } },
         getAddedElements: function () { return _addedElements; },

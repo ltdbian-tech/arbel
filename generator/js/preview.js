@@ -69,9 +69,26 @@ window.ArbelPreview = (function () {
      * Instead of creating separate blob URLs for CSS/JS,
      * we inline everything into a single HTML string so
      * the iframe works without needing to fetch resources.
+     *
+     * @param {Object} files compiled files from ArbelCompiler.compile()
+     * @param {string} [pagePath] optional relative path of the page HTML
+     *   inside `files` (e.g. "about/index.html"). Defaults to the home page.
      */
-    function _buildInlineHTML(files) {
-        var html = files['index.html'] || '';
+    function _buildInlineHTML(files, pagePath) {
+        // Resolve which HTML file to render. The compiler emits non-home
+        // pages under `<slug>/index.html`, so falling back to index.html is
+        // always safe.
+        var key = pagePath && files[pagePath] ? pagePath : 'index.html';
+        var html = files[key] || files['index.html'] || '';
+        // Sub-pages reference assets with "../css/…" / "../js/…". Normalise
+        // those to the flat paths that exist in the `files` map so the
+        // inline replacements below hit every link/script tag.
+        if (key !== 'index.html') {
+            html = html.replace(/(?:\.\.\/)+(css\/[^"']+)/g, '$1')
+                       .replace(/(?:\.\.\/)+(js\/[^"']+)/g, '$1')
+                       .replace(/href="(?:\.\.\/)+"/g, 'href="./"')
+                       .replace(/href="(?:\.\.\/)+(#[^"]+)"/g, 'href="$1"');
+        }
 
         // Replace external CSS link with inline <style>
         var css = files['css/style.css'] || '';
@@ -103,8 +120,9 @@ window.ArbelPreview = (function () {
      * @param {HTMLIFrameElement} iframe — target iframe element
      * @param {Object} files — { filename: content } from ArbelCompiler.compile()
      * @param {string} [editorScript] — optional editor overlay script to inject
+     * @param {string} [pagePath] — optional page file to render (e.g. "about/index.html"). Defaults to home.
      */
-    function render(iframe, files, editorScript) {
+    function render(iframe, files, editorScript, pagePath) {
         if (!iframe) return;
         _iframe = iframe;
 
@@ -116,7 +134,7 @@ window.ArbelPreview = (function () {
 
         _cleanup();
 
-        var inlinedHTML = _buildInlineHTML(files);
+        var inlinedHTML = _buildInlineHTML(files, pagePath);
 
         // Convert data:video URLs to blob URLs for reliable playback in iframe
         inlinedHTML = _convertVideoUrls(inlinedHTML);

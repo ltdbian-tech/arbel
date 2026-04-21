@@ -456,7 +456,7 @@ window.ArbelAI = (function () {
             '  sectionTones: {id:"dark"|"light"|"accent"} · sectionAnims: {id:"fade|fadeUp|slideLeft|slideRight|scale|stagger|blur|none"}\n' +
             '  sectionLayouts: {services:"list|alternating|bento|numbered", portfolio:"list|bento"} · sectionCounts: {services:2-4,portfolio:2-4,process:3-4}\n' +
             '  aboutFlip:bool · pricingAccent:1|2|3 · headingAlign:left|center|right · heroEyebrow:"≤24 char uppercase"\n' +
-            '  pages: [{id,name,path,sections[]}] (omit = use type defaults) · navExtra:{label,href,kind:"button|icon-cart|text"} · navExtraDisabled:bool · footerRecipe:{tagline,columns:[{heading,items:[{label,href}|string]}]}\n' +
+            '  pages: [{id,name,path,sections[],seoTitle?,seoDesc?,showInNav?}] — for multi-page sites, add 1-3 extra pages (e.g. About, Menu, Shop, Contact). id=slug like "about", path="/about", sections[]=subset of the section IDs above. Home page is auto. Prefer this for restaurant/shop/portfolio/fashion types. · navExtra:{label,href,kind:"button|icon-cart|text"} · navExtraDisabled:bool · footerRecipe:{tagline,columns:[{heading,items:[{label,href}|string]}]}\n' +
             '  elementOverrides: {id:{animation,hover,continuous,color,backgroundColor,borderRadius,opacity,position,top/right/bottom/left,zIndex,width/height,transform}} — 5-15 entries max, use for flair only (not layout)\n\n' +
             'copy = fill ALL these keys with original, on-persona text (no generics like "welcome"):\n' +
             '{ heroLine1 (2-4w), heroLine2 (1-2w), heroLine3 (1-2w italic with period), heroSub (<150ch), heroCta (2-3w UPPER),\n' +
