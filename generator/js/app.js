@@ -3564,6 +3564,10 @@
         var editorPages = ArbelEditor.getPages();
         if (editorPages && editorPages.length > 1) {
             cfg.pages = editorPages;
+        } else if (editorPages && editorPages.length === 1 && editorPages[0] && Array.isArray(editorPages[0].customBlocks) && editorPages[0].customBlocks.length) {
+            // Home-only site, but with custom blocks — still pass the home
+            // page entry so the compiler can render them.
+            cfg.pages = editorPages;
         }
 
         // Include video layer config from editor

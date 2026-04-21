@@ -2589,12 +2589,122 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 (page.isHome ? '' :
                     ('<label class="arbel-dialog-label" style="margin-top:10px">Sections on this page <span style="opacity:0.6;font-weight:400">(scroll-order; leave all unchecked for a simple intro page)</span></label>' +
                     '<div class="arbel-page-sec-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--arbel-border,#333);border-radius:6px;padding:8px 10px;background:var(--arbel-bg2,#0a0a0a)">' + secsHtml + '</div>')) +
+                '<label class="arbel-dialog-label" style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+                    '<span>Custom Content Blocks <span style="opacity:0.6;font-weight:400">(extra scroll content; editable on-click)</span></span>' +
+                '</label>' +
+                '<div id="dlgCustomBlocks" style="border:1px solid var(--arbel-border,#333);border-radius:6px;padding:8px;background:var(--arbel-bg2,#0a0a0a);max-height:260px;overflow-y:auto"></div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="heading" style="font-size:11px;padding:4px 10px">+ Heading</button>' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="subheading" style="font-size:11px;padding:4px 10px">+ Subheading</button>' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="text" style="font-size:11px;padding:4px 10px">+ Text</button>' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="button" style="font-size:11px;padding:4px 10px">+ Button</button>' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="image" style="font-size:11px;padding:4px 10px">+ Image</button>' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="spacer" style="font-size:11px;padding:4px 10px">+ Spacer</button>' +
+                    '<button type="button" class="arbel-dialog-btn" data-add-block="divider" style="font-size:11px;padding:4px 10px">+ Divider</button>' +
+                '</div>' +
                 '<div class="arbel-dialog-actions">' +
                     '<button class="arbel-dialog-btn arbel-dialog-cancel">Cancel</button>' +
                     '<button class="arbel-dialog-btn arbel-dialog-confirm">Save</button>' +
                 '</div>' +
             '</div>';
         _container.appendChild(overlay);
+
+        // ─── Custom blocks editor ───
+        // Deep-copy so Cancel truly cancels; we write back on Save.
+        var workingBlocks = (Array.isArray(page.customBlocks) ? page.customBlocks : []).map(function (b) {
+            return { id: b.id, type: b.type, content: b.content, align: b.align, href: b.href };
+        });
+        var blocksHost = overlay.querySelector('#dlgCustomBlocks');
+        function _renderBlocks() {
+            if (!blocksHost) return;
+            if (!workingBlocks.length) {
+                blocksHost.innerHTML = '<div style="opacity:0.55;font-size:11px;padding:6px 4px;text-align:center">No custom blocks yet. Use the buttons below to add free-form content.</div>';
+                return;
+            }
+            var html = '';
+            workingBlocks.forEach(function (b, i) {
+                var isImage = b.type === 'image';
+                var isSpacer = b.type === 'spacer';
+                var isButton = b.type === 'button';
+                var isDivider = b.type === 'divider';
+                var contentField = '';
+                if (isSpacer) {
+                    contentField = '<input type="number" min="1" max="30" class="arbel-dialog-input cb-content" value="' + (Number(b.content) || 4) + '" style="font-size:12px;padding:5px 8px;width:80px" placeholder="rem">';
+                } else if (isImage) {
+                    contentField = '<input type="text" class="arbel-dialog-input cb-content" value="' + _escHtml(b.content || '').replace(/"/g, '&quot;') + '" style="font-size:12px;padding:5px 8px" placeholder="Image URL (https://...)">';
+                } else if (isDivider) {
+                    contentField = '<span style="opacity:0.55;font-size:11px;align-self:center">Horizontal line</span>';
+                } else {
+                    contentField = '<textarea class="arbel-dialog-input cb-content" rows="' + (b.type === 'text' ? 2 : 1) + '" style="font-size:12px;padding:5px 8px;resize:vertical;font-family:inherit" placeholder="' + (isButton ? 'Button label' : b.type.charAt(0).toUpperCase() + b.type.slice(1) + ' text') + '">' + _escHtml(b.content || '') + '</textarea>';
+                }
+                var alignField = (isSpacer || isDivider) ? '' :
+                    '<select class="arbel-dialog-input cb-align" style="font-size:11px;padding:4px 6px;width:auto">' +
+                        '<option value=""' + (!b.align ? ' selected' : '') + '>Left</option>' +
+                        '<option value="center"' + (b.align === 'center' ? ' selected' : '') + '>Center</option>' +
+                        '<option value="right"' + (b.align === 'right' ? ' selected' : '') + '>Right</option>' +
+                    '</select>';
+                var hrefField = isButton ?
+                    '<input type="text" class="arbel-dialog-input cb-href" value="' + _escHtml(b.href || '#').replace(/"/g, '&quot;') + '" style="font-size:11px;padding:4px 6px;width:140px" placeholder="Link URL">' : '';
+                html += '<div class="cb-row" data-idx="' + i + '" style="display:flex;gap:6px;align-items:flex-start;padding:6px;border-bottom:1px solid rgba(255,255,255,0.05)">' +
+                    '<span style="font-size:10px;opacity:0.6;text-transform:uppercase;min-width:60px;padding-top:6px">' + b.type + '</span>' +
+                    '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' + contentField +
+                        (alignField || hrefField ? '<div style="display:flex;gap:4px">' + alignField + hrefField + '</div>' : '') +
+                    '</div>' +
+                    '<div style="display:flex;flex-direction:column;gap:2px">' +
+                        (i > 0 ? '<button type="button" class="cb-up" style="background:transparent;border:1px solid #333;color:#ccc;cursor:pointer;font-size:10px;padding:2px 6px;border-radius:3px">\u2191</button>' : '<span style="height:18px"></span>') +
+                        (i < workingBlocks.length - 1 ? '<button type="button" class="cb-down" style="background:transparent;border:1px solid #333;color:#ccc;cursor:pointer;font-size:10px;padding:2px 6px;border-radius:3px">\u2193</button>' : '<span style="height:18px"></span>') +
+                        '<button type="button" class="cb-remove" style="background:transparent;border:1px solid #a33;color:#f66;cursor:pointer;font-size:10px;padding:2px 6px;border-radius:3px">\u2715</button>' +
+                    '</div>' +
+                    '</div>';
+            });
+            blocksHost.innerHTML = html;
+            // Wire per-row handlers (re-render after any structural change)
+            blocksHost.querySelectorAll('.cb-row').forEach(function (row) {
+                var idx = +row.dataset.idx;
+                var b = workingBlocks[idx]; if (!b) return;
+                var c = row.querySelector('.cb-content');
+                if (c) c.addEventListener('input', function () { b.content = c.value; });
+                var a = row.querySelector('.cb-align');
+                if (a) a.addEventListener('change', function () { b.align = a.value || undefined; });
+                var h = row.querySelector('.cb-href');
+                if (h) h.addEventListener('input', function () { b.href = h.value; });
+                var rm = row.querySelector('.cb-remove');
+                if (rm) rm.addEventListener('click', function () { workingBlocks.splice(idx, 1); _renderBlocks(); });
+                var up = row.querySelector('.cb-up');
+                if (up) up.addEventListener('click', function () {
+                    if (idx <= 0) return;
+                    var tmp = workingBlocks[idx - 1]; workingBlocks[idx - 1] = workingBlocks[idx]; workingBlocks[idx] = tmp;
+                    _renderBlocks();
+                });
+                var dn = row.querySelector('.cb-down');
+                if (dn) dn.addEventListener('click', function () {
+                    if (idx >= workingBlocks.length - 1) return;
+                    var tmp = workingBlocks[idx + 1]; workingBlocks[idx + 1] = workingBlocks[idx]; workingBlocks[idx] = tmp;
+                    _renderBlocks();
+                });
+            });
+        }
+        _renderBlocks();
+        overlay.querySelectorAll('[data-add-block]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var t = btn.dataset.addBlock;
+                var defaults = {
+                    heading:    'New heading',
+                    subheading: 'New subheading',
+                    text:       'New text block — click here to edit or use the overlay on the live site.',
+                    button:     'Click here',
+                    image:      '',
+                    spacer:     '4',
+                    divider:    ''
+                };
+                var nb = { id: 'b' + Math.random().toString(36).slice(2, 8), type: t, content: defaults[t] };
+                if (t === 'button') nb.href = '#';
+                workingBlocks.push(nb);
+                _renderBlocks();
+                // Scroll to end so user sees the new block
+                setTimeout(function () { blocksHost.scrollTop = blocksHost.scrollHeight; }, 0);
+            });
+        });
 
         var nameIn = overlay.querySelector('#dlgEditName');
         var pathIn = overlay.querySelector('#dlgEditPath');
@@ -2626,6 +2736,14 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 });
                 page.sections = picked;
             }
+            // Persist custom blocks (filter out empty image/text to keep clean state)
+            page.customBlocks = workingBlocks.filter(function (b) {
+                if (!b || !b.type) return false;
+                if (b.type === 'image' && !(b.content || '').trim()) return false;
+                if (b.type === 'spacer' || b.type === 'divider') return true;
+                if (!(b.content || '').toString().trim()) return false;
+                return true;
+            });
             _updatePageSelect();
             _renderPageList();
             // Notify app so it recompiles + re-renders the preview to

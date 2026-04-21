@@ -1581,6 +1581,42 @@ window.ArbelCompiler = (function () {
             '</div>\n</section>';
     }
 
+    /* ─── Custom Content Blocks ─── designer-added free-form blocks
+     * (heading / text / spacer / image). Rendered as a single extra
+     * <section> on any page that declares them. Each text block is
+     * overlay-editable so the user can click-to-edit after deploy. */
+    function _renderCustomBlocks(page) {
+        if (!page || !Array.isArray(page.customBlocks) || !page.customBlocks.length) return '';
+        var inner = '';
+        page.customBlocks.forEach(function (b, idx) {
+            if (!b || !b.type) return;
+            var id = 'cb-' + (b.id || (page.id || 'home') + '-' + idx);
+            var align = b.align === 'center' ? 'text-align:center;margin-left:auto;margin-right:auto;' :
+                       (b.align === 'right' ? 'text-align:right;margin-left:auto;' : '');
+            if (b.type === 'heading') {
+                inner += '      <h2 class="section-heading" style="max-width:900px;' + align + 'margin-top:2.5rem" data-arbel-id="' + id + '" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(b.content || 'New Heading') + '</span></span></h2>\n';
+            } else if (b.type === 'subheading') {
+                inner += '      <h3 style="font-size:1.5rem;max-width:780px;margin-top:2rem;' + align + '" data-arbel-id="' + id + '" data-arbel-edit="text">' + esc(b.content || 'New Subheading') + '</h3>\n';
+            } else if (b.type === 'text') {
+                inner += '      <p style="max-width:640px;color:var(--fg2);line-height:1.85;margin-top:1.25rem;font-size:1.02rem;' + align + '" data-arbel-id="' + id + '" data-arbel-edit="text">' + esc(b.content || 'New text block \u2014 click to edit.') + '</p>\n';
+            } else if (b.type === 'spacer') {
+                var h = Math.max(1, Math.min(30, Number(b.content) || 4));
+                inner += '      <div style="height:' + h + 'rem" aria-hidden="true"></div>\n';
+            } else if (b.type === 'divider') {
+                inner += '      <hr style="border:none;border-top:1px solid var(--border);margin:2.5rem 0;max-width:640px">\n';
+            } else if (b.type === 'button') {
+                var href = (b.href || '#').toString();
+                inner += '      <p style="margin-top:1.5rem;' + align + '"><a href="' + escHref(href) + '" class="cta-btn" data-arbel-id="' + id + '" data-arbel-edit="text">' + esc(b.content || 'Click here') + '</a></p>\n';
+            } else if (b.type === 'image') {
+                var src = (b.content || '').toString();
+                if (!src) return;
+                inner += '      <img src="' + escHref(src) + '" alt="" style="max-width:100%;border-radius:12px;margin-top:1.5rem;display:block;' + align + '" data-arbel-id="' + id + '">\n';
+            }
+        });
+        if (!inner.trim()) return '';
+        return '  <section class="section custom-blocks" style="padding:4rem 0">\n    <div class="container">\n' + inner + '    </div>\n  </section>\n\n';
+    }
+
     /* ─── Section builder map ─── */
     var SECTION_BUILDERS = {
         hero: _heroHTML,
@@ -1813,6 +1849,12 @@ window.ArbelCompiler = (function () {
             }
         });
 
+        // Append custom free-form blocks (text / heading / spacer / image)
+        // defined on the home page entry in cfg.pages.
+        if (Array.isArray(cfg.pages) && cfg.pages.length) {
+            var homePg = cfg.pages.filter(function (p) { return p && p.isHome; })[0] || cfg.pages[0];
+            sectionsHTML += _renderCustomBlocks(homePg);
+        }
         var navLinks = '';
         var navSeen = {}; // de-dupe by lowercased label
         var navMap = {
@@ -3378,6 +3420,7 @@ window.ArbelCompiler = (function () {
                     (pageBody && pageBody !== pageDesc ? '    <p style="max-width:640px;color:var(--fg2);line-height:1.85;margin-top:1.25rem" data-arbel-id="page-body" data-arbel-edit="text">' + esc(pageBody) + '</p>\n' : '') +
                     '  </section>\n\n';
             }()) +
+            _renderCustomBlocks(page) +
             (function () {
                 var rich2 = _renderRichFooter(cfg);
                 if (rich2) {
