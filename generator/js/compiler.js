@@ -1855,7 +1855,10 @@ window.ArbelCompiler = (function () {
         if (cfg.pages) {
             cfg.pages.forEach(function (pg) {
                 if (pg.isHome || pg.showInNav === false) return;
-                var href = pg.path || '/' + pg.id;
+                // Relative href so the site works under any base path
+                // (user sites at /, project sites at /<repo>/).
+                var slug = (pg.path || '/' + pg.id).replace(/^\//, '').replace(/\/$/, '');
+                var href = slug ? slug + '/' : '#';
                 navLinks += '        <a href="' + escHref(href) + '" class="nav-link" data-arbel-id="nav-page-' + pg.id + '" data-arbel-edit="text">' + esc(pg.name) + '</a>\n';
             });
         }
