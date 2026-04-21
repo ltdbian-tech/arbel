@@ -2206,6 +2206,9 @@
         // Without this, effects like `cursorStyle: "spotlight"` appear in the
         // preview with no matching dropdown state — and the user can't turn
         // them off manually.
+        // Suppress the per-control "refresh preview" listener while we batch
+        // 18+ updates here; the AI flow rebuilds the preview itself once.
+        state._suppressDesignOptRefresh = true;
         var _syncSel = function (el, v) {
             if (!el || v == null) return;
             // Only assign if the option exists; otherwise leave the user's prior pick alone.
@@ -2256,6 +2259,7 @@
             state.lastAiDesign = JSON.parse(JSON.stringify(design));
         } catch (e) { state.lastAiDesign = null; }
         _populateAdvDesignEditor(state.lastAiDesign);
+        state._suppressDesignOptRefresh = false;
 
         // Remember choices so the next regen picks something different
         _aiLastPresetId = state.style;
@@ -3988,15 +3992,21 @@
     els.particleGlow.addEventListener('input', _markDirty);
     // Section toggles
     els.sectionToggles.addEventListener('change', _markDirty);
-    // Design-option dropdowns (classic-mode manual overrides)
+    // Design-option dropdowns (classic-mode manual overrides) — refresh preview
+    // immediately when the user is on Step 3+ (builder / preview) so changes
+    // made via the builder's Site Design tab show in real time.
+    var _designOptRefresh = function () {
+        if (state._suppressDesignOptRefresh) return;
+        _markDirty();
+        if (state.step >= 3 && typeof generatePreview === 'function') generatePreview();
+    };
     document.querySelectorAll('.design-opt').forEach(function (el) {
-        el.addEventListener('change', _markDirty);
-        el.addEventListener('input', _markDirty);
+        el.addEventListener('change', _designOptRefresh);
     });
-    if (els.optAboutFlip) els.optAboutFlip.addEventListener('change', _markDirty);
+    if (els.optAboutFlip) els.optAboutFlip.addEventListener('change', _designOptRefresh);
     if (els.optToneOfVoice) els.optToneOfVoice.addEventListener('change', function () {
         if (window.ArbelAI && ArbelAI.setTone) ArbelAI.setTone(els.optToneOfVoice.value || '');
-        _markDirty();
+        _designOptRefresh();
     });
     // Advanced Design (JSON) editor — Apply / Reset / Format buttons
     _wireAdvancedDesign();

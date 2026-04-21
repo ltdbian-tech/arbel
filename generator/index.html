@@ -386,9 +386,9 @@
                         </div>
 
                         <!-- Design Options (manual customization; AI also writes these) -->
-                        <div class="config-group">
+                        <div class="config-group" id="designOptionsGroup">
                             <h3 class="config-group-title mono">DESIGN OPTIONS</h3>
-                            <p class="config-hint">Optional style tweaks. Leave as <em>Default</em> to use the preset&#8217;s built-in look, or override any axis here. AI regeneration fills these too.</p>
+                            <p class="config-hint">Optional style tweaks. Leave as <em>Default</em> to use the preset&#8217;s built-in look, or override any axis here. AI regeneration fills these too. <em>Also available inside the builder &rarr; Site Design tab.</em></p>
 
                             <div class="design-grid">
                                 <div class="design-field">
@@ -1094,6 +1094,10 @@
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                 <span class="bfs-tab-label">Pages</span>
                             </button>
+                            <button class="bfs-tab" data-tab="site-design" title="Site Design — every style axis AI can set, editable by hand">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                                <span class="bfs-tab-label">Site Design</span>
+                            </button>
                         </div>
 
                         <!-- Layers Panel (Canva-style) -->
@@ -1157,6 +1161,15 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
                                 Add Page
                             </button>
+                        </div>
+
+                        <!-- Site Design Panel: hosts the same DESIGN OPTIONS + ADVANCED groups used in
+                             Step 2. On activation, JS moves those nodes into #bfsSiteDesignSlot so both
+                             places share the exact same controls (same IDs, one source of truth). -->
+                        <div class="bfs-left-panel bfs-panel-content" data-panel="site-design">
+                            <div class="bfs-panel-head mono">SITE DESIGN</div>
+                            <p class="editor-hint mono" style="margin-bottom:10px">Every style axis the AI can set &mdash; editable by hand. Changes here instantly update the preview.</p>
+                            <div id="bfsSiteDesignSlot" class="bfs-site-design-slot"></div>
                         </div>
                     </div>
 
@@ -4334,18 +4347,18 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="js/key-manager.js?v=20260421c"></script>
-    <script src="js/auth.js?v=20260421c"></script>
-    <script src="js/site-types.js?v=20260421c"></script>
-    <script src="js/image-bank.js?v=20260421c"></script>
-    <script src="js/ai.js?v=20260421c"></script>
-    <script src="js/ai-media.js?v=20260421c"></script>
-    <script src="js/compiler.js?v=20260421c"></script>
-    <script src="js/cinematic-compiler.js?v=20260421c"></script>
-    <script src="js/preview.js?v=20260421c"></script>
-    <script src="js/editor.js?v=20260421c"></script>
-    <script src="js/cinematic-editor.js?v=20260421c"></script>
-    <script src="js/deploy.js?v=20260421c"></script>
-    <script src="js/app.js?v=20260421c"></script>
+    <script src="js/key-manager.js?v=20260421d"></script>
+    <script src="js/auth.js?v=20260421d"></script>
+    <script src="js/site-types.js?v=20260421d"></script>
+    <script src="js/image-bank.js?v=20260421d"></script>
+    <script src="js/ai.js?v=20260421d"></script>
+    <script src="js/ai-media.js?v=20260421d"></script>
+    <script src="js/compiler.js?v=20260421d"></script>
+    <script src="js/cinematic-compiler.js?v=20260421d"></script>
+    <script src="js/preview.js?v=20260421d"></script>
+    <script src="js/editor.js?v=20260421d"></script>
+    <script src="js/cinematic-editor.js?v=20260421d"></script>
+    <script src="js/deploy.js?v=20260421d"></script>
+    <script src="js/app.js?v=20260421d"></script>
 </body>
 </html>

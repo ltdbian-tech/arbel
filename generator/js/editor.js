@@ -1293,8 +1293,55 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                         var target = parent.querySelector('[data-panel="' + panelName + '"]');
                         if (target) target.classList.add('active');
                     }
+                    // "Site Design" tab hosts the DESIGN OPTIONS + ADVANCED groups
+                    // that normally live in Step 2. Move them here on activate,
+                    // move them back on deactivate so both places share the exact
+                    // same controls (no duplicate IDs, no sync plumbing).
+                    if (panelName === 'site-design') _mountSiteDesign();
+                    else _unmountSiteDesign();
                 });
             });
+        });
+    }
+
+    /** Relocate the shared design panels into the builder's Site Design tab. */
+    function _mountSiteDesign() {
+        var slot = document.getElementById('bfsSiteDesignSlot');
+        if (!slot) return;
+        ['designOptionsGroup', 'advancedDesignGroup'].forEach(function (id) {
+            var node = document.getElementById(id);
+            if (!node || node.parentElement === slot) return;
+            // Remember where it came from so we can put it back on leave.
+            if (!node.dataset._originalParentId) {
+                var par = node.parentElement;
+                if (par && par.id) node.dataset._originalParentId = par.id;
+                // Leave a comment marker so we can re-insert at the right spot.
+                var marker = document.createComment('site-design-slot:' + id);
+                par.insertBefore(marker, node);
+                node.dataset._markerIndex = Array.prototype.indexOf.call(par.childNodes, marker);
+            }
+            slot.appendChild(node);
+        });
+    }
+
+    /** Return the panels to their original home (Step 2 config sidebar). */
+    function _unmountSiteDesign() {
+        var slot = document.getElementById('bfsSiteDesignSlot');
+        if (!slot) return;
+        ['designOptionsGroup', 'advancedDesignGroup'].forEach(function (id) {
+            var node = document.getElementById(id);
+            if (!node || node.parentElement !== slot) return;
+            var origId = node.dataset._originalParentId;
+            var orig = origId && document.getElementById(origId);
+            if (!orig) return;
+            // Find the marker we stashed; fall back to appendChild.
+            var marker = null;
+            for (var i = 0; i < orig.childNodes.length; i++) {
+                var c = orig.childNodes[i];
+                if (c.nodeType === 8 && c.data === 'site-design-slot:' + id) { marker = c; break; }
+            }
+            if (marker) orig.insertBefore(node, marker.nextSibling);
+            else orig.appendChild(node);
         });
     }
 

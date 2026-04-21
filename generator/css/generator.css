@@ -1392,6 +1392,18 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
 .bfs-panel-content.active { display: flex; flex-direction: column; }
 .bfs-left-panel { padding: 12px; }
 .bfs-right-panel { padding: 16px; }
+
+/* Site Design slot — reused DESIGN OPTIONS + ADVANCED nodes get moved in here
+ * when the Site Design tab is active. Force single-column grid since the
+ * sidebar is narrower than the Step-2 sidebar. */
+.bfs-site-design-slot .config-group { padding: 0; margin-bottom: 16px; }
+.bfs-site-design-slot .config-group-title { font-size: 0.7rem; margin-bottom: 8px; }
+.bfs-site-design-slot .config-hint { font-size: 0.7rem; line-height: 1.45; margin-bottom: 10px; }
+.bfs-site-design-slot .design-grid { grid-template-columns: 1fr; gap: 10px 0; }
+.bfs-site-design-slot .design-field--wide { grid-column: auto; }
+.bfs-site-design-slot #advDesignJson { font-size: 0.68rem; }
+.bfs-site-design-slot .gen-input,
+.bfs-site-design-slot .gen-textarea { font-size: 0.78rem; }
 .bfs-panel-head {
     font-family: var(--font-mono);
     font-size: 0.65rem;
