@@ -4255,14 +4255,12 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
             };
         }
 
-        // Check if nav overlay is open — dual detection: message state + direct iframe check
+        // Check if nav overlay is open.  We trust the _navOpenState variable
+        // kept in sync by the 'arbel-nav-state' message posted from inside
+        // the iframe (overlay script).  The old fallback read
+        // iframe.contentDocument directly, which no longer works now that
+        // the preview iframe is null-origin.
         var _isNavOpen = _navOpenState;
-        if (!_isNavOpen && _activeDevice !== 'desktop' && _iframe) {
-            try {
-                var _ifrDoc = _iframe.contentDocument || (_iframe.contentWindow && _iframe.contentWindow.document);
-                if (_ifrDoc && _ifrDoc.body) _isNavOpen = _ifrDoc.body.classList.contains('nav-open');
-            } catch (e) {}
-        }
         if (_isNavOpen) msg.navOverlay = true;
 
         _postIframe('arbel-add-element', msg);

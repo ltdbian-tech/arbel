@@ -30,12 +30,22 @@ window.ArbelCinematicCompiler = (function () {
     'use strict';
 
     /* ─── Helpers ─── */
+    /** Escape HTML entities for SAFE use in BOTH text and attribute contexts.
+     *  The old textNode+innerHTML approach only escaped & < > (per the HTML
+     *  serialization spec), which left `"` and `'` intact — a stored-XSS
+     *  sink when embedded inside attributes (alt=", placeholder=", data-*=").
+     *  We now entity-escape the quote chars too so the same helper is safe
+     *  in either context.
+     */
     function esc(str) {
         if (str === 0 || str === false) str = String(str);
         if (!str) return '';
-        var div = document.createElement('div');
-        div.appendChild(document.createTextNode(String(str)));
-        return div.innerHTML;
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /** Sanitise a URL for use in href/src attributes. */

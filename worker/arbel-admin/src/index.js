@@ -188,7 +188,10 @@ async function verifySession(env, cookieValue, ipHash) {
 function getCookie(request, name) {
     const c = request.headers.get('Cookie') || '';
     const m = c.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
-    return m ? decodeURIComponent(m[1]) : null;
+    if (!m) return null;
+    // Malformed %-sequences throw URIError — a bad cookie from a curious
+    // client should return "no cookie" rather than 500 the whole request.
+    try { return decodeURIComponent(m[1]); } catch (e) { return null; }
 }
 
 /* ─── Brute-force / rate-limit (KV-backed) ────────────────────── */

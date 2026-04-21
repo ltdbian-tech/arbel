@@ -29,12 +29,24 @@
 window.ArbelCompiler = (function () {
     'use strict';
 
-    /** Escape HTML entities to prevent XSS in generated output */
+    /** Escape HTML entities for SAFE use in BOTH text and attribute contexts.
+     *
+     *  CRITICAL: The old textNode+innerHTML approach only escaped & < > (per the
+     *  HTML serialization spec), which left `"` and `'` intact.  That was fine
+     *  for text content, but every compiler call site that embeds this inside
+     *  an attribute (alt="...", placeholder="...", data-*="...", etc.) was a
+     *  stored-XSS sink — a single `"` in an AI-generated string would break
+     *  out of the attribute.  We now also escape the quote chars so the same
+     *  helper is safe in either context.
+     */
     function esc(str) {
-        if (!str) return '';
-        var div = document.createElement('div');
-        div.appendChild(document.createTextNode(str));
-        return div.innerHTML;
+        if (str == null) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /** Sanitize a URL for safe use inside an href/src attribute.
@@ -1978,6 +1990,25 @@ window.ArbelCompiler = (function () {
             '<html lang="en">\n<head>\n' +
             '  <meta charset="UTF-8">\n' +
             '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+            // Defense-in-depth CSP for the deployed site.  Matches the cinematic
+            // compiler.  Blocks inline event handlers (onerror=, onclick=, …) so
+            // even if an attribute-context XSS slipped past `esc()` the payload
+            // cannot fire an inline handler.  `'unsafe-inline'` for scripts is
+            // still needed by our own generated bootstrap + gtag/JSON-LD users.
+            '  <meta http-equiv="Content-Security-Policy" content="'
+                + "default-src 'self'; "
+                + "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://www.googletagmanager.com https://www.google-analytics.com; "
+                + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                + "font-src 'self' https://fonts.gstatic.com data:; "
+                + "img-src 'self' data: blob: https:; "
+                + "media-src 'self' data: blob: https:; "
+                + "connect-src 'self' https:; "
+                + "frame-src 'self' https:; "
+                + "object-src 'none'; "
+                + "base-uri 'self'; "
+                + "form-action 'self' https:"
+                + '">\n' +
+            '  <meta name="referrer" content="strict-origin-when-cross-origin">\n' +
             metaBlock +
             '  <link rel="preconnect" href="https://fonts.googleapis.com">\n' +
             '  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
@@ -3355,6 +3386,21 @@ window.ArbelCompiler = (function () {
 
         return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
             '  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+            // Sub-pages get the same CSP as the main page — keep them aligned.
+            '  <meta http-equiv="Content-Security-Policy" content="'
+                + "default-src 'self'; "
+                + "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com https://www.googletagmanager.com https://www.google-analytics.com; "
+                + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                + "font-src 'self' https://fonts.gstatic.com data:; "
+                + "img-src 'self' data: blob: https:; "
+                + "media-src 'self' data: blob: https:; "
+                + "connect-src 'self' https:; "
+                + "frame-src 'self' https:; "
+                + "object-src 'none'; "
+                + "base-uri 'self'; "
+                + "form-action 'self' https:"
+                + '">\n' +
+            '  <meta name="referrer" content="strict-origin-when-cross-origin">\n' +
             '  <title>' + esc(page.seoTitle || page.name) + ' \u2014 ' + esc(cfg.brandName) + '</title>\n' +
             (page.seoDesc ? '  <meta name="description" content="' + esc(page.seoDesc) + '">\n' : '') +
             _faviconTags(cfg) +

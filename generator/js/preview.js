@@ -30,6 +30,63 @@ window.ArbelPreview = (function () {
 
     var _iframe = null;
     var _blobUrls = [];
+    // Latest scroll position reported by the iframe via postMessage.
+    // Used to restore scroll across re-renders without reading the iframe
+    // DOM directly (which is blocked now that the preview is null-origin).
+    var _lastScrollY = 0;
+    // Queue of audit resolvers keyed by request id.  Each _runAudit() posts
+    // an 'arbel-audit-run' message to the iframe and waits for its reply.
+    var _auditPending = {};
+    var _auditSeq = 0;
+    var _messageHandlerAttached = false;
+
+    /* ─── Cross-iframe message bus ─────────────────────────────
+     * The preview iframe runs null-origin (sandbox without
+     * allow-same-origin) so we cannot touch its DOM.  Everything
+     * the parent used to do synchronously \u2014 read scrollY, run the
+     * WCAG audit, scroll to an audit target \u2014 now goes through the
+     * message bus below.  The iframe-side companion script
+     * (IFRAME_HELPER_SCRIPT, injected by _buildInlineHTML) handles
+     * the other half of each call.
+     */
+    function _ensureMessageHandler() {
+        if (_messageHandlerAttached) return;
+        _messageHandlerAttached = true;
+        window.addEventListener('message', function (e) {
+            if (!_iframe || e.source !== _iframe.contentWindow) return;
+            var d = e.data;
+            if (!d || typeof d !== 'object') return;
+            if (d.type === 'arbel-preview-scroll' && typeof d.y === 'number') {
+                _lastScrollY = d.y;
+            } else if (d.type === 'arbel-audit-result' && d.rid && _auditPending[d.rid]) {
+                var resolve = _auditPending[d.rid];
+                delete _auditPending[d.rid];
+                resolve(d.report || { issues: [], error: 'no-report' });
+            }
+        });
+    }
+
+    function _postToIframe(msg) {
+        try { if (_iframe && _iframe.contentWindow) _iframe.contentWindow.postMessage(msg, '*'); }
+        catch (e) { /* iframe gone \u2014 ignore */ }
+    }
+
+    /** Request a WCAG audit from the iframe.  Returns a Promise that resolves
+     *  with the report, or a soft error after 2s. */
+    function _runAudit() {
+        return new Promise(function (resolve) {
+            if (!_iframe) { resolve({ issues: [], error: 'no-iframe' }); return; }
+            var rid = 'a' + (++_auditSeq);
+            _auditPending[rid] = resolve;
+            _postToIframe({ type: 'arbel-audit-run', rid: rid });
+            setTimeout(function () {
+                if (_auditPending[rid]) {
+                    delete _auditPending[rid];
+                    resolve({ issues: [], error: 'timeout' });
+                }
+            }, 2000);
+        });
+    }
 
     /** Revoke all previously created blob URLs */
     function _cleanup() {
@@ -39,7 +96,10 @@ window.ArbelPreview = (function () {
         _blobUrls = [];
     }
 
-    /** Convert a data:video URL to a blob URL for reliable iframe playback */
+    /** Convert a data:video URL to a blob URL for reliable iframe playback.
+     *  Kept for backwards compatibility; the actual conversion now happens
+     *  INSIDE the iframe (see IFRAME_HELPER_SCRIPT) because a null-origin
+     *  sandboxed iframe cannot load blob: URLs created by the parent window. */
     function _dataUrlToBlob(dataUrl) {
         try {
             var parts = dataUrl.split(',');
@@ -51,17 +111,6 @@ window.ArbelPreview = (function () {
             for (var i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
             return new Blob([arr], { type: mime });
         } catch (ex) { return null; }
-    }
-
-    /** Replace inline data:video URLs with blob URLs for preview */
-    function _convertVideoUrls(html) {
-        return html.replace(/src="(data:video\/[^"]+)"/g, function (match, dataUrl) {
-            var blob = _dataUrlToBlob(dataUrl);
-            if (!blob) return match;
-            var blobUrl = URL.createObjectURL(blob);
-            _blobUrls.push(blobUrl);
-            return 'src="' + blobUrl + '"';
-        });
     }
 
     /**
@@ -125,19 +174,30 @@ window.ArbelPreview = (function () {
     function render(iframe, files, editorScript, pagePath) {
         if (!iframe) return;
         _iframe = iframe;
+        _ensureMessageHandler();
 
-        // Save scroll position before re-render
-        var savedScrollY = 0;
-        try {
-            if (iframe.contentWindow) savedScrollY = iframe.contentWindow.scrollY || 0;
-        } catch (e) { /* cross-origin or blank — ignore */ }
+        // Use the scroll position reported by the iframe's last scroll event
+        // (cross-origin safe) instead of reading iframe.contentWindow.scrollY.
+        var savedScrollY = _lastScrollY || 0;
 
         _cleanup();
 
         var inlinedHTML = _buildInlineHTML(files, pagePath);
 
-        // Convert data:video URLs to blob URLs for reliable playback in iframe
-        inlinedHTML = _convertVideoUrls(inlinedHTML);
+        // NOTE: data:video URL -> blob URL conversion used to happen here in
+        // the parent, but null-origin iframes cannot load parent-origin
+        // blob URLs.  The same conversion now runs INSIDE the iframe via
+        // IFRAME_HELPER_SCRIPT, where the blob belongs to the iframe's own
+        // (null) origin and loads cleanly.
+
+        // Inject the parent<->iframe helper script FIRST so it's available
+        // even if the editor overlay is disabled.  It runs the WCAG audit,
+        // tracks scroll, and handles jump-to-issue \u2014 everything the parent
+        // used to do via direct DOM access.
+        inlinedHTML = inlinedHTML.replace(
+            '</body>',
+            '<script>' + IFRAME_HELPER_SCRIPT + '<\/script>\n</body>'
+        );
 
         // Inject editor overlay script if provided
         if (editorScript) {
@@ -151,23 +211,24 @@ window.ArbelPreview = (function () {
         var url = URL.createObjectURL(blob);
         _blobUrls.push(url);
 
-        // Restore scroll position after iframe loads
+        // Restore scroll position after iframe loads \u2014 via postMessage since
+        // we can no longer call iframe.contentWindow.scrollTo() directly.
         var onLoad = function () {
             iframe.removeEventListener('load', onLoad);
             if (savedScrollY > 0) {
-                // Small delay to let GSAP/ScrollTrigger initialize before restoring
                 setTimeout(function () {
-                    try { iframe.contentWindow.scrollTo(0, savedScrollY); } catch (e) {}
+                    _postToIframe({ type: 'arbel-preview-scroll-to', y: savedScrollY });
                 }, 80);
             }
             // Run self-audit once the preview paints (non-fatal)
             setTimeout(function () {
-                try {
-                    var report = _audit(iframe);
-                    if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('arbel:audit', { detail: report }));
-                    }
-                } catch (e) { /* ignore */ }
+                _runAudit().then(function (report) {
+                    try {
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('arbel:audit', { detail: report }));
+                        }
+                    } catch (e) { /* ignore */ }
+                });
             }, 400);
         };
         iframe.addEventListener('load', onLoad);
@@ -207,228 +268,258 @@ window.ArbelPreview = (function () {
     // ─────────────────────────────────────────────────────────────
     // SELF-AUDIT — WCAG contrast, heading length, CTA dup, alt, h-hierarchy
     // ─────────────────────────────────────────────────────────────
-    function _parseColor(str) {
-        if (!str) return null;
-        var m = str.match(/rgba?\(([^)]+)\)/);
-        if (!m) return null;
-        var parts = m[1].split(',').map(function (s) { return parseFloat(s.trim()); });
-        if (parts.length < 3 || parts.some(isNaN)) return null;
-        return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
-    }
-    function _relLum(c) {
-        function ch(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
-        return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
-    }
-    function _contrast(fg, bg) {
-        if (!fg || !bg) return null;
-        var L1 = _relLum(fg), L2 = _relLum(bg);
-        var hi = Math.max(L1, L2), lo = Math.min(L1, L2);
-        return (hi + 0.05) / (lo + 0.05);
-    }
-    /** Walk up ancestors to find first opaque background color */
-    function _effectiveBg(el, win) {
-        var cur = el;
-        while (cur && cur.nodeType === 1) {
-            var s = win.getComputedStyle(cur);
-            var c = _parseColor(s.backgroundColor);
-            if (c && c.a > 0.5) return c;
-            cur = cur.parentElement;
-        }
-        return { r: 255, g: 255, b: 255, a: 1 };
-    }
-    function _audit(iframe) {
-        var issues = [];
-        var doc, win;
-        try { doc = iframe.contentDocument; win = iframe.contentWindow; }
-        catch (e) { return { issues: issues, error: 'cross-origin' }; }
-        if (!doc || !doc.body) return { issues: issues, error: 'no-doc' };
-
-        // Attach a stable per-element id so the banner can jump back to it
-        var _auditSeq = 0;
-        function _tag(el) {
-            if (!el) return null;
-            var id = el.getAttribute('data-arbel-audit');
-            if (!id) {
-                id = 'aud-' + (++_auditSeq);
-                el.setAttribute('data-arbel-audit', id);
+    // The audit used to read the iframe DOM directly from the parent.  That
+    // required sandbox="allow-same-origin", which also gave any stored-XSS
+    // payload inside the preview full access to parent.sessionStorage (GitHub
+    // PAT) and parent.localStorage (AI API keys).  We now inject this helper
+    // script INTO the iframe and run the audit there, returning a plain JSON
+    // report via postMessage.  The preview iframe can then be null-origin.
+    var IFRAME_HELPER_SCRIPT = (function () {
+        // Keep this function body self-contained — it is stringified and
+        // injected into every preview iframe, so it cannot reference any
+        // parent-side variables or helpers.
+        function helper() {
+            'use strict';
+            function parseColor(str) {
+                if (!str) return null;
+                var m = str.match(/rgba?\(([^)]+)\)/);
+                if (!m) return null;
+                var parts = m[1].split(',').map(function (s) { return parseFloat(s.trim()); });
+                if (parts.length < 3 || parts.some(isNaN)) return null;
+                return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
             }
-            return id;
-        }
-
-        // 1. Contrast — sample visible text-bearing elements (cap at 200 for perf)
-        var textSel = 'h1,h2,h3,h4,p,a,button,span,li,.btn';
-        var nodes = Array.prototype.slice.call(doc.querySelectorAll(textSel), 0, 200);
-        var seenPairs = {};
-        var fixedCount = 0;
-        nodes.forEach(function (el) {
-            if (!el.textContent || !el.textContent.trim()) return;
-            var s = win.getComputedStyle(el);
-            if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) < 0.3) return;
-            var fg = _parseColor(s.color);
-            var bg = _effectiveBg(el, win);
-            var ratio = _contrast(fg, bg);
-            if (ratio == null) return;
-            var fontSize = parseFloat(s.fontSize) || 16;
-            var fontWeight = parseInt(s.fontWeight, 10) || 400;
-            var isLarge = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
-            var required = isLarge ? 3.0 : 4.5;
-            if (ratio < required) {
-                var key = s.color + '|' + s.backgroundColor + '|' + el.tagName;
-                if (seenPairs[key]) return;
-                seenPairs[key] = true;
-
-                // ─── AUTO-FIX: nudge foreground color until AA passes ──────
-                var fixedColor = _findAAColor(fg, bg, required);
-                var fixed = false;
-                if (fixedColor) {
-                    el.style.color = 'rgb(' + fixedColor.r + ',' + fixedColor.g + ',' + fixedColor.b + ')';
-                    fixed = true;
-                    fixedCount++;
+            function relLum(c) {
+                function ch(v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+                return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+            }
+            function contrast(fg, bg) {
+                if (!fg || !bg) return null;
+                var L1 = relLum(fg), L2 = relLum(bg);
+                var hi = Math.max(L1, L2), lo = Math.min(L1, L2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function effectiveBg(el, win) {
+                var cur = el;
+                while (cur && cur.nodeType === 1) {
+                    var s = win.getComputedStyle(cur);
+                    var c = parseColor(s.backgroundColor);
+                    if (c && c.a > 0.5) return c;
+                    cur = cur.parentElement;
                 }
-
-                issues.push({
-                    level: fixed ? 'warn' : (ratio < required * 0.7 ? 'error' : 'warn'),
-                    type: 'contrast',
-                    fixed: fixed,
-                    targetId: _tag(el),
-                    msg: (fixed ? 'Auto-fixed: ' : '') +
-                         'Low contrast ' + ratio.toFixed(2) + ':1 (needs ' + required + ':1) on <' +
-                         el.tagName.toLowerCase() + '> "' +
-                         el.textContent.trim().slice(0, 40) + '"'
-                });
+                return { r: 255, g: 255, b: 255, a: 1 };
             }
-        });
-
-        // 2. Headings too long (>120 chars)
-        doc.querySelectorAll('h1,h2,h3').forEach(function (h) {
-            var t = (h.textContent || '').trim();
-            if (t.length > 120) {
-                issues.push({
-                    level: 'warn', type: 'heading-length',
-                    targetId: _tag(h),
-                    msg: '<' + h.tagName.toLowerCase() + '> is ' + t.length + ' chars (>120) — "' + t.slice(0, 50) + '…"'
-                });
+            function findAAColor(fg, bg, required) {
+                if (!fg || !bg) return null;
+                var bgLum = relLum(bg);
+                var targetDir = bgLum > 0.5 ? -1 : 1;
+                var r = fg.r, g = fg.g, b = fg.b;
+                for (var step = 0; step < 30; step++) {
+                    r = Math.max(0, Math.min(255, r + targetDir * 9));
+                    g = Math.max(0, Math.min(255, g + targetDir * 9));
+                    b = Math.max(0, Math.min(255, b + targetDir * 9));
+                    var test = { r: r, g: g, b: b, a: 1 };
+                    var ratio = contrast(test, bg);
+                    if (ratio != null && ratio >= required) return test;
+                    if ((targetDir > 0 && r === 255 && g === 255 && b === 255) ||
+                        (targetDir < 0 && r === 0 && g === 0 && b === 0)) break;
+                }
+                return null;
             }
-        });
-
-        // 3. Duplicate CTA text
-        var ctaTexts = {};
-        var ctaFirstEl = {};
-        doc.querySelectorAll('a.btn, button.btn, .btn').forEach(function (el) {
-            var t = (el.textContent || '').trim().toLowerCase();
-            if (!t || t.length < 2) return;
-            ctaTexts[t] = (ctaTexts[t] || 0) + 1;
-            if (!ctaFirstEl[t]) ctaFirstEl[t] = el;
-        });
-        Object.keys(ctaTexts).forEach(function (t) {
-            if (ctaTexts[t] >= 3) {
-                issues.push({
-                    level: 'warn', type: 'cta-duplicate',
-                    targetId: _tag(ctaFirstEl[t]),
-                    msg: 'CTA text "' + t + '" appears ' + ctaTexts[t] + '× — consider varying'
+            function runAudit() {
+                var issues = [];
+                var doc = document, win = window;
+                if (!doc.body) return { issues: issues, error: 'no-doc' };
+                var auditSeq = 0;
+                function tag(el) {
+                    if (!el) return null;
+                    var id = el.getAttribute('data-arbel-audit');
+                    if (!id) { id = 'aud-' + (++auditSeq); el.setAttribute('data-arbel-audit', id); }
+                    return id;
+                }
+                var textSel = 'h1,h2,h3,h4,p,a,button,span,li,.btn';
+                var nodes = Array.prototype.slice.call(doc.querySelectorAll(textSel), 0, 200);
+                var seenPairs = {};
+                var fixedCount = 0;
+                nodes.forEach(function (el) {
+                    if (!el.textContent || !el.textContent.trim()) return;
+                    var s = win.getComputedStyle(el);
+                    if (s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) < 0.3) return;
+                    var fg = parseColor(s.color);
+                    var bg = effectiveBg(el, win);
+                    var ratio = contrast(fg, bg);
+                    if (ratio == null) return;
+                    var fontSize = parseFloat(s.fontSize) || 16;
+                    var fontWeight = parseInt(s.fontWeight, 10) || 400;
+                    var isLarge = fontSize >= 24 || (fontSize >= 18.66 && fontWeight >= 700);
+                    var required = isLarge ? 3.0 : 4.5;
+                    if (ratio < required) {
+                        var key = s.color + '|' + s.backgroundColor + '|' + el.tagName;
+                        if (seenPairs[key]) return;
+                        seenPairs[key] = true;
+                        var fixedColor = findAAColor(fg, bg, required);
+                        var fixed = false;
+                        if (fixedColor) {
+                            el.style.color = 'rgb(' + fixedColor.r + ',' + fixedColor.g + ',' + fixedColor.b + ')';
+                            fixed = true; fixedCount++;
+                        }
+                        issues.push({
+                            level: fixed ? 'warn' : (ratio < required * 0.7 ? 'error' : 'warn'),
+                            type: 'contrast', fixed: fixed, targetId: tag(el),
+                            msg: (fixed ? 'Auto-fixed: ' : '') +
+                                'Low contrast ' + ratio.toFixed(2) + ':1 (needs ' + required + ':1) on <' +
+                                el.tagName.toLowerCase() + '> "' +
+                                el.textContent.trim().slice(0, 40) + '"'
+                        });
+                    }
                 });
+                doc.querySelectorAll('h1,h2,h3').forEach(function (h) {
+                    var t = (h.textContent || '').trim();
+                    if (t.length > 120) {
+                        issues.push({
+                            level: 'warn', type: 'heading-length', targetId: tag(h),
+                            msg: '<' + h.tagName.toLowerCase() + '> is ' + t.length + ' chars (>120) \u2014 "' + t.slice(0, 50) + '\u2026"'
+                        });
+                    }
+                });
+                var ctaTexts = {}, ctaFirstEl = {};
+                doc.querySelectorAll('a.btn, button.btn, .btn').forEach(function (el) {
+                    var t = (el.textContent || '').trim().toLowerCase();
+                    if (!t || t.length < 2) return;
+                    ctaTexts[t] = (ctaTexts[t] || 0) + 1;
+                    if (!ctaFirstEl[t]) ctaFirstEl[t] = el;
+                });
+                Object.keys(ctaTexts).forEach(function (t) {
+                    if (ctaTexts[t] >= 3) {
+                        issues.push({
+                            level: 'warn', type: 'cta-duplicate', targetId: tag(ctaFirstEl[t]),
+                            msg: 'CTA text "' + t + '" appears ' + ctaTexts[t] + '\u00d7 \u2014 consider varying'
+                        });
+                    }
+                });
+                var imgsNoAlt = 0, firstImgNoAlt = null;
+                doc.querySelectorAll('img').forEach(function (img) {
+                    if (!img.hasAttribute('alt')) { imgsNoAlt++; if (!firstImgNoAlt) firstImgNoAlt = img; }
+                });
+                if (imgsNoAlt > 0) {
+                    issues.push({
+                        level: 'warn', type: 'alt',
+                        targetId: firstImgNoAlt ? tag(firstImgNoAlt) : null,
+                        msg: imgsNoAlt + ' image(s) missing alt attribute'
+                    });
+                }
+                var headingEls = doc.querySelectorAll('h1,h2,h3,h4,h5,h6');
+                var levels = [];
+                headingEls.forEach(function (h) { levels.push(parseInt(h.tagName.charAt(1), 10)); });
+                for (var i = 1; i < levels.length; i++) {
+                    if (levels[i] - levels[i - 1] > 1) {
+                        issues.push({
+                            level: 'warn', type: 'heading-skip', targetId: tag(headingEls[i]),
+                            msg: 'Heading jumps from h' + levels[i - 1] + ' to h' + levels[i] + ' (skip)'
+                        });
+                        break;
+                    }
+                }
+                var h1s = doc.querySelectorAll('h1');
+                if (h1s.length === 0) issues.push({ level: 'warn', type: 'h1', msg: 'No <h1> found on page' });
+                else if (h1s.length > 1) issues.push({
+                    level: 'warn', type: 'h1', targetId: tag(h1s[1]),
+                    msg: h1s.length + ' <h1> elements \u2014 use one per page'
+                });
+                return {
+                    issues: issues,
+                    errors: issues.filter(function (i) { return i.level === 'error'; }).length,
+                    warnings: issues.filter(function (i) { return i.level === 'warn'; }).length,
+                    fixed: fixedCount,
+                    ok: issues.length === 0
+                };
             }
-        });
-
-        // 4. Images missing alt
-        var imgsNoAlt = 0;
-        var firstImgNoAlt = null;
-        doc.querySelectorAll('img').forEach(function (img) {
-            if (!img.hasAttribute('alt')) { imgsNoAlt++; if (!firstImgNoAlt) firstImgNoAlt = img; }
-        });
-        if (imgsNoAlt > 0) {
-            issues.push({
-                level: 'warn', type: 'alt',
-                targetId: firstImgNoAlt ? _tag(firstImgNoAlt) : null,
-                msg: imgsNoAlt + ' image(s) missing alt attribute'
+            function jumpTo(targetId) {
+                if (!targetId) return;
+                var el = document.querySelector('[data-arbel-audit="' + targetId + '"]');
+                if (!el) return;
+                try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+                var prev = el.style.outline, prevT = el.style.transition;
+                el.style.transition = 'outline 1.4s ease-out, outline-offset 1.4s ease-out';
+                el.style.outline = '3px solid rgba(108,92,231,0.95)';
+                el.style.outlineOffset = '4px';
+                setTimeout(function () {
+                    el.style.outline = '3px solid rgba(108,92,231,0)';
+                    el.style.outlineOffset = '12px';
+                }, 40);
+                setTimeout(function () {
+                    el.style.outline = prev || '';
+                    el.style.outlineOffset = '';
+                    el.style.transition = prevT || '';
+                }, 1500);
+            }
+            // Throttled scroll reporter \u2014 parent uses this to save/restore
+            // scroll position across re-renders.
+            var _scrollRaf = 0;
+            window.addEventListener('scroll', function () {
+                if (_scrollRaf) return;
+                _scrollRaf = requestAnimationFrame(function () {
+                    _scrollRaf = 0;
+                    try { window.parent.postMessage({ type: 'arbel-preview-scroll', y: window.scrollY || 0 }, '*'); }
+                    catch (e) { }
+                });
+            }, { passive: true });            // Convert any inline data:video URLs into iframe-local blob URLs.
+            // Has to happen inside the iframe because a null-origin sandbox
+            // cannot load blob: URLs owned by the parent document.
+            function convertVideos() {
+                try {
+                    var nodes = document.querySelectorAll('video source[src^="data:video/"], video[src^="data:video/"]');
+                    for (var i = 0; i < nodes.length; i++) {
+                        var n = nodes[i];
+                        var src = n.getAttribute('src') || '';
+                        var parts = src.split(',');
+                        if (parts.length < 2) continue;
+                        var mimeMatch = parts[0].match(/:(.*?);/);
+                        var mime = mimeMatch ? mimeMatch[1] : 'video/mp4';
+                        try {
+                            var bin = atob(parts[1]);
+                            var arr = new Uint8Array(bin.length);
+                            for (var j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+                            var blob = new Blob([arr], { type: mime });
+                            n.setAttribute('src', URL.createObjectURL(blob));
+                            var parentV = n.tagName === 'SOURCE' ? n.parentElement : n;
+                            if (parentV && parentV.load) { try { parentV.load(); } catch (ex) { } }
+                        } catch (ex) { }
+                    }
+                } catch (ex) { }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', convertVideos);
+            } else {
+                convertVideos();
+            }            // Handle parent \u2192 iframe commands.
+            window.addEventListener('message', function (e) {
+                var d = e.data;
+                if (!d || typeof d !== 'object') return;
+                if (d.type === 'arbel-preview-scroll-to' && typeof d.y === 'number') {
+                    try { window.scrollTo(0, d.y); } catch (ex) { }
+                } else if (d.type === 'arbel-audit-run') {
+                    var report;
+                    try { report = runAudit(); } catch (ex) { report = { issues: [], error: 'exception' }; }
+                    try { window.parent.postMessage({ type: 'arbel-audit-result', rid: d.rid, report: report }, '*'); } catch (ex) { }
+                } else if (d.type === 'arbel-audit-jump') {
+                    try { jumpTo(d.targetId); } catch (ex) { }
+                }
             });
         }
+        return '(' + helper.toString() + ')();';
+    })();
 
-        // 5. Heading hierarchy — skipped levels (h1→h3, h2→h4, etc)
-        var headingEls = doc.querySelectorAll('h1,h2,h3,h4,h5,h6');
-        var levels = [];
-        headingEls.forEach(function (h) { levels.push(parseInt(h.tagName.charAt(1), 10)); });
-        for (var i = 1; i < levels.length; i++) {
-            if (levels[i] - levels[i - 1] > 1) {
-                issues.push({
-                    level: 'warn', type: 'heading-skip',
-                    targetId: _tag(headingEls[i]),
-                    msg: 'Heading jumps from h' + levels[i - 1] + ' to h' + levels[i] + ' (skip)'
-                });
-                break;
-            }
-        }
-
-        // 6. h1 count
-        var h1s = doc.querySelectorAll('h1');
-        if (h1s.length === 0) issues.push({ level: 'warn', type: 'h1', msg: 'No <h1> found on page' });
-        else if (h1s.length > 1) issues.push({
-            level: 'warn', type: 'h1',
-            targetId: _tag(h1s[1]),
-            msg: h1s.length + ' <h1> elements — use one per page'
-        });
-
-        return {
-            issues: issues,
-            errors: issues.filter(function (i) { return i.level === 'error'; }).length,
-            warnings: issues.filter(function (i) { return i.level === 'warn'; }).length,
-            fixed: fixedCount,
-            ok: issues.length === 0
-        };
-    }
-
-    /** Given an fg color + bg color, walk fg toward darker or lighter until
-     *  the required AA ratio is met. Returns null if impossible. */
-    function _findAAColor(fg, bg, required) {
-        if (!fg || !bg) return null;
-        var bgLum = _relLum(bg);
-        // Bg is light → darken fg toward black; Bg is dark → lighten fg toward white.
-        var targetDir = bgLum > 0.5 ? -1 : 1;
-        var r = fg.r, g = fg.g, b = fg.b;
-        for (var step = 0; step < 30; step++) {
-            r = Math.max(0, Math.min(255, r + targetDir * 9));
-            g = Math.max(0, Math.min(255, g + targetDir * 9));
-            b = Math.max(0, Math.min(255, b + targetDir * 9));
-            var test = { r: r, g: g, b: b, a: 1 };
-            var ratio = _contrast(test, bg);
-            if (ratio != null && ratio >= required) return test;
-            if ((targetDir > 0 && r === 255 && g === 255 && b === 255) ||
-                (targetDir < 0 && r === 0   && g === 0   && b === 0))   break;
-        }
-        return null;
-    }
-
-    /** Scroll to an audit-tagged element in the iframe and flash an outline. */
+    /** Ask the iframe to scroll to an audit-tagged element and flash it. */
     function _jumpToAuditTarget(targetId) {
         if (!_iframe || !targetId) return;
-        var doc, win;
-        try { doc = _iframe.contentDocument; win = _iframe.contentWindow; }
-        catch (e) { return; }
-        if (!doc) return;
-        var el = doc.querySelector('[data-arbel-audit="' + targetId + '"]');
-        if (!el) return;
-        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-        var prev = el.style.outline;
-        var prevT = el.style.transition;
-        el.style.transition = 'outline 1.4s ease-out, outline-offset 1.4s ease-out';
-        el.style.outline = '3px solid rgba(108,92,231,0.95)';
-        el.style.outlineOffset = '4px';
-        setTimeout(function () {
-            el.style.outline = '3px solid rgba(108,92,231,0)';
-            el.style.outlineOffset = '12px';
-        }, 40);
-        setTimeout(function () {
-            el.style.outline = prev || '';
-            el.style.outlineOffset = '';
-            el.style.transition = prevT || '';
-        }, 1500);
+        _postToIframe({ type: 'arbel-audit-jump', targetId: targetId });
     }
 
     return {
         render: render,
         setDevice: setDevice,
         destroy: destroy,
-        audit: function () { return _iframe ? _audit(_iframe) : null; },
+        audit: function () { return _runAudit(); },
         jumpToAudit: _jumpToAuditTarget
     };
 })();

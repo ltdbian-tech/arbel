@@ -24,6 +24,40 @@ var ALLOWED_ORIGINS = [
     'https://arbeltechnologies.github.io'
 ];
 
+/* ─── Per-IP rate limit ───────────────────────────────────────────
+ * Cloudflare Workers persist module-scope state within a single isolate,
+ * so this map acts as a "best-effort" rate limit across warm invocations
+ * on the same edge node.  It is NOT cluster-wide — an attacker hitting
+ * many PoPs can still get more attempts — but it bounds the damage a
+ * single botnet node can do to our GitHub OAuth app's rate limits without
+ * requiring a KV binding (which would need a separate deploy step).
+ *
+ * Limits: 20 callback attempts per IP per minute.  A legitimate user
+ * completes OAuth in 1 request; 20 is plenty of slack for retries. */
+var RL_WINDOW_MS = 60 * 1000;
+var RL_MAX = 20;
+var _rlMap = new Map(); // ip -> { count, resetAt }
+
+function _rlCheck(ip) {
+    if (!ip) return true; // no IP header → fail open (extremely rare on CF)
+    var now = Date.now();
+    // Opportunistic GC — keep the map bounded.
+    if (_rlMap.size > 10000) {
+        for (var k of _rlMap.keys()) {
+            if (_rlMap.get(k).resetAt < now) _rlMap.delete(k);
+            if (_rlMap.size < 5000) break;
+        }
+    }
+    var entry = _rlMap.get(ip);
+    if (!entry || entry.resetAt < now) {
+        _rlMap.set(ip, { count: 1, resetAt: now + RL_WINDOW_MS });
+        return true;
+    }
+    if (entry.count >= RL_MAX) return false;
+    entry.count++;
+    return true;
+}
+
 function corsHeaders(origin) {
     var allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
     return {
@@ -63,6 +97,14 @@ async function handleCallback(request, env, origin) {
     // attacker-controlled domains that don't send Origin).
     if (!origin || !ALLOWED_ORIGINS.includes(origin)) {
         return jsonResponse({ error: 'Origin not allowed' }, 403, origin);
+    }
+
+    // Per-IP rate limit — stops a single attacker from burning our GitHub
+    // OAuth app's rate budget with bogus codes (would cause outage for real
+    // users).  Check the IP BEFORE doing any work.
+    var ip = request.headers.get('CF-Connecting-IP') || '';
+    if (!_rlCheck(ip)) {
+        return jsonResponse({ error: 'Too many requests' }, 429, origin);
     }
 
     // Strict 4 KB body cap (defense vs. memory abuse / log spam).
