@@ -1814,6 +1814,7 @@ window.ArbelCompiler = (function () {
         });
 
         var navLinks = '';
+        var navSeen = {}; // de-dupe by lowercased label
         var navMap = {
             services: c.servicesNav || 'Services',
             portfolio: c.portfolioNav || 'Work',
@@ -1833,11 +1834,23 @@ window.ArbelCompiler = (function () {
             lookbookHorizontal: c.lookbookHorizontalNav || 'Lookbook',
             releaseGrid:        c.releaseGridNav        || 'Music'
         };
+        // Pass 1: dedicated pages win over home-section anchors.
+        // Pre-reserve their labels so a section link with the same label is skipped.
+        if (cfg.pages) {
+            cfg.pages.forEach(function (pg) {
+                if (pg.isHome || pg.showInNav === false) return;
+                if (pg.name) navSeen[String(pg.name).trim().toLowerCase()] = true;
+            });
+        }
         sections.forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
             if (s === 'statsStrip' || s === 'logoCloud' || s === 'ctaBanner') return;
             if (s === 'dealBanner' || s === 'cinematicReel') return;
-            if (navMap[s]) navLinks += '        <a href="#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap[s] + '</a>\n';
+            if (!navMap[s]) return;
+            var key = String(navMap[s]).trim().toLowerCase();
+            if (navSeen[key]) return;
+            navSeen[key] = true;
+            navLinks += '        <a href="#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap[s] + '</a>\n';
         });
         if (cfg.pages) {
             cfg.pages.forEach(function (pg) {

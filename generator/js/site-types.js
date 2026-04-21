@@ -22,7 +22,10 @@
     // more specific patterns first (e.g. "saas app" → app before saas).
     var KEYWORDS = [
         { t: 'gaming',      rx: /\b(gam(e|ing|er)s?|esport|valorant|fortnite|minecraft|league[- ]of[- ]legends|arcade|playable|game[- ]?studio|twitch|streamer|speedrun|raid|clan|guild|mmo|rpg|fps|moba|steam|xbox|playstation|nintendo)\b/i },
-        { t: 'shop',        rx: /\b(shop|store|ecommerce|e-commerce|retail|merch|boutique|cart|checkout|product(s)?|sell(ing)?|buy( online)?|shopify|clothing line|apparel|jewelr(y|ies)|marketplace|bazaar)\b/i },
+        // Hardware / B2B manufacturing — must run BEFORE shop so "we produce CPUs"
+        // doesn't get classed as a consumer e-commerce site.
+        { t: 'saas',        rx: /\b(cpus?|gpus?|chips?(et)?|semiconductors?|processors?|motherboards?|firmware|hardware|circuits?|silicon|wafers?|socs?|microcontrollers?|fpgas?|asics?|pcbs?|ssds?|rams?|datacenters?|data[- ]centers?|manufactur(e|er|ers|ing)|oem|supply[- ]chain|industrial)\b/i },
+        { t: 'shop',        rx: /\b(shop|store|ecommerce|e-commerce|retail|merch|boutique|cart|checkout|grocer(y|ies)|products?[ -](catalog|page|list)|(clothing|apparel|jewelry|accessories)[- ]?(line|shop|store|brand)?|shopify|marketplace|bazaar)\b/i },
         { t: 'restaurant',  rx: /\b(restaurant|cafe|bistro|bakery|brewery|diner|bar|pub|menu|reservation|cuisine|chef|food truck|pizzeria|sushi|coffee shop|eater(y|ies))\b/i },
         { t: 'portfolio',   rx: /\b(portfolio|freelanc(e|er)|my work|case studies|showcase|personal site|designer|illustrator|photographer|art director|resume|cv|about me)\b/i },
         { t: 'photography', rx: /\b(photograph(y|er)|wedding photo|photo studio|shoots?|lookbook|editorial photo|gallery)\b/i },

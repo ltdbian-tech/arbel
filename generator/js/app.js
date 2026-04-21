@@ -1544,8 +1544,21 @@
         if (typeof renderStyleGrid === 'function') { try { renderStyleGrid('all'); } catch (e) { } }
     }
 
-    function _applyCopy(copy) {
+    function _applyCopy(copy, replace) {
         var filled = 0, firstFilled = null;
+        // On a full fresh generation (replace=true), wipe every content input first
+        // so stale values from a previous topic can't bleed through into keys the
+        // new AI response didn't happen to emit (e.g. grocery category chips left
+        // over when regenerating a CPU-company site).
+        if (replace) {
+            document.querySelectorAll('.content-input').forEach(function (el) {
+                if (el.value) {
+                    el.value = '';
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        }
         Object.keys(copy).forEach(function (key) {
             var input = document.querySelector('.content-input[data-key="' + key + '"]');
             if (input) {
@@ -2429,7 +2442,7 @@
 
         ArbelAI.generateCopy(desc, els.industry.value, els.brandName.value, activeSections)
             .then(function (copy) {
-                var filled = _applyCopy(copy);
+                var filled = _applyCopy(copy, true);
                 els.aiStatus.textContent = 'Filled ' + filled + ' fields \u2014 scroll up to review, or click Preview.';
                 els.aiStatus.className = 'ai-status ai-status--success';
                 _showUndo();
@@ -2470,7 +2483,7 @@
                 .then(function (result) {
                     var brandCount = _applyBrand(result.brand);
                     _applyDesign(result.design);
-                    var filled = _applyCopy(result.copy);
+                    var filled = _applyCopy(result.copy, true);
                     var note = result.design && result.design.rationale
                         ? (' \u2014 ' + String(result.design.rationale).slice(0, 120))
                         : '';
