@@ -2470,10 +2470,12 @@
         }
         if (typeof brand.seoTitle === 'string' && brand.seoTitle.trim() && els.seoTitle) {
             els.seoTitle.value = brand.seoTitle.trim().slice(0, 70);
+            els.seoTitle.dispatchEvent(new Event('input', { bubbles: true }));
             count++;
         }
         if (typeof brand.seoDescription === 'string' && brand.seoDescription.trim() && els.seoDescription) {
             els.seoDescription.value = brand.seoDescription.trim().slice(0, 160);
+            els.seoDescription.dispatchEvent(new Event('input', { bubbles: true }));
             count++;
         }
         return count;
