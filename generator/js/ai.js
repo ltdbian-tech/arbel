@@ -445,12 +445,12 @@ window.ArbelAI = (function () {
             '[A Preset] { presetId: one of [' + presetIds + '], accentOverride?:#RRGGBB, bgOverride?:#RRGGBB, rationale }\n' +
             '[B Builder] { category:"particle"|"blob"|"gradient"|"wave", colors:[accent,secondary,bg], params:{count:20-300,speed:0.2-3,size:1-8,glow:0-1,connect:bool,blur:10-80,layers:2-8,amplitude:10-80}, rationale }\n\n' +
             'Plus optional design keys (pick what fits; omit rest):\n' +
-            '  sections: 3-6 from [services,portfolio,about,process,testimonials,pricing,faq,stats,statsStrip,logoCloud,ctaBanner,team] (hero+contact auto)\n' +
+            '  sections: 4-7 from [services,portfolio,about,process,testimonials,pricing,faq,stats,statsStrip,logoCloud,ctaBanner,team] (hero+contact auto; MIN 4 middle sections so page feels complete)\n' +
             '  heroLayout: centered|left|split|minimal|name-lockup|product-feature|dish-photo|search-first\n' +
             '  density: compact|cozy|spacious · corners: sharp|soft|pill · typeScale: tight|normal|dramatic · containerWidth: narrow|normal|wide\n' +
             '  fontPair: editorial|tech|humanist|display|mono|luxe|brutalist|futurist|classical|modern|boutique|retail|chef|arena|vinyl|runway|streetwear|athletic|magazine\n' +
-            '  cardTreatment: default|bordered|filled|floating|minimal|glass · navStyle: default|pill|minimal|ghost · buttonStyle: default|solid|outline|gradient|sharp|lifted\n' +
-            '  sectionRhythm: normal|compact|roomy|alternating · dividerStyle: none|line|gradient|numbered|dotline · footerStyle: default|minimal|columns|centered|bigLogo|stripe · labelStyle: default|bar|dot|number|stripe\n' +
+            '  cardTreatment: default|bordered|filled|floating|minimal|glass|neon|gradient|outline-accent|brutalist|split · navStyle: default|pill|minimal|ghost|floating|bordered · buttonStyle: default|solid|outline|gradient|sharp|lifted|pill|glow|underline|ghost\n' +
+            '  sectionRhythm: normal|compact|roomy|alternating · dividerStyle: none|line|gradient|numbered|dotline · footerStyle: default|minimal|columns|centered|bigLogo|stripe · labelStyle: default|bar|dot|number|stripe|tag|arrow|bracket\n' +
             '  heroArt: none|grid|lines|circle|dots|cross|blob|wave|triangle|zigzag|arc|rings|stripes|scribble|checker\n' +
             '  logoStyle: ""|monogram|mark-left|dot|bracket|underline|slash · cursorStyle: ""|ring-only|dot-only|crosshair|magnetic|spotlight|none\n' +
             '  sectionTones: {id:"dark"|"light"|"accent"} · sectionAnims: {id:"fade|fadeUp|slideLeft|slideRight|scale|stagger|blur|none"}\n' +
@@ -507,9 +507,9 @@ window.ArbelAI = (function () {
             '  density:"compact|cozy|spacious", corners:"sharp|soft|pill", containerWidth:"narrow|normal|wide", typeScale:"tight|normal|dramatic",\n' +
             '  fontPair:"editorial|tech|humanist|display|mono|luxe|brutalist|futurist|classical|modern|boutique|retail|chef|arena|vinyl|runway|streetwear|athletic|magazine",\n' +
             '  heroLayout:"centered|left|split|minimal|name-lockup|product-feature|dish-photo|search-first",\n' +
-            '  sectionOrder: 3-6 from [services,portfolio,about,process,testimonials,pricing,faq,statsStrip,logoCloud,ctaBanner,team],\n' +
-            '  cardTreatment:"default|bordered|filled|floating|minimal|glass", navStyle:"default|pill|minimal|ghost", buttonStyle:"default|solid|outline|gradient|sharp|lifted",\n' +
-            '  sectionRhythm:"normal|compact|roomy|alternating", dividerStyle:"none|line|gradient|numbered|dotline", footerStyle:"default|minimal|columns|centered|bigLogo|stripe", labelStyle:"default|bar|dot|number|stripe",\n' +
+            '  sectionOrder: 4-7 from [services,portfolio,about,process,testimonials,pricing,faq,statsStrip,logoCloud,ctaBanner,team] (keep page feeling full — min 4 middle sections),\n' +
+            '  cardTreatment:"default|bordered|filled|floating|minimal|glass|neon|gradient|outline-accent|brutalist|split", navStyle:"default|pill|minimal|ghost|floating|bordered", buttonStyle:"default|solid|outline|gradient|sharp|lifted|pill|glow|underline|ghost",\n' +
+            '  sectionRhythm:"normal|compact|roomy|alternating", dividerStyle:"none|line|gradient|numbered|dotline", footerStyle:"default|minimal|columns|centered|bigLogo|stripe", labelStyle:"default|bar|dot|number|stripe|tag|arrow|bracket",\n' +
             '  heroArt:"none|grid|lines|circle|dots|cross|blob|wave|triangle|zigzag|arc|rings|stripes|scribble|checker",\n' +
             '  logoStyle:""|"monogram|mark-left|dot|bracket|underline|slash", cursorStyle:""|"ring-only|dot-only|crosshair|magnetic|spotlight|none",\n' +
             '  sectionTones:{id:"dark|light|accent"}, sectionAnims:{id:"fade|fadeUp|slideLeft|slideRight|scale|stagger|blur|none"},\n' +

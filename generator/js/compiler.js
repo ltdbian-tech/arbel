@@ -2217,14 +2217,28 @@ window.ArbelCompiler = (function () {
             '.cards-floating .service-card, .cards-floating .portfolio-card, .cards-floating .process-card, .cards-floating .testimonial-card, .cards-floating .pricing-card { background: var(--surface); border-color: transparent; box-shadow: 0 12px 40px color-mix(in srgb, var(--bg) 50%, #000 0%), 0 2px 8px color-mix(in srgb, var(--bg) 70%, #000 0%); }\n' +
             '.cards-minimal .service-card, .cards-minimal .portfolio-card, .cards-minimal .process-card, .cards-minimal .testimonial-card, .cards-minimal .pricing-card { background: transparent; border-width: 0; border-top: 1px solid var(--border); border-radius: 0; padding-left: 0; padding-right: 0; }\n' +
             '.cards-minimal .pricing-card--accent { border-top-color: var(--accent); border-top-width: 2px; }\n' +
-            '.cards-glass .service-card, .cards-glass .portfolio-card, .cards-glass .process-card, .cards-glass .testimonial-card, .cards-glass .pricing-card { background: color-mix(in srgb, var(--fg) 4%, transparent); border-color: color-mix(in srgb, var(--fg) 12%, transparent); backdrop-filter: blur(12px); }\n\n' +
+            '.cards-glass .service-card, .cards-glass .portfolio-card, .cards-glass .process-card, .cards-glass .testimonial-card, .cards-glass .pricing-card { background: color-mix(in srgb, var(--fg) 4%, transparent); border-color: color-mix(in srgb, var(--fg) 12%, transparent); backdrop-filter: blur(12px); }\n' +
+            '/* ─── Extra treatments (neon/gradient/outline-accent/brutalist/split) ─── */\n' +
+            '.cards-neon .service-card, .cards-neon .portfolio-card, .cards-neon .process-card, .cards-neon .testimonial-card, .cards-neon .pricing-card { background: color-mix(in srgb, var(--bg) 88%, var(--accent) 0%); border-color: color-mix(in srgb, var(--accent) 55%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent), 0 0 28px color-mix(in srgb, var(--accent) 28%, transparent); }\n' +
+            '.cards-neon .service-card:hover, .cards-neon .portfolio-card:hover, .cards-neon .process-card:hover, .cards-neon .testimonial-card:hover, .cards-neon .pricing-card:hover { box-shadow: 0 0 0 1px var(--accent), 0 0 44px color-mix(in srgb, var(--accent) 55%, transparent); }\n' +
+            '.cards-gradient .service-card, .cards-gradient .portfolio-card, .cards-gradient .process-card, .cards-gradient .testimonial-card, .cards-gradient .pricing-card { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface)) 0%, var(--surface) 70%); border-color: transparent; position: relative; overflow: hidden; }\n' +
+            '.cards-gradient .service-card::before, .cards-gradient .portfolio-card::before, .cards-gradient .process-card::before, .cards-gradient .testimonial-card::before, .cards-gradient .pricing-card::before { content:""; position:absolute; inset:0; background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 40%, transparent), transparent 60%); opacity:0; transition: opacity 0.3s var(--ease); pointer-events:none; }\n' +
+            '.cards-gradient .service-card:hover::before, .cards-gradient .portfolio-card:hover::before, .cards-gradient .process-card:hover::before, .cards-gradient .testimonial-card:hover::before, .cards-gradient .pricing-card:hover::before { opacity: 1; }\n' +
+            '.cards-outline-accent .service-card, .cards-outline-accent .portfolio-card, .cards-outline-accent .process-card, .cards-outline-accent .testimonial-card, .cards-outline-accent .pricing-card { background: transparent; border: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 14px; }\n' +
+            '.cards-outline-accent .service-card:hover, .cards-outline-accent .portfolio-card:hover, .cards-outline-accent .process-card:hover, .cards-outline-accent .testimonial-card:hover, .cards-outline-accent .pricing-card:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }\n' +
+            '.cards-brutalist .service-card, .cards-brutalist .portfolio-card, .cards-brutalist .process-card, .cards-brutalist .testimonial-card, .cards-brutalist .pricing-card { background: var(--surface); border: 2px solid var(--fg); border-radius: 0; box-shadow: 6px 6px 0 0 var(--fg); transform: translate(-2px, -2px); transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.3s; }\n' +
+            '.cards-brutalist .service-card:hover, .cards-brutalist .portfolio-card:hover, .cards-brutalist .process-card:hover, .cards-brutalist .testimonial-card:hover, .cards-brutalist .pricing-card:hover { transform: translate(0, 0); box-shadow: 0 0 0 0 var(--fg); border-color: var(--accent); }\n' +
+            '.cards-split .service-card, .cards-split .portfolio-card, .cards-split .process-card, .cards-split .testimonial-card, .cards-split .pricing-card { background: var(--surface); border-left: 3px solid var(--accent); border-top: none; border-right: none; border-bottom: 1px solid var(--border); border-radius: 0 12px 12px 0; padding-left: 1.75rem; }\n\n' +
             '/* ═══ NAV STYLE VARIANTS ═══ */\n' +
             '.nav-pill .header { top: 1rem; left: 50%; transform: translateX(-50%); right: auto; width: auto; border-radius: 999px; padding: 0.4rem 1.5rem; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(14px); border: 1px solid var(--border); }\n' +
             '.nav-minimal .header { background: transparent; backdrop-filter: none; border-bottom: none; padding: 1.5rem 2rem; }\n' +
             '.nav-minimal .nav { gap: 2.5rem; }\n' +
             '.nav-ghost .header { background: transparent; border-bottom: none; }\n' +
             '.nav-ghost .nav a { opacity: 0.65; }\n' +
-            '.nav-ghost .nav a:hover { opacity: 1; }\n\n' +
+            '.nav-ghost .nav a:hover { opacity: 1; }\n' +
+            '/* ─── Extra nav styles ─── */\n' +
+            '.nav-floating .header { top: 1.2rem; left: 1.5rem; right: 1.5rem; border-radius: 16px; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(18px); border: 1px solid var(--border); box-shadow: 0 10px 40px color-mix(in srgb, var(--bg) 60%, #000 0%); }\n' +
+            '.nav-bordered .header { background: transparent; backdrop-filter: none; border: 1px solid var(--fg); border-radius: 0; margin: 1rem 1.5rem; position: absolute; top: 0; left: 0; right: 0; }\n\n' +
             '/* ═══ SECTION RHYTHM ═══ */\n' +
             '.rhythm-compact .section { padding: 4rem 0; }\n' +
             '.rhythm-roomy .section { padding: 10rem 0; }\n' +
@@ -2278,7 +2292,12 @@ window.ArbelCompiler = (function () {
             '.label-number .testimonials .section-label::after, .label-number #testimonials .section-label::after { content:" / 05"; opacity: 0.5; }\n' +
             '.label-number .pricing .section-label::after, .label-number #pricing .section-label::after { content:" / 06"; opacity: 0.5; }\n' +
             '.label-number .contact .section-label::after, .label-number #contact .section-label::after { content:" / 07"; opacity: 0.5; }\n' +
-            '.label-stripe .section-label { display: inline-block; padding: 0.35rem 0.9rem; background: color-mix(in srgb, var(--accent) 15%, transparent); border-left: 2px solid var(--accent); color: var(--fg); }\n\n' +
+            '.label-stripe .section-label { display: inline-block; padding: 0.35rem 0.9rem; background: color-mix(in srgb, var(--accent) 15%, transparent); border-left: 2px solid var(--accent); color: var(--fg); }\n' +
+            '.label-tag .section-label { display: inline-block; padding: 0.3rem 0.8rem; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }\n' +
+            '.label-arrow .section-label { display: inline-flex; align-items: center; gap: 0.5rem; }\n' +
+            '.label-arrow .section-label::before { content:"\\2192"; color: var(--accent); font-weight: 700; }\n' +
+            '.label-bracket .section-label::before { content:"["; color: var(--accent); margin-right: 0.3rem; }\n' +
+            '.label-bracket .section-label::after { content:"]"; color: var(--accent); margin-left: 0.3rem; }\n\n' +
             '/* ═══ HERO ART (decorative, body-class toggles) ═══ */\n' +
             '.heroart-grid .hero::before { content:""; position: absolute; inset: 0; background-image: linear-gradient(to right, var(--border) 1px, transparent 1px), linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 80px 80px; opacity: 0.35; mask-image: radial-gradient(ellipse at center, #000 30%, transparent 70%); pointer-events: none; z-index: 1; }\n' +
             '.heroart-lines .hero::before { content:""; position: absolute; inset: 0; background-image: repeating-linear-gradient(90deg, transparent 0, transparent 119px, color-mix(in srgb, var(--fg) 8%, transparent) 119px, color-mix(in srgb, var(--fg) 8%, transparent) 120px); pointer-events: none; z-index: 1; }\n' +
@@ -2354,7 +2373,23 @@ window.ArbelCompiler = (function () {
             '.btn-lifted .btn { border-radius: 8px; box-shadow: 0 4px 0 0 color-mix(in srgb, var(--bg) 60%, #000); transition: transform 0.15s ease, box-shadow 0.15s ease, color 0.3s var(--ease); }\n' +
             '.btn-lifted .btn:hover { transform: translateY(2px); box-shadow: 0 2px 0 0 color-mix(in srgb, var(--bg) 60%, #000); }\n' +
             '.btn-lifted .btn-primary { box-shadow: 0 4px 0 0 color-mix(in srgb, var(--accent) 40%, #000); }\n' +
-            '.btn-lifted .btn-primary:hover { box-shadow: 0 2px 0 0 color-mix(in srgb, var(--accent) 40%, #000); }\n\n' +
+            '.btn-lifted .btn-primary:hover { box-shadow: 0 2px 0 0 color-mix(in srgb, var(--accent) 40%, #000); }\n' +
+            '/* ─── Extra button styles (pill / glow / underline / ghost) ─── */\n' +
+            '.btn-pill .btn { border-radius: 999px; padding: 0.9rem 2.2rem; border-width: 1px; }\n' +
+            '.btn-pill .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }\n' +
+            '.btn-glow .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 45%, transparent); transition: box-shadow 0.25s var(--ease), transform 0.25s var(--ease); }\n' +
+            '.btn-glow .btn-primary:hover { box-shadow: 0 0 0 2px var(--accent), 0 0 48px color-mix(in srgb, var(--accent) 70%, transparent); transform: translateY(-1px); }\n' +
+            '.btn-glow .btn { text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 50%, transparent); }\n' +
+            '.btn-underline .btn { background: transparent; border: none; border-radius: 0; padding: 0.6rem 0.2rem; position: relative; }\n' +
+            '.btn-underline .btn::before { display: none; }\n' +
+            '.btn-underline .btn::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--fg); transform-origin: left; transform: scaleX(1); transition: transform 0.3s var(--ease); }\n' +
+            '.btn-underline .btn:hover::after { transform: scaleX(0.4); background: var(--accent); }\n' +
+            '.btn-underline .btn-primary { color: var(--accent); }\n' +
+            '.btn-underline .btn-primary::after { background: var(--accent); }\n' +
+            '.btn-ghost .btn { background: color-mix(in srgb, var(--fg) 6%, transparent); border-color: transparent; backdrop-filter: blur(8px); }\n' +
+            '.btn-ghost .btn:hover { background: color-mix(in srgb, var(--fg) 14%, transparent); }\n' +
+            '.btn-ghost .btn-primary { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--accent); }\n' +
+            '.btn-ghost .btn-primary:hover { background: var(--accent); color: #fff; }\n\n' +
             '/* ═══ SECTIONS ═══ */\n' +
             '.section { padding: 8rem 0; position: relative; }\n' +
             '.section-label { color: var(--accent); margin-bottom: 1rem; }\n' +

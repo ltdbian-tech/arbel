@@ -1875,6 +1875,34 @@
             core.forEach(function (s) {
                 if (clean.indexOf(s) === -1) clean.push(s);
             });
+            // ─── MINIMUM-SECTIONS GUARD ─── prevent "2-page" outputs when
+            // the AI hands us a laconic list (e.g. just hero+contact or
+            // hero+portfolio). Pad up to at least 5 total using type-recipe
+            // picks, then generic fallbacks, skipping anything on the deny
+            // list. This is the difference between a hollow placeholder and
+            // a believable full site.
+            var MIN_SECTIONS = 5;
+            if (clean.length < MIN_SECTIONS) {
+                var padPool = [];
+                var recipePool = window.ArbelSiteType ? (ArbelSiteType.recipe(siteType) || []) : [];
+                recipePool.forEach(function (s) {
+                    if (typeof s === 'string' && s !== 'hero' && s !== 'contact'
+                        && validSections.indexOf(s) !== -1
+                        && deny.indexOf(s) === -1
+                        && clean.indexOf(s) === -1
+                        && padPool.indexOf(s) === -1) padPool.push(s);
+                });
+                // Generic fallbacks after recipe-specific ones
+                ['services','about','portfolio','testimonials','process','stats','faq','ctaBanner'].forEach(function (s) {
+                    if (validSections.indexOf(s) !== -1
+                        && deny.indexOf(s) === -1
+                        && clean.indexOf(s) === -1
+                        && padPool.indexOf(s) === -1) padPool.push(s);
+                });
+                while (clean.length < MIN_SECTIONS && padPool.length) {
+                    clean.push(padPool.shift());
+                }
+            }
             clean.push('contact');
             design.sectionOrder = clean;
         }
@@ -1908,14 +1936,17 @@
             design.containerWidth = widths[Math.floor(Math.random() * widths.length)];
         }
 
-        // ─── CARD TREATMENT ─── completely reskins every card in the page
-        var treatments = ['default', 'bordered', 'filled', 'floating', 'minimal', 'glass'];
+        // ─── CARD TREATMENT ─── completely reskins every card in the page.
+        // 11 options — six legacy + five new designer shapes (neon/gradient/
+        // outline-accent/brutalist/split) for richer variation.
+        var treatments = ['default', 'bordered', 'filled', 'floating', 'minimal', 'glass',
+            'neon', 'gradient', 'outline-accent', 'brutalist', 'split'];
         if (treatments.indexOf(design.cardTreatment) === -1) {
             design.cardTreatment = treatments[Math.floor(Math.random() * treatments.length)];
         }
 
-        // ─── NAV STYLE ─── pill / minimal / ghost / default
-        var navStyles = ['default', 'pill', 'minimal', 'ghost'];
+        // ─── NAV STYLE ─── pill / minimal / ghost / default + new variants
+        var navStyles = ['default', 'pill', 'minimal', 'ghost', 'floating', 'bordered'];
         if (navStyles.indexOf(design.navStyle) === -1) {
             design.navStyle = navStyles[Math.floor(Math.random() * navStyles.length)];
         }
@@ -1947,8 +1978,10 @@
             }
         }
 
-        // ─── BUTTON STYLE ─── default / solid / outline / gradient / sharp / lifted
-        var btnStyles = ['default', 'solid', 'outline', 'gradient', 'sharp', 'lifted'];
+        // ─── BUTTON STYLE ─── 10 options now (6 legacy + 4 new: pill, glow,
+        // underline, ghost). Each maps to a `.btn-<name>` body class.
+        var btnStyles = ['default', 'solid', 'outline', 'gradient', 'sharp', 'lifted',
+            'pill', 'glow', 'underline', 'ghost'];
         if (btnStyles.indexOf(design.buttonStyle) === -1) {
             design.buttonStyle = btnStyles[Math.floor(Math.random() * btnStyles.length)];
         }
@@ -1973,14 +2006,18 @@
             design.footerStyle = footers[Math.floor(Math.random() * footers.length)];
         }
 
-        // ─── SECTION LABEL STYLE ─── prefix/adornment on every section mono label
-        var labels = ['default', 'bar', 'dot', 'number', 'stripe'];
+        // ─── SECTION LABEL STYLE ─── prefix/adornment on every section mono
+        // label. Three new: tag (pill chip), arrow (→), bracket ([]).
+        var labels = ['default', 'bar', 'dot', 'number', 'stripe', 'tag', 'arrow', 'bracket'];
         if (labels.indexOf(design.labelStyle) === -1) {
             design.labelStyle = labels[Math.floor(Math.random() * labels.length)];
         }
 
-        // ─── HERO ART ─── decorative overlay in the hero (on top of the bg animation)
-        var arts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross'];
+        // ─── HERO ART ─── decorative overlay — 15 options, all rendered by
+        // the compiler's `.heroart-<name>` CSS (blob, wave, triangle, zigzag,
+        // arc, rings, stripes, scribble, checker in addition to the basics).
+        var arts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross',
+            'blob', 'wave', 'triangle', 'zigzag', 'arc', 'rings', 'stripes', 'scribble', 'checker'];
         if (arts.indexOf(design.heroArt) === -1) {
             design.heroArt = arts[Math.floor(Math.random() * arts.length)];
         }
@@ -2798,15 +2835,15 @@
         // every click — not just the palette. _applyDesign respects any
         // explicit axis value we pass (and falls back to random if null).
         var heroLayouts = ['centered', 'left', 'split', 'minimal'];
-        var cardTreats  = ['default', 'bordered', 'filled', 'floating', 'minimal', 'glass'];
-        var buttonStyles = ['default', 'solid', 'outline', 'gradient', 'sharp', 'lifted'];
+        var cardTreats  = ['default', 'bordered', 'filled', 'floating', 'minimal', 'glass', 'neon', 'gradient', 'outline-accent', 'brutalist', 'split'];
+        var buttonStyles = ['default', 'solid', 'outline', 'gradient', 'sharp', 'lifted', 'pill', 'glow', 'underline', 'ghost'];
         var fontPairs = ['editorial', 'tech', 'humanist', 'display', 'mono', 'luxe', 'brutalist', 'terminal', 'futurist', 'soft', 'classical', 'modern', 'boutique', 'journal'];
         var footers  = ['default', 'minimal', 'columns', 'centered', 'bigLogo', 'stripe'];
         var typeScales = ['tight', 'normal', 'dramatic'];
         var rhythms = ['normal', 'compact', 'roomy', 'alternating'];
         var dividers = ['none', 'line', 'gradient', 'numbered', 'dotline'];
         var heroArts = ['none', 'grid', 'lines', 'circle', 'dots', 'cross', 'blob', 'wave', 'triangle', 'zigzag', 'arc', 'rings', 'stripes', 'scribble', 'checker'];
-        var labels   = ['default', 'bar', 'dot', 'number', 'stripe'];
+        var labels   = ['default', 'bar', 'dot', 'number', 'stripe', 'tag', 'arrow', 'bracket'];
 
         var heroLayout   = _pickDiff(heroLayouts, _localLastHero);
         var cardTreat    = _pickDiff(cardTreats,  _localLastCard);
