@@ -602,13 +602,72 @@
                             </div>
                         </div>
 
-                        <!-- Advanced Design (JSON) — full manual control over every axis the AI can pick -->
+                        <!-- Advanced Design — manual controls for complex axes + JSON editor -->
                         <div class="config-group" id="advancedDesignGroup">
                             <h3 class="config-group-title mono">ADVANCED <span style="opacity:0.55;font-weight:normal;font-size:0.7rem">(designer mode)</span></h3>
-                            <p class="config-hint">Every axis the AI can set — section tones, section animations, pages, nav extras, footer recipe, element overrides, design tokens. Edit the JSON and click <b>Apply</b> to override anything by hand.</p>
-                            <details id="advDesignDetails" style="margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface)">
-                                <summary class="mono" style="cursor:pointer;font-size:0.7rem;letter-spacing:0.08em;color:var(--fg2)">&#9881; DESIGN JSON EDITOR</summary>
-                                <div style="margin-top:10px">
+                            <p class="config-hint">Fine-tune the axes that don&rsquo;t have simple dropdowns &mdash; per-section tones/animations, card counts, nav CTA, footer recipe. Everything auto-populates from the last AI run.</p>
+
+                            <!-- Manual controls -->
+                            <details class="adv-panel" id="advSectionTonesDetails" open>
+                                <summary class="adv-panel-summary mono">&#9998; SECTION TONES &amp; ANIMATIONS</summary>
+                                <div class="adv-panel-body">
+                                    <p class="config-hint" style="font-size:0.68rem;margin:0 0 8px">Per-section background tone + entrance animation. Section must be enabled in the SECTIONS list above.</p>
+                                    <div class="adv-section-list" id="advSectionList" data-empty="Enable sections above first.">
+                                        <!-- rows rendered by JS: { tone, anim } per section -->
+                                    </div>
+                                </div>
+                            </details>
+
+                            <details class="adv-panel" id="advSectionCountsDetails">
+                                <summary class="adv-panel-summary mono">&#9998; CARD COUNTS</summary>
+                                <div class="adv-panel-body">
+                                    <p class="config-hint" style="font-size:0.68rem;margin:0 0 8px">How many cards render in each list section (clamped to available copy).</p>
+                                    <div class="adv-counts-grid">
+                                        <label class="adv-count-field"><span class="mono">Services</span><input type="number" id="advCountServices" class="gen-input" min="0" max="8" step="1"></label>
+                                        <label class="adv-count-field"><span class="mono">Portfolio</span><input type="number" id="advCountPortfolio" class="gen-input" min="0" max="8" step="1"></label>
+                                        <label class="adv-count-field"><span class="mono">Process</span><input type="number" id="advCountProcess" class="gen-input" min="0" max="6" step="1"></label>
+                                        <label class="adv-count-field"><span class="mono">Team</span><input type="number" id="advCountTeam" class="gen-input" min="0" max="8" step="1"></label>
+                                        <label class="adv-count-field"><span class="mono">Pricing</span><input type="number" id="advCountPricing" class="gen-input" min="2" max="4" step="1"></label>
+                                        <label class="adv-count-field"><span class="mono">Testimonials</span><input type="number" id="advCountTestimonials" class="gen-input" min="0" max="6" step="1"></label>
+                                        <label class="adv-count-field"><span class="mono">FAQ</span><input type="number" id="advCountFaq" class="gen-input" min="0" max="8" step="1"></label>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <details class="adv-panel" id="advNavExtraDetails">
+                                <summary class="adv-panel-summary mono">&#9998; NAV CTA</summary>
+                                <div class="adv-panel-body">
+                                    <p class="config-hint" style="font-size:0.68rem;margin:0 0 8px">Extra link or button next to the navigation (right-hand side).</p>
+                                    <label class="adv-count-field"><span class="mono">Kind</span>
+                                        <select id="advNavExtraKind" class="gen-input">
+                                            <option value="">None / default</option>
+                                            <option value="button">Primary button</option>
+                                            <option value="text">Text link</option>
+                                            <option value="icon-cart">Cart icon + label</option>
+                                        </select>
+                                    </label>
+                                    <label class="adv-count-field"><span class="mono">Label</span><input type="text" id="advNavExtraLabel" class="gen-input" maxlength="30" placeholder="Start Free"></label>
+                                    <label class="adv-count-field"><span class="mono">Link (href)</span><input type="text" id="advNavExtraHref" class="gen-input" maxlength="200" placeholder="#contact"></label>
+                                    <label class="adv-count-field"><input type="checkbox" id="advNavExtraDisabled"> <span>Hide the nav CTA</span></label>
+                                </div>
+                            </details>
+
+                            <details class="adv-panel" id="advFooterRecipeDetails">
+                                <summary class="adv-panel-summary mono">&#9998; FOOTER RECIPE</summary>
+                                <div class="adv-panel-body">
+                                    <p class="config-hint" style="font-size:0.68rem;margin:0 0 8px">Multi-column footer. One column per row, heading first, then one item per line. Leave empty for the minimal footer.</p>
+                                    <label class="adv-count-field"><span class="mono">Tagline under logo</span><input type="text" id="advFooterTagline" class="gen-input" maxlength="120" placeholder="Short brand line"></label>
+                                    <div id="advFooterCols" class="adv-footer-cols">
+                                        <!-- column cards rendered by JS -->
+                                    </div>
+                                    <button class="gen-btn gen-btn--sm" type="button" id="advFooterAddCol">+ ADD COLUMN</button>
+                                </div>
+                            </details>
+
+                            <details class="adv-panel" id="advJsonDetails">
+                                <summary class="adv-panel-summary mono">&#9881; DESIGN JSON (raw)</summary>
+                                <div class="adv-panel-body">
+                                    <p class="config-hint" style="font-size:0.68rem;margin:0 0 8px">Power users: edit every axis directly including <code>elementOverrides</code> and <code>designTokens</code>. Unknown keys are ignored. Buttons below apply to the preview.</p>
                                     <textarea id="advDesignJson" class="gen-textarea" rows="14" spellcheck="false" placeholder="Run an AI generation to populate — or paste a design JSON object here." style="font-family:var(--font-mono,monospace);font-size:0.72rem;line-height:1.45;white-space:pre"></textarea>
                                     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
                                         <button class="gen-btn gen-btn--sm gen-btn--accent" id="advDesignApplyBtn" type="button" title="Validate JSON and apply every axis to the preview">APPLY JSON</button>
@@ -616,7 +675,6 @@
                                         <button class="gen-btn gen-btn--sm" id="advDesignFormatBtn" type="button" title="Pretty-print the JSON">FORMAT</button>
                                     </div>
                                     <div class="ai-status" id="advDesignStatus" style="margin-top:8px"></div>
-                                    <p class="config-hint" style="margin-top:8px;font-size:0.68rem;opacity:0.7">Shape: <code>{ sectionTones, sectionAnims, sectionLayouts, sectionCounts, pages, navExtra, footerRecipe, elementOverrides, heroLayout, cardTreatment, ... }</code>. Unknown keys are ignored.</p>
                                 </div>
                             </details>
                         </div>
@@ -1096,7 +1154,7 @@
                             </button>
                             <button class="bfs-tab" data-tab="site-design" title="Site Design — every style axis AI can set, editable by hand">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                                <span class="bfs-tab-label">Site Design</span>
+                                <span class="bfs-tab-label">Design</span>
                             </button>
                         </div>
 
@@ -4347,18 +4405,18 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="js/key-manager.js?v=20260421e"></script>
-    <script src="js/auth.js?v=20260421e"></script>
-    <script src="js/site-types.js?v=20260421e"></script>
-    <script src="js/image-bank.js?v=20260421e"></script>
-    <script src="js/ai.js?v=20260421e"></script>
-    <script src="js/ai-media.js?v=20260421e"></script>
-    <script src="js/compiler.js?v=20260421e"></script>
-    <script src="js/cinematic-compiler.js?v=20260421e"></script>
-    <script src="js/preview.js?v=20260421e"></script>
-    <script src="js/editor.js?v=20260421e"></script>
-    <script src="js/cinematic-editor.js?v=20260421e"></script>
-    <script src="js/deploy.js?v=20260421e"></script>
-    <script src="js/app.js?v=20260421e"></script>
+    <script src="js/key-manager.js?v=20260421f"></script>
+    <script src="js/auth.js?v=20260421f"></script>
+    <script src="js/site-types.js?v=20260421f"></script>
+    <script src="js/image-bank.js?v=20260421f"></script>
+    <script src="js/ai.js?v=20260421f"></script>
+    <script src="js/ai-media.js?v=20260421f"></script>
+    <script src="js/compiler.js?v=20260421f"></script>
+    <script src="js/cinematic-compiler.js?v=20260421f"></script>
+    <script src="js/preview.js?v=20260421f"></script>
+    <script src="js/editor.js?v=20260421f"></script>
+    <script src="js/cinematic-editor.js?v=20260421f"></script>
+    <script src="js/deploy.js?v=20260421f"></script>
+    <script src="js/app.js?v=20260421f"></script>
 </body>
 </html>

@@ -2259,6 +2259,7 @@
             state.lastAiDesign = JSON.parse(JSON.stringify(design));
         } catch (e) { state.lastAiDesign = null; }
         _populateAdvDesignEditor(state.lastAiDesign);
+        if (typeof _renderAdvAll === 'function') _renderAdvAll();
         state._suppressDesignOptRefresh = false;
 
         // Remember choices so the next regen picks something different
@@ -2958,6 +2959,313 @@
                 showStatus('Cannot format — invalid JSON: ' + err.message, 'error');
             }
         });
+
+        // ─── Manual advanced-form controls ─── sync form widgets ↔ state
+        _wireAdvancedForms();
+        _renderAdvAll();
+    }
+
+    /* ─── ADVANCED FORMS ─── designer-friendly manual controls for the
+     * complex axes the AI sets (section tones/anims, card counts, nav CTA,
+     * footer recipe). Each widget edits a single property on
+     * state.lastAiDesign, then re-runs _applyDesign + generatePreview so the
+     * preview updates instantly. The JSON textarea stays in sync too. */
+    var ADV_SECTION_IDS = ['hero','services','portfolio','about','process','testimonials','pricing','faq','team','contact'];
+    var ADV_TONES = [
+        { v: '',         label: 'Default' },
+        { v: 'dark',     label: 'Dark' },
+        { v: 'light',    label: 'Light' },
+        { v: 'accent',   label: 'Accent tint' }
+    ];
+    var ADV_ANIMS = [
+        { v: '',           label: 'Default' },
+        { v: 'fade',       label: 'Fade' },
+        { v: 'fadeUp',     label: 'Fade up' },
+        { v: 'slideLeft',  label: 'Slide left' },
+        { v: 'slideRight', label: 'Slide right' },
+        { v: 'scale',      label: 'Scale' },
+        { v: 'stagger',    label: 'Stagger' },
+        { v: 'blur',       label: 'Blur' },
+        { v: 'none',       label: 'No animation' }
+    ];
+
+    function _getAdvDesign() {
+        // Mirror current state.ai* into a shallow object so form edits map 1:1
+        // onto design keys. We prefer state.lastAiDesign (the full AI payload)
+        // if present so we don't lose AI-picked nested things.
+        if (state.lastAiDesign && typeof state.lastAiDesign === 'object') {
+            return state.lastAiDesign;
+        }
+        // Fallback: synthesize from state.ai* so manual-only users can still
+        // edit these axes before the first AI run.
+        return (state.lastAiDesign = {
+            sectionTones:   state.aiSectionTones || {},
+            sectionAnims:   state.aiSectionAnims || {},
+            sectionCounts:  state.aiSectionCounts || {},
+            navExtra:       state.aiNavExtra || null,
+            navExtraDisabled: !!state.aiNavExtraDisabled,
+            footerRecipe:   state.aiFooterRecipe || null
+        });
+    }
+
+    /** Re-apply the current state.lastAiDesign to the preview. */
+    function _advCommit() {
+        if (!state.lastAiDesign) return;
+        try {
+            state._suppressDesignOptRefresh = true;
+            _applyDesign(JSON.parse(JSON.stringify(state.lastAiDesign)));
+            state._suppressDesignOptRefresh = false;
+            _markDirty();
+            if (state.step >= 3 && typeof generatePreview === 'function') generatePreview();
+        } catch (err) {
+            state._suppressDesignOptRefresh = false;
+            console.warn('Advanced apply failed:', err);
+        }
+    }
+
+    /** Rebuild the section-tones/anims list based on currently-enabled sections. */
+    function _renderAdvSectionList() {
+        var list = document.getElementById('advSectionList');
+        if (!list) return;
+        // Enabled sections = hero + any section checkbox that's on + contact (required)
+        var enabled = { hero: 1, contact: 1 };
+        document.querySelectorAll('[data-section]').forEach(function (cb) {
+            if (cb.checked || cb.disabled) enabled[cb.dataset.section] = 1;
+        });
+        var design = _getAdvDesign();
+        var tones = design.sectionTones || {};
+        var anims = design.sectionAnims || {};
+        var html = '';
+        ADV_SECTION_IDS.forEach(function (sid) {
+            if (!enabled[sid]) return;
+            var toneOpts = ADV_TONES.map(function (t) {
+                return '<option value="' + t.v + '"' + (tones[sid] === t.v ? ' selected' : '') + '>' + t.label + '</option>';
+            }).join('');
+            var animOpts = ADV_ANIMS.map(function (a) {
+                return '<option value="' + a.v + '"' + (anims[sid] === a.v ? ' selected' : '') + '>' + a.label + '</option>';
+            }).join('');
+            html += '<div class="adv-section-row" data-sid="' + sid + '">' +
+                '<span class="adv-section-row-label">' + sid + '</span>' +
+                '<select class="gen-input adv-tone">' + toneOpts + '</select>' +
+                '<select class="gen-input adv-anim">' + animOpts + '</select>' +
+                '</div>';
+        });
+        list.innerHTML = html;
+    }
+
+    function _renderAdvCounts() {
+        var design = _getAdvDesign();
+        var counts = design.sectionCounts || {};
+        [
+            ['advCountServices', 'services'],
+            ['advCountPortfolio', 'portfolio'],
+            ['advCountProcess', 'process'],
+            ['advCountTeam', 'team'],
+            ['advCountPricing', 'pricing'],
+            ['advCountTestimonials', 'testimonials'],
+            ['advCountFaq', 'faq']
+        ].forEach(function (pair) {
+            var el = document.getElementById(pair[0]);
+            if (el) el.value = counts[pair[1]] != null ? counts[pair[1]] : '';
+        });
+    }
+
+    function _renderAdvNavExtra() {
+        var design = _getAdvDesign();
+        var ne = design.navExtra || {};
+        var k = document.getElementById('advNavExtraKind');
+        var l = document.getElementById('advNavExtraLabel');
+        var h = document.getElementById('advNavExtraHref');
+        var d = document.getElementById('advNavExtraDisabled');
+        if (k) k.value = ne.kind || '';
+        if (l) l.value = ne.label || '';
+        if (h) h.value = ne.href || '';
+        if (d) d.checked = !!design.navExtraDisabled;
+    }
+
+    function _renderAdvFooterRecipe() {
+        var design = _getAdvDesign();
+        var fr = design.footerRecipe || {};
+        var tagEl = document.getElementById('advFooterTagline');
+        if (tagEl) tagEl.value = fr.tagline || '';
+        var container = document.getElementById('advFooterCols');
+        if (!container) return;
+        var cols = Array.isArray(fr.columns) ? fr.columns : [];
+        var html = '';
+        cols.forEach(function (col, i) {
+            var heading = col && col.heading ? String(col.heading) : '';
+            // Items can be strings or { label, href } — display as "label | href" lines.
+            var items = (col && Array.isArray(col.items)) ? col.items.map(function (it) {
+                if (typeof it === 'string') return it;
+                if (it && it.label && it.href) return it.label + ' | ' + it.href;
+                if (it && it.label) return it.label;
+                return '';
+            }).filter(Boolean).join('\n') : '';
+            html += '<div class="adv-footer-col" data-col="' + i + '">' +
+                '<div class="adv-footer-col-head"><span class="mono">COLUMN ' + (i+1) + '</span>' +
+                '<button class="adv-footer-col-remove" type="button" data-remove="' + i + '">REMOVE</button></div>' +
+                '<input type="text" class="gen-input adv-footer-col-heading" placeholder="Heading (e.g. Company)" value="' + _esc(heading) + '">' +
+                '<textarea class="gen-textarea adv-footer-col-items" placeholder="One item per line. For links use: Label | https://example.com">' + _esc(items) + '</textarea>' +
+                '</div>';
+        });
+        container.innerHTML = html;
+    }
+
+    function _esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function _renderAdvAll() {
+        _renderAdvSectionList();
+        _renderAdvCounts();
+        _renderAdvNavExtra();
+        _renderAdvFooterRecipe();
+    }
+
+    function _wireAdvancedForms() {
+        // Section tones / anims (delegated — list is dynamic)
+        var list = document.getElementById('advSectionList');
+        if (list) {
+            list.addEventListener('change', function (e) {
+                var row = e.target.closest('.adv-section-row');
+                if (!row) return;
+                var sid = row.getAttribute('data-sid');
+                var design = _getAdvDesign();
+                design.sectionTones = design.sectionTones || {};
+                design.sectionAnims = design.sectionAnims || {};
+                var toneEl = row.querySelector('.adv-tone');
+                var animEl = row.querySelector('.adv-anim');
+                if (toneEl) {
+                    if (toneEl.value) design.sectionTones[sid] = toneEl.value;
+                    else delete design.sectionTones[sid];
+                }
+                if (animEl) {
+                    if (animEl.value) design.sectionAnims[sid] = animEl.value;
+                    else delete design.sectionAnims[sid];
+                }
+                _populateAdvDesignEditor(design);
+                _advCommit();
+            });
+        }
+
+        // Card counts
+        var countMap = [
+            ['advCountServices', 'services'],
+            ['advCountPortfolio', 'portfolio'],
+            ['advCountProcess', 'process'],
+            ['advCountTeam', 'team'],
+            ['advCountPricing', 'pricing'],
+            ['advCountTestimonials', 'testimonials'],
+            ['advCountFaq', 'faq']
+        ];
+        countMap.forEach(function (pair) {
+            var el = document.getElementById(pair[0]);
+            if (!el) return;
+            el.addEventListener('change', function () {
+                var design = _getAdvDesign();
+                design.sectionCounts = design.sectionCounts || {};
+                var n = parseInt(el.value, 10);
+                if (isFinite(n) && n >= 0 && n <= 12) design.sectionCounts[pair[1]] = n;
+                else delete design.sectionCounts[pair[1]];
+                _populateAdvDesignEditor(design);
+                _advCommit();
+            });
+        });
+
+        // Nav extra
+        ['advNavExtraKind', 'advNavExtraLabel', 'advNavExtraHref'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', _onAdvNavExtraChange);
+            if (el.tagName === 'INPUT') el.addEventListener('blur', _onAdvNavExtraChange);
+        });
+        var neDisabled = document.getElementById('advNavExtraDisabled');
+        if (neDisabled) neDisabled.addEventListener('change', _onAdvNavExtraChange);
+
+        // Footer recipe
+        var tagEl = document.getElementById('advFooterTagline');
+        if (tagEl) tagEl.addEventListener('change', _onAdvFooterChange);
+        var footerContainer = document.getElementById('advFooterCols');
+        if (footerContainer) {
+            footerContainer.addEventListener('change', _onAdvFooterChange);
+            footerContainer.addEventListener('click', function (e) {
+                var rm = e.target.closest('.adv-footer-col-remove');
+                if (!rm) return;
+                var idx = parseInt(rm.getAttribute('data-remove'), 10);
+                var design = _getAdvDesign();
+                if (!design.footerRecipe || !Array.isArray(design.footerRecipe.columns)) return;
+                design.footerRecipe.columns.splice(idx, 1);
+                if (!design.footerRecipe.columns.length) design.footerRecipe = null;
+                _renderAdvFooterRecipe();
+                _populateAdvDesignEditor(design);
+                _advCommit();
+            });
+        }
+        var addBtn = document.getElementById('advFooterAddCol');
+        if (addBtn) addBtn.addEventListener('click', function () {
+            var design = _getAdvDesign();
+            design.footerRecipe = design.footerRecipe && typeof design.footerRecipe === 'object'
+                ? design.footerRecipe : {};
+            design.footerRecipe.columns = Array.isArray(design.footerRecipe.columns) ? design.footerRecipe.columns : [];
+            design.footerRecipe.columns.push({ heading: 'Column ' + (design.footerRecipe.columns.length + 1), items: [] });
+            _renderAdvFooterRecipe();
+            _populateAdvDesignEditor(design);
+            _advCommit();
+        });
+
+        // Rebuild section list when the user toggles a section in the sidebar
+        var sectionToggles = document.getElementById('sectionToggles');
+        if (sectionToggles) sectionToggles.addEventListener('change', function () {
+            _renderAdvSectionList();
+        });
+    }
+
+    function _onAdvNavExtraChange() {
+        var design = _getAdvDesign();
+        var kind = (document.getElementById('advNavExtraKind') || {}).value || '';
+        var label = (document.getElementById('advNavExtraLabel') || {}).value || '';
+        var href  = (document.getElementById('advNavExtraHref')  || {}).value || '';
+        var disabled = !!(document.getElementById('advNavExtraDisabled') || {}).checked;
+        if (kind || label || href) {
+            design.navExtra = { kind: kind || 'button' };
+            if (label) design.navExtra.label = label.slice(0, 40);
+            if (href)  design.navExtra.href  = href.slice(0, 200);
+        } else {
+            design.navExtra = null;
+        }
+        design.navExtraDisabled = disabled;
+        _populateAdvDesignEditor(design);
+        _advCommit();
+    }
+
+    function _onAdvFooterChange() {
+        var design = _getAdvDesign();
+        var tagline = (document.getElementById('advFooterTagline') || {}).value || '';
+        var cols = [];
+        document.querySelectorAll('#advFooterCols .adv-footer-col').forEach(function (card) {
+            var heading = (card.querySelector('.adv-footer-col-heading') || {}).value || '';
+            var itemsText = (card.querySelector('.adv-footer-col-items') || {}).value || '';
+            var items = itemsText.split(/\r?\n/).map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+                var pipe = line.indexOf('|');
+                if (pipe > -1) {
+                    var lab = line.slice(0, pipe).trim();
+                    var href = line.slice(pipe + 1).trim();
+                    if (lab && href) return { label: lab.slice(0, 40), href: href.slice(0, 200) };
+                }
+                return line.slice(0, 60);
+            });
+            if (heading || items.length) cols.push({ heading: heading.slice(0, 40), items: items });
+        });
+        if (cols.length || tagline) {
+            design.footerRecipe = { columns: cols };
+            if (tagline) design.footerRecipe.tagline = tagline.slice(0, 160);
+        } else {
+            design.footerRecipe = null;
+        }
+        _populateAdvDesignEditor(design);
+        _advCommit();
     }
 
     /** Merge manual design-option dropdowns from the classic wizard onto a cfg.
