@@ -98,6 +98,52 @@
     var $ = function (id) { return document.getElementById(id); };
     var $$ = function (sel) { return document.querySelectorAll(sel); };
 
+    /* ─── Toast notifications ─── replaces native alert() with a
+     * premium, non-blocking surface. Call: showToast(message, 'success'|'error'|'info', durationMs).
+     * Stacks bottom-right, auto-dismisses, clickable to dismiss. */
+    function showToast(message, kind, duration) {
+        try {
+            var host = document.getElementById('arbelToastHost');
+            if (!host) {
+                host = document.createElement('div');
+                host.id = 'arbelToastHost';
+                host.className = 'arbel-toast-host';
+                document.body.appendChild(host);
+            }
+            var t = document.createElement('div');
+            t.className = 'arbel-toast arbel-toast--' + (kind || 'info');
+            var iconSvg = {
+                success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+                error:   '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+                info:    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+            };
+            t.innerHTML = '<span class="arbel-toast-icon">' + (iconSvg[kind] || iconSvg.info) + '</span>' +
+                '<span class="arbel-toast-msg"></span>' +
+                '<button class="arbel-toast-close" aria-label="Dismiss">\u00d7</button>';
+            t.querySelector('.arbel-toast-msg').textContent = String(message || '');
+            host.appendChild(t);
+            // Enter animation
+            requestAnimationFrame(function () { t.classList.add('arbel-toast--in'); });
+            var dismiss = function () {
+                t.classList.remove('arbel-toast--in');
+                t.classList.add('arbel-toast--out');
+                setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 260);
+            };
+            t.querySelector('.arbel-toast-close').addEventListener('click', dismiss);
+            t.addEventListener('click', function (e) {
+                if (e.target.closest('.arbel-toast-close')) return;
+                dismiss();
+            });
+            var ms = duration != null ? duration : (kind === 'error' ? 6000 : 3500);
+            if (ms > 0) setTimeout(dismiss, ms);
+        } catch (e) {
+            // Last-resort fallback so we never silently swallow if the DOM isn't ready.
+            try { console.warn('[toast]', kind, message); } catch (_) {}
+        }
+    }
+    // Expose globally so editor.js/deploy.js/etc. can use it without plumbing.
+    window.showToast = window.showToast || showToast;
+
     var els = {
         wizard: $('wizard'),
         progressFill: $('progressFill'),
@@ -355,7 +401,7 @@
             var brand    = (els.brandName && els.brandName.value) || '';
 
             if (!desc.trim()) {
-                alert('Add a business description on Step 1 first — AI needs context to regen.');
+                showToast('Add a business description on Step 1 first — AI needs context to regen.', 'error');
                 return;
             }
 
@@ -380,7 +426,7 @@
                     btn.classList.add('err');
                     setTimeout(function () { btn.classList.remove('err'); }, 1800);
                     console.warn('[arbel] section regen failed:', err);
-                    alert('Section regen failed: ' + (err && err.message || err));
+                    showToast('Section regen failed: ' + (err && err.message || err), 'error');
                 });
         });
     })();
@@ -628,6 +674,16 @@
 
             grid.appendChild(btn);
         });
+
+        // Show empty state when the active filter matches no styles so the
+        // grid doesn't look broken.
+        if (!grid.children.length) {
+            var empty = document.createElement('div');
+            empty.className = 'arbel-empty';
+            empty.style.gridColumn = '1 / -1';
+            empty.innerHTML = '<div class="arbel-empty-title">No styles match that filter</div>Try a different category or clear the filter.';
+            grid.appendChild(empty);
+        }
 
         // Animate visible canvases
         initCardCanvases();
@@ -1379,6 +1435,10 @@
     //  (b) after a key is saved (input is empty) -> temporarily inject the stored
     //      key into the input so the user can visually verify it, then wipe on HIDE.
     if (els.aiKeyToggle) {
+        // SVG icons for eye (show) / eye-off (hide). Preserves the premium
+        // look and keeps the button width constant across toggles.
+        var EYE_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        var EYE_OFF_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
         els.aiKeyToggle.addEventListener('click', function () {
             var saved = ArbelKeyManager.hasKey('text');
             var input = els.aiKeyInput;
@@ -1390,12 +1450,14 @@
                     if (real) input.value = real;
                 }
                 input.type = 'text';
-                els.aiKeyToggle.textContent = 'HIDE';
+                els.aiKeyToggle.innerHTML = EYE_OFF_SVG;
+                els.aiKeyToggle.setAttribute('aria-label', 'Hide API key');
             } else {
                 // Currently visible -> hide, and if the shown value came from storage, wipe it
                 if (saved) input.value = '';
                 input.type = 'password';
-                els.aiKeyToggle.textContent = 'SHOW';
+                els.aiKeyToggle.innerHTML = EYE_SVG;
+                els.aiKeyToggle.setAttribute('aria-label', 'Show API key');
             }
         });
     }
@@ -2604,7 +2666,7 @@
         aiLastSnapshot = _snapshotForUndo();
         els.aiGenerateBtn.disabled = true;
         els.aiGenerateBtn.textContent = 'WRITING...';
-        els.aiStatus.textContent = 'Calling AI...';
+        els.aiStatus.innerHTML = '<span class="arbel-spinner"></span>Calling AI…';
         els.aiStatus.className = 'ai-status ai-status--info';
 
         var activeSections = getActiveSections();
@@ -2641,7 +2703,7 @@
             els.aiGenerateBtn.disabled = true;
             var originalLabel = els.aiAutoDesignBtn.innerHTML;
             els.aiAutoDesignBtn.textContent = 'DESIGNING...';
-            els.aiStatus.textContent = 'AI is designing your site (brand, palette, sections, copy)...';
+            els.aiStatus.innerHTML = '<span class="arbel-spinner"></span>AI is designing your site (brand, palette, sections, copy)…';
             els.aiStatus.className = 'ai-status ai-status--info';
 
             // Wipe per-element overrides so each fresh design starts clean
@@ -2695,7 +2757,7 @@
             els.aiRedesignBtn.disabled = true;
             els.aiAutoDesignBtn.disabled = true;
             els.aiRedesignBtn.textContent = 'REDESIGNING...';
-            els.aiStatus.textContent = 'Picking a fresh design (keeping your copy)...';
+            els.aiStatus.innerHTML = '<span class="arbel-spinner"></span>Picking a fresh design (keeping your copy)…';
             els.aiStatus.className = 'ai-status ai-status--info';
 
             // Clear previous per-element overrides so the new design starts clean
@@ -4214,7 +4276,7 @@
                 if (!proj || (!proj.config && !proj.overrides)) throw new Error('Invalid project file');
                 _loadProjectData(proj);
             }).catch(function (err) {
-                if (err.name !== 'AbortError') alert('Failed to open: ' + err.message);
+                if (err.name !== 'AbortError') showToast('Failed to open project: ' + err.message, 'error');
             });
         } else {
             // Fallback: file input
@@ -4232,7 +4294,7 @@
                         _fileHandle = null;
                         _loadProjectData(proj);
                     } catch (err) {
-                        alert('Failed to open: ' + err.message);
+                        showToast('Failed to open project: ' + err.message, 'error');
                     }
                 };
                 reader.readAsText(file);

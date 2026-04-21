@@ -400,8 +400,128 @@ a:hover { text-decoration: underline; }
 }
 .gen-btn--lg { min-height: 52px; padding: 14px 40px; font-size: 0.85rem; }
 .gen-btn[disabled], .gen-btn:disabled {
-    opacity: 0.4; cursor: not-allowed;
+    opacity: 0.45;
+    filter: grayscale(0.6);
+    cursor: not-allowed;
     pointer-events: none;
+}
+.gen-btn--icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    min-width: 32px;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+}
+.gen-btn--primary[disabled], .gen-btn--primary:disabled {
+    background: var(--surface2, #1a1a1a);
+    border-color: var(--border);
+    color: var(--fg3);
+}
+
+/* ─── Spinner ─── inline loading indicator for buttons/status text */
+.arbel-spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: arbel-spin 0.75s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+    opacity: 0.75;
+}
+@keyframes arbel-spin { to { transform: rotate(360deg); } }
+
+/* ─── Empty-state card ─── generic placeholder for empty lists/grids */
+.arbel-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--fg3);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.015);
+}
+.arbel-empty-title {
+    font-weight: 600;
+    color: var(--fg2);
+    margin-bottom: 4px;
+    font-size: 0.88rem;
+}
+
+/* ─── Toast notifications ─── replaces native alert() with a premium,
+   non-blocking surface. Stacks bottom-right, slides in/out. */
+.arbel-toast-host {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    max-width: calc(100vw - 40px);
+}
+.arbel-toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 280px;
+    max-width: 420px;
+    padding: 12px 14px;
+    background: var(--surface, #111);
+    color: var(--fg, #eee);
+    border: 1px solid var(--border, #333);
+    border-left: 3px solid var(--accent, #6C5CE7);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 0.82rem;
+    line-height: 1.4;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s;
+    cursor: pointer;
+}
+.arbel-toast--in { transform: translateX(0); opacity: 1; }
+.arbel-toast--out { transform: translateX(120%); opacity: 0; }
+.arbel-toast--success { border-left-color: #3ddb85; }
+.arbel-toast--success .arbel-toast-icon { color: #3ddb85; }
+.arbel-toast--error   { border-left-color: #ff6b6b; }
+.arbel-toast--error   .arbel-toast-icon { color: #ff6b6b; }
+.arbel-toast--info    .arbel-toast-icon { color: var(--accent2, #8f87ff); }
+.arbel-toast-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+.arbel-toast-msg {
+    flex: 1;
+    word-break: break-word;
+}
+.arbel-toast-close {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--fg3, #777);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.12s ease;
+}
+.arbel-toast-close:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--fg, #eee);
 }
 
 
@@ -711,7 +831,6 @@ a:hover { text-decoration: underline; }
     color: #fff;
 }
 .builder-params { display: flex; flex-direction: column; gap: 12px; }
-.builder-colors { }
 .builder-section-title {
     font-size: 0.65rem;
     letter-spacing: 0.1em;
@@ -1353,7 +1472,6 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
-.bfs-panel-tabs--right { }
 .bfs-tab {
     flex: 1;
     display: flex; align-items: center; justify-content: center; gap: 6px;
