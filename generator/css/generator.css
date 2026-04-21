@@ -831,6 +831,10 @@ a:hover { text-decoration: underline; }
     color: #fff;
 }
 .builder-params { display: flex; flex-direction: column; gap: 12px; }
+/* Reserved hook — .builder-colors is used by #builderColors container
+   (see index.html). Keep this selector so future palette styling has a
+   documented entry point. */
+.builder-colors { --arbel-hook: builder-colors; }
 .builder-section-title {
     font-size: 0.65rem;
     letter-spacing: 0.1em;
@@ -1472,6 +1476,10 @@ body.dev-unlocked .mode-card.locked .mode-card-badge--cinematic::after {
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
+/* Reserved hook — .bfs-panel-tabs--right marks the right-side tab cluster
+   in the builder footer strip. Keep this selector for future layout
+   overrides (alignment / spacing) without hunting for the HTML. */
+.bfs-panel-tabs--right { --arbel-hook: bfs-panel-tabs-right; }
 .bfs-tab {
     flex: 1;
     display: flex; align-items: center; justify-content: center; gap: 6px;
