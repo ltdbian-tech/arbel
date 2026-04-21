@@ -3248,9 +3248,22 @@ window.ArbelCompiler = (function () {
         // Build nav with links back to home sections + other pages
         var navLinks2 = '';
         var navMap2 = { services: c.servicesNav || 'Services', portfolio: c.portfolioNav || 'Work', about: c.aboutNav || 'About', process: c.processNav || 'Process', pricing: c.pricingNav || 'Pricing', contact: c.contactNav || 'Contact' };
+        // Dedup: reserve names of other pages so section links with the
+        // same label don't duplicate (e.g. "Contact" section + /contact page).
+        var navSeen2 = {};
+        if (cfg.pages) {
+            cfg.pages.forEach(function (pg) {
+                if (pg.isHome || pg.showInNav === false) return;
+                if (pg.name) navSeen2[String(pg.name).trim().toLowerCase()] = true;
+            });
+        }
         (cfg.sections || []).forEach(function (s) {
             if (s === 'hero' || s === 'testimonials' || s === 'faq') return;
-            if (navMap2[s]) navLinks2 += '        <a href="' + prefix + '#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap2[s] + '</a>\n';
+            if (!navMap2[s]) return;
+            var key = String(navMap2[s]).trim().toLowerCase();
+            if (navSeen2[key]) return;
+            navSeen2[key] = true;
+            navLinks2 += '        <a href="' + prefix + '#' + s + '" class="nav-link" data-arbel-id="nav-' + s + '" data-arbel-edit="text">' + navMap2[s] + '</a>\n';
         });
         if (cfg.pages) {
             cfg.pages.forEach(function (pg) {
@@ -3317,6 +3330,17 @@ window.ArbelCompiler = (function () {
                             if (!builder) return;
                             try { secHtml += builder(pageC, bgClass2) + '\n\n'; } catch (e) {}
                         });
+                        // If all builders produced nothing, fall back to a
+                        // short descriptive paragraph so the page isn't
+                        // just a lonely heading above empty space.
+                        if (!secHtml.trim()) {
+                            secHtml = '  <section class="section" style="padding-top:0rem;padding-bottom:4rem">\n' +
+                                '    <div class="container">\n' +
+                                '      <p style="max-width:640px;color:var(--fg2);line-height:1.85;font-size:1.05rem" data-arbel-id="page-fallback" data-arbel-edit="text">' +
+                                esc((page.seoDesc || ('Learn more about ' + (cfg.brandName || 'us') + '. This ' + (page.name || 'page') + ' page is ready for your content \u2014 click any element to edit it directly.'))) +
+                                '</p>\n' +
+                                '    </div>\n  </section>\n\n';
+                        }
                         return introHtml + secHtml;
                     }
                 }
@@ -3340,6 +3364,13 @@ window.ArbelCompiler = (function () {
                 var pageHeading = c[nameLower + 'Heading'] || c[nameLower + 'Title'] || page.seoTitle || page.name;
                 var pageDesc = page.seoDesc || '';
                 var pageBody = c[nameLower + 'Body'] || c[nameLower + 'Intro'] || c[nameLower + 'Copy'] || '';
+                // Ensure the page always has *some* copy — synthesise from
+                // brand + page name so an AI that forgets content doesn't
+                // leave a bare heading on a blank page.
+                if (!pageDesc && !pageBody) {
+                    pageBody = 'Learn more about ' + (cfg.brandName || 'us') + '. This ' + (page.name || 'page') +
+                        ' page is ready for your story \u2014 click any element to edit it directly.';
+                }
                 return '  <section class="section" style="padding-top:12rem;min-height:60vh">\n' +
                     '    <span class="section-label mono">' + esc((page.name || '').toUpperCase()) + '</span>\n' +
                     '    <h2 class="section-heading" data-arbel-id="page-heading" data-arbel-edit="text"><span class="line"><span class="line-inner">' + esc(pageHeading) + '</span></span></h2>\n' +
