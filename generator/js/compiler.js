@@ -211,10 +211,14 @@ window.ArbelCompiler = (function () {
                 '        <ul class="footer-col-list">' + items + '</ul>\n' +
                 '      </div>\n';
         });
+        // Bake the year at compile time — avoids document.write() which
+        // modern browsers throttle, can clash with CSP, and breaks layout if
+        // any earlier script throws.  `brand` is already esc()'d by the caller.
+        var _year = new Date().getFullYear();
         return '      <div class="footer-brand-col">\n' +
             '        ' + logoHtml + '\n' +
             (tagline ? '        <p class="footer-tagline" data-arbel-id="footer-tagline" data-arbel-edit="text">' + tagline + '</p>\n' : '') +
-            '        <p class="footer-copy mono">&copy; <script>document.write(new Date().getFullYear())<\/script> ' + brand + '</p>\n' +
+            '        <p class="footer-copy mono">&copy; ' + _year + ' ' + brand + '</p>\n' +
             '      </div>\n' +
             colsHtml;
     }
