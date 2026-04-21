@@ -2759,12 +2759,19 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
     function _renderPageList() {
         var list = _qs('#pageList'); if (!list) return;
         list.innerHTML = '';
+        // Keep header count in sync so the Pages tab shows "PAGES · 3" etc.
+        try {
+            var cntEl = document.getElementById('pageCount');
+            if (cntEl) cntEl.textContent = _pages.length ? String(_pages.length) : '';
+        } catch (e) {}
         _pages.forEach(function (page) {
             var row = document.createElement('div');
             row.className = 'page-item' + (page.id === _currentPage ? ' active' : '');
             var homeIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
             var pageIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
             var settingsIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>';
+            var dupIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+            var delIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
             row.innerHTML =
                 '<div class="page-item-icon">' + (page.isHome ? homeIcon : pageIcon) + '</div>' +
                 '<div class="page-item-info">' +
@@ -2774,8 +2781,8 @@ window.parent.postMessage({type:"arbel-tree",tree:tree},"*");
                 '<div class="page-item-actions">' +
                     (page.showInNav && !page.isHome ? '<span class="page-item-nav-badge" title="In navigation">NAV</span>' : '') +
                     (!page.isHome ? '<button class="page-item-btn page-settings-btn" title="Page Settings">' + settingsIcon + '</button>' : '') +
-                    (!page.isHome ? '<button class="page-item-btn page-dup-btn" title="Duplicate">&#128464;</button>' : '') +
-                    (!page.isHome ? '<button class="page-item-btn page-del-btn" title="Delete">&times;</button>' : '') +
+                    (!page.isHome ? '<button class="page-item-btn page-dup-btn" title="Duplicate">' + dupIcon + '</button>' : '') +
+                    (!page.isHome ? '<button class="page-item-btn page-del-btn" title="Delete">' + delIcon + '</button>' : '') +
                 '</div>';
 
             /* Click to select */
