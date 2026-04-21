@@ -37,13 +37,51 @@ window.ArbelCompiler = (function () {
         return div.innerHTML;
     }
 
-    /** Sanitize a URL/href — block javascript: and data: (non-image) schemes */
+    /** Sanitize a URL for safe use inside an href/src attribute.
+     *
+     *  Uses an ALLOWLIST of schemes / relative-path shapes rather than a
+     *  blocklist, so novel XSS vectors (data:text/html, blob:, filesystem:,
+     *  control-character smuggling, protocol-relative //evil.tld, etc.) all
+     *  get rewritten to '#' instead of reaching the DOM.
+     *
+     *  After the allowlist passes we also entity-escape the quote chars so
+     *  a rogue `" onload="…` can't break out of the attribute.
+     *
+     *  Anything that fails the allowlist returns '#', which renders a
+     *  harmless in-page anchor instead of silently disappearing (the old
+     *  blocklist version returned '', producing invalid HTML).
+     */
     function escHref(str) {
-        if (!str) return '';
-        var trimmed = str.replace(/^\s+/, '').toLowerCase();
-        if (/^\s*javascript\s*:/i.test(trimmed) || /^\s*vbscript\s*:/i.test(trimmed)) return '';
-        if (/^\s*data\s*:/i.test(trimmed) && !/^\s*data:image\//i.test(trimmed)) return '';
-        return esc(str);
+        if (str == null) return '#';
+        var s = String(str).trim();
+        if (!s) return '#';
+        // Reject control chars (newlines, NULs, tabs) — browsers strip some
+        // of these before scheme parsing, which is how `java\nscript:` bypasses
+        // naive regex blocklists.
+        if (/[\x00-\x1f\x7f]/.test(s)) return '#';
+        // Allowlist: http(s), mailto:, tel:, fragment, absolute path, relative path.
+        if (!/^(https?:\/\/|mailto:|tel:|#|\/(?!\/)|\.\.?\/)/i.test(s)) return '#';
+        // Attribute-context escape: & " ' < > (belt-and-braces — safeUrl already
+        // rejected the hostile cases above).
+        return s.replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+    }
+
+    /** Escape a string for safe embedding inside a <script> block.
+     *  JSON.stringify does not protect against `</script>` or `<!--` sequences
+     *  appearing inside string values; those would break out of the block.
+     *  Encoding `<` as the JSON-equivalent `\u003c` is invisible at runtime
+     *  but prevents the parser from seeing a closing tag.
+     */
+    function jsonForScript(value) {
+        return JSON.stringify(value)
+            .replace(/</g, '\\u003c')
+            .replace(/>/g, '\\u003e')
+            .replace(/\u2028/g, '\\u2028')
+            .replace(/\u2029/g, '\\u2029');
     }
 
     /** Derive up to 2 initials from a brand name (e.g. "Spice Root" → "SR", "Arbel" → "A"). */
@@ -117,7 +155,7 @@ window.ArbelCompiler = (function () {
         var ne = (cfg.navExtra && typeof cfg.navExtra === 'object') ? cfg.navExtra : (stp && stp.navExtra);
         if (!ne || !ne.label) return '';
         var label = esc(ne.label || 'Start');
-        var href = ne.href || '#contact';
+        var href = escHref(ne.href || '#contact');
         var kind = ne.kind || 'button'; // 'button' | 'icon-cart' | 'text'
         if (kind === 'icon-cart') {
             return '<a href="' + href + '" class="nav-extra-cart" data-arbel-id="nav-extra-cart" aria-label="Cart">' +
@@ -151,7 +189,7 @@ window.ArbelCompiler = (function () {
                 if (typeof it === 'string') {
                     items += '<li data-arbel-id="footer-col' + (i+1) + '-' + (j+1) + '" data-arbel-edit="text">' + esc(it) + '</li>';
                 } else if (it && it.label) {
-                    var href = it.href || '#';
+                    var href = escHref(it.href || '#');
                     items += '<li><a href="' + href + '" data-arbel-id="footer-col' + (i+1) + '-' + (j+1) + '" data-arbel-edit="text">' + esc(it.label) + '</a></li>';
                 }
             });
@@ -710,7 +748,7 @@ window.ArbelCompiler = (function () {
         var count = (userCfg && userCfg.count) || c.count;
         var blur = (userCfg && userCfg.blur) || c.blur;
         var speed = (userCfg && userCfg.speed) || c.speed;
-        var colorsArr = JSON.stringify(c.baseColors);
+        var colorsArr = jsonForScript(c.baseColors);
         var bg0 = bgColor || c.bgGrad[0];
         var bg1 = bgColor || c.bgGrad[1];
 
@@ -779,7 +817,7 @@ window.ArbelCompiler = (function () {
         var g = GRADIENTS[style] || GRADIENTS.meshGrad;
         var c = g.config;
         var speed = (userCfg && userCfg.speed) || c.speed;
-        var stopsArr = JSON.stringify(c.stops);
+        var stopsArr = jsonForScript(c.stops);
 
         return '/* Gradient Animation — ' + style + ' */\n' +
             '(function(){\n' +
@@ -841,7 +879,7 @@ window.ArbelCompiler = (function () {
         var layers = (userCfg && userCfg.layers) || c.layers;
         var amplitude = (userCfg && userCfg.amplitude) || c.amplitude;
         var speed = (userCfg && userCfg.speed) || c.speed;
-        var colorsArr = JSON.stringify(c.colors);
+        var colorsArr = jsonForScript(c.colors);
         var wBg0 = bgColor || c.bgGrad[0];
         var wBg1 = bgColor || c.bgGrad[1];
 
@@ -1272,7 +1310,7 @@ window.ArbelCompiler = (function () {
             '      <span class="line"><span class="line-inner">' + esc(c.contactHeading || "Let's Talk") + '</span></span>\n' +
             '    </h2>\n' +
             '    <div class="contact-actions">\n' +
-            '      <a href="mailto:' + esc(email) + '" class="btn btn-primary magnetic" data-arbel-id="contact-cta" data-arbel-edit="text">' + esc(c.contactCta || 'EMAIL US') + '</a>\n' +
+            '      <a href="' + escHref('mailto:' + (email || '')) + '" class="btn btn-primary magnetic" data-arbel-id="contact-cta" data-arbel-edit="text">' + esc(c.contactCta || 'EMAIL US') + '</a>\n' +
             '    </div>\n' +
             '  </div>\n' +
             '</section>';
@@ -3235,7 +3273,7 @@ window.ArbelCompiler = (function () {
             js += _getPresetGenCode(vl.preset);
         } else if (vl.frames && vl.frames.length) {
             // For uploaded videos/sequences: embed frame data URLs
-            js += 'var srcs=' + JSON.stringify(vl.frames) + ';\n';
+            js += 'var srcs=' + jsonForScript(vl.frames) + ';\n';
             js += 'srcs.forEach(function(s){var im=new Image();im.src=s;frames.push(im)});\n';
             js += 'if(frames[0])frames[0].onload=function(){draw(0,true);onScroll()};\n';
         }
@@ -3311,7 +3349,7 @@ window.ArbelCompiler = (function () {
             cfg.pages.forEach(function (pg) {
                 if (pg.isHome || pg.showInNav === false || pg.id === page.id) return;
                 var pgPath = (pg.path || '/' + pg.id).replace(/^\//, '').replace(/\/$/, '');
-                navLinks2 += '        <a href="' + prefix + pgPath + '" class="nav-link" data-arbel-id="nav-page-' + pg.id + '" data-arbel-edit="text">' + esc(pg.name) + '</a>\n';
+                navLinks2 += '        <a href="' + escHref(prefix + pgPath) + '" class="nav-link" data-arbel-id="nav-page-' + pg.id + '" data-arbel-edit="text">' + esc(pg.name) + '</a>\n';
             });
         }
 
@@ -3397,7 +3435,7 @@ window.ArbelCompiler = (function () {
                         '    <form action="#" method="POST" style="max-width:540px;display:grid;gap:1.2rem" onsubmit="this.querySelector(\'[type=submit]\').textContent=\'Sent!\';return false">\n' +
                         '      <input type="text" name="name" autocomplete="name" placeholder="Your Name" required style="' + fieldStyle + '">\n' +
                         '      <input type="email" name="email" autocomplete="email" placeholder="Your Email" required style="' + fieldStyle + '">\n' +
-                        (cfg.contactEmail ? '      <p style="font-size:0.7rem;color:var(--fg3);margin-top:-0.5rem">Or email: <a href="mailto:' + esc(cfg.contactEmail) + '" style="color:var(--accent)">' + esc(cfg.contactEmail) + '</a></p>\n' : '') +
+                        (cfg.contactEmail ? '      <p style="font-size:0.7rem;color:var(--fg3);margin-top:-0.5rem">Or email: <a href="' + escHref('mailto:' + cfg.contactEmail) + '" style="color:var(--accent)">' + esc(cfg.contactEmail) + '</a></p>\n' : '') +
                         '      <textarea name="message" rows="5" placeholder="Your Message" required style="' + fieldStyle + 'resize:vertical"></textarea>\n' +
                         '      <button type="submit" class="cta-btn" style="align-self:start;cursor:pointer" data-arbel-id="contact-cta" data-arbel-edit="text">' + esc(c.contactCta || 'Send Message') + '</button>\n' +
                         '    </form>\n' +
