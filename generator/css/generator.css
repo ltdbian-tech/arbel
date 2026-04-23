@@ -3362,3 +3362,15 @@ body:has(.gen-step[data-step="3"].active) .gen-wizard { padding-top: 0 !importan
 .site-card-actions .gen-btn{flex:1;padding:7px 10px;font-size:12px;}
 .site-card-link{color:var(--accent,#7aa2ff);text-decoration:none;font-size:11px;}
 .site-card-link:hover{text-decoration:underline;}
+
+
+/* --- Header "My Sites" link --- */
+.gen-header-link{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--border);color:var(--fg2);padding:6px 12px;border-radius:20px;font-size:11px;letter-spacing:0.1em;cursor:pointer;transition:all 0.15s;}
+.gen-header-link:hover{color:var(--fg);border-color:var(--border-hover);background:rgba(255,255,255,0.03);}
+
+/* --- "Start New Project" card inside sites modal --- */
+.site-card--new{background:linear-gradient(135deg,rgba(108,92,231,0.15),rgba(108,92,231,0.05));border:1px dashed rgba(108,92,231,0.4);align-items:center;justify-content:center;text-align:center;min-height:180px;cursor:pointer;}
+.site-card--new:hover{border-color:rgba(108,92,231,0.8);background:linear-gradient(135deg,rgba(108,92,231,0.25),rgba(108,92,231,0.1));}
+.site-card--new .site-card-name{font-size:17px;color:var(--accent2,#a599f0);}
+.site-card--new .site-card-plus{font-size:36px;line-height:1;color:var(--accent2,#a599f0);margin-bottom:4px;}
+.site-card--new .site-card-desc{min-height:0;}

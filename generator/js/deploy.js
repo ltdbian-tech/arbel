@@ -405,62 +405,169 @@ window.ArbelDeploy = (function () {
 
     /**
      * List the authenticated user's Arbel-generated repos.
-     * Pages through /user/repos and filters to repos that carry the
-     * 'arbel-site' topic.  Returns lightweight objects suitable for
-     * rendering a "My Sites" grid.
+     * Strategy:
+     *   1. Page through /user/repos and first collect repos that already
+     *      carry the 'arbel-site' topic (fast path).
+     *   2. For repos missing the topic, probe for `arbel.config.json` in
+     *      the default branch (bounded concurrency to avoid hammering
+     *      the GitHub API).  Any match is treated as a legacy Arbel site
+     *      and its topic is backfilled so future loads hit the fast path.
+     * Returns lightweight objects suitable for rendering a "My Sites" grid.
      */
     function listSites(token) {
-        var out = [];
+        var tagged = [];
+        var candidates = [];
+
         function page(n) {
             return _gh('GET', '/user/repos?per_page=100&sort=updated&page=' + n, token)
                 .then(function (repos) {
-                    if (!Array.isArray(repos) || repos.length === 0) return out;
+                    if (!Array.isArray(repos) || repos.length === 0) return;
                     repos.forEach(function (r) {
+                        var info = {
+                            owner: r.owner && r.owner.login,
+                            name: r.name,
+                            description: r.description || '',
+                            updatedAt: r.updated_at,
+                            pushedAt: r.pushed_at,
+                            htmlUrl: r.html_url,
+                            homepage: r.homepage || '',
+                            siteUrl: r.homepage ||
+                                ('https://' + (r.owner && r.owner.login) + '.github.io/' + r.name),
+                            private: !!r.private,
+                            hasPages: !!r.has_pages,
+                            fork: !!r.fork
+                        };
                         if (r.topics && r.topics.indexOf('arbel-site') >= 0) {
-                            out.push({
-                                owner: r.owner && r.owner.login,
-                                name: r.name,
-                                description: r.description || '',
-                                updatedAt: r.updated_at,
-                                pushedAt: r.pushed_at,
-                                htmlUrl: r.html_url,
-                                homepage: r.homepage || '',
-                                siteUrl: r.homepage ||
-                                    ('https://' + (r.owner && r.owner.login) + '.github.io/' + r.name),
-                                private: !!r.private
-                            });
+                            tagged.push(info);
+                        } else if (!r.fork) {
+                            // Only probe non-forks that look like they could
+                            // be a site (skip empty repos, archived, etc.).
+                            candidates.push(info);
                         }
                     });
-                    if (repos.length < 100 || n >= 3) return out; // cap at 300
+                    if (repos.length < 100 || n >= 3) return; // cap at 300
                     return page(n + 1);
                 });
         }
-        return page(1);
+
+        // Probe a candidate repo for arbel.config.json.  404 => not an Arbel
+        // site, any other error => also skip silently (don't break the list).
+        function probe(info) {
+            return _gh('GET', '/repos/' + info.owner + '/' + info.name +
+                       '/contents/arbel.config.json', token)
+                .then(function () { return info; })
+                .catch(function () { return null; });
+        }
+
+        // Run probes with limited concurrency.
+        function probeAll(list, concurrency) {
+            var i = 0, found = [];
+            function next() {
+                if (i >= list.length) return Promise.resolve();
+                var item = list[i++];
+                return probe(item).then(function (hit) {
+                    if (hit) found.push(hit);
+                    return next();
+                });
+            }
+            var workers = [];
+            for (var k = 0; k < Math.min(concurrency, list.length); k++) workers.push(next());
+            return Promise.all(workers).then(function () { return found; });
+        }
+
+        // Fire-and-forget topic backfill so the next listSites() is fast.
+        function backfill(info) {
+            return _gh('PUT', '/repos/' + info.owner + '/' + info.name + '/topics', token, {
+                names: ['arbel-site']
+            }).catch(function () { /* non-fatal */ });
+        }
+
+        return page(1).then(function () {
+            // Cap the probe set — if a user has hundreds of non-Arbel repos,
+            // we don't want to spam the API.  Most recently-updated first.
+            var toProbe = candidates.slice(0, 60);
+            return probeAll(toProbe, 6);
+        }).then(function (legacy) {
+            // Backfill tags in the background; don't await.
+            legacy.forEach(backfill);
+            // Merge and de-dupe by owner/name.
+            var seen = {};
+            var merged = [];
+            tagged.concat(legacy).forEach(function (s) {
+                var key = s.owner + '/' + s.name;
+                if (seen[key]) return;
+                seen[key] = true;
+                merged.push(s);
+            });
+            // Sort by most recent push/update.
+            merged.sort(function (a, b) {
+                var ax = a.pushedAt || a.updatedAt || '';
+                var bx = b.pushedAt || b.updatedAt || '';
+                return ax < bx ? 1 : ax > bx ? -1 : 0;
+            });
+            return merged;
+        });
     }
 
     /**
-     * Load arbel.project.json from a deployed repo.  Uses the raw contents
-     * API so the result is the decoded file content, ready to JSON.parse.
+     * Load the editable project from a deployed repo.
+     * Prefers `arbel.project.json` (full state, emitted by this version),
+     * falls back to `arbel.config.json` (emitted by every version) and
+     * wraps it in a project-shaped object so the UI can still reopen
+     * legacy sites — though only the config fields will be restored.
      */
     function loadProjectFromRepo(token, owner, repoName) {
+        function decode(data) {
+            if (!data || !data.content) return null;
+            var clean = String(data.content).replace(/\s+/g, '');
+            var bin;
+            try { bin = atob(clean); } catch (e) { return null; }
+            var bytes = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            var text;
+            try { text = new TextDecoder('utf-8').decode(bytes); }
+            catch (e) { text = bin; }
+            try { return JSON.parse(text); } catch (e) { return null; }
+        }
+
         return _gh('GET', '/repos/' + owner + '/' + repoName +
                    '/contents/arbel.project.json', token)
-            .then(function (data) {
-                if (!data || !data.content) {
-                    throw new Error('This site has no editable project file. It may have been deployed before the "My Sites" feature was added.');
-                }
-                // GitHub returns base64 with embedded newlines.
-                var clean = String(data.content).replace(/\s+/g, '');
-                var bin;
-                try { bin = atob(clean); }
-                catch (e) { throw new Error('Corrupt project file on GitHub.'); }
-                // Decode UTF-8 bytes safely (atob gives Latin-1).
-                var bytes = new Uint8Array(bin.length);
-                for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-                var text;
-                try { text = new TextDecoder('utf-8').decode(bytes); }
-                catch (e) { text = bin; }
-                return JSON.parse(text);
+            .then(function (d) {
+                var proj = decode(d);
+                if (!proj) throw new Error('Corrupt project file on GitHub.');
+                return proj;
+            })
+            .catch(function (err) {
+                // Fallback for legacy sites: read arbel.config.json and
+                // synthesize a v2 project shape from its fields.
+                return _gh('GET', '/repos/' + owner + '/' + repoName +
+                           '/contents/arbel.config.json', token)
+                    .then(function (d) {
+                        var cfg = decode(d);
+                        if (!cfg) {
+                            throw new Error('This site was deployed before the editable-project feature was added, and does not contain an editable config. You can only edit sites deployed by this version.');
+                        }
+                        return {
+                            version: 2,
+                            meta: { name: cfg.brandName || repoName, savedAt: new Date().toISOString() },
+                            config: {
+                                brandName: cfg.brandName || '',
+                                tagline: cfg.tagline || '',
+                                industry: cfg.industry || '',
+                                style: cfg.style || '',
+                                accent: cfg.accent || '',
+                                bgColor: cfg.bgColor || '',
+                                sections: cfg.sections || [],
+                                content: cfg.content || {},
+                                editorOverrides: cfg.editorOverrides || {},
+                                scenes: cfg.scenes || null
+                            },
+                            editor: {
+                                overrides: cfg.editorOverrides || {}
+                            },
+                            _legacyConfig: true
+                        };
+                    });
             });
     }
 

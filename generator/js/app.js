@@ -527,12 +527,18 @@
 
         showAuthStatus('Connected as ' + user.login, 'success');
 
-        // Reveal the "Open My Sites" button once authenticated.
+        // Reveal the "My Sites" header link once authenticated.
         var _mySitesBtn = $('mySitesBtn');
         if (_mySitesBtn) _mySitesBtn.hidden = false;
 
-        // Auto-advance after brief delay
-        setTimeout(function () { goToStep(1); }, 600);
+        // Hide the sign-in button now that we're connected; no need to keep
+        // showing "Connecting..." forever.
+        if (els.githubSignIn) els.githubSignIn.style.display = 'none';
+
+        // Wix/Canva-style: after sign-in, show the dashboard of existing
+        // sites + a "Start New Project" card.  Picking either advances the
+        // user into the builder, so the CONNECT step effectively ends here.
+        setTimeout(function () { _openSitesModal(true); }, 400);
     }
 
     // OAuth: Sign in with GitHub button
@@ -4575,13 +4581,26 @@
     var _sitesError = $('sitesError');
     var _mySitesBtn = $('mySitesBtn');
 
-    function _openSitesModal() {
+    function _openSitesModal(isPostAuth) {
         if (!_sitesModal) return;
         _sitesModal.style.display = '';
         _sitesGrid.innerHTML = '';
         _sitesEmpty.style.display = 'none';
         _sitesError.style.display = 'none';
         _sitesLoading.style.display = '';
+
+        // Dashboard title adapts to context.
+        var titleEl = $('sitesModalTitle');
+        if (titleEl) {
+            titleEl.textContent = isPostAuth
+                ? 'Welcome back — pick a site or start fresh'
+                : 'Your Arbel Sites';
+        }
+
+        // Always render the "Start New Project" card first so the dashboard
+        // is useful even before the GitHub list finishes loading (or when
+        // the user has no existing sites).
+        _renderNewProjectCard();
 
         var token = ArbelAuth.getToken();
         if (!token) {
@@ -4594,7 +4613,7 @@
         ArbelDeploy.listSites(token).then(function (sites) {
             _sitesLoading.style.display = 'none';
             if (!sites.length) {
-                _sitesEmpty.style.display = '';
+                // Empty state still shows the "New Project" card at top.
                 return;
             }
             _renderSites(sites);
@@ -4605,12 +4624,55 @@
         });
     }
 
+    function _renderNewProjectCard() {
+        var card = document.createElement('div');
+        card.className = 'site-card site-card--new';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        var plus = document.createElement('div');
+        plus.className = 'site-card-plus';
+        plus.textContent = '+';
+        card.appendChild(plus);
+        var name = document.createElement('div');
+        name.className = 'site-card-name';
+        name.textContent = 'Start New Project';
+        card.appendChild(name);
+        var desc = document.createElement('div');
+        desc.className = 'site-card-desc';
+        desc.textContent = 'Build a fresh site from scratch';
+        card.appendChild(desc);
+
+        function go() {
+            state.openedRepo = null;
+            _updateDeployButtonLabel();
+            _closeSitesModal();
+            goToStep(1);
+        }
+        card.addEventListener('click', go);
+        card.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+        });
+        _sitesGrid.appendChild(card);
+    }
+
     function _closeSitesModal() {
         if (_sitesModal) _sitesModal.style.display = 'none';
+        // If the user closed the dashboard while still on the CONNECT step
+        // (i.e. this was the post-auth welcome), drop them into Style so
+        // they aren't stuck looking at the sign-in page they just finished.
+        if (state.authenticated && typeof goToStep === 'function') {
+            try {
+                var active = document.querySelector('.gen-step.active');
+                if (active && active.getAttribute('data-step') === '0') {
+                    goToStep(1);
+                }
+            } catch (e) { /* non-fatal */ }
+        }
     }
 
     function _renderSites(sites) {
-        _sitesGrid.innerHTML = '';
+        // Note: caller has already rendered the "Start New Project" card,
+        // so we just append the user's existing sites after it.
         sites.forEach(function (s) {
             var card = document.createElement('div');
             card.className = 'site-card';
@@ -4699,6 +4761,8 @@
             updateDeployUrl();
             _updateDeployButtonLabel();
             _closeSitesModal();
+            // Drop the user straight into the editor (Step 4 = EDIT).
+            goToStep(3);
         }).catch(function (err) {
             _sitesLoading.style.display = 'none';
             _sitesError.style.display = '';
@@ -4770,6 +4834,10 @@
                 showAuthStatus('Connected as ' + result.user.login, 'success');
                 var _mySitesBtn2 = $('mySitesBtn');
                 if (_mySitesBtn2) _mySitesBtn2.hidden = false;
+                if (els.githubSignIn) els.githubSignIn.style.display = 'none';
+                // Returning user with a valid token — don't auto-open the
+                // dashboard; they may already be editing.  The header link
+                // gives them one-click access.
             })
             .catch(function () {
                 ArbelAuth.logout();
