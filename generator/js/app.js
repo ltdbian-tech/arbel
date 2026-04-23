@@ -4858,9 +4858,12 @@
                 var _mySitesBtn2 = $('mySitesBtn');
                 if (_mySitesBtn2) _mySitesBtn2.hidden = false;
                 if (els.githubSignIn) els.githubSignIn.style.display = 'none';
-                // Returning user with a valid token — don't auto-open the
-                // dashboard; they may already be editing.  The header link
-                // gives them one-click access.
+                // Returning user with a valid token — the CONNECT step now
+                // has nothing interactive left (sign-in button is hidden), so
+                // drop them into the dashboard so they can pick an existing
+                // site or start a new project.  The header "MY SITES" link
+                // remains for later access.
+                setTimeout(function () { _openSitesModal(true); }, 200);
             })
             .catch(function () {
                 ArbelAuth.logout();
