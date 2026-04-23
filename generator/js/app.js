@@ -4892,17 +4892,48 @@
     // account. Stays on the current step so an in-progress edit isn't lost.
     var _signOutBtn = $('signOutBtn');
     if (_signOutBtn) _signOutBtn.addEventListener('click', function () {
-        if (!confirm('Sign out of GitHub?\n\nThis will also clear any cached AI API keys (text / image / video) stored in this browser so the next user can\u2019t reuse them. Your unsaved edits stay in this tab.')) return;
-        // Clear all cached AI keys across categories BEFORE the auth layer
-        // clears the default one, so nothing is left behind in localStorage.
-        try {
-            if (window.ArbelKeyManager && ArbelKeyManager.removeKey) {
+        // Step 1: confirm sign-out itself. Saved projects live in GitHub +
+        // `arbel_project` local draft is preserved, so users can reload
+        // their work later.
+        if (!confirm('Sign out of GitHub?\n\nYour saved projects on GitHub and the local draft in this browser will NOT be deleted \u2014 you can reload them after signing back in.')) return;
+
+        // Step 2: ask separately whether to wipe cached AI API keys. Default
+        // is KEEP so the same user can sign in again without re-entering
+        // keys. Opt-in clear is for shared machines / handing off a device.
+        var clearKeys = false;
+        if (window.ArbelKeyManager && (ArbelKeyManager.hasKey('text') || ArbelKeyManager.hasKey('image') || ArbelKeyManager.hasKey('video'))) {
+            clearKeys = confirm('Also clear cached AI API keys (text / image / video) from this browser?\n\nOK   = clear them (recommended on shared computers)\nCancel = keep them so you can sign back in quickly');
+        }
+
+        if (clearKeys) {
+            try {
                 ArbelKeyManager.removeKey('text');
                 ArbelKeyManager.removeKey('image');
                 ArbelKeyManager.removeKey('video');
-            }
-        } catch (e) { /* ignore */ }
+            } catch (e) { /* ignore */ }
+        }
+        // ArbelAuth.logout() internally removes the default ('text') AI key
+        // as well. If the user chose to KEEP keys, snapshot them first and
+        // restore after so that behaviour doesn't override the user's choice.
+        var _kept = null;
+        if (!clearKeys && window.ArbelKeyManager) {
+            try {
+                _kept = {
+                    text:  { key: ArbelKeyManager.getKey('text'),  provider: ArbelKeyManager.getProvider && ArbelKeyManager.getProvider('text') },
+                    image: { key: ArbelKeyManager.getKey('image'), provider: ArbelKeyManager.getProvider && ArbelKeyManager.getProvider('image') },
+                    video: { key: ArbelKeyManager.getKey('video'), provider: ArbelKeyManager.getProvider && ArbelKeyManager.getProvider('video') }
+                };
+            } catch (e) { _kept = null; }
+        }
         try { ArbelAuth.logout(); } catch (e) { /* ignore */ }
+        if (_kept && window.ArbelKeyManager && ArbelKeyManager.saveKey) {
+            try {
+                ['text', 'image', 'video'].forEach(function (cat) {
+                    var k = _kept[cat];
+                    if (k && k.key && k.provider) ArbelKeyManager.saveKey(cat, k.provider, k.key);
+                });
+            } catch (e) { /* ignore */ }
+        }
         state.authenticated = false;
         state.openedRepo = null;
         if (els.genUser) els.genUser.style.display = 'none';
@@ -4921,8 +4952,9 @@
         // Refresh the AI-key panel so the masked input + status clear to
         // reflect the now-empty storage.
         try { if (typeof refreshAIKeyState === 'function') refreshAIKeyState(); } catch (e) { /* ignore */ }
-        showAuthStatus('Signed out \u2014 API keys cleared', 'info');
-        showToast && showToast('Signed out. Cached AI keys cleared.', 'info', 3500);
+        var _msg = clearKeys ? 'Signed out \u2014 API keys cleared' : 'Signed out (AI keys kept)';
+        showAuthStatus(_msg, 'info');
+        showToast && showToast(_msg + '.', 'info', 3500);
     });
     if (_sitesModal) {
         _sitesModal.addEventListener('click', function (e) {
