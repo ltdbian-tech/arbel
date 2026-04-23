@@ -3338,3 +3338,27 @@ body:has(.gen-step[data-step="3"].active) .gen-progress,
 body:has(.gen-step[data-step="3"].active) .gen-steps-nav { display: none !important; }
 body:has(.gen-step[data-step="3"].active) .gen-wizard { padding-top: 0 !important; }
 
+
+
+/* --- My Sites Modal --- */
+.sites-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;}
+.sites-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);cursor:pointer;}
+.sites-modal-panel{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:12px;max-width:900px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+.sites-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);}
+.sites-modal-head h3{margin:0;font-size:18px;font-weight:600;}
+.sites-modal-close{background:none;border:none;color:var(--fg2);font-size:26px;line-height:1;cursor:pointer;padding:0 6px;border-radius:6px;}
+.sites-modal-close:hover{background:var(--surface2);color:var(--fg);}
+.sites-modal-body{padding:22px;overflow-y:auto;flex:1;}
+.sites-loading,.sites-empty,.sites-error{padding:40px 20px;text-align:center;color:var(--fg2);}
+.sites-error{color:#ff6b6b;}
+.sites-hint{font-size:12px;opacity:0.7;margin-top:8px;}
+.sites-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.site-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color 0.15s;}
+.site-card:hover{border-color:var(--border-hover);}
+.site-card-name{font-weight:600;font-size:15px;color:var(--fg);word-break:break-word;}
+.site-card-desc{font-size:12px;color:var(--fg2);min-height:16px;}
+.site-card-meta{font-size:11px;color:var(--fg2);opacity:0.75;display:flex;gap:8px;flex-wrap:wrap;}
+.site-card-actions{display:flex;gap:8px;margin-top:auto;padding-top:8px;}
+.site-card-actions .gen-btn{flex:1;padding:7px 10px;font-size:12px;}
+.site-card-link{color:var(--accent,#7aa2ff);text-decoration:none;font-size:11px;}
+.site-card-link:hover{text-decoration:underline;}

@@ -527,6 +527,10 @@
 
         showAuthStatus('Connected as ' + user.login, 'success');
 
+        // Reveal the "Open My Sites" button once authenticated.
+        var _mySitesBtn = $('mySitesBtn');
+        if (_mySitesBtn) _mySitesBtn.style.display = '';
+
         // Auto-advance after brief delay
         setTimeout(function () { goToStep(1); }, 600);
     }
@@ -3811,26 +3815,59 @@
         // Deploy progress UI
         var steps = ['ds1', 'ds2', 'ds3', 'ds4'];
 
-        ArbelDeploy.deploy({
-            repoName: repoName,
-            token: token,
-            files: state.compiledFiles,
-            description: buildConfig().tagline || 'Built with Arbel Generator',
-            onProgress: function (step, total, msg) {
-                for (var i = 0; i < steps.length; i++) {
-                    var el = $(steps[i]);
-                    if (!el) continue;
-                    var icon = el.querySelector('.deploy-icon');
-                    if (i < step - 1) {
-                        icon.innerHTML = '&#10003;';
-                        el.classList.add('done');
-                    } else if (i === step - 1) {
-                        icon.innerHTML = '&#9899;';
-                        el.classList.add('active');
-                    }
+        // Embed the full editable project state so the site can be reopened
+        // and edited later via the "My Sites" dashboard.
+        var _projectJson;
+        try { _projectJson = JSON.stringify(_collectFullState(), null, 2); }
+        catch (e) { _projectJson = null; }
+
+        function _onDeployProgress(step, total, msg) {
+            for (var i = 0; i < steps.length; i++) {
+                var el = $(steps[i]);
+                if (!el) continue;
+                var icon = el.querySelector('.deploy-icon');
+                if (i < step - 1) {
+                    icon.innerHTML = '&#10003;';
+                    el.classList.add('done');
+                } else if (i === step - 1) {
+                    icon.innerHTML = '&#9899;';
+                    el.classList.add('active');
                 }
             }
-        })
+        }
+
+        // If this project was reopened from GitHub, update the existing
+        // repo in place; otherwise, create a brand new one.
+        var _deployPromise;
+        if (state.openedRepo && state.openedRepo.owner && state.openedRepo.name) {
+            _deployPromise = ArbelDeploy.update({
+                token: token,
+                owner: state.openedRepo.owner,
+                repoName: state.openedRepo.name,
+                files: state.compiledFiles,
+                projectJson: _projectJson,
+                onProgress: _onDeployProgress
+            }).then(function (r) {
+                // Normalise update() result to look like deploy()'s result.
+                return {
+                    siteUrl: r && r.siteUrl ||
+                        'https://' + state.openedRepo.owner + '.github.io/' + state.openedRepo.name,
+                    repoUrl: r && r.repoUrl ||
+                        'https://github.com/' + state.openedRepo.owner + '/' + state.openedRepo.name
+                };
+            });
+        } else {
+            _deployPromise = ArbelDeploy.deploy({
+                repoName: repoName,
+                token: token,
+                files: state.compiledFiles,
+                projectJson: _projectJson,
+                description: buildConfig().tagline || 'Built with Arbel Generator',
+                onProgress: _onDeployProgress
+            });
+        }
+
+        _deployPromise
         .then(function (result) {
             // Mark all steps done
             steps.forEach(function (id) {
@@ -4530,6 +4567,186 @@
     if (_fileSaveBtn) _fileSaveBtn.addEventListener('click', _saveProject);
     if (_fileSaveAsBtn) _fileSaveAsBtn.addEventListener('click', _saveProjectAs);
 
+    /* ─── "My Sites" dashboard (reopen deployed sites from GitHub) ─── */
+    var _sitesModal = $('sitesModal');
+    var _sitesGrid = $('sitesGrid');
+    var _sitesLoading = $('sitesLoading');
+    var _sitesEmpty = $('sitesEmpty');
+    var _sitesError = $('sitesError');
+    var _mySitesBtn = $('mySitesBtn');
+
+    function _openSitesModal() {
+        if (!_sitesModal) return;
+        _sitesModal.style.display = '';
+        _sitesGrid.innerHTML = '';
+        _sitesEmpty.style.display = 'none';
+        _sitesError.style.display = 'none';
+        _sitesLoading.style.display = '';
+
+        var token = ArbelAuth.getToken();
+        if (!token) {
+            _sitesLoading.style.display = 'none';
+            _sitesError.style.display = '';
+            _sitesError.textContent = 'Please sign in with GitHub first.';
+            return;
+        }
+
+        ArbelDeploy.listSites(token).then(function (sites) {
+            _sitesLoading.style.display = 'none';
+            if (!sites.length) {
+                _sitesEmpty.style.display = '';
+                return;
+            }
+            _renderSites(sites);
+        }).catch(function (err) {
+            _sitesLoading.style.display = 'none';
+            _sitesError.style.display = '';
+            _sitesError.textContent = 'Failed to load your sites: ' + (err.message || err);
+        });
+    }
+
+    function _closeSitesModal() {
+        if (_sitesModal) _sitesModal.style.display = 'none';
+    }
+
+    function _renderSites(sites) {
+        _sitesGrid.innerHTML = '';
+        sites.forEach(function (s) {
+            var card = document.createElement('div');
+            card.className = 'site-card';
+
+            var name = document.createElement('div');
+            name.className = 'site-card-name';
+            name.textContent = s.name;
+            card.appendChild(name);
+
+            if (s.description) {
+                var desc = document.createElement('div');
+                desc.className = 'site-card-desc';
+                desc.textContent = s.description;
+                card.appendChild(desc);
+            }
+
+            var meta = document.createElement('div');
+            meta.className = 'site-card-meta';
+            var when = s.pushedAt || s.updatedAt;
+            if (when) {
+                var d = new Date(when);
+                meta.textContent = 'Updated ' + d.toLocaleDateString();
+            }
+            card.appendChild(meta);
+
+            var linkRow = document.createElement('div');
+            linkRow.style.display = 'flex';
+            linkRow.style.gap = '10px';
+            linkRow.style.flexWrap = 'wrap';
+            if (s.siteUrl) {
+                var a1 = document.createElement('a');
+                a1.className = 'site-card-link';
+                a1.href = s.siteUrl;
+                a1.target = '_blank';
+                a1.rel = 'noopener noreferrer';
+                a1.textContent = 'View live ↗';
+                linkRow.appendChild(a1);
+            }
+            if (s.htmlUrl) {
+                var a2 = document.createElement('a');
+                a2.className = 'site-card-link';
+                a2.href = s.htmlUrl;
+                a2.target = '_blank';
+                a2.rel = 'noopener noreferrer';
+                a2.textContent = 'Repo ↗';
+                linkRow.appendChild(a2);
+            }
+            card.appendChild(linkRow);
+
+            var actions = document.createElement('div');
+            actions.className = 'site-card-actions';
+            var openBtn = document.createElement('button');
+            openBtn.type = 'button';
+            openBtn.className = 'gen-btn gen-btn--primary';
+            openBtn.textContent = 'Edit';
+            openBtn.addEventListener('click', function () {
+                _openSiteFromRepo(s);
+            });
+            actions.appendChild(openBtn);
+            card.appendChild(actions);
+
+            _sitesGrid.appendChild(card);
+        });
+    }
+
+    function _openSiteFromRepo(site) {
+        if (_projectDirty) {
+            if (!confirm('You have unsaved changes. Loading this site will discard them. Continue?')) return;
+        }
+        var token = ArbelAuth.getToken();
+        if (!token) return;
+
+        _sitesLoading.style.display = '';
+        _sitesGrid.innerHTML = '';
+        _sitesEmpty.style.display = 'none';
+        _sitesError.style.display = 'none';
+
+        ArbelDeploy.loadProjectFromRepo(token, site.owner, site.name).then(function (proj) {
+            // Hand off to the standard project-loader so all existing restore
+            // logic (v1 & v2) runs exactly as it does for a local file.
+            _loadProjectData(proj);
+            // Remember the origin so Publish becomes "Update".
+            state.openedRepo = { owner: site.owner, name: site.name };
+            // Pre-fill the deploy form so the user sees which repo will be updated.
+            if (els.repoName) els.repoName.value = site.name;
+            updateDeployUrl();
+            _updateDeployButtonLabel();
+            _closeSitesModal();
+        }).catch(function (err) {
+            _sitesLoading.style.display = 'none';
+            _sitesError.style.display = '';
+            _sitesError.textContent = err.message || 'Failed to load project from GitHub.';
+        });
+    }
+
+    function _updateDeployButtonLabel() {
+        if (!els.deployBtn) return;
+        if (state.openedRepo && state.openedRepo.name) {
+            els.deployBtn.innerHTML =
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                '<path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/>' +
+                '<path d="M12 12v9M8 17l4 4 4-4"/></svg> UPDATE MY SITE';
+            if (els.repoName) els.repoName.readOnly = true;
+        } else {
+            els.deployBtn.innerHTML =
+                '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                '<path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242"/>' +
+                '<path d="M12 12v9M8 17l4 4 4-4"/></svg> PUBLISH MY SITE';
+            if (els.repoName) els.repoName.readOnly = false;
+        }
+    }
+
+    if (_mySitesBtn) _mySitesBtn.addEventListener('click', _openSitesModal);
+    if (_sitesModal) {
+        _sitesModal.addEventListener('click', function (e) {
+            if (e.target.hasAttribute && e.target.hasAttribute('data-close-sites')) {
+                _closeSitesModal();
+            }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && _sitesModal.style.display !== 'none') {
+                _closeSitesModal();
+            }
+        });
+    }
+    // Clear the "reopened" marker on New Project so the next deploy creates
+    // a fresh repo instead of overwriting the previously loaded one.  The
+    // file-menu New button listener was attached above with a direct
+    // reference, so we add a capture-phase listener here that runs first.
+    if (_fileNewBtn) {
+        _fileNewBtn.addEventListener('click', function () {
+            state.openedRepo = null;
+            setTimeout(_updateDeployButtonLabel, 0);
+        }, true);
+    }
+
     /* ─── Warn on unsaved changes ─── */
     window.addEventListener('beforeunload', function (e) {
         if (_projectDirty) {
@@ -4551,6 +4768,8 @@
                 els.genUserName.textContent = result.user.login;
                 els.deployUsername.textContent = result.user.login;
                 showAuthStatus('Connected as ' + result.user.login, 'success');
+                var _mySitesBtn2 = $('mySitesBtn');
+                if (_mySitesBtn2) _mySitesBtn2.style.display = '';
             })
             .catch(function () {
                 ArbelAuth.logout();

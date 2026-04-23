@@ -141,6 +141,13 @@ window.ArbelDeploy = (function () {
         var token = opts.token;
         var repoName = opts.repoName;
         var files = opts.files;
+        // Embed the full editable project JSON in the repo so the user can
+        // reopen & edit the site later from "My Sites".  The file is public
+        // (the whole repo is), but it only contains what the user already
+        // published in their site's HTML/CSS, so no new information leaks.
+        if (opts.projectJson) {
+            files = Object.assign({}, files, { 'arbel.project.json': opts.projectJson });
+        }
         var description = opts.description || 'Built with Arbel Generator';
         var progress = opts.onProgress || function () {};
         var owner;
@@ -164,6 +171,18 @@ window.ArbelDeploy = (function () {
                     has_issues: false,
                     has_projects: false,
                     has_wiki: false
+                });
+            })
+            .then(function () {
+                // Tag with 'arbel-site' so the "My Sites" UI can filter the
+                // authenticated user's repos to only Arbel-generated ones.
+                // Non-fatal: if this fails, the site still deploys, it just
+                // won't show up in the dashboard until the user re-saves.
+                return _gh('PUT', '/repos/' + owner + '/' + repoName + '/topics', token, {
+                    names: ['arbel-site']
+                }).catch(function (err) {
+                    console.warn('Topic tagging skipped:', err.message);
+                    return null;
                 });
             })
             .then(function () {
@@ -281,8 +300,13 @@ window.ArbelDeploy = (function () {
         var token = opts.token;
         var owner = opts.owner;
         var repoName = opts.repoName;
+        var inputFiles = opts.files;
+        // Same project-JSON embedding as deploy() — keeps both paths symmetrical.
+        if (opts.projectJson) {
+            inputFiles = Object.assign({}, inputFiles, { 'arbel.project.json': opts.projectJson });
+        }
         // Apply the same data-URI extraction the initial deploy uses.
-        var split = _extractLargeEmbeds(opts.files);
+        var split = _extractLargeEmbeds(inputFiles);
         var files = split.files;
         var binaryFiles = split.binaryFiles;
         var progress = opts.onProgress || function () {};
@@ -379,9 +403,72 @@ window.ArbelDeploy = (function () {
         });
     }
 
+    /**
+     * List the authenticated user's Arbel-generated repos.
+     * Pages through /user/repos and filters to repos that carry the
+     * 'arbel-site' topic.  Returns lightweight objects suitable for
+     * rendering a "My Sites" grid.
+     */
+    function listSites(token) {
+        var out = [];
+        function page(n) {
+            return _gh('GET', '/user/repos?per_page=100&sort=updated&page=' + n, token)
+                .then(function (repos) {
+                    if (!Array.isArray(repos) || repos.length === 0) return out;
+                    repos.forEach(function (r) {
+                        if (r.topics && r.topics.indexOf('arbel-site') >= 0) {
+                            out.push({
+                                owner: r.owner && r.owner.login,
+                                name: r.name,
+                                description: r.description || '',
+                                updatedAt: r.updated_at,
+                                pushedAt: r.pushed_at,
+                                htmlUrl: r.html_url,
+                                homepage: r.homepage || '',
+                                siteUrl: r.homepage ||
+                                    ('https://' + (r.owner && r.owner.login) + '.github.io/' + r.name),
+                                private: !!r.private
+                            });
+                        }
+                    });
+                    if (repos.length < 100 || n >= 3) return out; // cap at 300
+                    return page(n + 1);
+                });
+        }
+        return page(1);
+    }
+
+    /**
+     * Load arbel.project.json from a deployed repo.  Uses the raw contents
+     * API so the result is the decoded file content, ready to JSON.parse.
+     */
+    function loadProjectFromRepo(token, owner, repoName) {
+        return _gh('GET', '/repos/' + owner + '/' + repoName +
+                   '/contents/arbel.project.json', token)
+            .then(function (data) {
+                if (!data || !data.content) {
+                    throw new Error('This site has no editable project file. It may have been deployed before the "My Sites" feature was added.');
+                }
+                // GitHub returns base64 with embedded newlines.
+                var clean = String(data.content).replace(/\s+/g, '');
+                var bin;
+                try { bin = atob(clean); }
+                catch (e) { throw new Error('Corrupt project file on GitHub.'); }
+                // Decode UTF-8 bytes safely (atob gives Latin-1).
+                var bytes = new Uint8Array(bin.length);
+                for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                var text;
+                try { text = new TextDecoder('utf-8').decode(bytes); }
+                catch (e) { text = bin; }
+                return JSON.parse(text);
+            });
+    }
+
     return {
         deploy: deploy,
         update: update,
-        checkRepoName: checkRepoName
+        checkRepoName: checkRepoName,
+        listSites: listSites,
+        loadProjectFromRepo: loadProjectFromRepo
     };
 })();
