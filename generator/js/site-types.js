@@ -25,6 +25,7 @@
         // Hardware / B2B manufacturing — must run BEFORE shop so "we produce CPUs"
         // doesn't get classed as a consumer e-commerce site.
         { t: 'saas',        rx: /\b(cpus?|gpus?|chips?(et)?|semiconductors?|processors?|motherboards?|firmware|hardware|circuits?|silicon|wafers?|socs?|microcontrollers?|fpgas?|asics?|pcbs?|ssds?|rams?|datacenters?|data[- ]centers?|manufactur(e|er|ers|ing)|oem|supply[- ]chain|industrial)\b/i },
+        { t: 'beauty',      rx: /\b(beauty|cosmetics?|skincare|skin[- ]care|makeup|make[- ]up|fragrance|perfume|lipstick|mascara|serum|moisturizer|cleanser|spa|salon|haircare|hair[- ]care|nail[- ]?bar|aesthetic clinic|dermo[- ]?cosmetic)\b/i },
         { t: 'shop',        rx: /\b(shop|store|ecommerce|e-commerce|retail|merch|boutique|cart|checkout|grocer(y|ies)|products?[ -](catalog|page|list)|(clothing|apparel|jewelry|accessories)[- ]?(line|shop|store|brand)?|shopify|marketplace|bazaar)\b/i },
         { t: 'restaurant',  rx: /\b(restaurant|cafe|bistro|bakery|brewery|diner|bar|pub|menu|reservation|cuisine|chef|food truck|pizzeria|sushi|coffee shop|eater(y|ies))\b/i },
         { t: 'portfolio',   rx: /\b(portfolio|freelanc(e|er)|my work|case studies|showcase|personal site|designer|illustrator|photographer|art director|resume|cv|about me)\b/i },
@@ -58,7 +59,7 @@
         photography: 'photography', startup: 'saas',
         gaming: 'gaming', shop: 'shop', blog: 'blog',
         event: 'event', app: 'app', podcast: 'podcast',
-        course: 'course', other: 'generic'
+        course: 'course', beauty: 'beauty', other: 'generic'
     };
 
     /**
@@ -302,6 +303,72 @@
                 ],
                 cinematicReel: { heading: 'Enter the arena', sub: 'Five roles. One objective. Zero retries. Queue up free.', cta: 'Play Free', label: 'NOW PLAYING' }
             }
+        },
+        beauty: {
+            presetIds: ['meshGrad', 'iridescent', 'sunsetBlob', 'morphBlob', 'auroraBlob'],
+            palettes: [
+                ['#e8a5b9', '#fff5f7'], ['#c9a27e', '#fbf6ef'], ['#1a1a1a', '#faf7f0'],
+                ['#d4a574', '#fdf9f4'], ['#be185d', '#fff1f5'],
+                ['#a16207', '#fefce8'], ['#0f172a', '#f1f5f9'], ['#6d28d9', '#fdf9ff']
+            ],
+            fonts: ['editorial', 'boutique', 'luxe', 'humanist', 'modern'],
+            corners: ['soft', 'pill', 'soft'],
+            cardTreatment: ['minimal', 'floating', 'bordered'],
+            navStyle: ['minimal', 'pill', 'default'],
+            heroLayout: ['split', 'centered', 'product-feature'],
+            buttonStyle: ['solid', 'outline', 'lifted'],
+            typeScale: ['normal', 'dramatic'],
+            labelStyle: ['default', 'dot'],
+            logoStyle: ['underline', 'mark-left', ''],
+            headingAlign: ['center', 'left'],
+            statsStrip: [
+                { v: 'CLEAN', l: 'CLINICALLY TESTED' }, { v: '4.9\u2605', l: 'OVER 8,000 REVIEWS' },
+                { v: '100%', l: 'CRUELTY FREE' }, { v: '30 DAY', l: 'GLOW GUARANTEE' }
+            ],
+            logoCloud: ['Vogue', 'ELLE', 'Allure', 'Byrdie', 'Into The Gloss', 'Refinery29', 'Harper\u2019s Bazaar'],
+            team: [
+                { n: 'Ines Duval', r: 'Founder / Formulator' },
+                { n: 'Noor Aziz', r: 'Head of Product' },
+                { n: 'Sofia Bianchi', r: 'Brand Director' }
+            ],
+            labels: { portfolio: 'SHOP', services: 'COLLECTION', pricing: 'RITUALS', ctaBanner: 'SHOP THE EDIT' },
+            cta: {
+                heroCta:         ['Shop the Edit', 'Build Your Ritual', 'Discover'],
+                heroCtaSecondary:['Take the Skin Quiz', 'View Ingredients'],
+                ctaBannerHeading:['Your ritual, reimagined.', 'Clean formulas. Real results.', 'Glow delivered.'],
+                ctaBannerSub:   ['Free shipping over $50. Carbon-neutral delivery on every order.', 'Dermatologist-tested. Never tested on animals.'],
+                ctaBannerCta:   ['Shop Now', 'Start Your Ritual', 'Explore the Edit']
+            },
+            pageRecipes: [
+                { id: 'shop',    name: 'Shop',    path: '/shop',    sections: ['categoryChips','productGrid','dealBanner','ctaBanner'] },
+                { id: 'about',   name: 'About',   path: '/about',   sections: ['about','team','statsStrip','logoCloud'] },
+                { id: 'contact', name: 'Contact', path: '/contact', sections: [] }
+            ],
+            persona: 'beauty / cosmetics / skincare brand \u2014 portfolio reads as a hero product grid (serums, creams, palettes), pricing reads as rituals or kits, stats lean into clinical/clean claims; copy is sensorial and ingredient-led',
+            navExtra: { label: 'Cart', href: '#', kind: 'icon-cart' },
+            footerRecipe: {
+                tagline: 'Clean, clinically-backed beauty. Shipped fast, returned free.',
+                columns: [
+                    { heading: 'SHOP',     items: [{ label: 'Skincare', href: '/shop' }, { label: 'Makeup',   href: '/shop#new' }, { label: 'Rituals',  href: '#pricing' }] },
+                    { heading: 'HELP',     items: [{ label: 'Shipping', href: '/contact' }, { label: 'Returns',   href: '/contact' }, { label: 'Contact',  href: '/contact' }] },
+                    { heading: 'COMPANY',  items: [{ label: 'About',    href: '/about' },   { label: 'Journal',   href: '#' },         { label: 'Press',    href: '#' }] }
+                ]
+            },
+            content: {
+                productGrid: [
+                    { name: 'Luminous Hydra Serum', price: '$48', category: 'Skincare', badge: 'NEW' },
+                    { name: 'Velvet Matte Lipstick', price: '$24', category: 'Makeup', badge: '' },
+                    { name: 'Rosewater Toning Mist', price: '$28', category: 'Skincare', badge: '' },
+                    { name: 'Overnight Repair Cream', price: '$62', category: 'Skincare', badge: 'BESTSELLER' },
+                    { name: 'Sculpting Cheek Palette', price: '$38', category: 'Makeup', badge: '' },
+                    { name: 'Silk Amber Eau de Parfum', price: '$85', category: 'Fragrance', badge: '' },
+                    { name: 'Glow Drops SPF 50', price: '$34', category: 'Skincare', badge: '-10%' },
+                    { name: 'Nourishing Hair Oil', price: '$29', category: 'Haircare', badge: '' }
+                ],
+                categoryChips: ['Skincare', 'Makeup', 'Fragrance', 'Haircare', 'Body', 'Tools', 'Gifts', 'Rituals'],
+                dealBanner: { tag: 'THE EDIT', heading: 'Build your ritual \u2014 save 15% on any 3', sub: 'Complimentary samples with every order over $50. Always clean, always shipped fast.', cta: 'Shop the Edit' }
+            },
+            imageTopics: { product: 'boutique', heroProduct: 'boutique' }
         },
         shop: {
             presetIds: ['meshGrad', 'iridescent', 'sunsetBlob', 'morphBlob', 'prism'],

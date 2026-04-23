@@ -64,6 +64,10 @@
     var ALIASES = {
         'product':       'produce',
         'grocery':       'produce',
+        'beauty':        'boutique',
+        'cosmetics':     'boutique',
+        'skincare':      'boutique',
+        'fragrance':     'boutique',
         'food':          'restaurant-dish',
         'dish':          'restaurant-dish',
         'menu':          'restaurant-dish',

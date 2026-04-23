@@ -1804,6 +1804,7 @@ window.ArbelCompiler = (function () {
                     shop: 'produce', ecommerce: 'produce',
                     restaurant: 'restaurant-dish',
                     fashion: 'fashion-model',
+                    beauty: 'boutique',
                     music: 'album-art',
                     podcast: 'album-art',
                     gaming: 'gaming',
