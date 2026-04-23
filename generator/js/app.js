@@ -81,7 +81,8 @@
         editorOverrides: null,
         cinematicEditorOverrides: null,
         templateContent: null,
-        cinematicScenes: null
+        cinematicScenes: null,
+        aiLastContentType: null
     };
 
     /* ─── DOM Refs ─── */
@@ -2726,6 +2727,7 @@
                     state.aiLastDesc     = desc;
                     state.aiLastIndustry = els.industry.value;
                     state.aiLastBrand    = els.brandName.value;
+                    state.aiLastContentType = state.aiSiteType || null;
                     if (els.aiRedesignBtn) els.aiRedesignBtn.style.display = '';
                     _showUndo();
                 })
@@ -2818,6 +2820,34 @@
         });
     }
 
+    /** Clear DOM content inputs for keys that belong to the site-type-bound
+     *  auto-fill cohort (product grids, agents, dishes, looks, releases,
+     *  game modes, stat walls, race timelines, category chips, hero
+     *  product/dish images). Called when the AI-inferred site type
+     *  changes so the compiler re-picks fresh type-appropriate content.
+     *  Leaves user-facing brand/SEO/generic copy intact. */
+    function _purgeTypeBoundContent() {
+        var prefixes = ['product', 'agent', 'mode', 'wall', 'race', 'dish', 'look', 'release', 'category'];
+        var singletons = ['heroProductImage', 'heroDishImage'];
+        document.querySelectorAll('.content-input').forEach(function (inp) {
+            var k = inp.dataset && inp.dataset.key;
+            if (!k) return;
+            var match = singletons.indexOf(k) >= 0;
+            if (!match) {
+                for (var i = 0; i < prefixes.length; i++) {
+                    // e.g. product1Name, agent2Image, category3, mode1Tag
+                    var re = new RegExp('^' + prefixes[i] + '\\d+([A-Z].*)?$');
+                    if (re.test(k)) { match = true; break; }
+                }
+            }
+            if (match) {
+                inp.value = '';
+                // Fire input event so app state syncs (some inputs wire live-save)
+                try { inp.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) { }
+            }
+        });
+    }
+
     /** Run a randomize pass. When useAI=true OR toggle is on + key present,
      *  route through ArbelAI.generateDesignOnly so the LLM drives the remix.
      *  Otherwise shuffle locally — random preset, random palette, random axes. */
@@ -2854,6 +2884,22 @@
                 return;
             }
             state.editorOverrides = {};
+            if (window.ArbelEditor && ArbelEditor.setOverrides) ArbelEditor.setOverrides({});
+            // ─── Pre-infer new site type; if it differs from the type the
+            // current content was auto-filled for, purge the type-bound
+            // content cohort (product/agent/dish/look/release/mode/wall/
+            // race/category items + hero product/dish images) so the
+            // compiler re-picks fresh items matching the new type. This
+            // prevents e.g. grocery product photos lingering on a site
+            // re-themed to "gaming".
+            var _newType = window.ArbelSiteType ? ArbelSiteType.infer(
+                desc,
+                state.aiLastIndustry || (els.industry && els.industry.value) || ''
+            ) : 'generic';
+            if (_newType !== state.aiLastContentType) {
+                _purgeTypeBoundContent();
+                state.aiLastContentType = _newType;
+            }
             ArbelAI.generateDesignOnly(desc,
                 state.aiLastIndustry || (els.industry && els.industry.value) || '',
                 state.aiLastBrand || (els.brandName && els.brandName.value) || '')
@@ -3987,7 +4033,8 @@
             ai: {
                 lastDesc: state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || '',
                 lastIndustry: state.aiLastIndustry || (els.industry && els.industry.value) || '',
-                lastBrand: state.aiLastBrand || (els.brandName && els.brandName.value) || ''
+                lastBrand: state.aiLastBrand || (els.brandName && els.brandName.value) || '',
+                lastContentType: state.aiLastContentType || state.aiSiteType || ''
             },
             config: {
                 brandName: els.brandName.value.trim() || '',
@@ -4084,6 +4131,9 @@
             }
             if (typeof proj.ai.lastIndustry === 'string') state.aiLastIndustry = proj.ai.lastIndustry;
             if (typeof proj.ai.lastBrand === 'string') state.aiLastBrand = proj.ai.lastBrand;
+            if (typeof proj.ai.lastContentType === 'string' && proj.ai.lastContentType) {
+                state.aiLastContentType = proj.ai.lastContentType;
+            }
         }
 
         // Config form inputs
