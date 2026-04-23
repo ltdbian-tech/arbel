@@ -32,6 +32,34 @@
     var yearEl = document.getElementById('copyrightYear');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+    // Report-a-bug: build a pre-filled mailto: with the current page + user
+    // agent + site-type so we can triage quickly. No PII collected beyond
+    // what the user types in the email client.
+    var reportBugEl = document.getElementById('reportBugLink');
+    if (reportBugEl) {
+        reportBugEl.addEventListener('click', function (e) {
+            e.preventDefault();
+            var subject = 'Arbel Bug Report \u2014 ' + (location.pathname || '/');
+            var body = [
+                'Describe what happened:',
+                '',
+                '',
+                'What did you expect instead?',
+                '',
+                '',
+                '---',
+                'Page: ' + location.href,
+                'UA: ' + navigator.userAgent,
+                'When: ' + new Date().toISOString(),
+                'Arbel build: v=20260423m'
+            ].join('\n');
+            var url = 'mailto:arbeltechnologies@gmail.com'
+                + '?subject=' + encodeURIComponent(subject)
+                + '&body=' + encodeURIComponent(body);
+            window.location.href = url;
+        });
+    }
+
     /* ─── Dev Unlock (internal testing of in-progress features) ───
        Flag is stored in localStorage so it persists across visits.
        To enable for yourself:   localStorage.setItem('arbel.devUnlock','1')

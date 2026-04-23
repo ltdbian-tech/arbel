@@ -32,10 +32,11 @@ var ALLOWED_ORIGINS = [
  * single botnet node can do to our GitHub OAuth app's rate limits without
  * requiring a KV binding (which would need a separate deploy step).
  *
- * Limits: 20 callback attempts per IP per minute.  A legitimate user
- * completes OAuth in 1 request; 20 is plenty of slack for retries. */
+ * Limits: 10 callback attempts per IP per minute.  A legitimate user
+ * completes OAuth in 1 request; 10 gives plenty of slack for retries
+ * while keeping brute-force attempts bounded. */
 var RL_WINDOW_MS = 60 * 1000;
-var RL_MAX = 20;
+var RL_MAX = 10;
 var RL_CAPACITY = 2000;   // hard ceiling on distinct IPs tracked per isolate
 var _rlMap = new Map();    // ip -> { count, resetAt }  (insertion order = LRU)
 
