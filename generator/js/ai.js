@@ -193,6 +193,9 @@ window.ArbelAI = (function () {
 
                 if (resp.ok) {
                     var data = await resp.json();
+                    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+                        throw new Error('Groq returned an unexpected response format.');
+                    }
                     var text = data.choices[0].message.content;
                     return JSON.parse(text);
                 }

@@ -54,6 +54,10 @@ window.ArbelPreview = (function () {
         _messageHandlerAttached = true;
         window.addEventListener('message', function (e) {
             if (!_iframe || e.source !== _iframe.contentWindow) return;
+            // Defence-in-depth: a sandboxed iframe without allow-same-origin
+            // always reports origin === 'null'.  Rejecting anything else
+            // catches future regressions where sandbox flags change.
+            if (e.origin !== 'null' && e.origin !== '') return;
             var d = e.data;
             if (!d || typeof d !== 'object') return;
             if (d.type === 'arbel-preview-scroll' && typeof d.y === 'number') {

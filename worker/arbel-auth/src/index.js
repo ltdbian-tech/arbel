@@ -36,20 +36,28 @@ var ALLOWED_ORIGINS = [
  * completes OAuth in 1 request; 20 is plenty of slack for retries. */
 var RL_WINDOW_MS = 60 * 1000;
 var RL_MAX = 20;
-var _rlMap = new Map(); // ip -> { count, resetAt }
+var RL_CAPACITY = 2000;   // hard ceiling on distinct IPs tracked per isolate
+var _rlMap = new Map();    // ip -> { count, resetAt }  (insertion order = LRU)
 
 function _rlCheck(ip) {
     if (!ip) return true; // no IP header → fail open (extremely rare on CF)
     var now = Date.now();
-    // Opportunistic GC — keep the map bounded.
-    if (_rlMap.size > 10000) {
-        for (var k of _rlMap.keys()) {
-            if (_rlMap.get(k).resetAt < now) _rlMap.delete(k);
-            if (_rlMap.size < 5000) break;
-        }
-    }
     var entry = _rlMap.get(ip);
+
     if (!entry || entry.resetAt < now) {
+        // Before inserting a new key, bound memory:
+        //   1. drop every already-expired entry (cheap full scan up to capacity)
+        //   2. if still at cap, evict the oldest entry (Map preserves insertion order)
+        if (_rlMap.size >= RL_CAPACITY) {
+            for (var k of _rlMap.keys()) {
+                var v = _rlMap.get(k);
+                if (v && v.resetAt < now) _rlMap.delete(k);
+            }
+            if (_rlMap.size >= RL_CAPACITY) {
+                var firstKey = _rlMap.keys().next().value;
+                if (firstKey !== undefined) _rlMap.delete(firstKey);
+            }
+        }
         _rlMap.set(ip, { count: 1, resetAt: now + RL_WINDOW_MS });
         return true;
     }

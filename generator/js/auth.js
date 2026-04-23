@@ -52,8 +52,15 @@ window.ArbelAuth = (function () {
         return Array.from(array, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
     }
 
-    /** Start OAuth flow — redirect to GitHub */
+    /** Start OAuth flow — redirect to GitHub.
+     *  Refuses to run over plain HTTP (except on localhost) to prevent
+     *  an SSL-stripped redirect URI from leaking the OAuth code. */
     function startOAuth() {
+        if (window.location.protocol !== 'https:' &&
+            window.location.hostname !== 'localhost' &&
+            window.location.hostname !== '127.0.0.1') {
+            throw new Error('OAuth requires HTTPS. Refusing to start over ' + window.location.protocol);
+        }
         var state = _generateState();
         try {
             sessionStorage.setItem(OAUTH_STATE_KEY, state);

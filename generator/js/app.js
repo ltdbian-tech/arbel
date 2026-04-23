@@ -32,26 +32,16 @@
     var yearEl = document.getElementById('copyrightYear');
     if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-    /* ─── Dev Unlock (for internal testing of locked features) ───
-       Activate by visiting: /generator/?unlock=arbel-dev-2026
-       Deactivate by visiting: /generator/?unlock=off
-       Flag is stored in localStorage so it persists across visits. */
+    /* ─── Dev Unlock (internal testing of in-progress features) ───
+       Flag is stored in localStorage so it persists across visits.
+       To enable for yourself:   localStorage.setItem('arbel.devUnlock','1')
+       To disable:               localStorage.removeItem('arbel.devUnlock')
+       The previous `?unlock=<secret>` URL trigger was removed because the
+       secret was visible in public source — anyone reading the JS could
+       enable dev mode.  Manual DevTools toggle keeps the same convenience
+       for maintainers without advertising the switch to strangers. */
     var DEV_UNLOCK_KEY = 'arbel.devUnlock';
-    var DEV_UNLOCK_SECRET = 'arbel-dev-2026'; // change to rotate access
     try {
-        var usp = new URLSearchParams(location.search);
-        if (usp.has('unlock')) {
-            var v = usp.get('unlock');
-            if (v === 'off') {
-                localStorage.removeItem(DEV_UNLOCK_KEY);
-            } else if (v === DEV_UNLOCK_SECRET) {
-                localStorage.setItem(DEV_UNLOCK_KEY, '1');
-            }
-            // Scrub the query param from URL so it isn't shared / logged
-            usp.delete('unlock');
-            var newQs = usp.toString();
-            history.replaceState(null, '', location.pathname + (newQs ? '?' + newQs : '') + location.hash);
-        }
         if (localStorage.getItem(DEV_UNLOCK_KEY) === '1') {
             document.body.classList.add('dev-unlocked');
         }
