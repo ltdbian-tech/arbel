@@ -532,6 +532,11 @@
         var _mySitesBtn = $('mySitesBtn');
         if (_mySitesBtn) _mySitesBtn.hidden = false;
 
+        // Reveal the Sign Out button so users can disconnect their GitHub
+        // account without clearing browser storage manually.
+        var _signOutBtn = $('signOutBtn');
+        if (_signOutBtn) _signOutBtn.hidden = false;
+
         // Hide the sign-in button now that we're connected; no need to keep
         // showing "Connecting..." forever.
         if (els.githubSignIn) els.githubSignIn.style.display = 'none';
@@ -4881,6 +4886,44 @@
     }
 
     if (_mySitesBtn) _mySitesBtn.addEventListener('click', _openSitesModal);
+
+    // Sign-out: clear GitHub token + cached keys, hide header controls,
+    // restore the sign-in button so the user can connect a different
+    // account. Stays on the current step so an in-progress edit isn't lost.
+    var _signOutBtn = $('signOutBtn');
+    if (_signOutBtn) _signOutBtn.addEventListener('click', function () {
+        if (!confirm('Sign out of GitHub?\n\nThis will also clear any cached AI API keys (text / image / video) stored in this browser so the next user can\u2019t reuse them. Your unsaved edits stay in this tab.')) return;
+        // Clear all cached AI keys across categories BEFORE the auth layer
+        // clears the default one, so nothing is left behind in localStorage.
+        try {
+            if (window.ArbelKeyManager && ArbelKeyManager.removeKey) {
+                ArbelKeyManager.removeKey('text');
+                ArbelKeyManager.removeKey('image');
+                ArbelKeyManager.removeKey('video');
+            }
+        } catch (e) { /* ignore */ }
+        try { ArbelAuth.logout(); } catch (e) { /* ignore */ }
+        state.authenticated = false;
+        state.openedRepo = null;
+        if (els.genUser) els.genUser.style.display = 'none';
+        if (els.genUserAvatar) els.genUserAvatar.src = '';
+        if (els.genUserName) els.genUserName.textContent = '';
+        if (els.deployUsername) els.deployUsername.textContent = 'username';
+        var _mySitesBtnX = $('mySitesBtn');
+        if (_mySitesBtnX) _mySitesBtnX.hidden = true;
+        _signOutBtn.hidden = true;
+        if (els.githubSignIn) {
+            els.githubSignIn.style.display = '';
+            els.githubSignIn.disabled = false;
+            els.githubSignIn.innerHTML = '<svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> Sign in with GitHub';
+        }
+        _closeSitesModal && _closeSitesModal();
+        // Refresh the AI-key panel so the masked input + status clear to
+        // reflect the now-empty storage.
+        try { if (typeof refreshAIKeyState === 'function') refreshAIKeyState(); } catch (e) { /* ignore */ }
+        showAuthStatus('Signed out \u2014 API keys cleared', 'info');
+        showToast && showToast('Signed out. Cached AI keys cleared.', 'info', 3500);
+    });
     if (_sitesModal) {
         _sitesModal.addEventListener('click', function (e) {
             if (e.target.hasAttribute && e.target.hasAttribute('data-close-sites')) {
@@ -4927,6 +4970,8 @@
                 showAuthStatus('Connected as ' + result.user.login, 'success');
                 var _mySitesBtn2 = $('mySitesBtn');
                 if (_mySitesBtn2) _mySitesBtn2.hidden = false;
+                var _signOutBtn2 = $('signOutBtn');
+                if (_signOutBtn2) _signOutBtn2.hidden = false;
                 if (els.githubSignIn) els.githubSignIn.style.display = 'none';
                 // Returning user with a valid token — the CONNECT step now
                 // has nothing interactive left (sign-in button is hidden), so
