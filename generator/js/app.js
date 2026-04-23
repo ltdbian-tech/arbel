@@ -3823,9 +3823,19 @@
 
         // Embed the full editable project state so the site can be reopened
         // and edited later via the "My Sites" dashboard.
+        //
+        // SECURITY: strip contactEmail before shipping — the GitHub repo is
+        // public and arbel.config.json already intentionally excludes it
+        // (see compiler._buildConfig "X9" note).  Anything we put into
+        // arbel.project.json is publicly scrapable for the same reason.
         var _projectJson;
-        try { _projectJson = JSON.stringify(_collectFullState(), null, 2); }
-        catch (e) { _projectJson = null; }
+        try {
+            var _fullState = _collectFullState();
+            if (_fullState && _fullState.config) {
+                delete _fullState.config.contactEmail;
+            }
+            _projectJson = JSON.stringify(_fullState, null, 2);
+        } catch (e) { _projectJson = null; }
 
         function _onDeployProgress(step, total, msg) {
             for (var i = 0; i < steps.length; i++) {
@@ -4671,6 +4681,19 @@
     }
 
     function _renderSites(sites) {
+        // Guard against javascript:/data:/vbscript: URLs before feeding them
+        // into an <a href>.  Most values here originate from GitHub's API
+        // and are already validated, but `homepage` is user-settable.
+        function _safeHref(u) {
+            if (!u) return '';
+            try {
+                var parsed = new URL(u, 'https://github.com');
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return parsed.href;
+                }
+            } catch (e) { /* bad URL */ }
+            return '';
+        }
         // Note: caller has already rendered the "Start New Project" card,
         // so we just append the user's existing sites after it.
         sites.forEach(function (s) {
@@ -4705,7 +4728,7 @@
             if (s.siteUrl) {
                 var a1 = document.createElement('a');
                 a1.className = 'site-card-link';
-                a1.href = s.siteUrl;
+                a1.href = _safeHref(s.siteUrl);
                 a1.target = '_blank';
                 a1.rel = 'noopener noreferrer';
                 a1.textContent = 'View live ↗';
@@ -4714,7 +4737,7 @@
             if (s.htmlUrl) {
                 var a2 = document.createElement('a');
                 a2.className = 'site-card-link';
-                a2.href = s.htmlUrl;
+                a2.href = _safeHref(s.htmlUrl);
                 a2.target = '_blank';
                 a2.rel = 'noopener noreferrer';
                 a2.textContent = 'Repo ↗';
