@@ -1,5 +1,5 @@
 {
-    "enabled": false,
+    "enabled": true,
     "message": "Arbel is getting a quick upgrade. We'll be back in a few minutes.",
     "until": "",
     "_note": "Flip 'enabled' to true to close the site to the public. Bypass: visit /generator/?mb=<BYPASS_TOKEN> once (token is in generator/js/maintenance.js). Bypass auto-expires after 7 days per device."
