@@ -3980,6 +3980,15 @@
                 name: els.brandName.value.trim() || 'My Site',
                 savedAt: new Date().toISOString()
             },
+            // Remember the prompt context that produced this site so that
+            // Randomize+AI on a reopened project uses the right description
+            // (e.g. "gaming studio" vs. "grocery store") instead of silently
+            // falling back to a no-context local shuffle.
+            ai: {
+                lastDesc: state.aiLastDesc || (els.aiPrompt && els.aiPrompt.value) || '',
+                lastIndustry: state.aiLastIndustry || (els.industry && els.industry.value) || '',
+                lastBrand: state.aiLastBrand || (els.brandName && els.brandName.value) || ''
+            },
             config: {
                 brandName: els.brandName.value.trim() || '',
                 tagline: els.tagline.value.trim() || '',
@@ -4065,6 +4074,17 @@
         if (!proj || !proj.config) return;
         var c = proj.config;
         var ed = proj.editor || {};
+
+        // Restore the AI prompt context so Randomize+AI on a reopened site
+        // uses the original description instead of falling back to local.
+        if (proj.ai && typeof proj.ai === 'object') {
+            if (typeof proj.ai.lastDesc === 'string') {
+                state.aiLastDesc = proj.ai.lastDesc;
+                if (els.aiPrompt && !els.aiPrompt.value) els.aiPrompt.value = proj.ai.lastDesc;
+            }
+            if (typeof proj.ai.lastIndustry === 'string') state.aiLastIndustry = proj.ai.lastIndustry;
+            if (typeof proj.ai.lastBrand === 'string') state.aiLastBrand = proj.ai.lastBrand;
+        }
 
         // Config form inputs
         if (c.brandName !== undefined) els.brandName.value = c.brandName;
