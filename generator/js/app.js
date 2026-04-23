@@ -4891,32 +4891,30 @@
     // restore the sign-in button so the user can connect a different
     // account. Stays on the current step so an in-progress edit isn't lost.
     var _signOutBtn = $('signOutBtn');
-    if (_signOutBtn) _signOutBtn.addEventListener('click', function () {
-        // Step 1: confirm sign-out itself. Saved projects live in GitHub +
-        // `arbel_project` local draft is preserved, so users can reload
-        // their work later.
-        if (!confirm('Sign out of GitHub?\n\nYour saved projects on GitHub and the local draft in this browser will NOT be deleted \u2014 you can reload them after signing back in.')) return;
+    var _signOutModal = $('signOutModal');
 
-        // Step 2: ask separately whether to wipe cached AI API keys. Default
-        // is KEEP so the same user can sign in again without re-entering
-        // keys. Opt-in clear is for shared machines / handing off a device.
-        var clearKeys = false;
-        if (window.ArbelKeyManager && (ArbelKeyManager.hasKey('text') || ArbelKeyManager.hasKey('image') || ArbelKeyManager.hasKey('video'))) {
-            clearKeys = confirm('Also clear cached AI API keys (text / image / video) from this browser?\n\nOK   = clear them (recommended on shared computers)\nCancel = keep them so you can sign back in quickly');
-        }
+    function _openSignOutModal() {
+        if (_signOutModal) _signOutModal.style.display = 'flex';
+    }
+    function _closeSignOutModal() {
+        if (_signOutModal) _signOutModal.style.display = 'none';
+    }
 
-        if (clearKeys) {
-            try {
-                ArbelKeyManager.removeKey('text');
-                ArbelKeyManager.removeKey('image');
-                ArbelKeyManager.removeKey('video');
-            } catch (e) { /* ignore */ }
-        }
+    function _performSignOut(clearKeys) {
+        _closeSignOutModal();
         // ArbelAuth.logout() internally removes the default ('text') AI key
         // as well. If the user chose to KEEP keys, snapshot them first and
         // restore after so that behaviour doesn't override the user's choice.
         var _kept = null;
-        if (!clearKeys && window.ArbelKeyManager) {
+        if (clearKeys) {
+            try {
+                if (window.ArbelKeyManager) {
+                    ArbelKeyManager.removeKey('text');
+                    ArbelKeyManager.removeKey('image');
+                    ArbelKeyManager.removeKey('video');
+                }
+            } catch (e) { /* ignore */ }
+        } else if (window.ArbelKeyManager) {
             try {
                 _kept = {
                     text:  { key: ArbelKeyManager.getKey('text'),  provider: ArbelKeyManager.getProvider && ArbelKeyManager.getProvider('text') },
@@ -4942,7 +4940,7 @@
         if (els.deployUsername) els.deployUsername.textContent = 'username';
         var _mySitesBtnX = $('mySitesBtn');
         if (_mySitesBtnX) _mySitesBtnX.hidden = true;
-        _signOutBtn.hidden = true;
+        if (_signOutBtn) _signOutBtn.hidden = true;
         if (els.githubSignIn) {
             els.githubSignIn.style.display = '';
             els.githubSignIn.disabled = false;
@@ -4955,7 +4953,29 @@
         var _msg = clearKeys ? 'Signed out \u2014 API keys cleared' : 'Signed out (AI keys kept)';
         showAuthStatus(_msg, 'info');
         showToast && showToast(_msg + '.', 'info', 3500);
-    });
+    }
+
+    if (_signOutBtn) _signOutBtn.addEventListener('click', _openSignOutModal);
+    if (_signOutModal) {
+        _signOutModal.addEventListener('click', function (e) {
+            var t = e.target;
+            if (!t) return;
+            if (t.hasAttribute && t.hasAttribute('data-close-signout')) {
+                _closeSignOutModal();
+                return;
+            }
+            var optBtn = t.closest && t.closest('[data-signout-mode]');
+            if (optBtn) {
+                var mode = optBtn.getAttribute('data-signout-mode');
+                _performSignOut(mode === 'clear');
+            }
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && _signOutModal.style.display === 'flex') {
+                _closeSignOutModal();
+            }
+        });
+    }
     if (_sitesModal) {
         _sitesModal.addEventListener('click', function (e) {
             if (e.target.hasAttribute && e.target.hasAttribute('data-close-sites')) {
