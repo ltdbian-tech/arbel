@@ -529,7 +529,7 @@
 
         // Reveal the "Open My Sites" button once authenticated.
         var _mySitesBtn = $('mySitesBtn');
-        if (_mySitesBtn) _mySitesBtn.style.display = '';
+        if (_mySitesBtn) _mySitesBtn.hidden = false;
 
         // Auto-advance after brief delay
         setTimeout(function () { goToStep(1); }, 600);
@@ -4769,7 +4769,7 @@
                 els.deployUsername.textContent = result.user.login;
                 showAuthStatus('Connected as ' + result.user.login, 'success');
                 var _mySitesBtn2 = $('mySitesBtn');
-                if (_mySitesBtn2) _mySitesBtn2.style.display = '';
+                if (_mySitesBtn2) _mySitesBtn2.hidden = false;
             })
             .catch(function () {
                 ArbelAuth.logout();
